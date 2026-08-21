@@ -1,0 +1,237 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-3-a",
+  "generatedAt": "2026-08-21T14:27:33.041Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-3-a-L3-001",
+    "batchId": "bench-3-a",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "被",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "中",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "该",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "像",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "认为",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-3-a-L3-001",
+    "status": "rejected",
+    "title": "失踪的白猫",
+    "content": "下午的阳光照在社区公园的长椅上，大毛通常在这里睡觉。\n李明抬头看了看空荡荡的椅子，肚子突然咕咕叫了起来。\n“奇怪，今天大毛怎么没有出现呢？”李明问道。\n小红仔细观察了一下周围的地面，发现了一些白色的猫毛。\n“你看，这里有毛，大毛可能在这里待过，”小红说。\n李明认为大毛一定遇到了什么麻烦，心里有点担心。\n小明正躺在旁边的草地上，懒洋洋地不想动。\n“我们找不到大毛，也许它只是去别的地方玩了，”小明说。\n“可是大毛从来没有离开过这个公园很久，”李明着急地说。\n妈妈走过来，拍了拍李明的肩膀，让她不要着急。\n“慢慢找，大毛很聪明，不会跑得太远，”妈妈温柔地说。\n他们开始在草丛中仔细搜索，希望能找到大毛的身影。\n突然，李明听到灌木丛后面传来微弱的叫声。\n“你听，好像是大毛的声音！”李明兴奋地喊道。\n大家赶紧走过去，发现大毛的腿被塑料环卡住了。\n小红看了看那个塑料环，觉得很难直接取下来。\n“我们需要一把剪刀，才能帮大毛解开这个环，”小红说。\n李明跑回家拿来剪刀，动作很快，像一阵风一样。\n“小心一点，别伤到大毛，”小红提醒着拿剪刀的李明。\n李明小心翼翼地剪断了塑料环，大毛终于自由了。\n大毛舔了舔李明的手，表示感谢，然后跑开了。\n“它看起来没事，这真是万幸，”妈妈松了一口气说。\n“如果刚才我们没发现，大毛可能会更难过，”李明说。\n小红点点头，认为这次经历让他们更加注意垃圾问题。\n“我们该把周围的垃圾都捡起来，避免再发生这样的事，”小红说。\n大家同意了这个建议，开始清理公园里的垃圾。\n小明也起来了，帮他们捡瓶子，虽然他还是有点懒。\n“虽然打扫很累，但是为了保护动物，这是需要的，”李明说。\n看着干净的公园，李明感到心里很开心和充实。\n这种帮助别人的感觉，像吃了冰淇淋一样甜。\n妈妈微笑着看着他们，觉得孩子们的成长很快。\n在这个社区里，大家的生活因为互助变得更美好。\n如果每个人都能这样关心周围，世界会变得更温暖。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@1",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "target_below_min",
+          "message": "被 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "中 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "该 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "生活 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_words",
+          "message": "56 distinct words above HSK 3 (max 3)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 21.2% > 7.0%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "22 unknown (non-vocabulary) runs (max 2): 照在、长椅、荡、咕咕、毛、有毛、懒洋洋、草丛、身影、灌木"
+        },
+        {
+          "code": "unknown_share",
+          "message": "unknown text: 7.5% > 7.0%"
+        }
+      ],
+      "warnings": [],
+      "metrics": {
+        "lines": 33,
+        "cjkChars": 589,
+        "distinctVocab": 212,
+        "targetCounts": {
+          "被": 1,
+          "中": 1,
+          "如果": 2,
+          "该": 1,
+          "需要": 2,
+          "像": 2,
+          "认为": 2,
+          "生活": 1
+        },
+        "inLevelCoverage": 0.713,
+        "outOfLevelDistinct": 56,
+        "outOfLevelCharShare": 0.212,
+        "unknownDistinct": 22,
+        "unknownCharShare": 0.075,
+        "unknownRuns": [
+          "照在",
+          "长椅",
+          "荡",
+          "咕咕",
+          "毛",
+          "有毛",
+          "懒洋洋",
+          "草丛",
+          "身影",
+          "灌木"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.035,
+        "nearestNeighbor": {
+          "title": "5. 农民回到田里",
+          "level": 2,
+          "jaccard": 0.011,
+          "containment": 0.068
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 1,
+    "calls": 9,
+    "providerErrors": [
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 5824, Requested 5886. Please try again in 27.825s. Need more tokens? Upgrade to Dev Tier today at htt"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4754, Requested 5886. Please try again in 19.8s. Need more tokens? Upgrade to Dev Tier today at https"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 2605, Requested 5886. Please try again in 3.6825s. Need more tokens? Upgrade to Dev Tier today at htt"
+      },
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 2596, Requested 5508. Please try again in 779.999999ms. Need more tokens? Upgrade to Dev Tier today a"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7959, Requested 6736. Please try again in 50.2125s. Need more tokens? Upgrade to Dev Tier today at ht"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6883, Requested 4742. Please try again in 27.1875s. Need more tokens? Upgrade to Dev Tier today at ht"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4740, Requested 6736. Please try again in 26.07s. Need more tokens? Upgrade to Dev Tier today at http"
+      }
+    ],
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 9,
+      "failures": 7,
+      "promptTokens": 6016,
+      "completionTokens": 1852,
+      "latencyMsTotal": 4902,
+      "wallMs": 61129
+    }
+  },
+  "staged": null
+}

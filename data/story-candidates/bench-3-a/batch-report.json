@@ -1,0 +1,164 @@
+{
+  "batchId": "bench-3-a",
+  "level": 3,
+  "generatedAt": "2026-08-21T14:32:16.572Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b"
+  },
+  "versions": {
+    "generator": "fab9-pipeline@1",
+    "prompts": "fab9-prompts@1"
+  },
+  "manifests": 4,
+  "accepted": 0,
+  "rejected": 4,
+  "totalProviderCalls": 47,
+  "tokenUsage": {
+    "requests": 47,
+    "failures": 36,
+    "promptTokens": 34894,
+    "completionTokens": 7612,
+    "latencyMsTotal": 22775
+  },
+  "failureHistogram": {
+    "target_below_min": 9,
+    "out_of_level_words": 4,
+    "out_of_level_share": 3,
+    "unknown_words": 3,
+    "unknown_share": 1,
+    "missing_target": 2,
+    "too_long": 2,
+    "unknown_speaker": 2,
+    "target_above_max": 1
+  },
+  "plan": {
+    "before": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    },
+    "after": {
+      "level": 3,
+      "totalTargets": 384,
+      "satisfied": 0,
+      "pending": 384,
+      "cappedThisBatch": 0
+    }
+  },
+  "coverage": {
+    "current": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    },
+    "projectedIfPublished": {
+      "zero": 356,
+      "single": 28,
+      "pctZero": 78.6
+    }
+  },
+  "candidates": [
+    {
+      "manifestId": "bench-3-a-L3-001",
+      "status": "rejected",
+      "title": "失踪的白猫",
+      "critiqueScore": null,
+      "failures": [
+        "target_below_min",
+        "target_below_min",
+        "target_below_min",
+        "target_below_min",
+        "out_of_level_words",
+        "out_of_level_share",
+        "unknown_words",
+        "unknown_share"
+      ],
+      "warnings": [],
+      "calls": 9,
+      "usage": {
+        "requests": 9,
+        "failures": 7,
+        "promptTokens": 6016,
+        "completionTokens": 1852,
+        "latencyMsTotal": 4902,
+        "wallMs": 61129
+      }
+    },
+    {
+      "manifestId": "bench-3-a-L3-002",
+      "status": "rejected",
+      "title": "照片比赛",
+      "critiqueScore": null,
+      "failures": [
+        "missing_target",
+        "missing_target",
+        "target_below_min",
+        "out_of_level_words",
+        "out_of_level_share"
+      ],
+      "warnings": [],
+      "calls": 14,
+      "usage": {
+        "requests": 14,
+        "failures": 11,
+        "promptTokens": 9429,
+        "completionTokens": 1888,
+        "latencyMsTotal": 5847,
+        "wallMs": 110092
+      }
+    },
+    {
+      "manifestId": "bench-3-a-L3-003",
+      "status": "rejected",
+      "title": "意外的礼物",
+      "critiqueScore": null,
+      "failures": [
+        "too_long",
+        "unknown_speaker",
+        "target_below_min",
+        "target_below_min",
+        "out_of_level_words",
+        "out_of_level_share",
+        "unknown_words"
+      ],
+      "warnings": [],
+      "calls": 12,
+      "usage": {
+        "requests": 12,
+        "failures": 9,
+        "promptTokens": 9484,
+        "completionTokens": 1868,
+        "latencyMsTotal": 5627,
+        "wallMs": 85874
+      }
+    },
+    {
+      "manifestId": "bench-3-a-L3-004",
+      "status": "rejected",
+      "title": "远方的朋友",
+      "critiqueScore": null,
+      "failures": [
+        "too_long",
+        "unknown_speaker",
+        "target_below_min",
+        "target_above_max",
+        "target_below_min",
+        "out_of_level_words",
+        "unknown_words"
+      ],
+      "warnings": [],
+      "calls": 12,
+      "usage": {
+        "requests": 12,
+        "failures": 9,
+        "promptTokens": 9965,
+        "completionTokens": 2004,
+        "latencyMsTotal": 6399,
+        "wallMs": 86620
+      }
+    }
+  ]
+}

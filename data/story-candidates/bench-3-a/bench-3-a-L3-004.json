@@ -1,0 +1,240 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-3-a",
+  "generatedAt": "2026-08-21T14:32:15.629Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-3-a-L3-004",
+    "batchId": "bench-3-a",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "要求",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "信",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "接",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "刚",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "只要",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a new friend or visitor arrives and daily life is a little different for a while",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-3-a-L3-004",
+    "status": "rejected",
+    "title": "远方的朋友",
+    "content": "李明：妈妈，有人给你打电话。\n妈妈：好的，我马上过来。\n刚放学回家，李明就听到电话响。\n他跑过去，看到妈妈接电话。\n妈妈：你好，请问找谁？\n电话那头传来一个男人的声音。\n那个男人说话很客气。\n李明觉得这个声音有点奇怪。\n妈妈说没问题，让他进来吧。\n爸爸和朋友在银行里。\n李明问小红：你看见爸爸了吗？\n小红：刚才在车站看见过他。\n小红总是比李明细心一点。\n李明饿得发慌，想吃东西。\n他的肚子一直在叫。\n小红：你别急，慢慢等。\n只有一袋面包在桌子上。\n大毛跳上来，看着面包。\n它发着呼噜呼噜的声音。\n白猫看起来很可爱。\n妈妈要求大家不要吵。\n那个男人带着几个包。\n他是来自德国的男人。\n他讲中文讲得不太好。\n但是他的笑容很温暖。\n当然，李明觉得他很高。\n个子很高的男人。\n李明问：你相信中国菜吗？\n客人笑着说：当然相信。\n他刚来中国三天。\n只要有机会，他就出去。\n小红告诉李明：他是新邻居。\n小明：我们可以帮助他吗？\n李明：当然可以，我很热心。\n但是小明比较懒。\n小明只想躺着休息。\n妈妈给客人倒了红茶。\n房间里有音乐声。\n那个男人拿出一些信。\n信是从国外寄来的。\n李明想看那些图片。\n妈妈要求他先吃饭。\n李明拿起一块面包。\n大毛看着李明。\n李明把一半给了大毛。\n客人说谢谢。\n他说中国的小孩很友好。\n李明很高兴。\n只要礼貌，就有朋友。\n最后，大家吃了晚饭。\n那个男人走了。\n小红：他是个好人。\n李明：是的，我很开心。\n明天还要见面吗？\n妈妈告诉他不要担心。\n只要想去，就可以去。\n李明点点头，笑了。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@1",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "57 lines (need 14-38)"
+        },
+        {
+          "code": "unknown_speaker",
+          "message": "speakers outside the cast: 李明问小红、李明问、客人笑着说、小红告诉李明 (allowed: 李明、小红、小明、妈妈)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "发 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_above_max",
+          "message": "男人 appears 7× (max 4) — reads as spam"
+        },
+        {
+          "code": "target_below_min",
+          "message": "接 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_words",
+          "message": "18 distinct words above HSK 3 (max 3)"
+        },
+        {
+          "code": "unknown_words",
+          "message": "7 unknown (non-vocabulary) runs (max 2): 没、发慌、一袋、呼噜、德国、懒、小孩"
+        }
+      ],
+      "warnings": [],
+      "metrics": {
+        "lines": 57,
+        "cjkChars": 434,
+        "distinctVocab": 167,
+        "targetCounts": {
+          "发": 1,
+          "要求": 2,
+          "男人": 7,
+          "信": 2,
+          "当然": 3,
+          "接": 1,
+          "刚": 2,
+          "只要": 3
+        },
+        "inLevelCoverage": 0.901,
+        "outOfLevelDistinct": 18,
+        "outOfLevelCharShare": 0.067,
+        "unknownDistinct": 7,
+        "unknownCharShare": 0.032,
+        "unknownRuns": [
+          "没",
+          "发慌",
+          "一袋",
+          "呼噜",
+          "德国",
+          "懒",
+          "小孩"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.03,
+        "nearestNeighbor": {
+          "title": "6. 六点，星期六",
+          "level": 1,
+          "jaccard": 0.014,
+          "containment": 0.044
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 1,
+    "calls": 12,
+    "providerErrors": [
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7041, Requested 5802. Please try again in 36.3225s. Need more tokens? Upgrade to Dev Tier today at ht"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 5965, Requested 5802. Please try again in 28.252499999s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 3823, Requested 5802. Please try again in 12.1875s. Need more tokens? Upgrade to Dev Tier today at ht"
+      },
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 3815, Requested 4355. Please try again in 1.275s. Need more tokens? Upgrade to Dev Tier today at http"
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6397, Requested 6447. Please try again in 36.33s. Need more tokens? Upgrade to Dev Tier today at http"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 5320, Requested 6447. Please try again in 28.252499999s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "repair",
+        "attempt": 1,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7426, Requested 5293. Please try again in 35.3925s. Need more tokens? Upgrade to Dev Tier today at ht"
+      },
+      {
+        "kind": "repair",
+        "attempt": 2,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6349, Requested 6447. Please try again in 35.97s. Need more tokens? Upgrade to Dev Tier today at http"
+      },
+      {
+        "kind": "repair",
+        "attempt": 3,
+        "message": "groq/qwen/qwen3.6-27b HTTP 429: Rate limit reached for model `qwen/qwen3.6-27b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4206, Requested 4930. Please try again in 8.52s. Need more tokens? Upgrade to Dev Tier today at https"
+      }
+    ],
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 12,
+      "failures": 9,
+      "promptTokens": 9965,
+      "completionTokens": 2004,
+      "latencyMsTotal": 6399,
+      "wallMs": 86620
+    }
+  },
+  "staged": null
+}

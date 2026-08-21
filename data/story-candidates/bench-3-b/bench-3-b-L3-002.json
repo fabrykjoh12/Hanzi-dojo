@@ -1,0 +1,164 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "bench-3-b",
+  "generatedAt": "2026-08-21T14:34:10.893Z",
+  "provider": {
+    "name": "groq",
+    "model": "openai/gpt-oss-120b"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bench-3-b-L3-002",
+    "batchId": "bench-3-b",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "或",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "得到",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "了解",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "candidate": {
+    "manifestId": "bench-3-b-L3-002",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": {
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "no_candidate",
+          "message": "every draft attempt failed (provider error or unparseable response)"
+        }
+      ],
+      "warnings": [],
+      "metrics": {}
+    },
+    "critique": null,
+    "attempts": 2,
+    "calls": 6,
+    "providerErrors": [
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 7993, Requested 5504. Please try again in 41.2275s. Need more tokens? Upgrade to Dev Tier today"
+      },
+      {
+        "kind": "draft",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 6918, Requested 5504. Please try again in 33.165s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "draft",
+        "attempt": 3,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4776, Requested 5504. Please try again in 17.099999999s. Need more tokens? Upgrade to Dev Tier "
+      },
+      {
+        "kind": "draft",
+        "attempt": 1,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 4768, Requested 5504. Please try again in 17.04s. Need more tokens? Upgrade to Dev Tier today a"
+      },
+      {
+        "kind": "draft",
+        "attempt": 2,
+        "message": "groq/openai/gpt-oss-120b HTTP 429: Rate limit reached for model `openai/gpt-oss-120b` in organization `org_01ktpxytdren08fzm817vqa68q` service tier `on_demand` on tokens per minute (TPM): Limit 8000, Used 3693, Requested 5504. Please try again in 8.9775s. Need more tokens? Upgrade to Dev Tier today "
+      },
+      {
+        "kind": "draft",
+        "attempt": 3,
+        "message": "groq/openai/gpt-oss-120b returned empty content (finish_reason=length)"
+      }
+    ],
+    "generatorVersion": "fab9-pipeline@1",
+    "promptVersion": "fab9-prompts@1",
+    "usage": {
+      "requests": 6,
+      "failures": 5,
+      "promptTokens": 3004,
+      "completionTokens": 2500,
+      "latencyMsTotal": 5836,
+      "wallMs": 53868
+    }
+  },
+  "staged": null
+}
