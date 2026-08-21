@@ -32,11 +32,16 @@
 //   --model      exact model id for the explicit providers
 //   --reasoning-effort  optional Groq reasoning_effort (e.g. none/low) — Qwen3
 //                spends its whole budget thinking without it
-//   --provider duo --writer <p:m> --editor <p:m>  the two-model flow: writer
-//                drafts naturally, deterministic validation, editor performs a
-//                constrained simplification of failures, revalidate, one
-//                repair, writer critiques after PASS. --writer-effort /
-//                --editor-effort set reasoning_effort per model.
+//   --provider select --writer <p:m> --editor <p:m>  THE PRODUCTION FLOW:
+//                K independent writer drafts (--k, default 3), deterministic
+//                validation + ranking, best draft wins; patch-based
+//                micro-repair only when the winner is narrow; the editor
+//                model only patches lines and translates — full-story
+//                editing is retired from the active pipeline (three rounds
+//                of evidence: every model rewrote instead of editing).
+//   --provider duo --writer <p:m> --editor <p:m>  DIAGNOSTIC ONLY: the
+//                retired write→edit flow (self-condense / editor-simplify
+//                behind --broad-stage), kept for transformation experiments.
 //   --responses  fake provider script: { "<manifestId>"|"*": { draft: [..],
 //                repair: [..], critique: [..], revise: [..], translate: [..] } }
 //   --dry-run    compose and write manifests + plan only; zero provider calls
@@ -52,6 +57,7 @@ import { buildCoveragePlan, pendingTargets, useTargets, recordAcceptedCandidate,
 import { composeSemanticManifests, manifestDefaults } from './storyManifestPlanner.mjs'
 import { generateCandidate, serializableCandidate, GENERATOR_VERSION } from './storyGenPipeline.mjs'
 import { generateDuoCandidate, serializableDuoCandidate } from './storyDuoPipeline.mjs'
+import { generateSelectCandidate, serializableSelectCandidate } from './storySelectPipeline.mjs'
 import { PROMPT_VERSION } from './storyGenPrompts.mjs'
 import { CANDIDATE_FILE_SCHEMA } from './storyStaging.mjs'
 import { directProvider, DIRECT_PROVIDERS, newUsage, usageDelta } from './llmDirect.mjs'
@@ -78,6 +84,7 @@ const editorSpec = arg('editor', null)          // duo: provider:model for the c
 const editorEffort = arg('editor-effort', null)
 const broadStage = arg('broad-stage', 'self-condense')   // duo: 'self-condense' | 'editor'
 const manifestFile = arg('manifest', null)               // reuse ONE stored manifest verbatim (count forced to 1)
+const draftsK = parseInt(arg('k', '3'), 10)              // select: independent drafts per manifest
 const responsesPath = arg('responses', null)
 const dryRun = has('dry-run')
 
@@ -205,21 +212,21 @@ if (providerName === 'fake') {
 } else if (providerName === 'premium') {
   const p = await premiumProvider()
   providerInfo = { name: p.name, model: p.model, send: p.send, usage: p.usage }
-} else if (providerName === 'duo') {
-  if (!writerSpec || !editorSpec) { console.error('--provider duo needs --writer <p:m> and --editor <p:m>'); process.exit(1) }
+} else if (providerName === 'duo' || providerName === 'select') {
+  if (!writerSpec || !editorSpec) { console.error('--provider ' + providerName + ' needs --writer <p:m> and --editor <p:m>'); process.exit(1) }
   const mk = (spec, effort) => {
     const i = spec.indexOf(':')
     return directProvider(spec.slice(0, i), spec.slice(i + 1), process.env, { reasoningEffort: effort })
   }
   const writer = mk(writerSpec, writerEffort)
   const editor = mk(editorSpec, editorEffort)
-  console.log('[generate-targeted] duo: writer=' + writer.name + '/' + writer.model
+  console.log('[generate-targeted] ' + providerName + ': writer=' + writer.name + '/' + writer.model
     + (writerEffort ? ' (effort ' + writerEffort + ')' : '')
     + ' editor=' + editor.name + '/' + editor.model
     + (editorEffort ? ' (effort ' + editorEffort + ')' : ''))
   const sum = (k) => (writer.usage[k] || 0) + (editor.usage[k] || 0)
   providerInfo = {
-    name: 'duo',
+    name: providerName,
     model: writer.model + ' + ' + editor.model,
     writer, editor,
     // Live combined view: the runner snapshots this before/after each
@@ -259,13 +266,20 @@ for (const manifest of manifests) {
   const startedAt = Date.now()
   let result
   try {
-    result = providerInfo.name === 'duo'
-      ? await generateDuoCandidate({
+    result = providerInfo.name === 'select'
+      ? await generateSelectCandidate({
           manifest, pool, vocabMap, corpus, meanings,
-          writer: providerInfo.writer.send, editor: providerInfo.editor.send,
-          broadStage,
+          writer: providerInfo.writer.send, patcher: providerInfo.editor.send,
+          K: Math.min(Math.max(draftsK, 1), 5),
+          usage: { writer: providerInfo.writer.usage, patcher: providerInfo.editor.usage },
         })
-      : await generateCandidate({ manifest, pool, vocabMap, corpus, meanings, provider })
+      : providerInfo.name === 'duo'
+        ? await generateDuoCandidate({
+            manifest, pool, vocabMap, corpus, meanings,
+            writer: providerInfo.writer.send, editor: providerInfo.editor.send,
+            broadStage,
+          })
+        : await generateCandidate({ manifest, pool, vocabMap, corpus, meanings, provider })
   } catch (err) {
     result = {
       manifestId: manifest.id, status: 'rejected', title: null, content: null, englishContent: null,
@@ -294,7 +308,9 @@ for (const manifest of manifests) {
     generatedAt: new Date().toISOString(),
     provider: { name: providerInfo.name, model: providerInfo.model },
     manifest,
-    candidate: providerInfo.name === 'duo' ? serializableDuoCandidate(result) : serializableCandidate(result),
+    candidate: providerInfo.name === 'select' ? serializableSelectCandidate(result)
+      : providerInfo.name === 'duo' ? serializableDuoCandidate(result)
+      : serializableCandidate(result),
     staged: null,
   }
   write(manifest.id + '.json', fileData)
