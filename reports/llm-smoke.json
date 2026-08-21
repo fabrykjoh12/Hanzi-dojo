@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-21T13:59:37.093Z",
+  "generatedAt": "2026-08-21T14:11:22.861Z",
   "keyPresence": {
     "GEMINI_API_KEY": {
       "present": true,
@@ -30,7 +30,7 @@
     "gemini": {
       "ok": true,
       "status": 200,
-      "latencyMs": 160,
+      "latencyMs": 413,
       "models": [
         "antigravity-preview-05-2026",
         "deep-research-max-preview-04-2026",
@@ -74,7 +74,7 @@
     "groq": {
       "ok": true,
       "status": 200,
-      "latencyMs": 109,
+      "latencyMs": 78,
       "models": [
         "allam-2-7b",
         "canopylabs/orpheus-arabic-saudi",
@@ -96,13 +96,13 @@
   "results": [
     {
       "provider": "groq",
-      "model": "qwen/qwen3.6-27b",
+      "model": "openai/gpt-oss-120b",
       "ok": true,
       "status": 200,
-      "latencyMs": 153,
+      "latencyMs": 2180,
       "finishReason": "stop",
-      "promptTokens": 76,
-      "completionTokens": 18,
+      "promptTokens": 136,
+      "completionTokens": 952,
       "chinese": true,
       "lineCount": 3,
       "wordsPresent": [
@@ -110,7 +110,42 @@
         "打算"
       ],
       "followedFormat": true,
-      "output": "我的邻居很热心。\n他同意了我的打算。\n这件事变得容易了。",
+      "output": "我的邻居帮助我做打算。  \n我和邻居一起讨论明天的打算。  \n他们的邻居也愿意帮助我的打算。",
+      "apiError": null
+    },
+    {
+      "provider": "groq",
+      "model": "qwen/qwen3.6-27b",
+      "ok": false,
+      "status": 200,
+      "latencyMs": 4337,
+      "finishReason": "length",
+      "promptTokens": 74,
+      "completionTokens": 2000,
+      "chinese": false,
+      "lineCount": 0,
+      "wordsPresent": [],
+      "followedFormat": false,
+      "output": "",
+      "apiError": "empty content (finish_reason=length)"
+    },
+    {
+      "provider": "groq",
+      "model": "openai/gpt-oss-20b",
+      "ok": true,
+      "status": 200,
+      "latencyMs": 1007,
+      "finishReason": "stop",
+      "promptTokens": 136,
+      "completionTokens": 700,
+      "chinese": true,
+      "lineCount": 3,
+      "wordsPresent": [
+        "邻居",
+        "打算"
+      ],
+      "followedFormat": true,
+      "output": "邻居说他打算帮我搬家。  \n我们一起讨论了搬家的打算。  \n邻居也打算一起去买东西。",
       "apiError": null
     }
   ]
