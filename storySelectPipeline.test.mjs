@@ -7,7 +7,7 @@ import {
   SELECT_GENERATOR_VERSION,
 } from './storySelectPipeline.mjs'
 import { applyStructuralPatch, structurallyPatchable } from './storySelectPipeline.mjs'
-import { parseStructuralPatch, structuralPatchPrompt } from './storyGenPrompts.mjs'
+import { parseStructuralPatch, structuralPatchPrompt, isImpossiblePatch } from './storyGenPrompts.mjs'
 import { buildManifest } from './storyManifestPlanner.mjs'
 
 const POOL = [
@@ -153,6 +153,17 @@ describe('compareDrafts — the specified priority order, exactly', () => {
   it('more targets in range beats lower out-of-level share', () => {
     expect(compareDrafts({ ...base, targetsInRange: 2, outOfLevelShare: 0.2 }, { ...base, targetsInRange: 1, outOfLevelShare: 0.01 })).toBeLessThan(0)
   })
+  it('REVIEW_REQUIRED ranks between PASS and FAIL', () => {
+    const pass = { ...base, pass: true, verdictRank: 0, failures: 0 }
+    const review = { ...base, verdictRank: 1, failures: 0 }
+    const fail = { ...base, verdictRank: 2, failures: 0 }
+    expect(compareDrafts(pass, review)).toBeLessThan(0)
+    expect(compareDrafts(review, fail)).toBeLessThan(0)
+    expect(compareDrafts(fail, review)).toBeGreaterThan(0)
+    // breakdowns from before verdictRank existed fall back to the pass flag
+    expect(compareDrafts({ ...base, pass: true, failures: 0 }, review)).toBeLessThan(0)
+  })
+
   it('then out-of-level, unknown, structure, line distance, warnings — in order', () => {
     expect(compareDrafts({ ...base, outOfLevelShare: 0.08 }, { ...base, outOfLevelShare: 0.12 })).toBeLessThan(0)
     expect(compareDrafts({ ...base, unknownShare: 0.01 }, { ...base, unknownShare: 0.06 })).toBeLessThan(0)
@@ -194,6 +205,18 @@ describe('bounded structural patch protocol', () => {
     expect(parseStructuralPatch('IMPOSSIBLE', 40)).toBeNull()
     expect(parseStructuralPatch('some prose only', 40)).toBeNull()
     expect(parseStructuralPatch('noise\nDELETE LINE 2\nmore noise', 5)).toEqual([{ op: 'delete', line: 2 }])
+  })
+
+  it('IMPOSSIBLE is a valid terminal answer, detected before parsing — never a retryable parse failure', () => {
+    expect(isImpossiblePatch('IMPOSSIBLE')).toBe(true)
+    expect(isImpossiblePatch('  impossible.  ')).toBe(true)              // whitespace/case/period tolerated
+    expect(isImpossiblePatch('Sorry.\nIMPOSSIBLE')).toBe(true)           // any standalone line counts
+    expect(isImpossiblePatch('this is impossible to do in 6 ops')).toBe(false)  // prose mention is not a declaration
+    expect(isImpossiblePatch('DELETE LINE 2')).toBe(false)
+    expect(isImpossiblePatch('')).toBe(false)
+    // parseStructuralPatch still returns null for it, so a runner that skips
+    // the isImpossiblePatch check would wrongly retry — callers check it FIRST
+    expect(parseStructuralPatch('IMPOSSIBLE', 40)).toBeNull()
   })
 
   it('applies deterministically: untouched lines byte-for-byte, order preserved', () => {

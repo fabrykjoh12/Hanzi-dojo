@@ -114,11 +114,42 @@ describe('difficulty', () => {
     // 旅行+森林+警察+签证 = 4 distinct > advisory max 3 → warning, not failure
     expect(r.warnings.map(w => w.code)).toContain('out_of_level_words')
     expect(r.failures.map(f => f.code)).not.toContain('out_of_level_words')
-    // but those words push the out-of-level SHARE past 7%, which still fails
+    // those words push the SHARE to 11.9% — beyond even the 10.5% review
+    // ceiling, so this still fails hard under the pilot band
     expect(r.failures.map(f => f.code)).toContain('out_of_level_share')
     // both metrics recorded for the empirical calibration
     expect(r.metrics.outOfLevelDistinct).toBe(4)
+    expect(r.metrics.outOfLevelCharShare).toBeGreaterThan(0.105)
+  })
+
+  // The HSK 3 pilot band (validator@3): 7% came from the corpus p75, not a
+  // validated pedagogical threshold, so (7%, 10.5%] is REVIEW_REQUIRED —
+  // continues through patching and critique, refused by staging — while
+  // >10.5% stays a deterministic FAIL and <=7% a normal PASS.
+  it('an out-of-level share inside the review band is REVIEW_REQUIRED, not FAIL', () => {
+    const c = { title: 'T', content: GOOD + '\n森林很大，警察也去。' }    // 9.4%
+    const r = validateCandidate(c, { manifest: manifest(), vocabMap })
+    expect(r.verdict).toBe('REVIEW_REQUIRED')
+    expect(r.failures).toEqual([])
+    expect(r.reviews.map(x => x.code)).toEqual(['out_of_level_share_review'])
     expect(r.metrics.outOfLevelCharShare).toBeGreaterThan(0.07)
+    expect(r.metrics.outOfLevelCharShare).toBeLessThanOrEqual(0.105)
+    expect(formatValidation(r)).toContain('review: out-of-level vocabulary')
+    // the exact share and distinct count stay recorded either way
+    expect(r.metrics.outOfLevelDistinct).toBeGreaterThan(0)
+  })
+
+  it('without the band field the old hard gate applies unchanged (non-pilot manifests)', () => {
+    const m = manifest({ defaults: { lines: [6, 20], reviewMaxOutOfLevelCharShare: null } })
+    const r = validateCandidate({ title: 'T', content: GOOD + '\n森林很大，警察也去。' }, { manifest: m, vocabMap })
+    expect(r.verdict).toBe('FAIL')
+    expect(r.failures.map(f => f.code)).toContain('out_of_level_share')
+  })
+
+  it('a hard failure dominates the band: FAIL even when the share is only review-worthy', () => {
+    const c = { title: 'T', content: GOOD + '\n森林很大，警察也去。\n咖喱和乌龟。\n墨镜也好。' }
+    const r = validateCandidate(c, { manifest: manifest(), vocabMap })
+    expect(r.verdict).toBe('FAIL')
   })
 
   it('unknown text beyond the caps fails with the runs named', () => {

@@ -36,7 +36,12 @@ export function stageableCandidates(files, { existingTitles = new Set() } = {}) 
     if (!mCheck.ok) { refuse(file, 'invalid manifest: ' + mCheck.problems.join('; ')); continue }
     if (!c) { refuse(file, 'no candidate record'); continue }
     if (file.staged && file.staged.storyId) { refuse(file, 'already staged as ' + file.staged.storyId); continue }
-    if (c.status !== 'accepted') { refuse(file, 'candidate status is "' + c.status + '", not "accepted"'); continue }
+    if (c.status !== 'accepted') {
+      refuse(file, c.status === 'review_required'
+        ? 'candidate is REVIEW_REQUIRED (experimental difficulty band) — mandatory human review; never stageable automatically'
+        : 'candidate status is "' + c.status + '", not "accepted"')
+      continue
+    }
     if (!c.validation || c.validation.verdict !== 'PASS') {
       refuse(file, 'stored deterministic verdict is ' + (c.validation ? c.validation.verdict : 'missing') + ', not PASS')
       continue

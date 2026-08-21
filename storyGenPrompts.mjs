@@ -279,11 +279,22 @@ export function structuralPatchPrompt({ manifest, candidate, failures, meanings 
     'INSERT AFTER <n>: <full new line>'
 }
 
+// IMPOSSIBLE is a VALID terminal patcher answer — the prompt offers it as the
+// alternative to exceeding the budget. Callers must check this BEFORE
+// parseStructuralPatch and treat a hit as final: no retry, no reprompt (the
+// patch-test-1 run burned two redundant requests re-asking). Only a line that
+// is exactly IMPOSSIBLE counts; prose that merely contains the word does not.
+export function isImpossiblePatch(text) {
+  return String(text || '').split('\n').some(l => /^impossible[.。!！]?$/i.test(l.trim()))
+}
+
 // Parse structural patch operations → [{op, line, text?}] or null (bad
-// syntax, out of range, duplicate ops on one line, or over budget).
+// syntax, out of range, duplicate ops on one line, or over budget). An
+// IMPOSSIBLE declaration also returns null — but callers distinguish it via
+// isImpossiblePatch above, so it is never mistaken for a parse failure.
 export function parseStructuralPatch(text, lineCount, maxTouched = 6) {
   const raw = String(text || '')
-  if (/^\s*IMPOSSIBLE\s*$/im.test(raw)) return null
+  if (isImpossiblePatch(raw)) return null
   const ops = []
   const touched = new Set()
   for (const line of raw.split('\n')) {

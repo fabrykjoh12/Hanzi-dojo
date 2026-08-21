@@ -20,7 +20,8 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { publishedChineseStories } from './storyCoverage.mjs'
 import { validateCandidate, validateEdit, formatValidation, serializableValidation } from './storyCandidateValidation.mjs'
-import { structuralPatchPrompt, parseStructuralPatch, PROMPT_VERSION } from './storyGenPrompts.mjs'
+import { structuralPatchPrompt, parseStructuralPatch, isImpossiblePatch, PROMPT_VERSION } from './storyGenPrompts.mjs'
+import { MANIFEST_DEFAULTS } from './storyManifestPlanner.mjs'
 import { applyStructuralPatch, structurallyPatchable } from './storySelectPipeline.mjs'
 import { analyzeStory } from './storyCorpusCalibration.mjs'
 import { judgePrompt, parseJudgment, JUDGE_VERSION } from './storyJudge.mjs'
@@ -48,6 +49,20 @@ if (!inputPath || !candidatePath || !patcherSpec || !outDir) {
 
 const stored = JSON.parse(readFileSync(candidatePath, 'utf8'))
 const manifest = stored.manifest
+
+// Stored manifests were frozen before validator@3's experimental review band
+// existed; apply the current default for this level so re-evaluation runs
+// under the pilot policy (out-of-level share above the cap but within the
+// band → REVIEW_REQUIRED instead of FAIL — mandatory human review).
+const levelDefaults = MANIFEST_DEFAULTS[manifest && manifest.level] || {}
+if (manifest && manifest.difficulty && manifest.difficulty.reviewMaxOutOfLevelCharShare == null
+  && levelDefaults.reviewMaxOutOfLevelCharShare != null) {
+  manifest.difficulty = { ...manifest.difficulty, reviewMaxOutOfLevelCharShare: levelDefaults.reviewMaxOutOfLevelCharShare }
+  console.log('[patch-test] pilot review band applied: out-of-level share '
+    + (manifest.difficulty.maxOutOfLevelCharShare * 100).toFixed(1) + '%-'
+    + (manifest.difficulty.reviewMaxOutOfLevelCharShare * 100).toFixed(1) + '% → REVIEW_REQUIRED')
+}
+
 const stage = (stored.candidate.stages || []).find(s => s.stage === stageName)
 if (!manifest || !stage || !stage.content) { console.error('Stage ' + stageName + ' not found in ' + candidatePath); process.exit(1) }
 const original = { title: stage.title, content: stage.content }
@@ -62,8 +77,9 @@ const meanings = Object.fromEntries(vocab.filter(v => v.meaning).map(v => [v.wor
 
 // ── Fresh "before" validation ────────────────────────────────────────────────
 const before = validateCandidate(original, { manifest, vocabMap, corpus: stories })
-console.log('[patch-test] before: ' + before.verdict + ' — ' + before.failures.map(f => f.code).join(', '))
-if (before.verdict === 'PASS') { console.log('Nothing to patch — already PASS.'); process.exit(0) }
+console.log('[patch-test] before: ' + before.verdict + ' — ' + before.failures.map(f => f.code).join(', ')
+  + ((before.reviews || []).length ? ' | review: ' + before.reviews.map(r => r.code).join(', ') : ''))
+if (before.failures.length === 0) { console.log('No hard failures to patch — verdict is ' + before.verdict + '.'); process.exit(0) }
 if (!structurallyPatchable(before.failures)) {
   console.error('Failures are not structurally patchable: ' + before.failures.map(f => f.code).join(', '))
   process.exit(1)
@@ -77,13 +93,18 @@ for (const run of (before.metrics.unknownRuns || [])) {
   const at = originalLines.map((l, i) => (l.includes(run) ? i + 1 : 0)).filter(Boolean)
   if (at.length) lineHints.push('unknown word ' + run + ' appears on line ' + at.join(', '))
 }
-// Per-line out-of-level weight, worst first — where simplification buys the most.
-const lineOut = originalLines.map((l, i) => {
-  const a = analyzeStory({ title: 'x', level: manifest.level, content: l }, vocabMap)
-  return { line: i + 1, chars: Math.round(a.outOfLevelCharShare * a.cjkChars) }
-}).filter(x => x.chars > 0).sort((a, b) => b.chars - a.chars).slice(0, 8)
-if (lineOut.length) {
-  lineHints.push('most above-level characters sit on lines ' + lineOut.map(x => x.line + ' (' + x.chars + ' chars)').join(', ') + ' — simplify or delete there')
+// Per-line out-of-level weight, worst first — where simplification buys the
+// most. Only offered when out_of_level_share is actually among the HARD
+// failures: the patcher's job is the listed failures and nothing else, so a
+// share that merely sits in the review band earns no hint.
+if (before.failures.some(f => f.code === 'out_of_level_share')) {
+  const lineOut = originalLines.map((l, i) => {
+    const a = analyzeStory({ title: 'x', level: manifest.level, content: l }, vocabMap)
+    return { line: i + 1, chars: Math.round(a.outOfLevelCharShare * a.cjkChars) }
+  }).filter(x => x.chars > 0).sort((a, b) => b.chars - a.chars).slice(0, 8)
+  if (lineOut.length) {
+    lineHints.push('most above-level characters sit on lines ' + lineOut.map(x => x.line + ' (' + x.chars + ' chars)').join(', ') + ' — simplify or delete there')
+  }
 }
 
 // ── ONE bounded patch attempt ────────────────────────────────────────────────
@@ -94,9 +115,17 @@ const prompt = structuralPatchPrompt({ manifest, candidate: original, failures: 
 const startedAt = Date.now()
 let ops = null
 let patchError = null
+let impossible = false
 for (let attempt = 0; attempt <= 2 && !ops; attempt += 1) {
   try {
     const text = await patcher.send({ prompt, maxTokens: 1200 })
+    // IMPOSSIBLE is a valid terminal answer, not a parse failure — it
+    // short-circuits immediately and is never retried.
+    if (isImpossiblePatch(text)) {
+      impossible = true
+      patchError = 'patcher declared IMPOSSIBLE (terminal — not retried)'
+      break
+    }
     ops = parseStructuralPatch(text, originalLines.length, maxTouched)
     if (!ops) patchError = 'unparseable or over-budget patch: ' + String(text).slice(0, 200)
   } catch (err) {
@@ -115,7 +144,10 @@ if (ops) {
   const v = validateCandidate(patched, { manifest, vocabMap, corpus: stories })
   after = {
     ...v,
-    verdict: (v.verdict === 'PASS' && editCheck.ok) ? 'PASS' : 'FAIL',
+    // Preservation-gate failures demote any verdict to FAIL; otherwise the
+    // validator's own verdict stands (PASS, or REVIEW_REQUIRED when only the
+    // experimental out-of-level band is hit).
+    verdict: editCheck.ok ? v.verdict : 'FAIL',
     failures: [...v.failures, ...editCheck.failures],
     warnings: [...v.warnings, ...editCheck.warnings],
     metrics: { ...v.metrics, edit: editCheck.metrics },
@@ -127,9 +159,10 @@ if (ops) {
   }))
 }
 
-// ── Critique on PASS ─────────────────────────────────────────────────────────
+// ── Critique on PASS or REVIEW_REQUIRED (the band continues through
+// critique; it just can never be staged without a human) ─────────────────────
 let critique = null
-if (after && after.verdict === 'PASS' && criticSpec) {
+if (after && (after.verdict === 'PASS' || after.verdict === 'REVIEW_REQUIRED') && criticSpec) {
   const critic = directProvider(criticSpec.slice(0, criticSpec.indexOf(':')), criticSpec.slice(criticSpec.indexOf(':') + 1), process.env, { reasoningEffort: criticEffort })
   try {
     const cfg = levelConfig(manifest.language, manifest.system, manifest.level)
@@ -154,13 +187,17 @@ const file = {
     lineHints,
     ops: ops || null,
     touched,
+    impossible,
     patchError: ops ? null : patchError,
     before: serializableValidation(before),
     after: after ? serializableValidation(after) : null,
   },
   candidate: {
     manifestId: manifest.id,
-    status: after && after.verdict === 'PASS' ? 'accepted' : 'rejected',
+    status: !after ? 'rejected'
+      : after.verdict === 'PASS' ? 'accepted'
+      : after.verdict === 'REVIEW_REQUIRED' ? 'review_required'
+      : 'rejected',
     title: (patched || original).title,
     content: (patched || original).content,
     englishContent: null,
@@ -168,7 +205,7 @@ const file = {
     critique,
     attempts: 1,
     calls: patcher.usage.requests + (typeof criticUsage !== 'undefined' ? criticUsage.requests : 0),
-    generatorVersion: 'fab9-structural-patch@1',
+    generatorVersion: 'fab9-structural-patch@2',
     promptVersion: PROMPT_VERSION,
     usage: { patcher: patcher.usage, critic: typeof criticUsage !== 'undefined' ? criticUsage : null, wallMs: Date.now() - startedAt },
   },
@@ -183,6 +220,7 @@ if (ops) {
   console.log('\n=== OPS (' + ops.length + '/' + maxTouched + ') ===')
   for (const t of touched) console.log(t.op.toUpperCase() + ' ' + t.line + (t.before ? '\n  - ' + t.before : '') + (t.after ? '\n  + ' + t.after : ''))
   console.log('\n=== AFTER ===\n' + formatValidation(after))
+  if (after.verdict === 'REVIEW_REQUIRED') console.log('\nREVIEW_REQUIRED: no hard failures remain, but the out-of-level share sits in the experimental band — mandatory human review, never auto-publishable.')
   if (critique) console.log('\nCRITIQUE overall ' + critique.overall + '/10')
 } else {
   console.log('\nNo usable patch: ' + patchError)

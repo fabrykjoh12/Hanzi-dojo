@@ -51,6 +51,14 @@ export const SELECT_LIMITS = {
 
 const STRUCTURE_CODES = new Set(['unknown_speaker', 'too_long', 'too_short', 'line_too_long', 'invalid_title', 'invalid_content'])
 
+// PASS beats REVIEW_REQUIRED beats FAIL. REVIEW_REQUIRED (validator@3's
+// experimental difficulty band) is a real outcome — it continues through
+// critique and translation and gets its own candidate status — but staging
+// refuses it: mandatory human review, never automatically publishable.
+const VERDICT_RANK = { PASS: 0, REVIEW_REQUIRED: 1, FAIL: 2 }
+const verdictRank = (b) => (b.verdictRank != null ? b.verdictRank : (b.pass ? 0 : 2))
+const statusFor = (verdict) => (verdict === 'PASS' ? 'accepted' : verdict === 'REVIEW_REQUIRED' ? 'review_required' : 'rejected')
+
 // The transparent per-draft breakdown the ranking is computed from.
 export function draftBreakdown(validation, manifest) {
   const met = validation.metrics || {}
@@ -65,6 +73,7 @@ export function draftBreakdown(validation, manifest) {
   const lineDistance = lines < dl[0] ? dl[0] - lines : lines > dl[1] ? lines - dl[1] : 0
   return {
     pass: validation.verdict === 'PASS',
+    verdictRank: VERDICT_RANK[validation.verdict] != null ? VERDICT_RANK[validation.verdict] : 2,
     failures: validation.failures.length,
     targetsInRange: inRange,
     targetsTotal: manifest.targets.length,
@@ -79,7 +88,7 @@ export function draftBreakdown(validation, manifest) {
 // Strict lexicographic comparison in the specified priority order.
 // Negative → a ranks better than b.
 export function compareDrafts(a, b) {
-  if (a.pass !== b.pass) return a.pass ? -1 : 1
+  if (verdictRank(a) !== verdictRank(b)) return verdictRank(a) - verdictRank(b)
   if (a.failures !== b.failures) return a.failures - b.failures
   if (a.targetsInRange !== b.targetsInRange) return b.targetsInRange - a.targetsInRange
   if (a.outOfLevelShare !== b.outOfLevelShare) return a.outOfLevelShare - b.outOfLevelShare
@@ -239,10 +248,11 @@ export async function generateSelectCandidate({
     } catch { /* no parseable patch — the winning draft stands as-is */ }
   }
 
-  // ── Critique + translation — PASS only ─────────────────────────────────────
+  // ── Critique + translation — PASS or REVIEW_REQUIRED (the review band
+  // continues through critique; only staging refuses it) ─────────────────────
   let critique = null
   let english = null
-  if (best.validation.verdict === 'PASS') {
+  if (best.validation.verdict === 'PASS' || best.validation.verdict === 'REVIEW_REQUIRED') {
     if (critiqueEnabled) {
       try {
         const cfg = levelConfig(manifest.language, manifest.system, manifest.level)
@@ -287,7 +297,7 @@ function finish({ manifest, stages, ranking, best, calls, critique, english }) {
   }
   return {
     ...base,
-    status: best.validation.verdict === 'PASS' ? 'accepted' : 'rejected',
+    status: statusFor(best.validation.verdict),
     selectedFrom: best.from,
     title: best.cand.title,
     content: best.cand.content,

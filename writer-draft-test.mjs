@@ -87,7 +87,7 @@ const file = {
   manifest,
   candidate: {
     manifestId: manifest.id,
-    status: validation.verdict === 'PASS' ? 'accepted' : 'rejected',
+    status: validation.verdict === 'PASS' ? 'accepted' : validation.verdict === 'REVIEW_REQUIRED' ? 'review_required' : 'rejected',
     title: candidate ? candidate.title : null,
     content: candidate ? candidate.content : null,
     englishContent: null,

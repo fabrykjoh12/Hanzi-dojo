@@ -102,14 +102,16 @@ export function applyJudgment(file, judgment) {
   return { ...file, judgments }
 }
 
-// Is this candidate eligible for judging? Only a deterministic PASS — a FAIL
-// is not a matter of opinion, and spending judge calls on one invites exactly
+// Is this candidate eligible for judging? A deterministic PASS, or a
+// REVIEW_REQUIRED from validator@3's experimental band (which explicitly
+// continues through critique on its way to mandatory human review). A FAIL is
+// not a matter of opinion, and spending judge calls on one invites exactly
 // the "the LLM says it's fine" override this architecture forbids.
 export function judgeable(file) {
   const c = file && file.candidate
   if (!c) return { ok: false, reason: 'no candidate record' }
-  if (c.status !== 'accepted') return { ok: false, reason: 'status is "' + c.status + '"' }
-  if (!c.validation || c.validation.verdict !== 'PASS') {
+  if (c.status !== 'accepted' && c.status !== 'review_required') return { ok: false, reason: 'status is "' + c.status + '"' }
+  if (!c.validation || (c.validation.verdict !== 'PASS' && c.validation.verdict !== 'REVIEW_REQUIRED')) {
     return { ok: false, reason: 'deterministic verdict is ' + (c.validation ? c.validation.verdict : 'missing') }
   }
   if (!String(c.content || '').trim()) return { ok: false, reason: 'empty content' }

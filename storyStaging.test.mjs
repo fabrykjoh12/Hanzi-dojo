@@ -66,6 +66,19 @@ describe('stageableCandidates — the ingestion gate', () => {
     expect(refused[0].reason).toContain('FAIL')
   })
 
+  it('refuses a REVIEW_REQUIRED candidate — the experimental difficulty band is never auto-stageable', () => {
+    const f = file()
+    f.candidate = {
+      ...f.candidate,
+      status: 'review_required',
+      validation: { ...f.candidate.validation, verdict: 'REVIEW_REQUIRED', reviews: [{ code: 'out_of_level_share_review' }] },
+    }
+    const { stageable, refused } = stageableCandidates([f])
+    expect(stageable.length).toBe(0)
+    expect(refused[0].reason).toContain('REVIEW_REQUIRED')
+    expect(refused[0].reason).toContain('human review')
+  })
+
   it('refuses an already-staged candidate (idempotence)', () => {
     const f = file({ staged: { storyId: 'abc-123', stagedAt: 'x' } })
     const { refused } = stageableCandidates([f])

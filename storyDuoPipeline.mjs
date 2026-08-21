@@ -259,7 +259,7 @@ function finish({ manifest, stages, best, calls, critique, english }) {
   }
   return {
     manifestId: manifest.id,
-    status: best.validation.verdict === 'PASS' ? 'accepted' : 'rejected',
+    status: best.validation.verdict === 'PASS' ? 'accepted' : best.validation.verdict === 'REVIEW_REQUIRED' ? 'review_required' : 'rejected',
     title: best.cand.title,
     content: best.cand.content,
     englishContent: english,

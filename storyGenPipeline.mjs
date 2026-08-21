@@ -225,7 +225,7 @@ export async function generateCandidate({
 
   return {
     manifestId: manifest.id,
-    status: finalValidation.verdict === 'PASS' ? 'accepted' : 'rejected',
+    status: finalValidation.verdict === 'PASS' ? 'accepted' : finalValidation.verdict === 'REVIEW_REQUIRED' ? 'review_required' : 'rejected',
     title: best.candidate.title,
     content: best.candidate.content,
     englishContent: english,

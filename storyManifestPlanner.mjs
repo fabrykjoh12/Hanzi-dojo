@@ -35,7 +35,13 @@ export const MANIFEST_SCHEMA = 'story-manifest@1'
 export const MANIFEST_DEFAULTS = {
   1: { targetsPerStory: 12, occurrences: { min: 2, max: 5 }, maxOutOfLevelDistinct: 4, maxOutOfLevelCharShare: 0.08, maxUnknownDistinct: 2, maxUnknownCharShare: 0.02, draftLines: [25, 32], lines: [18, 40], maxRepeatedTrigramShare: 0.24 },
   2: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 9, maxOutOfLevelCharShare: 0.12, maxUnknownDistinct: 2, maxUnknownCharShare: 0.03, draftLines: [24, 32], lines: [14, 42], maxRepeatedTrigramShare: 0.195 },
-  3: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 3, maxOutOfLevelCharShare: 0.07, maxUnknownDistinct: 2, maxUnknownCharShare: 0.07, draftLines: [22, 30], lines: [14, 38], maxRepeatedTrigramShare: 0.165 },
+  // reviewMaxOutOfLevelCharShare (HSK 3 pilot, 2026-08-21): the 7% cap came
+  // from the corpus p75, not a validated pedagogical threshold, while the only
+  // viable writer floors around 10%. Shares in (7%, 10.5%] are therefore an
+  // explicit REVIEW_REQUIRED band — mandatory human review, never auto-
+  // publishable — so the owner can judge how 8-10.5% actually reads before
+  // fixing the permanent threshold. Above 10.5% stays a deterministic FAIL.
+  3: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 3, maxOutOfLevelCharShare: 0.07, reviewMaxOutOfLevelCharShare: 0.105, maxUnknownDistinct: 2, maxUnknownCharShare: 0.07, draftLines: [22, 30], lines: [14, 38], maxRepeatedTrigramShare: 0.165 },
   4: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 3, maxOutOfLevelCharShare: 0.02, maxUnknownDistinct: 4, maxUnknownCharShare: 0.04, draftLines: [29, 34], lines: [27, 38], maxRepeatedTrigramShare: 0.09 },
   5: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 2, maxOutOfLevelCharShare: 0.02, maxUnknownDistinct: 6, maxUnknownCharShare: 0.04, draftLines: [28, 33], lines: [26, 37], maxRepeatedTrigramShare: 0.075 },
   6: { targetsPerStory: 8, occurrences: { min: 2, max: 4 }, maxOutOfLevelDistinct: 2, maxOutOfLevelCharShare: 0.02, maxUnknownDistinct: 6, maxUnknownCharShare: 0.04, draftLines: [28, 33], lines: [26, 37], maxRepeatedTrigramShare: 0.09 },
@@ -89,6 +95,7 @@ export function buildManifest({
     difficulty: {
       maxOutOfLevelDistinct: d.maxOutOfLevelDistinct,
       maxOutOfLevelCharShare: d.maxOutOfLevelCharShare,
+      ...(d.reviewMaxOutOfLevelCharShare != null ? { reviewMaxOutOfLevelCharShare: d.reviewMaxOutOfLevelCharShare } : {}),
       maxUnknownDistinct: d.maxUnknownDistinct,
       maxUnknownCharShare: d.maxUnknownCharShare,
     },

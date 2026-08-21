@@ -22,14 +22,22 @@
 // calibration and this validator agree about which words a story contains by
 // construction.
 //
-// Output is machine-readable ({ verdict, failures, warnings, metrics }) with
-// stable failure codes; formatValidation renders the concise human summary.
+// Output is machine-readable ({ verdict, failures, reviews, warnings,
+// metrics }) with stable failure codes; formatValidation renders the concise
+// human summary.
+//
+// Verdicts (validator@3): FAIL when any hard gate is violated; PASS when
+// nothing is; REVIEW_REQUIRED when only an experimental review band is hit —
+// currently the HSK 3 out-of-level-share band (see MANIFEST_DEFAULTS). A
+// REVIEW_REQUIRED candidate may continue through patching and critique but is
+// refused by staging (storyStaging.mjs): mandatory human review, never
+// automatically publishable.
 
 import { analyzeStory, contentSimilarity, cjkLength } from './storyCorpusCalibration.mjs'
 import { splitSpeaker } from './src/storyReading.js'
 import { validateManifest, NEAR_DUPLICATE_THRESHOLDS } from './storyManifestPlanner.mjs'
 
-export const VALIDATOR_VERSION = 'fab10-validator@2'
+export const VALIDATOR_VERSION = 'fab10-validator@3'
 
 const MAX_TITLE_CHARS = 40
 
@@ -41,14 +49,16 @@ const REPEATED_LINE_FAIL = 2
 
 export function validateCandidate(candidate, { manifest, vocabMap, corpus = [] } = {}) {
   const failures = []
+  const reviews = []
   const warnings = []
   const fail = (code, message, data) => failures.push({ code, message, ...(data ? { data } : {}) })
+  const review = (code, message, data) => reviews.push({ code, message, ...(data ? { data } : {}) })
   const warn = (code, message, data) => warnings.push({ code, message, ...(data ? { data } : {}) })
 
   const mCheck = validateManifest(manifest)
   if (!mCheck.ok) {
     fail('invalid_manifest', 'manifest is invalid: ' + mCheck.problems.join('; '))
-    return finish(failures, warnings, {})
+    return finish(failures, reviews, warnings, {})
   }
 
   const title = String((candidate && candidate.title) || '').trim()
@@ -62,7 +72,7 @@ export function validateCandidate(candidate, { manifest, vocabMap, corpus = [] }
   }
   if (lines.length === 0 || cjkLength(content) === 0) {
     fail('invalid_content', 'content is empty or contains no Chinese text')
-    return finish(failures, warnings, { lines: lines.length })
+    return finish(failures, reviews, warnings, { lines: lines.length })
   }
   const { minLines, maxLines, maxLineChars } = manifest.length
   if (lines.length < minLines) fail('too_short', lines.length + ' lines (need ' + minLines + '-' + maxLines + ')')
@@ -130,8 +140,18 @@ export function validateCandidate(candidate, { manifest, vocabMap, corpus = [] }
   if (a.outOfLevelDistinct > d.maxOutOfLevelDistinct) {
     warn('out_of_level_words', a.outOfLevelDistinct + ' distinct words above HSK ' + manifest.level + ' (advisory max ' + d.maxOutOfLevelDistinct + ')')
   }
-  if (a.outOfLevelCharShare > d.maxOutOfLevelCharShare) {
-    fail('out_of_level_share', 'out-of-level vocabulary: ' + pct(a.outOfLevelCharShare) + ' > ' + pct(d.maxOutOfLevelCharShare))
+  // Experimental review band (validator@3, 2026-08-21): when the manifest
+  // carries reviewMaxOutOfLevelCharShare, a share between the normal cap and
+  // the review ceiling is REVIEW_REQUIRED — mandatory human review, never
+  // auto-publishable — instead of FAIL. Without the field the cap is the hard
+  // gate exactly as before. The exact share and distinct count stay recorded
+  // in metrics either way.
+  const reviewMax = d.reviewMaxOutOfLevelCharShare
+  const hardShareMax = reviewMax != null ? Math.max(reviewMax, d.maxOutOfLevelCharShare) : d.maxOutOfLevelCharShare
+  if (a.outOfLevelCharShare > hardShareMax) {
+    fail('out_of_level_share', 'out-of-level vocabulary: ' + pct(a.outOfLevelCharShare) + ' > ' + pct(hardShareMax))
+  } else if (reviewMax != null && a.outOfLevelCharShare > d.maxOutOfLevelCharShare) {
+    review('out_of_level_share_review', 'out-of-level vocabulary ' + pct(a.outOfLevelCharShare) + ' sits in the experimental review band (' + pct(d.maxOutOfLevelCharShare) + '-' + pct(reviewMax) + ') — mandatory human review before publication')
   }
   if (a.unknownDistinct > d.maxUnknownDistinct) {
     fail('unknown_words', a.unknownDistinct + ' unknown (non-vocabulary) runs (max ' + d.maxUnknownDistinct + '): ' + a.unknownRuns.slice(0, 10).join('、'))
@@ -170,7 +190,7 @@ export function validateCandidate(candidate, { manifest, vocabMap, corpus = [] }
     warn('near_duplicate', 'resembles "' + nearest.title + '" (jaccard ' + nearest.jaccard + ', containment ' + nearest.containment + ')')
   }
 
-  return finish(failures, warnings, {
+  return finish(failures, reviews, warnings, {
     lines: lines.length,
     cjkChars: a.cjkChars,
     distinctVocab: a.distinctVocab,
@@ -190,11 +210,12 @@ export function validateCandidate(candidate, { manifest, vocabMap, corpus = [] }
 
 function round3(x) { return Math.round(x * 1000) / 1000 }
 
-function finish(failures, warnings, metrics) {
+function finish(failures, reviews, warnings, metrics) {
   return {
     validatorVersion: VALIDATOR_VERSION,
-    verdict: failures.length === 0 ? 'PASS' : 'FAIL',
+    verdict: failures.length > 0 ? 'FAIL' : reviews.length > 0 ? 'REVIEW_REQUIRED' : 'PASS',
     failures,
+    reviews,
     warnings,
     metrics,
   }
@@ -285,6 +306,7 @@ export function validateEdit(original, edited, { allowNewSpeakers = false, thres
 export function formatValidation(result) {
   const out = [result.verdict]
   for (const f of result.failures) out.push('- ' + f.message)
+  for (const r of result.reviews || []) out.push('review: ' + r.message)
   for (const w of result.warnings) out.push('warning: ' + w.message)
   return out.join('\n')
 }
