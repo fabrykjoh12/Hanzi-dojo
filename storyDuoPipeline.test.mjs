@@ -3,10 +3,11 @@ import {
   generateDuoCandidate,
   serializableDuoCandidate,
   microRepairable,
+  selfCondensable,
   applyLinePatch,
   DUO_GENERATOR_VERSION,
 } from './storyDuoPipeline.mjs'
-import { parseLinePatch, microRepairPrompt } from './storyGenPrompts.mjs'
+import { parseLinePatch, microRepairPrompt, selfCondensePrompt } from './storyGenPrompts.mjs'
 import { simplifyPrompt } from './storyGenPrompts.mjs'
 import { buildManifest } from './storyManifestPlanner.mjs'
 
@@ -78,15 +79,28 @@ describe('generateDuoCandidate — write → simplify/micro-repair → validate'
     expect(r.generatorVersion).toBe(DUO_GENERATOR_VERSION)
   })
 
-  it('BROAD failures go to the editor; a faithful simplification is adopted', async () => {
-    const writer = scripted({ draft: [BROAD_TEXT], critique: [JUDGE_OK] })
-    const editor = scripted({ simplify: [GOOD_TEXT], translate: [EN8] })
+  it('BROAD failures go to WRITER SELF-CONDENSE by default; a faithful condense is adopted', async () => {
+    const writer = scripted({ draft: [BROAD_TEXT], 'self-condense': [GOOD_TEXT], critique: [JUDGE_OK] })
+    const editor = scripted({ translate: [EN8] })
     const r = await gen({ writer, editor })
     expect(r.status).toBe('accepted')
-    expect(r.stages.map(s => `${s.stage}:${s.validation.verdict}`)).toEqual(['draft:FAIL', 'simplify:PASS'])
-    const req = editor.seen.find(s => s.kind === 'simplify')
-    expect(req.prompt).toContain('unknown_speaker'.length ? '王老师' : '')
+    expect(r.stages.map(s => `${s.stage}:${s.validation.verdict}`)).toEqual(['draft:FAIL', 'self-condense:PASS'])
+    expect(r.stages[1].role).toBe('writer')
+    const req = writer.seen.find(s => s.kind === 'self-condense')
+    expect(req.prompt).toContain('not a new story generation task')
+    expect(req.prompt).toContain('王老师')                              // the exact failures travel
+    expect(req.prompt).toContain('Keep the title EXACTLY: 去旅行')
+    expect(editor.seen.map(s => s.kind)).toEqual(['translate'])         // gpt-oss never authors
     expect(r.stages[1].validation.metrics.edit.containment).toBeGreaterThan(0.5)
+  })
+
+  it('the editor-simplify path stays available behind broadStage: editor', async () => {
+    const writer = scripted({ draft: [BROAD_TEXT], critique: [JUDGE_OK] })
+    const editor = scripted({ simplify: [GOOD_TEXT], translate: [EN8] })
+    const r = await gen({ writer, editor, broadStage: 'editor' })
+    expect(r.status).toBe('accepted')
+    expect(r.stages.map(s => s.stage)).toEqual(['draft', 'simplify'])
+    expect(r.stages[1].role).toBe('editor')
   })
 
   it('NARROW failures skip simplification and get a deterministic line patch', async () => {
@@ -113,18 +127,18 @@ describe('generateDuoCandidate — write → simplify/micro-repair → validate'
       '今天学校有运动会。', '李明：我们要跑步。', '小红：我很紧张。', '小明：加油！',
       '妈妈：孩子们真努力。', '大家一起跑步。', '李明跑得很快。', '大家都很高兴。',
     ].join('\n')
-    const writer = scripted({ draft: [BROAD_TEXT] })
-    const editor = scripted({ simplify: [rewrite] })
+    const writer = scripted({ draft: [BROAD_TEXT], 'self-condense': [rewrite] })
+    const editor = scripted({})
     const r = await gen({ writer, editor })
     expect(r.status).toBe('rejected')
-    const simplifyStage = r.stages.find(s => s.stage === 'simplify')
-    expect(simplifyStage.validation.failures.map(f => f.code)).toContain('rewrite_detected')
+    const stage = r.stages.find(s => s.stage === 'self-condense')
+    expect(stage.validation.failures.map(f => f.code)).toContain('rewrite_detected')
     expect(r.content).toContain('王老师')          // the draft stayed the best candidate
   })
 
   it('the validator has the last word: a stubbornly broken flow ends rejected, evolution kept', async () => {
-    const writer = scripted({ draft: [BROAD_TEXT] })
-    const editor = scripted({ simplify: [BROAD_TEXT] })   // "edit" fixes nothing
+    const writer = scripted({ draft: [BROAD_TEXT], 'self-condense': [BROAD_TEXT] })   // "condense" fixes nothing
+    const editor = scripted({})
     const r = await gen({ writer, editor })
     expect(r.status).toBe('rejected')
     expect(r.stages.length).toBeGreaterThanOrEqual(2)
@@ -219,5 +233,42 @@ describe('simplifyPrompt', () => {
     expect(p).toContain('81 lines (need 14-38)')
     expect(p).toContain('CUT — merge thin lines')
     expect(p).toContain('护照')
+  })
+})
+
+describe('selfCondensable', () => {
+  const f = (code) => ({ code, message: code })
+  it('admits fixable broad failures with a length/format/difficulty driver', () => {
+    expect(selfCondensable([f('too_long'), f('unknown_speaker')])).toBe(true)
+    expect(selfCondensable([f('out_of_level_share'), f('missing_target')])).toBe(true)
+    expect(selfCondensable([f('unknown_words'), f('target_below_min')])).toBe(true)
+  })
+  it('refuses what condensing cannot fix', () => {
+    expect(selfCondensable([f('too_short')])).toBe(false)             // condensing a short story is absurd
+    expect(selfCondensable([f('duplicate_of_existing'), f('too_long')])).toBe(false)
+    expect(selfCondensable([f('invalid_title'), f('too_long')])).toBe(false)
+    expect(selfCondensable([f('missing_target')])).toBe(false)        // no condense driver
+    expect(selfCondensable([])).toBe(false)
+  })
+})
+
+describe('selfCondensePrompt', () => {
+  it('carries everything the spec requires and frames the task as self-editing', () => {
+    const m = manifest()
+    const p = selfCondensePrompt({
+      manifest: m,
+      candidate: { title: '去旅行', content: '第一行。\n第二行。' },
+      failures: [{ code: 'too_long', message: '51 lines (need 14-38)' }],
+      meanings: { 护照: 'passport' },
+    })
+    expect(p).toContain('This is an EDIT of your existing story, not a new story generation task')
+    expect(p).toContain('Keep the title EXACTLY: 去旅行')
+    expect(p).toContain('51 lines (need 14-38)')                         // exact failures
+    expect(p).toContain('李明, 小红, 小明, 妈妈')                          // allowed speakers
+    expect(p).toContain('护照 (passport) — use 2-4 times')               // targets with ranges
+    expect(p).toContain('NO new characters, locations or plot events')
+    expect(p).toContain('CUTTING redundant dialogue')
+    // target line range comes from draftLines (clamped [6,20] fixture → falls back inside bounds)
+    expect(p).toMatch(/Reduce to \d+-\d+ lines/)
   })
 })

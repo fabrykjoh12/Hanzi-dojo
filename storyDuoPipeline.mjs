@@ -1,12 +1,16 @@
-// Two-model generation for one manifest (FAB-9 duo flow, v2):
+// Two-model generation for one manifest (FAB-9 duo flow, v3):
 //
 //   WRITER natural draft (aimed at draftLines, mid-range) → validation
-//     → (broad FAIL) EDITOR constrained simplification
-//         → deterministic PRESERVATION gate (validateEdit: title, speakers,
-//           contentSimilarity — a rewrite is never adopted) → validation
-//     → (narrow FAIL) PATCH-BASED micro repair: the editor returns only the
-//         changed lines, the patch is applied deterministically so the rest
-//         of the story is byte-for-byte untouched → validation
+//     → (condensable broad FAIL) WRITER SELF-CONDENSE — the writer shortens
+//         and format-fixes its own story (the cross-model editor rewrote in
+//         every observed case; the author is the only model that can hold the
+//         voice) → deterministic PRESERVATION gate (validateEdit: title,
+//         speakers, contentSimilarity — a failed condense NEVER replaces the
+//         draft) → validation
+//     → (narrow FAIL) PATCH-BASED micro repair: only the changed lines come
+//         back, applied deterministically, rest byte-for-byte untouched
+//     → still broadly failing → reject (the editor-simplify path stays
+//         available behind broadStage: 'editor' but is not the default)
 //     → (on PASS) WRITER semantic critique → line-aligned translation
 //
 // The division of labour the benchmarks measured: the writer (Qwen) owns the
@@ -29,6 +33,7 @@ import {
   PROMPT_VERSION,
   draftPrompt,
   simplifyPrompt,
+  selfCondensePrompt,
   microRepairPrompt,
   parseLinePatch,
   translatePrompt,
@@ -39,7 +44,7 @@ import { judgePrompt, parseJudgment, JUDGE_VERSION } from './storyJudge.mjs'
 import { outputBudget } from './storyGenPipeline.mjs'
 import { levelConfig } from './storyLevels.mjs'
 
-export const DUO_GENERATOR_VERSION = 'fab9-duo@2'
+export const DUO_GENERATOR_VERSION = 'fab9-duo@3'
 
 export const DUO_LIMITS = {
   parseRetries: 2,     // per logical call, same cap as the single-model pipeline
@@ -88,6 +93,24 @@ export function microRepairable(failures) {
   return total > 0 && belowMin <= 2 && aboveMax <= 1 && longLine <= 1
 }
 
+// Which broad failures can self-condensing plausibly fix: too long, bad
+// speaker labels, and difficulty that shrinks when text is cut and
+// simplified. NOT: a story that is too short (condensing it is absurd), has
+// no usable title/content, or duplicates the corpus — those need a fresh
+// draft, not an edit.
+const CONDENSE_FIXABLE = new Set([
+  'too_long', 'unknown_speaker', 'line_too_long',
+  'out_of_level_share', 'unknown_words', 'unknown_share',
+  'target_below_min', 'target_above_max', 'missing_target',
+  'repeated_line', 'repetition_excess',
+])
+export function selfCondensable(failures) {
+  if (!failures || !failures.length) return false
+  if (!failures.every(f => CONDENSE_FIXABLE.has(f.code))) return false
+  return failures.some(f => f.code === 'too_long' || f.code === 'unknown_speaker'
+    || f.code === 'out_of_level_share' || f.code === 'unknown_words' || f.code === 'unknown_share')
+}
+
 // Apply a parsed line patch: replace exactly the given 1-based lines; every
 // other line stays byte-for-byte identical.
 export function applyLinePatch(content, patch) {
@@ -107,6 +130,7 @@ export async function generateDuoCandidate({
   limits = {},
   translate: translateEnabled = true,
   critique: critiqueEnabled = true,
+  broadStage = 'self-condense',   // 'self-condense' (writer edits itself) | 'editor' (gpt-oss simplify)
   sleep = null,
 } = {}) {
   const slp = sleep || ((ms) => new Promise(resolve => setTimeout(resolve, ms)))
@@ -136,27 +160,40 @@ export async function generateDuoCandidate({
   let best = { cand: draft, validation: validate(draft) }
   record('draft', 'writer', draft, best.validation)
 
-  // ── 2. Editor simplification — only for BROAD failures, and gated by the
-  // deterministic preservation check: a rewrite (changed title, invented
-  // speakers, low content similarity) is recorded but NEVER adopted.
+  // ── 2. Broad-failure stage, gated by the deterministic preservation check:
+  // a rewrite (changed title, invented speakers, low content similarity) is
+  // recorded in the evolution but NEVER replaces the draft.
+  //
+  // Default is WRITER SELF-CONDENSE: the author shortens its own story. The
+  // cross-model editor path remains selectable (broadStage: 'editor') but
+  // rewrote the story in every observed run.
   if (best.validation.verdict === 'FAIL' && !microRepairable(best.validation.failures)) {
-    try {
-      const input = best.cand
-      const simplified = await call(editor, 'simplify',
-        simplifyPrompt({ manifest, candidate: input, failures: best.validation.failures, pool, meanings }),
-        outputBudget(manifest, 'repair'), parseChapter, lim.parseRetries, calls, slp)
-      const edit = validateEdit(input, simplified)
-      const v = validate(simplified)
-      const merged = {
-        ...v,
-        verdict: (v.verdict === 'PASS' && edit.ok) ? 'PASS' : 'FAIL',
-        failures: [...v.failures, ...edit.failures],
-        warnings: [...v.warnings, ...edit.warnings],
-        metrics: { ...v.metrics, edit: edit.metrics },
-      }
-      record('simplify', 'editor', simplified, merged)
-      if (edit.ok && stageRank(merged) >= stageRank(best.validation)) best = { cand: simplified, validation: merged }
-    } catch { /* stage failed to produce text — the draft stays the best we have */ }
+    const useCondense = broadStage === 'self-condense' && selfCondensable(best.validation.failures)
+    const useEditor = broadStage === 'editor'
+    if (useCondense || useEditor) {
+      try {
+        const input = best.cand
+        const stageName = useCondense ? 'self-condense' : 'simplify'
+        const role = useCondense ? 'writer' : 'editor'
+        const provider = useCondense ? writer : editor
+        const prompt = useCondense
+          ? selfCondensePrompt({ manifest, candidate: input, failures: best.validation.failures, meanings })
+          : simplifyPrompt({ manifest, candidate: input, failures: best.validation.failures, pool, meanings })
+        const edited = await call(provider, stageName, prompt,
+          outputBudget(manifest, 'repair'), parseChapter, lim.parseRetries, calls, slp)
+        const edit = validateEdit(input, edited)
+        const v = validate(edited)
+        const merged = {
+          ...v,
+          verdict: (v.verdict === 'PASS' && edit.ok) ? 'PASS' : 'FAIL',
+          failures: [...v.failures, ...edit.failures],
+          warnings: [...v.warnings, ...edit.warnings],
+          metrics: { ...v.metrics, edit: edit.metrics },
+        }
+        record(stageName, role, edited, merged)
+        if (edit.ok && stageRank(merged) >= stageRank(best.validation)) best = { cand: edited, validation: merged }
+      } catch { /* stage failed to produce text — the draft stays the best we have */ }
+    }
   }
 
   // ── 3. Patch-based micro repair — narrow failures only. The editor returns

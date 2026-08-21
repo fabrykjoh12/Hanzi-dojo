@@ -76,6 +76,8 @@ const writerSpec = arg('writer', null)          // duo: provider:model for the s
 const writerEffort = arg('writer-effort', null)
 const editorSpec = arg('editor', null)          // duo: provider:model for the constraint editor
 const editorEffort = arg('editor-effort', null)
+const broadStage = arg('broad-stage', 'self-condense')   // duo: 'self-condense' | 'editor'
+const manifestFile = arg('manifest', null)               // reuse ONE stored manifest verbatim (count forced to 1)
 const responsesPath = arg('responses', null)
 const dryRun = has('dry-run')
 
@@ -147,17 +149,29 @@ const before = planSummary(plan)
 console.log('HSK ' + level + ' plan: ' + before.totalTargets + ' under-covered words (goal ' + goal + ' stories each).')
 
 const defaults = targetsPerStory ? { targetsPerStory } : undefined
-// Semantic composition (2026-08-21): coverage gap → target suitability →
-// semantic grouping → manifest. Structural words are skipped and reported on
-// each manifest's composition block; soft targets carry min 1.
-const composed = composeSemanticManifests({
-  batchId, level, plan,
-  pending: pendingTargets, use: useTargets,
-  meanings: Object.fromEntries(vocab.filter(v => v.meaning).map(v => [v.word, v.meaning])),
-  count, defaults,
-})
-plan = composed.plan
-const manifests = composed.manifests
+let manifests
+if (manifestFile) {
+  // Controlled reruns: reuse a STORED manifest verbatim (bare or inside a
+  // candidate file) so the only variable is the pipeline, never the targets.
+  const stored = JSON.parse(readFileSync(manifestFile, 'utf8'))
+  const m = stored.manifest || stored
+  if (!m || !m.schema) { console.error('No manifest found in ' + manifestFile); process.exit(1) }
+  manifests = [m]
+  plan = useTargets(plan, m.targets.map(t => t.word))
+  console.log('Reusing stored manifest ' + m.id + ' from ' + manifestFile)
+} else {
+  // Semantic composition (2026-08-21): coverage gap → target suitability →
+  // semantic grouping → manifest. Structural words are skipped and reported on
+  // each manifest's composition block; soft targets carry min 1.
+  const composed = composeSemanticManifests({
+    batchId, level, plan,
+    pending: pendingTargets, use: useTargets,
+    meanings: Object.fromEntries(vocab.filter(v => v.meaning).map(v => [v.word, v.meaning])),
+    count, defaults,
+  })
+  plan = composed.plan
+  manifests = composed.manifests
+}
 console.log('Composed ' + manifests.length + ' manifest(s), ' + (manifestDefaults(level).targetsPerStory) + ' targets/story default.')
 for (const m of manifests) {
   const c = m.composition || {}
@@ -249,6 +263,7 @@ for (const manifest of manifests) {
       ? await generateDuoCandidate({
           manifest, pool, vocabMap, corpus, meanings,
           writer: providerInfo.writer.send, editor: providerInfo.editor.send,
+          broadStage,
         })
       : await generateCandidate({ manifest, pool, vocabMap, corpus, meanings, provider })
   } catch (err) {

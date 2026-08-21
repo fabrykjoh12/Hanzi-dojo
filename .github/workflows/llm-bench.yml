@@ -56,8 +56,12 @@ on:
         description: "writer-test only: max_tokens override for full-thinking runs (capped 4800; blank = pipeline budget)"
         type: string
         default: ''
+      broad_stage:
+        description: "duo only: broad-failure stage — self-condense (writer edits itself) or editor (gpt-oss simplify)"
+        type: string
+        default: 'self-condense'
       manifest_path:
-        description: "writer-test only: repo path of the stored manifest/candidate file"
+        description: "writer-test / duo: repo path of a stored manifest to reuse verbatim (duo: blank = compose fresh)"
         type: string
         default: 'data/story-candidates/duo-2/duo-2-L3-002.json'
       batch_prefix:
@@ -211,6 +215,8 @@ jobs:
           PREFIX: ${{ inputs.batch_prefix }}
           LEVEL: ${{ inputs.level }}
           COUNT: ${{ inputs.count }}
+          BROAD_STAGE: ${{ inputs.broad_stage }}
+          MANIFEST: ${{ inputs.manifest_path }}
         run: |
           set -e
           case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
@@ -220,12 +226,20 @@ jobs:
           for spec in "$MODEL_A" "$MODEL_B"; do
             case "$spec" in (""|*[!A-Za-z0-9._/:-]*) echo "bad or missing model spec: $spec"; exit 1;; esac
           done
+          case "$BROAD_STAGE" in (self-condense|editor) ;; (*) echo "bad broad_stage"; exit 1;; esac
+          MANIFEST_FLAG=""
+          if [ -n "$MANIFEST" ]; then
+            case "$MANIFEST" in (*[!A-Za-z0-9._/-]*|/*|*..*) echo "bad manifest_path"; exit 1;; esac
+            [ -f "$MANIFEST" ] || { echo "manifest not found: $MANIFEST"; exit 1; }
+            MANIFEST_FLAG="--manifest $MANIFEST"
+          fi
           W_EFFORT=""; [ -n "$EFFORT_A" ] && W_EFFORT="--writer-effort $EFFORT_A"
           E_EFFORT=""; [ -n "$EFFORT_B" ] && E_EFFORT="--editor-effort $EFFORT_B"
           node generate-targeted-stories.mjs \
             --input reports/story-corpus-dump.json \
             --level "$LEVEL" --count "$COUNT" --batch "$PREFIX" \
-            --provider duo --writer "$MODEL_A" --editor "$MODEL_B" $W_EFFORT $E_EFFORT
+            --provider duo --writer "$MODEL_A" --editor "$MODEL_B" $W_EFFORT $E_EFFORT \
+            --broad-stage "$BROAD_STAGE" $MANIFEST_FLAG
 
       - name: Fresh corpus dump for writer-test (read-only)
         if: inputs.mode == 'writer-test'

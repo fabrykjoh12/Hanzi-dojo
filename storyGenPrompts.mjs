@@ -116,6 +116,32 @@ export function draftPrompt({ manifest, pool, meanings = {} }) {
     CHAPTER_FORMAT
 }
 
+// Writer self-condense — the WRITER shortens and format-fixes ITS OWN story
+// (fab9-duo@3). The controlled tests proved the cross-model editor rewrites
+// rather than edits (duo-1/duo-2: containment 2-8%), and that Qwen with
+// reasoning enabled produces no output at all on this tier — so the one model
+// that can hold this story's voice is the one that wrote it. The prompt frames
+// the task as unambiguous self-editing; the deterministic preservation gate
+// (validateEdit) still runs on the result, because framing is not enforcement.
+export function selfCondensePrompt({ manifest, candidate, failures, meanings = {} }) {
+  const name = levelName(manifest)
+  const lo = manifest.length.draftLines ? manifest.length.draftLines[0] : manifest.length.minLines
+  const hi = manifest.length.draftLines ? manifest.length.draftLines[1] : manifest.length.maxLines
+  return 'This is an EDIT of your existing story, not a new story generation task.\n\n' +
+    'You wrote the ' + name + ' graded-reader story below. It is a good story that failed mechanical validation. ' +
+    'Produce a shorter, compliant version of THE SAME STORY.\n\n' +
+    'Validation failures to fix:\n' + failures.map(f => '- ' + f.message).join('\n') + '\n\n' +
+    'Non-negotiable rules:\n' +
+    '1. Same plot, same events, same characters, same ending. Introduce NO new characters, locations or plot events.\n' +
+    '2. Keep the title EXACTLY: ' + candidate.title + '\n' +
+    '3. Reduce to ' + lo + '-' + hi + ' lines by CUTTING redundant dialogue and side details — never by inventing replacement scenes.\n' +
+    '4. Dialogue labels are ONLY a bare allowed speaker name plus ：, e.g. "小红：…". Never "小红说：…" or any描述 before the colon; turn other people\'s lines into narration. Allowed speakers: ' + manifest.speakers.join(', ') + '\n' +
+    '5. Keep every TARGET WORD within its range (weave in an extra natural use if one is under):\n' + targetList(manifest, meanings) + '\n' +
+    '6. Replace unnecessarily difficult vocabulary with plain ' + name + '-or-below words while you cut.\n' +
+    '7. Keep the sentences that carry the story\'s voice — cut quantity, not character.\n\n' +
+    CHAPTER_FORMAT
+}
+
 // Constrained simplification — the EDITOR's prompt in the two-model flow
 // (write → simplify). The writer model produces the story; this hands it to a
 // more obedient model whose only job is to bring it inside the deterministic
