@@ -178,7 +178,7 @@ fallback providers were measured rather than assumed — evidence in
   out-of-level words against a cap of 3, and 33-87 lines against a max of 38.
   `openai/gpt-oss-120b` (needs `reasoning_effort=low`) obeys far better —
   21-23 lines, 9-16 out-of-level — but writes flat, near-all-dialogue prose and
-  visibly bends sentences to插入 target words (`我受到了她的笑容`).
+  visibly bends sentences to force target words in (`我受到了她的笑容`).
 - **Open calibration question:** `maxOutOfLevelDistinct: 3` (HSK 3) came from
   the published corpus's p75. No free-tier model got within 3× of it. Either
   the cap needs revisiting against what generation can actually achieve, or
