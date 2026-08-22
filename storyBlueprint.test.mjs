@@ -5,6 +5,7 @@ import {
   anonymiseBlueprints,
   renderBlueprint,
   acceptableBlueprint,
+  samePlace,
   BLUEPRINT_QUALITY,
   BLUEPRINT_DIMENSIONS,
   BEAT_BOUNDS,
@@ -75,6 +76,34 @@ describe('validateBlueprint — what code can check about a plan', () => {
     const same = blueprint()
     same.beats[3] = { ...same.beats[3], arrivedHow: '' }
     expect(validateBlueprint(same, { manifest: manifest() }).failures.map(f => f.code)).not.toContain('unexplained_move')
+  })
+
+  // blueprint-1 threw away sound plans because "Hallway outside Apartment 201"
+  // and "Same hallway, by the leaking pipe" are not the same STRING.
+  it('the same place described twice is not a move', () => {
+    expect(samePlace('Hallway outside Apartment 201', 'Same hallway, they stand by the leaking pipe')).toBe(true)
+    expect(samePlace("Li Ming's apartment door", "Li Ming's apartment living room")).toBe(true)
+    expect(samePlace('学校教室', '学校教室')).toBe(true)
+    expect(samePlace('Hallway outside Apartment 201', 'Lift Lobby')).toBe(false)
+    expect(samePlace('Classroom', 'Library study room')).toBe(false)
+    expect(samePlace('', 'anywhere')).toBe(true)              // nothing to compare
+    // beat 2 re-describes beat 1's place; beat 3's real move still needs its
+    // explanation, and keeps it
+    const reworded = blueprint()
+    reworded.beats[1] = { ...reworded.beats[1], where: '李明家的门口', arrivedHow: '' }
+    expect(validateBlueprint(reworded, { manifest: manifest() }).failures.map(f => f.code)).not.toContain('unexplained_move')
+  })
+
+  it('a beat asking for one line is normalised, not rejected — the allocator owns the floor', () => {
+    const bp = blueprint()
+    bp.beats[4] = { ...bp.beats[4], lines: 1 }
+    const r = validateBlueprint(bp, { manifest: manifest() })
+    expect(r.failures.map(f => f.code)).not.toContain('beat_lines')
+    expect(Math.min(...allocateLines(bp.beats, 28).map(a => a.lines))).toBeGreaterThanOrEqual(2)
+    // a missing or absurd number still fails
+    const absurd = blueprint()
+    absurd.beats[0] = { ...absurd.beats[0], lines: 99 }
+    expect(validateBlueprint(absurd, { manifest: manifest() }).failures.map(f => f.code)).toContain('beat_lines')
   })
 
   it('rejects missing chronology, missing place, and an empty beat', () => {
@@ -175,6 +204,9 @@ describe('plan ranking', () => {
     expect(p).toContain('CONTRADICTION')
     expect(p).not.toContain('qwen')
     expect(p).not.toContain('gpt-oss')
+    // the judge answers in the shape the plans were shown to it: "PLAN A:"
+    expect(parseBlueprintJudgment('PLAN A: CAUSAL 8 CHRONOLOGY 8 PLAUSIBILITY 7 SIMPLICITY 8 TARGETFIT 7 SUITABILITY 8 CONTRADICTION no OVERALL 8 — ok', ['A'], BLUEPRINT_DIMENSIONS)[0].overall).toBe(8)
+    expect(parseBlueprintJudgment('- **Plan B**: CAUSAL 6 CHRONOLOGY 6 PLAUSIBILITY 6 SIMPLICITY 6 TARGETFIT 6 SUITABILITY 6 CONTRADICTION yes OVERALL 6 — thin', ['B'], BLUEPRINT_DIMENSIONS)[0].contradiction).toBe(true)
     const scored = parseBlueprintJudgment('A: CAUSAL 8 CHRONOLOGY 7 PLAUSIBILITY 7 SIMPLICITY 8 TARGETFIT 6 SUITABILITY 8 CONTRADICTION no OVERALL 7 — holds together', ['A'], BLUEPRINT_DIMENSIONS)
     expect(scored[0]).toMatchObject({ label: 'A', causal: 8, chronology: 7, targetFit: 6, contradiction: false, overall: 7 })
   })

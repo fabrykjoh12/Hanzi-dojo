@@ -109,12 +109,15 @@ for (const manifest of composed.manifests) {
     for (let k = 1; k <= perPlanner; k += 1) {
       let bp = null
       let error = null
+      let rawText = null
       try {
-        const text = await p.send({ prompt: blueprintPrompt({ manifest, meanings, totalLines, targets: required }), maxTokens: 2500 })
-        bp = parseBlueprint(text)
+        rawText = await p.send({ prompt: blueprintPrompt({ manifest, meanings, totalLines, targets: required }), maxTokens: 2500 })
+        bp = parseBlueprint(rawText)
       } catch (err) { error = String(err.message || err).slice(0, 160) }
       const check = bp ? validateBlueprint(bp, { manifest, requiredTargets: required }) : { ok: false, failures: [{ code: error ? 'provider_error' : 'unparseable', message: error || 'no JSON plan in the response' }] }
-      raws.push({ planner: p.name, attempt: k, blueprint: bp, check })
+      // Keep the raw text when nothing parsed: blueprint-1 could not be
+      // diagnosed from its own artifacts because only parsed values were kept.
+      raws.push({ planner: p.name, attempt: k, blueprint: bp, check, raw: bp ? null : String(rawText || '').slice(0, 1500) })
     }
   }
   const valid = raws.filter(r => r.check.ok)
@@ -135,9 +138,10 @@ for (const manifest of composed.manifests) {
   // ── 2. Anonymised ranking ─────────────────────────────────────────────────
   const labelled = anonymiseBlueprints(valid.map(r => ({ ...r, rendered: renderBlueprint(r.blueprint) })))
   let scores = null
+  let judgeRaw = null
   try {
     const cfg = levelConfig(manifest.language, manifest.system, manifest.level)
-    const text = await writer.send({
+    judgeRaw = await writer.send({
       prompt: blueprintJudgePrompt({
         manifest,
         levelName: (cfg && cfg.levelName) || ('HSK ' + manifest.level),
@@ -146,7 +150,8 @@ for (const manifest of composed.manifests) {
       }),
       maxTokens: 2000,
     })
-    scores = parseBlueprintJudgment(text, labelled.map(c => c.label), BLUEPRINT_DIMENSIONS)
+    scores = parseBlueprintJudgment(judgeRaw, labelled.map(c => c.label), BLUEPRINT_DIMENSIONS)
+    if (!scores) console.error('blueprint judgment did not parse. Raw:\n' + String(judgeRaw).slice(0, 600))
   } catch (err) { console.error('blueprint judging failed: ' + (err.message || err)) }
 
   const scored = labelled.map(c => ({ ...c, score: (scores || []).find(s => s.label === c.label) || null }))
@@ -168,6 +173,7 @@ for (const manifest of composed.manifests) {
   const chosen = acceptable[0]
   if (!chosen) {
     console.log('\nNO ACCEPTABLE PLAN — manifest rejected before any prose call.')
+    record.judgeRaw = String(judgeRaw || '').slice(0, 2000)
     record.selection = { code: 'BLUEPRINT_QUALITY_FAILED', reason: scores ? 'no plan met the plan thresholds' : 'the judge returned nothing usable' }
     results.push(record)
     continue
@@ -181,6 +187,7 @@ for (const manifest of composed.manifests) {
   console.log('\nSELECTED PLAN ' + chosen.label + ' — written by ' + chosen.planner + ' (revealed only now)')
   console.log('  line allocation: ' + allocation.map(a => 'beat ' + a.beat + ' → ' + a.from + '-' + a.to).join(' | '))
   console.log('  target → beat: ' + (chosen.blueprint.targetPlan || []).map(t => t.word + '→' + t.beat).join(', '))
+  record.judgeRaw = String(judgeRaw || '').slice(0, 2000)
   record.selection = { code: null, label: chosen.label, planner: chosen.planner, attempt: chosen.attempt, allocation, targetPlan: chosen.blueprint.targetPlan }
 
   // ── 3. Realization: exactly N lines, one bounded retry ────────────────────
@@ -331,6 +338,7 @@ for (const r of results) {
       required: r.required,
       thresholds: { blueprint: BLUEPRINT_QUALITY, draft: DRAFT_QUALITY, line: LINE_QUALITY },
       blueprints: r.blueprints,
+      judgeRaw: r.judgeRaw || null,
       selection: r.selection,
       draft: r.draft,
       before: r.validation,

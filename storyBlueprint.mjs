@@ -49,6 +49,37 @@ export const BLUEPRINT_QUALITY = {
 const text = (v) => String(v == null ? '' : v).trim()
 const has = (v, min = 1) => text(v).length >= min
 
+// Two beats are in the same place when their descriptions share a real word.
+// blueprint-1 rejected plan after plan for "teleporting" between
+// "Hallway outside Apartment 201" and "Same hallway, by the leaking pipe" —
+// the same corridor, described twice. Comparing the strings exactly made a
+// re-wording look like a move, so the check compares CONTENT WORDS instead
+// and only calls it a move when the two places have nothing in common. The
+// trade is deliberate: the deterministic rule now catches only unmistakable
+// jumps, and the semantic judge scores chronology on top of it.
+const PLACE_NOISE = new Set([
+  'the', 'a', 'an', 'at', 'in', 'on', 'by', 'of', 'to', 'near', 'outside', 'inside',
+  'same', 'back', 'front', 'again', 'still', 'just', 'and', 'with', 'where', 'they',
+  'her', 'his', 'their', 'it', 'is', 'are', 'stands', 'standing', 'stand', 'sits', 'sitting',
+])
+function placeTokens(v) {
+  return new Set(text(v).toLowerCase()
+    .split(/[^\p{Letter}\p{Number}]+/u)
+    .filter(w => w && w.length > 1 && !PLACE_NOISE.has(w)))
+}
+export function samePlace(a, b) {
+  const A = placeTokens(a)
+  const B = placeTokens(b)
+  if (!A.size || !B.size) return true            // nothing to compare — not a move
+  for (const w of A) if (B.has(w)) return true
+  // CJK place names are not word-segmented here, so 李明家 and 李明家的门口 are
+  // two different tokens; one containing the other is the same place.
+  const flat = (v) => text(v).toLowerCase().replace(/[^\p{Letter}\p{Number}]+/gu, '')
+  const fa = flat(a)
+  const fb = flat(b)
+  return Boolean(fa && fb && (fa.includes(fb) || fb.includes(fa)))
+}
+
 // ── Deterministic structure check ───────────────────────────────────────────
 // Everything here is a fact about the plan, not an opinion about it.
 export function validateBlueprint(bp, { manifest, requiredTargets = null } = {}) {
@@ -83,12 +114,16 @@ export function validateBlueprint(bp, { manifest, requiredTargets = null } = {})
     // why it follows from the one before it.
     if (i > 0 && !has(b && b.because, 5)) fail('beat_uncaused', 'beat ' + n + ' does not follow from beat ' + i)
     // A cast cannot teleport: a change of place has to be accounted for.
-    if (i > 0 && text(b && b.where) !== text(beats[i - 1] && beats[i - 1].where) && !has(b && b.arrivedHow, 4)) {
+    if (i > 0 && !samePlace(b && b.where, beats[i - 1] && beats[i - 1].where) && !has(b && b.arrivedHow, 4)) {
       fail('unexplained_move', 'beat ' + n + ' moves to "' + text(b && b.where) + '" without saying how')
     }
+    // The plan's line shares are a proposal, not the contract: allocateLines
+    // normalises them to the exact total and enforces the real floor. Only a
+    // missing or absurd number is a structural failure — blueprint-1 threw
+    // away otherwise sound plans over a closing beat that asked for one line.
     const lines = Number(b && b.lines)
-    if (!Number.isFinite(lines) || lines < BEAT_LINE_BOUNDS.min || lines > BEAT_LINE_BOUNDS.max) {
-      fail('beat_lines', 'beat ' + n + ' asks for ' + (b && b.lines) + ' lines (need ' + BEAT_LINE_BOUNDS.min + '-' + BEAT_LINE_BOUNDS.max + ')')
+    if (!Number.isFinite(lines) || lines < 1 || lines > BEAT_LINE_BOUNDS.max * 2) {
+      fail('beat_lines', 'beat ' + n + ' asks for ' + (b && b.lines) + ' lines')
     }
     const t = Array.isArray(b && b.targets) ? b.targets : []
     if (t.length > MAX_TARGETS_PER_BEAT) fail('beat_target_dump', 'beat ' + n + ' carries ' + t.length + ' target words')
