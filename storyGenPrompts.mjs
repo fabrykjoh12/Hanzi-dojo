@@ -487,7 +487,7 @@ export function parseLineJudgment(text, labels) {
 // planner that writes the story has not planned it, and a plan written in the
 // story's own language invites the model to start drafting.
 
-export function blueprintPrompt({ manifest, meanings = {}, totalLines, targets = null, feedback = null }) {
+export function blueprintPrompt({ manifest, meanings = {}, totalLines, targets = null, pool = null, feedback = null }) {
   const name = levelName(manifest)
   const need = targets || manifest.targets.map(t => t.word)
   const list = manifest.targets
@@ -495,9 +495,11 @@ export function blueprintPrompt({ manifest, meanings = {}, totalLines, targets =
     .join('\n')
   return 'Plan a short ' + name + ' Chinese graded-reader story. Do NOT write the story. Return a PLAN, in English, as JSON.\n\n'
     + (feedback ? 'YOUR PREVIOUS PLAN WAS REJECTED:\n' + feedback.map(f => '- ' + f).join('\n') + '\nFix exactly these problems.\n\n' : '')
-    + 'Characters available (use 2-3 of them, no one else):\n' + manifest.speakers.join('、') + '\n\n'
+    + 'Characters available (use 2-3 of them, no one else). Write their names in CHINESE exactly as shown, everywhere in the plan — in "cast", in every "speaker", anywhere you refer to them:\n'
+    + manifest.speakers.join('、') + '\n\n'
     + 'Words the finished story must teach. Each REQUIRED word needs a beat where a person would genuinely need that word:\n' + list + '\n\n'
     + (manifest.theme ? 'Theme: ' + manifest.theme + '\n\n' : '')
+    + (pool ? 'Words the reader already knows — the anchors must come from words like these (this is a sample, not the whole list):\n' + poolForPrompt(pool, 160) + '\n\n' : '')
     + 'Rules for the plan:\n'
     + '- ONE central problem. No subplots, no side quests, nothing invented just to fit a word in.\n'
     + '- 5 or 6 beats. Every beat after the first must happen BECAUSE of the beat before it — "because → therefore", never "and then".\n'

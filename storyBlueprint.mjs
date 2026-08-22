@@ -159,6 +159,18 @@ export function validateBlueprint(bp, { manifest, vocabMap = null, requiredTarge
   }
 
   const allowed = new Set([...(manifest.speakers || []), ...(manifest.extraNames || [])])
+  // The plan is written in English, so a planner names people the way an
+  // English document does: "Li Ming", "Mom", "Xiao Ming (thought)". Demanding
+  // an exact Chinese string threw away most of blueprint-3 and blueprint-4's
+  // plans over notation, not content. A name matches when the Chinese name is
+  // in it — parentheticals, roles and stray words around it are notation.
+  const namedPerson = (v) => {
+    const t = text(v)
+    if (!t) return null
+    if (allowed.has(t)) return t
+    for (const name of allowed) if (t.includes(name)) return name
+    return null
+  }
   const cast = Array.isArray(bp.cast) ? bp.cast.map(text).filter(Boolean) : []
 
   // The story needs a Chinese title, and it is subject to the same vocabulary
@@ -179,7 +191,7 @@ export function validateBlueprint(bp, { manifest, vocabMap = null, requiredTarge
   if (cast.length < CAST_BOUNDS.min || cast.length > CAST_BOUNDS.max) {
     fail('cast_size', cast.length + ' characters (need ' + CAST_BOUNDS.min + '-' + CAST_BOUNDS.max + ')')
   }
-  const strangers = cast.filter(c => !allowed.has(c))
+  const strangers = cast.filter(c => !namedPerson(c))
   if (strangers.length) fail('cast_unknown', 'characters outside the cast: ' + strangers.join('、'))
 
   const beats = Array.isArray(bp.beats) ? bp.beats : []
@@ -237,9 +249,11 @@ export function validateBlueprint(bp, { manifest, vocabMap = null, requiredTarge
     }
     if (vocabMap) {
       // Who says it, about what, to what end, and how it actually sounds.
-      if (!has(entry && entry.speaker, 1)) fail('target_no_speaker', word + ' has nobody to say it')
-      else if (!allowed.has(text(entry.speaker)) && text(entry.speaker).toLowerCase() !== 'narrator') {
-        fail('target_no_speaker', word + ' is given to "' + text(entry.speaker) + '", who is not in the cast')
+      const speaker = text(entry && entry.speaker)
+      if (!speaker) fail('target_no_speaker', word + ' has nobody to say it')
+      else if (!namedPerson(speaker) && !/narrator|旁白/i.test(speaker)) {
+        fail('target_no_speaker', word + ' is given to "' + speaker + '", who is not in the cast ('
+          + [...allowed].join('、') + ')')
       }
       if (!has(entry && entry.refersTo, 1)) fail('target_no_referent', word + ' does not say what it refers to')
       if (!has(entry && entry.intent, 8)) fail('target_no_intent', word + ' has no communicative purpose')

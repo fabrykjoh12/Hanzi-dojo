@@ -125,7 +125,10 @@ for (const manifest of composed.manifests) {
       try {
         // The plan JSON now carries anchors and usage sketches for 5-6 beats;
         // blueprint-3 lost two first attempts to a truncated answer at 3000.
-        rawText = await writer.send({ prompt: blueprintPrompt({ manifest, meanings, totalLines, targets: required, feedback }), maxTokens: 4500 })
+        // 4500 plus a pool-bearing prompt saturates the 8000 TPM window and
+        // blueprint-4 lost a whole manifest to back-to-back 429s. 3200 is
+        // enough for a 6-beat plan and leaves room to pace.
+        rawText = await writer.send({ prompt: blueprintPrompt({ manifest, meanings, totalLines, targets: required, pool, feedback }), maxTokens: 3200 })
         bp = parseBlueprint(rawText)
       } catch (err) { error = String(err.message || err).slice(0, 160); bp = null }
       check = bp

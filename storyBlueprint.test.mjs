@@ -115,6 +115,29 @@ describe('validateBlueprint — what code can check about a plan', () => {
     }
   })
 
+  // blueprint-3 and -4 lost most of their plans to notation: the plan is
+  // written in English, so people are called "Li Ming" or "Xiao Ming
+  // (thought)". A name matches when the Chinese name is inside it.
+  it('accepts how an English plan actually writes a Chinese name', () => {
+    const vm = { 找: { word: '找', level: 1 }, 护照: { word: '护照', level: 3 }, 打算: { word: '打算', level: 3 }, 我: { word: '我', level: 1 }, 去: { word: '去', level: 1 }, 他: { word: '他', level: 1 } }
+    const m = manifest()
+    const withNotation = blueprint({ cast: ['李明 (Li Ming)', '小红'] })
+    withNotation.targetPlan[0] = { ...withNotation.targetPlan[0], speaker: '李明 (thinking to himself)', refersTo: 'tomorrow', intent: 'say what he plans', usageSketch: '我打算去找他' }
+    const r = validateBlueprint(withNotation, { manifest: m, vocabMap: vm })
+    const about = (word) => r.failures.filter(f => f.code === 'target_no_speaker' && f.message.includes(word))
+    expect(r.failures.map(f => f.code)).not.toContain('cast_unknown')
+    expect(about('打算')).toEqual([])          // 李明 (thinking to himself) is 李明
+    // a narrator is still allowed, and a genuine stranger still is not
+    const stranger = blueprint()
+    stranger.targetPlan[0] = { ...stranger.targetPlan[0], speaker: 'the shopkeeper', refersTo: 'x', intent: 'say something', usageSketch: '我打算去找他' }
+    expect(validateBlueprint(stranger, { manifest: m, vocabMap: vm }).failures
+      .filter(f => f.code === 'target_no_speaker' && f.message.includes('打算')).length).toBe(1)
+    const narrator = blueprint()
+    narrator.targetPlan[0] = { ...narrator.targetPlan[0], speaker: 'narrator', refersTo: 'x', intent: 'say something', usageSketch: '我打算去找他' }
+    expect(validateBlueprint(narrator, { manifest: m, vocabMap: vm }).failures
+      .filter(f => f.code === 'target_no_speaker' && f.message.includes('打算')).length).toBe(0)
+  })
+
   it('rejects a cast outside the manifest, and one too large or too small', () => {
     expect(validateBlueprint(blueprint({ cast: ['李明', '王老师'] }), { manifest: manifest() }).failures.map(f => f.code)).toContain('cast_unknown')
     expect(validateBlueprint(blueprint({ cast: ['李明'] }), { manifest: manifest() }).failures.map(f => f.code)).toContain('cast_size')
