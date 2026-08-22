@@ -1,0 +1,973 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "blueprint-2",
+  "generatedAt": "2026-08-22T12:52:12.058Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "blueprint-2-L3-003",
+    "batchId": "blueprint-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "得到",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "了解",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "参加",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "安全",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "选择",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "只要",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "关于",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "特别",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 28,
+      "maxLines": 28,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a bigger outing or adventure away from home with a genuine surprise in the middle",
+    "series": null,
+    "composition": {
+      "bucket": "general",
+      "reason": "top-priority hard targets are general-purpose vocabulary that fits any theme",
+      "hard": [
+        {
+          "word": "得到",
+          "meaning": "to get; to obtain"
+        },
+        {
+          "word": "了解",
+          "meaning": "to understand; to realize"
+        },
+        {
+          "word": "参加",
+          "meaning": "to participate; to take part"
+        },
+        {
+          "word": "安全",
+          "meaning": "safe; secure; safety; security"
+        },
+        {
+          "word": "选择",
+          "meaning": "to select; to pick"
+        }
+      ],
+      "soft": [
+        {
+          "word": "只要",
+          "meaning": "if only; so long as"
+        },
+        {
+          "word": "关于",
+          "meaning": "pertaining to; concerning"
+        },
+        {
+          "word": "特别",
+          "meaning": "unusual; special; very; especially; particularly"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸",
+        "卡",
+        "辆"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "得到",
+      "了解",
+      "参加",
+      "安全",
+      "选择"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "blueprints": [
+      {
+        "label": "A",
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Basketball Tryout",
+          "setting": "A weekend afternoon in and around a city park and community sports center.",
+          "cast": [
+            "李明",
+            "小红",
+            "小明"
+          ],
+          "problem": "Li Ming must choose a friend to play basketball with, but he does not know who is skilled enough or reliable.",
+          "incitingEvent": "Li Ming receives a notice that he can take part in a quick pickup game at the park, but he needs a partner immediately.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday morning, 10:00 AM",
+              "where": "Li Ming's apartment",
+              "what": "Li Ming receives a message inviting him to a game. He decides to participate but lacks a teammate.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [
+                "参加",
+                "得到"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 2,
+              "when": "10:30 AM",
+              "where": "The apartment hallway",
+              "what": "Li Ming meets Xiao Ming and Xiao Hong. He has to make a choice between them to join him.",
+              "because": "he got the invitation and needs a partner immediately",
+              "arrivedHow": null,
+              "targets": [
+                "选择"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "10:35 AM",
+              "where": "The apartment corridor/stairs",
+              "what": "Xiao Ming insists on going first. Li Ming realizes Xiao Ming is not thinking about safety or rules, making him an unreliable teammate.",
+              "because": "Li Ming had to choose a partner, and Xiao Ming's behavior revealed his character",
+              "arrivedHow": null,
+              "targets": [
+                "安全",
+                "了解"
+              ],
+              "lines": 7
+            },
+            {
+              "id": 4,
+              "when": "10:40 AM",
+              "where": "The park entrance",
+              "what": "Li Ming rejects Xiao Ming's reckless suggestion and walks toward the park with Xiao Hong, who suggested a safer approach.",
+              "because": "Li Ming understood (了解了) that safety and rules matter, so he chose the responsible friend",
+              "arrivedHow": "walking from the apartment",
+              "targets": [],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "10:50 AM",
+              "where": "The basketball court in the park",
+              "what": "Li Ming and Xiao Hong play together. They enjoy the game because Xiao Hong is careful and skilled.",
+              "because": "they arrived at the park having chosen the right partner",
+              "arrivedHow": "walking from the apartment to the park",
+              "targets": [
+                "特别",
+                "只要",
+                "关于"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "Li Ming resolves the problem of finding a partner by realizing (了解) that choosing (选择) a safe and responsible friend leads to a successful game.",
+          "targetPlan": [
+            {
+              "word": "参加",
+              "beat": 1,
+              "why": "Li Ming needs to accept the invitation, so he must use the verb 'to participate' to decide to join the game."
+            },
+            {
+              "word": "得到",
+              "beat": 1,
+              "why": "Li Ming just got the message/invitation, so he uses 'to get/obtain' to describe receiving the opportunity."
+            },
+            {
+              "word": "选择",
+              "beat": 2,
+              "why": "Li Ming stands between two friends. He needs the word 'to choose/pick' to describe the decision-making process of selecting a teammate."
+            },
+            {
+              "word": "安全",
+              "beat": 3,
+              "why": "Xiao Ming suggests a dangerous shortcut or careless move. Li Ming needs the word 'safe/safety' to articulate why this behavior is a problem for a serious game."
+            },
+            {
+              "word": "了解",
+              "beat": 3,
+              "why": "After seeing Xiao Ming's behavior, Li Ming reaches a realization. He uses 'to understand' to express that he now knows Xiao Ming is not the right choice."
+            },
+            {
+              "word": "特别",
+              "beat": 5,
+              "why": "During the game, Xiao Hong plays very well. Li Ming uses 'especially/particularly' to highlight how good the experience is compared to his initial worry."
+            },
+            {
+              "word": "只要",
+              "beat": 5,
+              "why": "Li Ming reflects on the game. He thinks 'so long as' (as long as) you have a good partner, the game is fun."
+            },
+            {
+              "word": "关于",
+              "beat": 5,
+              "why": "Li Ming thinks about the factors 'concerning' or 'regarding' why the game went well (the partner)."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "rendered": "TITLE CONCEPT: The Basketball Tryout\nSETTING: A weekend afternoon in and around a city park and community sports center.\nCAST: 李明、小红、小明\nCENTRAL PROBLEM: Li Ming must choose a friend to play basketball with, but he does not know who is skilled enough or reliable.\nINCITING EVENT: Li Ming receives a notice that he can take part in a quick pickup game at the park, but he needs a partner immediately.\nBEATS:\n  1. [Saturday morning, 10:00 AM · Li Ming's apartment] · uses 参加、得到\n     WHAT CHANGES: Li Ming receives a message inviting him to a game. He decides to participate but lacks a teammate.\n  2. [10:30 AM · The apartment hallway] · uses 选择\n     WHAT CHANGES: Li Ming meets Xiao Ming and Xiao Hong. He has to make a choice between them to join him.\n     BECAUSE: he got the invitation and needs a partner immediately\n  3. [10:35 AM · The apartment corridor/stairs] · uses 安全、了解\n     WHAT CHANGES: Xiao Ming insists on going first. Li Ming realizes Xiao Ming is not thinking about safety or rules, making him an unreliable teammate.\n     BECAUSE: Li Ming had to choose a partner, and Xiao Ming's behavior revealed his character\n  4. [10:40 AM · The park entrance]\n     WHAT CHANGES: Li Ming rejects Xiao Ming's reckless suggestion and walks toward the park with Xiao Hong, who suggested a safer approach.\n     BECAUSE: Li Ming understood (了解了) that safety and rules matter, so he chose the responsible friend\n     GOT THERE BY: walking from the apartment\n  5. [10:50 AM · The basketball court in the park] · uses 特别、只要、关于\n     WHAT CHANGES: Li Ming and Xiao Hong play together. They enjoy the game because Xiao Hong is careful and skilled.\n     BECAUSE: they arrived at the park having chosen the right partner\n     GOT THERE BY: walking from the apartment to the park\nRESOLUTION: Li Ming resolves the problem of finding a partner by realizing (了解) that choosing (选择) a safe and responsible friend leads to a successful game.\nTARGET WORDS:\n  参加 → beat 1: Li Ming needs to accept the invitation, so he must use the verb 'to participate' to decide to join the game.\n  得到 → beat 1: Li Ming just got the message/invitation, so he uses 'to get/obtain' to describe receiving the opportunity.\n  选择 → beat 2: Li Ming stands between two friends. He needs the word 'to choose/pick' to describe the decision-making process of selecting a teammate.\n  安全 → beat 3: Xiao Ming suggests a dangerous shortcut or careless move. Li Ming needs the word 'safe/safety' to articulate why this behavior is a problem for a serious game.\n  了解 → beat 3: After seeing Xiao Ming's behavior, Li Ming reaches a realization. He uses 'to understand' to express that he now knows Xiao Ming is not the right choice.\n  特别 → beat 5: During the game, Xiao Hong plays very well. Li Ming uses 'especially/particularly' to highlight how good the experience is compared to his initial worry.\n  只要 → beat 5: Li Ming reflects on the game. He thinks 'so long as' (as long as) you have a good partner, the game is fun.\n  关于 → beat 5: Li Ming thinks about the factors 'concerning' or 'regarding' why the game went well (the partner).",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小红",
+            "小明"
+          ],
+          "beats": 5,
+          "placed": {
+            "参加": 1,
+            "得到": 1,
+            "选择": 2,
+            "安全": 3,
+            "了解": 3,
+            "特别": 5,
+            "只要": 5,
+            "关于": 5
+          }
+        },
+        "score": {
+          "label": "A",
+          "contradiction": false,
+          "overall": 9,
+          "reason": "Tight causal chain, natural word usage, and a clear character decision suitable for HSK 3.",
+          "causal": 8,
+          "chronology": 8,
+          "plausibility": 9,
+          "simplicity": 9,
+          "targetFit": 9,
+          "suitability": 9
+        },
+        "acceptable": true
+      },
+      {
+        "label": "B",
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Safety Choice",
+          "setting": "A suburban neighborhood park and a nearby convenience store, on a Saturday morning.",
+          "cast": [
+            "李明",
+            "小明",
+            "妈妈"
+          ],
+          "problem": "Xiao Ming wants to join a weekend cycling club but his mother refuses until the family finds a safe, nearby meeting location.",
+          "incitingEvent": "Xiao Ming receives an invitation to a cycling club and wants to go, but his mom says it is too far and unsafe.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "8:00 AM",
+              "where": "At home, living room",
+              "what": "Xiao Ming shows his mom a flyer for a cycling club. Mom says no because the place is too far from home.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [
+                "得到"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "8:15 AM",
+              "where": "At home, living room",
+              "what": "Li Ming explains that if Xiao Ming chooses a different, closer meeting spot, he can go. Xiao Ming agrees to look for a better option.",
+              "because": "Mom's refusal forces them to find a condition (closer location) to solve the access problem.",
+              "arrivedHow": null,
+              "targets": [
+                "只要",
+                "选择"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "8:20 AM",
+              "where": "The neighborhood park",
+              "what": "They walk to the park to check if the club meets there. Xiao Ming calls the club and learns they only meet at the city center.",
+              "because": "They need to verify if the nearby park is a valid alternative to satisfy the 'closer' condition.",
+              "arrivedHow": "Walked from home",
+              "targets": [
+                "参加",
+                "关于"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "8:40 AM",
+              "where": "The neighborhood park / Phone call",
+              "what": "Xiao Ming realizes the city center is too dangerous for his skill level. He tells his parents he understands the risk now.",
+              "because": "The information from the park call reveals the inherent danger of the original plan, triggering personal realization.",
+              "arrivedHow": null,
+              "targets": [
+                "了解",
+                "安全",
+                "特别"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "9:00 AM",
+              "where": "At home, living room",
+              "what": "Xiao Ming decides not to join that specific faraway club. He promises to practice safely at the neighborhood park with Li Ming instead.",
+              "because": "Understanding the safety risk makes the original goal unachievable under Mom's rules, leading to a new, safe resolution.",
+              "arrivedHow": "Walked back from park",
+              "targets": [],
+              "lines": 6
+            }
+          ],
+          "resolution": "Xiao Ming accepts that he cannot join the distant club yet. He chooses to practice cycling safely at the local park with his friend Li Ming, satisfying his mother's safety concerns.",
+          "targetPlan": [
+            {
+              "word": "得到",
+              "beat": 1,
+              "why": "Xiao Ming needs to express that he has physically received the invitation flyer to show his mom why he wants to go."
+            },
+            {
+              "word": "只要",
+              "beat": 2,
+              "why": "Li Ming suggests a conditional solution: 'As long as' (只要) you pick a closer place, you can go. This sets the rule for the rest of the story."
+            },
+            {
+              "word": "选择",
+              "beat": 2,
+              "why": "Xiao Ming needs to exercise agency by selecting (选择) a new potential location to test if it meets the 'closer' condition."
+            },
+            {
+              "word": "参加",
+              "beat": 3,
+              "why": "Xiao Ming calls to ask if he can participate (参加) in the club at the nearby park, driving the plot forward by testing the alternative."
+            },
+            {
+              "word": "关于",
+              "beat": 3,
+              "why": "The phone operator provides information concerning (关于) the meeting locations, which is the crucial data point that disproves the nearby option."
+            },
+            {
+              "word": "了解",
+              "beat": 4,
+              "why": "Xiao Ming undergoes a change of mind. He realizes or understands (了解) that the city center is not suitable for him, shifting the conflict from external permission to internal decision."
+            },
+            {
+              "word": "安全",
+              "beat": 4,
+              "why": "The core reason for the refusal is safety (安全). Xiao Ming must acknowledge that the city center is unsafe, validating his mother's initial stance."
+            },
+            {
+              "word": "特别",
+              "beat": 4,
+              "why": "Xiao Ming emphasizes that the traffic in the city center is especially (特别) dangerous, reinforcing the safety argument."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "rendered": "TITLE CONCEPT: The Safety Choice\nSETTING: A suburban neighborhood park and a nearby convenience store, on a Saturday morning.\nCAST: 李明、小明、妈妈\nCENTRAL PROBLEM: Xiao Ming wants to join a weekend cycling club but his mother refuses until the family finds a safe, nearby meeting location.\nINCITING EVENT: Xiao Ming receives an invitation to a cycling club and wants to go, but his mom says it is too far and unsafe.\nBEATS:\n  1. [8:00 AM · At home, living room] · uses 得到\n     WHAT CHANGES: Xiao Ming shows his mom a flyer for a cycling club. Mom says no because the place is too far from home.\n  2. [8:15 AM · At home, living room] · uses 只要、选择\n     WHAT CHANGES: Li Ming explains that if Xiao Ming chooses a different, closer meeting spot, he can go. Xiao Ming agrees to look for a better option.\n     BECAUSE: Mom's refusal forces them to find a condition (closer location) to solve the access problem.\n  3. [8:20 AM · The neighborhood park] · uses 参加、关于\n     WHAT CHANGES: They walk to the park to check if the club meets there. Xiao Ming calls the club and learns they only meet at the city center.\n     BECAUSE: They need to verify if the nearby park is a valid alternative to satisfy the 'closer' condition.\n     GOT THERE BY: Walked from home\n  4. [8:40 AM · The neighborhood park / Phone call] · uses 了解、安全、特别\n     WHAT CHANGES: Xiao Ming realizes the city center is too dangerous for his skill level. He tells his parents he understands the risk now.\n     BECAUSE: The information from the park call reveals the inherent danger of the original plan, triggering personal realization.\n  5. [9:00 AM · At home, living room]\n     WHAT CHANGES: Xiao Ming decides not to join that specific faraway club. He promises to practice safely at the neighborhood park with Li Ming instead.\n     BECAUSE: Understanding the safety risk makes the original goal unachievable under Mom's rules, leading to a new, safe resolution.\n     GOT THERE BY: Walked back from park\nRESOLUTION: Xiao Ming accepts that he cannot join the distant club yet. He chooses to practice cycling safely at the local park with his friend Li Ming, satisfying his mother's safety concerns.\nTARGET WORDS:\n  得到 → beat 1: Xiao Ming needs to express that he has physically received the invitation flyer to show his mom why he wants to go.\n  只要 → beat 2: Li Ming suggests a conditional solution: 'As long as' (只要) you pick a closer place, you can go. This sets the rule for the rest of the story.\n  选择 → beat 2: Xiao Ming needs to exercise agency by selecting (选择) a new potential location to test if it meets the 'closer' condition.\n  参加 → beat 3: Xiao Ming calls to ask if he can participate (参加) in the club at the nearby park, driving the plot forward by testing the alternative.\n  关于 → beat 3: The phone operator provides information concerning (关于) the meeting locations, which is the crucial data point that disproves the nearby option.\n  了解 → beat 4: Xiao Ming undergoes a change of mind. He realizes or understands (了解) that the city center is not suitable for him, shifting the conflict from external permission to internal decision.\n  安全 → beat 4: The core reason for the refusal is safety (安全). Xiao Ming must acknowledge that the city center is unsafe, validating his mother's initial stance.\n  特别 → beat 4: Xiao Ming emphasizes that the traffic in the city center is especially (特别) dangerous, reinforcing the safety argument.",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小明",
+            "妈妈"
+          ],
+          "beats": 5,
+          "placed": {
+            "得到": 1,
+            "只要": 2,
+            "选择": 2,
+            "参加": 3,
+            "关于": 3,
+            "了解": 4,
+            "安全": 4,
+            "特别": 4
+          }
+        },
+        "score": {
+          "label": "B",
+          "contradiction": false,
+          "overall": 6,
+          "reason": "Logical gap in beat 4 (realizing danger after just calling) weakens causality; plot is less intuitive than A.",
+          "causal": 6,
+          "chronology": 7,
+          "plausibility": 7,
+          "simplicity": 8,
+          "targetFit": 8,
+          "suitability": 8
+        },
+        "acceptable": true
+      },
+      {
+        "label": null,
+        "planner": "groq:openai/gpt-oss-120b/low",
+        "attempt": 1,
+        "blueprint": {
+          "title": "Joining the Community Safety Workshop",
+          "setting": "Modern city, weekday morning to afternoon",
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "problem": "李明 wants to help his neighborhood but doesn't know how to get involved safely.",
+          "incitingEvent": "妈妈告诉李明社区今天有一个安全讲座。",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Morning, 8:30 am",
+              "where": "李明的家客厅",
+              "what": "李明必须决定是否去参加社区的安全讲座。",
+              "because": "the story opens with the need to act on 妈妈's suggestion",
+              "arrivedHow": "",
+              "targets": [
+                "选择"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Morning, 9:00 am",
+              "where": "社区文化中心入口",
+              "what": "李明和小红一起参加讲座的报名。",
+              "because": "because 李明 chose to go, they must register to take part",
+              "arrivedHow": "they walk from home to the center",
+              "targets": [
+                "参加"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 3,
+              "when": "Morning, 9:30 am",
+              "where": "讲座教室",
+              "what": "老师讲解社区安全的基本原则，强调只要遵守规则就能保持安全。",
+              "because": "because they are now in the class, the concept of safety is introduced",
+              "arrivedHow": "",
+              "targets": [
+                "安全"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "Morning, 10:15 am",
+              "where": "讲座教室",
+              "what": "李明通过提问，了解如何在日常生活中预防意外。",
+              "because": "because the safety lesson makes him realize he needs more knowledge",
+              "arrivedHow": "",
+              "targets": [
+                "了解"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "Afternoon, 12:00 pm",
+              "where": "社区文化中心前台",
+              "what": "李明得到一张参与证书，决定以后常来帮助邻居。",
+              "because": "because his new understanding motivates him to stay involved and receive proof",
+              "arrivedHow": "",
+              "targets": [
+                "得到"
+              ],
+              "lines": 6
+            }
+          ],
+          "resolution": "李明得到证书后，安心地在社区里帮助邻居，问题得到解决。",
+          "targetPlan": [
+            {
+              "word": "选择",
+              "beat": 1,
+              "why": "李明需要 to choose whether to go to the safety workshop, so the verb 选择 is naturally used."
+            },
+            {
+              "word": "参加",
+              "beat": 2,
+              "why": "After deciding, the next step is to register and take part, requiring the verb 参加."
+            },
+            {
+              "word": "安全",
+              "beat": 3,
+              "why": "The workshop’s main topic is community safety, so the word 安全 appears in the teacher’s explanation."
+            },
+            {
+              "word": "了解",
+              "beat": 4,
+              "why": "李明 asks questions to better understand safety measures, naturally using the verb 了解."
+            },
+            {
+              "word": "得到",
+              "beat": 5,
+              "why": "At the end he receives a certificate, which uses the verb 得到."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 3 moves to \"讲座教室\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 5 moves to \"社区文化中心前台\" without saying how"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "beats": 5,
+          "placed": {
+            "选择": 1,
+            "参加": 2,
+            "安全": 3,
+            "了解": 4,
+            "得到": 5
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:openai/gpt-oss-120b/low",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The School Safety Drill",
+          "setting": "A modern Chinese middle school and the nearby home, present day",
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "problem": "李明 is unsure how to act safely during the school safety drill",
+          "incitingEvent": "The school sends a notice that a safety drill will be held tomorrow",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Morning",
+              "where": "李明's home",
+              "what": "李明 reads the notice and tries to understand the purpose of the drill",
+              "because": "the story opens",
+              "arrivedHow": "",
+              "targets": [
+                "了解"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Afternoon",
+              "where": "School courtyard",
+              "what": "小红 explains the drill rules and invites 李明 to join the participation group",
+              "because": "李明 needs to understand the drill before he can act, so he asks 小红 for help",
+              "arrivedHow": "",
+              "targets": [
+                "参加"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 3,
+              "when": "During the drill",
+              "where": "School building exit corridor",
+              "what": "The group must choose the correct emergency exit according to the instructions",
+              "because": "Because they are participating, they must follow the procedure and therefore need to make a choice",
+              "arrivedHow": "",
+              "targets": [
+                "选择"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "After the drill",
+              "where": "School office",
+              "what": "李明 and 小红 receive certificates confirming they have successfully completed the drill",
+              "because": "Because they chose the right exit and participated, the teachers give them the certificates",
+              "arrivedHow": "",
+              "targets": [
+                "得到"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Evening",
+              "where": "李明's home",
+              "what": "妈妈 asks if the school is now safe; 李明 assures her that the drill made the school safe",
+              "because": "Because he has obtained the certificate, he can confidently speak about safety",
+              "arrivedHow": "",
+              "targets": [
+                "安全"
+              ],
+              "lines": 6
+            }
+          ],
+          "resolution": "李明 feels confident about safety at school, and his mother is relieved; the central problem of uncertainty is solved.",
+          "targetPlan": [
+            {
+              "word": "了解",
+              "beat": 1,
+              "why": "李明必须先了解安全演练的意义，才能决定接下来怎么做。"
+            },
+            {
+              "word": "参加",
+              "beat": 2,
+              "why": "在了解之后，李明需要参加演练，才能实际练习安全措施。"
+            },
+            {
+              "word": "选择",
+              "beat": 3,
+              "why": "演练过程中要求学生选择正确的紧急出口，这是安全操作的关键。"
+            },
+            {
+              "word": "得到",
+              "beat": 4,
+              "why": "完成选择并参加后，老师会给学生得到演练合格证书。"
+            },
+            {
+              "word": "安全",
+              "beat": 5,
+              "why": "拿到证书后，李明可以向妈妈说明学校已经更加安全。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 2 moves to \"School courtyard\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 5 moves to \"李明's home\" without saying how"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "beats": 5,
+          "placed": {
+            "了解": 1,
+            "参加": 2,
+            "选择": 3,
+            "得到": 4,
+            "安全": 5
+          }
+        },
+        "score": null,
+        "acceptable": false
+      }
+    ],
+    "judgeRaw": "PLAN A: CAUSAL 8 CHRONOLOGY 8 PLAUSIBILITY 9 SIMPLICITY 9 TARGETFIT 9 SUITABILITY 9 CONTRADICTION no OVERALL 9 — Tight causal chain, natural word usage, and a clear character decision suitable for HSK 3.\n\nPLAN B: CAUSAL 6 CHRONOLOGY 7 PLAUSIBILITY 7 SIMPLICITY 8 TARGETFIT 8 SUITABILITY 8 CONTRADICTION no OVERALL 6 — Logical gap in beat 4 (realizing danger after just calling) weakens causality; plot is less intuitive than A.",
+    "selection": {
+      "code": null,
+      "label": "A",
+      "planner": "groq:qwen/qwen3.6-27b/none",
+      "attempt": 2,
+      "allocation": [
+        {
+          "beat": 1,
+          "lines": 6,
+          "from": 1,
+          "to": 6
+        },
+        {
+          "beat": 2,
+          "lines": 5,
+          "from": 7,
+          "to": 11
+        },
+        {
+          "beat": 3,
+          "lines": 7,
+          "from": 12,
+          "to": 18
+        },
+        {
+          "beat": 4,
+          "lines": 5,
+          "from": 19,
+          "to": 23
+        },
+        {
+          "beat": 5,
+          "lines": 5,
+          "from": 24,
+          "to": 28
+        }
+      ],
+      "targetPlan": [
+        {
+          "word": "参加",
+          "beat": 1,
+          "why": "Li Ming needs to accept the invitation, so he must use the verb 'to participate' to decide to join the game."
+        },
+        {
+          "word": "得到",
+          "beat": 1,
+          "why": "Li Ming just got the message/invitation, so he uses 'to get/obtain' to describe receiving the opportunity."
+        },
+        {
+          "word": "选择",
+          "beat": 2,
+          "why": "Li Ming stands between two friends. He needs the word 'to choose/pick' to describe the decision-making process of selecting a teammate."
+        },
+        {
+          "word": "安全",
+          "beat": 3,
+          "why": "Xiao Ming suggests a dangerous shortcut or careless move. Li Ming needs the word 'safe/safety' to articulate why this behavior is a problem for a serious game."
+        },
+        {
+          "word": "了解",
+          "beat": 3,
+          "why": "After seeing Xiao Ming's behavior, Li Ming reaches a realization. He uses 'to understand' to express that he now knows Xiao Ming is not the right choice."
+        },
+        {
+          "word": "特别",
+          "beat": 5,
+          "why": "During the game, Xiao Hong plays very well. Li Ming uses 'especially/particularly' to highlight how good the experience is compared to his initial worry."
+        },
+        {
+          "word": "只要",
+          "beat": 5,
+          "why": "Li Ming reflects on the game. He thinks 'so long as' (as long as) you have a good partner, the game is fun."
+        },
+        {
+          "word": "关于",
+          "beat": 5,
+          "why": "Li Ming thinks about the factors 'concerning' or 'regarding' why the game went well (the partner)."
+        }
+      ]
+    },
+    "draft": {
+      "title": "篮球试训",
+      "content": "星期六上午十点，李明在公寓里休息。\n他打开手机，看到一条新的信息。\n他得到参加公园篮球赛的邀请。\n这个消息让他非常高兴。\n但是他需要马上找一个队友。\n他决定去参加这次比赛。\n走出公寓，他碰到了小红和小明。\n李明需要选择一个人跟他一起去。\n只有两个小时的时间准备。\n小明说他想立刻出发。\n小红建议先整理装备。\n小明说走那条小路比较快。\n李明知道那条小路不平整。\n他说那样做不安全。\n小明觉得李明太胆小了。\n李明了解小明不重视规则。\n他担心小明会受伤。\n李明不想和 reckless 的人打球。\n他选择了小红一起。\n他们一起向公园走去。\n公园离公寓不远。\n路上有树和花。\n十点半到了篮球场。\n小红打球特别认真。\n她每次传球都很稳。\n李明觉得这样很好。\n只要队友好，比赛就有趣。\n关于胜利，他不再担心。",
+      "lines": 28,
+      "attempts": [
+        {
+          "attempt": 1,
+          "ok": true,
+          "error": null
+        }
+      ]
+    },
+    "before": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "invalid_manifest",
+          "message": "manifest is invalid: invalid length bounds"
+        }
+      ],
+      "reviews": [],
+      "warnings": [],
+      "metrics": {}
+    },
+    "preRepairCritique": {
+      "scores": {
+        "natural": 4,
+        "coherence": 3,
+        "integration": 2,
+        "level": 5,
+        "human": 3,
+        "interest": 4
+      },
+      "strengths": "The sentence structures are mechanically simple and grammatically correct for HSK 3.",
+      "weaknesses": "The logic is broken (time/space contradictions), the story ends before the main event, and \"reckless\" is written in English in a Chinese reader.",
+      "mechanical": true,
+      "contradiction": null,
+      "contradictionDetail": "",
+      "overall": 3
+    },
+    "decision": {
+      "ok": false,
+      "code": "DRAFT_QUALITY_FAILED",
+      "reason": "overall 3 < 6; natural 4 < 5; coherence 3 < 5; integration 2 < 5; human 3 < 5",
+      "quality": {
+        "ok": false,
+        "code": "DRAFT_QUALITY_FAILED",
+        "reasons": [
+          "overall 3 < 6",
+          "natural 4 < 5",
+          "coherence 3 < 5",
+          "integration 2 < 5",
+          "human 3 < 5"
+        ],
+        "scores": {
+          "natural": 4,
+          "coherence": 3,
+          "integration": 2,
+          "level": 5,
+          "human": 3,
+          "interest": 4
+        },
+        "overall": 3,
+        "mechanical": true,
+        "contradiction": false,
+        "contradictionDetail": null,
+        "thresholds": {
+          "overall": 6,
+          "natural": 5,
+          "coherence": 5,
+          "integration": 5,
+          "human": 5
+        }
+      },
+      "repairability": null
+    },
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "blueprint-2-L3-003",
+    "status": "rejected",
+    "title": "篮球试训",
+    "content": "星期六上午十点，李明在公寓里休息。\n他打开手机，看到一条新的信息。\n他得到参加公园篮球赛的邀请。\n这个消息让他非常高兴。\n但是他需要马上找一个队友。\n他决定去参加这次比赛。\n走出公寓，他碰到了小红和小明。\n李明需要选择一个人跟他一起去。\n只有两个小时的时间准备。\n小明说他想立刻出发。\n小红建议先整理装备。\n小明说走那条小路比较快。\n李明知道那条小路不平整。\n他说那样做不安全。\n小明觉得李明太胆小了。\n李明了解小明不重视规则。\n他担心小明会受伤。\n李明不想和 reckless 的人打球。\n他选择了小红一起。\n他们一起向公园走去。\n公园离公寓不远。\n路上有树和花。\n十点半到了篮球场。\n小红打球特别认真。\n她每次传球都很稳。\n李明觉得这样很好。\n只要队友好，比赛就有趣。\n关于胜利，他不再担心。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "invalid_manifest",
+          "message": "manifest is invalid: invalid length bounds"
+        }
+      ],
+      "reviews": [],
+      "warnings": [],
+      "metrics": {}
+    },
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}

@@ -1,0 +1,961 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "blueprint-2",
+  "generatedAt": "2026-08-22T12:52:12.057Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "blueprint-2-L3-002",
+    "batchId": "blueprint-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "结束",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "来自",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 28,
+      "maxLines": 28,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "out in the city: places, errands, and a small discovery",
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "composition": {
+      "bucket": "places",
+      "reason": "4 pending hard targets share the \"places\" theme",
+      "hard": [
+        {
+          "word": "发生",
+          "meaning": "to happen; to occur; to take place; to break out"
+        },
+        {
+          "word": "国家",
+          "meaning": "country; nation; state"
+        },
+        {
+          "word": "结束",
+          "meaning": "termination; to finish"
+        },
+        {
+          "word": "来自",
+          "meaning": "to come from (a place); From: (in email header)"
+        },
+        {
+          "word": "生活",
+          "meaning": "to live; life"
+        }
+      ],
+      "soft": [
+        {
+          "word": "其他",
+          "meaning": "other; (sth or sb) else"
+        },
+        {
+          "word": "或者",
+          "meaning": "or; possibly; maybe; perhaps"
+        },
+        {
+          "word": "当然",
+          "meaning": "only natural; as it should be"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "发生",
+      "国家",
+      "结束",
+      "来自",
+      "生活"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "blueprints": [
+      {
+        "label": "A",
+        "planner": "groq:openai/gpt-oss-120b/low",
+        "attempt": 2,
+        "blueprint": {
+          "title": "A Morning Errand in the City",
+          "setting": "Beijing, modern day, morning to early afternoon",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "李明 needs to pay a utility bill before the bank closes",
+          "incitingEvent": "李明 arrives at the bank and sees a notice about an unexpected closure",
+          "beats": [
+            {
+              "id": 1,
+              "when": "7:30 am",
+              "where": "李明's apartment",
+              "what": "He gets ready, grabs his wallet and heads out to the bank",
+              "because": "the story opens with 李明 needing to pay the bill",
+              "arrivedHow": "",
+              "targets": [],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "8:00 am",
+              "where": "Bank on Main Street",
+              "what": "He discovers a sign: “因电力故障，银行提前关闭，今天的业务已发生”",
+              "because": "because the bank is closed, he must find another way to pay",
+              "arrivedHow": "walks down the street from his apartment",
+              "targets": [
+                "发生"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 3,
+              "when": "8:15 am",
+              "where": "Nearby post office",
+              "what": "He meets 小红, who tells him she is 来自加拿大, a different 国家, and suggests using the post office’s payment service",
+              "because": "because 小红 offers an alternative place to settle the bill",
+              "arrivedHow": "takes the next block east to the post office",
+              "targets": [
+                "来自",
+                "国家"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "8:30 am",
+              "where": "Internet café on the second floor of the post office building",
+              "what": "They log in, chat about their daily 生活, and complete the online payment",
+              "because": "because the post office requires online payment, they go to the café",
+              "arrivedHow": "takes the elevator up to the café",
+              "targets": [
+                "生活"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "9:00 am",
+              "where": "Internet café",
+              "what": "The transaction is successful, the café announces it will 结束 soon, and 李明 leaves relieved",
+              "because": "because the payment is finally done, the story’s problem ends",
+              "arrivedHow": "",
+              "targets": [
+                "结束"
+              ],
+              "lines": 6
+            }
+          ],
+          "resolution": "李明 pays the bill successfully and can continue his day without worry",
+          "targetPlan": [
+            {
+              "word": "发生",
+              "beat": 2,
+              "why": "The sign at the bank explains that a power outage has occurred, so the word '发生' naturally appears."
+            },
+            {
+              "word": "国家",
+              "beat": 3,
+              "why": "小红 mentions the country she is from, making '国家' necessary in the dialogue."
+            },
+            {
+              "word": "来自",
+              "beat": 3,
+              "why": "小红 says she '来自' Canada, requiring the verb."
+            },
+            {
+              "word": "生活",
+              "beat": 4,
+              "why": "While waiting, they talk about their daily life, so '生活' fits naturally."
+            },
+            {
+              "word": "结束",
+              "beat": 5,
+              "why": "The café announces it will close soon, using the word '结束' to indicate termination."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "rendered": "TITLE CONCEPT: A Morning Errand in the City\nSETTING: Beijing, modern day, morning to early afternoon\nCAST: 李明、小红\nCENTRAL PROBLEM: 李明 needs to pay a utility bill before the bank closes\nINCITING EVENT: 李明 arrives at the bank and sees a notice about an unexpected closure\nBEATS:\n  1. [7:30 am · 李明's apartment]\n     WHAT CHANGES: He gets ready, grabs his wallet and heads out to the bank\n  2. [8:00 am · Bank on Main Street] · uses 发生\n     WHAT CHANGES: He discovers a sign: “因电力故障，银行提前关闭，今天的业务已发生”\n     BECAUSE: because the bank is closed, he must find another way to pay\n     GOT THERE BY: walks down the street from his apartment\n  3. [8:15 am · Nearby post office] · uses 来自、国家\n     WHAT CHANGES: He meets 小红, who tells him she is 来自加拿大, a different 国家, and suggests using the post office’s payment service\n     BECAUSE: because 小红 offers an alternative place to settle the bill\n     GOT THERE BY: takes the next block east to the post office\n  4. [8:30 am · Internet café on the second floor of the post office building] · uses 生活\n     WHAT CHANGES: They log in, chat about their daily 生活, and complete the online payment\n     BECAUSE: because the post office requires online payment, they go to the café\n     GOT THERE BY: takes the elevator up to the café\n  5. [9:00 am · Internet café] · uses 结束\n     WHAT CHANGES: The transaction is successful, the café announces it will 结束 soon, and 李明 leaves relieved\n     BECAUSE: because the payment is finally done, the story’s problem ends\nRESOLUTION: 李明 pays the bill successfully and can continue his day without worry\nTARGET WORDS:\n  发生 → beat 2: The sign at the bank explains that a power outage has occurred, so the word '发生' naturally appears.\n  国家 → beat 3: 小红 mentions the country she is from, making '国家' necessary in the dialogue.\n  来自 → beat 3: 小红 says she '来自' Canada, requiring the verb.\n  生活 → beat 4: While waiting, they talk about their daily life, so '生活' fits naturally.\n  结束 → beat 5: The café announces it will close soon, using the word '结束' to indicate termination.",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 5,
+          "placed": {
+            "发生": 2,
+            "国家": 3,
+            "来自": 3,
+            "生活": 4,
+            "结束": 5
+          }
+        },
+        "score": {
+          "label": "A",
+          "contradiction": false,
+          "overall": 7,
+          "reason": "Strong causal chain and simple plot, but target word integration for \"发生\" (used in a sign text rather than narrative action) and \"结束\" (cafe closing) feels slightly forced for HSk 3 dialogue.",
+          "causal": 6,
+          "chronology": 8,
+          "plausibility": 8,
+          "simplicity": 9,
+          "targetFit": 7,
+          "suitability": 8
+        },
+        "acceptable": true
+      },
+      {
+        "label": "B",
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Lost Passenger",
+          "setting": "A busy Tuesday afternoon in the city center, near a subway station and a park.",
+          "cast": [
+            "李明",
+            "小明",
+            "小红"
+          ],
+          "problem": "Little Ming has lost his new pen, which was a gift from a friend from another country.",
+          "incitingEvent": "Little Ming realizes the pen is missing during math class, causing panic before he can leave for the day.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Tuesday, 3:00 PM, just after school",
+              "where": "Outside the primary school gate",
+              "what": "Little Ming is crying because he cannot find his special pen. Li Ming asks what happened.",
+              "because": "the story opens",
+              "targets": [
+                "发生"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Tuesday, 3:15 PM",
+              "where": "A small coffee shop near the school",
+              "what": "Li Ming listens to Little Ming's story. Little Ming explains he bought the pen at a gift shop. He describes it as a gift from a friend from another country.",
+              "because": "Li Ming needs details to help search",
+              "arrivedHow": "Walking from the school gate to the nearby cafe (5 mins)",
+              "targets": [
+                "来自",
+                "国家"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 3,
+              "when": "Tuesday, 3:45 PM",
+              "where": "The suburban park where they did homework yesterday",
+              "what": "They search the park. It is quiet. Li Ming suggests looking in the usual spot. They spot Xiaohong sitting on a bench, looking at a pen.",
+              "because": "The last known location of the pen is the park",
+              "arrivedHow": "Taking a shared bike from the cafe to the park (10 mins)",
+              "targets": [],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "Tuesday, 3:55 PM",
+              "where": "The park bench",
+              "what": "Li Ming approaches Xiaohong. Little Ming recognizes the pen. Xiaohong says she found it on the grass yesterday and kept it for its owner.",
+              "because": "They saw a familiar object with a stranger",
+              "targets": [
+                "其他"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Tuesday, 4:10 PM",
+              "where": "The park bench",
+              "what": "Xiaohong returns the pen. Little Ming is very happy. They talk about how they lost and found it. Li Ming says this is a good end to the busy day.",
+              "because": "The owner and finder have met",
+              "targets": [
+                "结束",
+                "生活",
+                "当然",
+                "或者"
+              ],
+              "lines": 6
+            }
+          ],
+          "resolution": "The pen is returned to Little Ming, resolving the loss and the emotional distress.",
+          "targetPlan": [
+            {
+              "word": "发生",
+              "beat": 1,
+              "why": "Li Ming asks 'What happened?'. This is the most natural, high-frequency usage for 发生 when asking about an immediate, visible negative event."
+            },
+            {
+              "word": "来自",
+              "beat": 2,
+              "why": "Little Ming needs to describe the origin of the pen to help Li Ming identify it if they find it. He says 'It comes from a friend...'"
+            },
+            {
+              "word": "国家",
+              "beat": 2,
+              "why": "Continuing the description, Little Ming specifies the friend is 'from another country'. This requires the noun 国家."
+            },
+            {
+              "word": "其他",
+              "beat": 4,
+              "why": "Xiaohong explains she didn't know who it belonged to, so she kept it to see if the owner or someone else (other people) would come looking for it."
+            },
+            {
+              "word": "结束",
+              "beat": 5,
+              "why": "After the resolution, Li Ming comments that the 'day' or the 'incident' has finished/ended. He might say 'Today's trouble is finished.'"
+            },
+            {
+              "word": "生活",
+              "beat": 5,
+              "why": "In a concluding reflection, Li Ming might make a simple philosophical point suitable for HSK 3, such as 'Life is full of small surprises' or 'This is part of daily life.'"
+            },
+            {
+              "word": "当然",
+              "beat": 5,
+              "why": "Little Ming thanks Xiaohong. She replies, 'Of course (当然), I would help you.' This fits the polite, positive resolution."
+            },
+            {
+              "word": "或者",
+              "beat": 5,
+              "why": "During the conversation after returning the pen, Little Ming might suggest, 'You can come to our house to play, or (或者) we can go buy ice cream.'"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "rendered": "TITLE CONCEPT: The Lost Passenger\nSETTING: A busy Tuesday afternoon in the city center, near a subway station and a park.\nCAST: 李明、小明、小红\nCENTRAL PROBLEM: Little Ming has lost his new pen, which was a gift from a friend from another country.\nINCITING EVENT: Little Ming realizes the pen is missing during math class, causing panic before he can leave for the day.\nBEATS:\n  1. [Tuesday, 3:00 PM, just after school · Outside the primary school gate] · uses 发生\n     WHAT CHANGES: Little Ming is crying because he cannot find his special pen. Li Ming asks what happened.\n  2. [Tuesday, 3:15 PM · A small coffee shop near the school] · uses 来自、国家\n     WHAT CHANGES: Li Ming listens to Little Ming's story. Little Ming explains he bought the pen at a gift shop. He describes it as a gift from a friend from another country.\n     BECAUSE: Li Ming needs details to help search\n     GOT THERE BY: Walking from the school gate to the nearby cafe (5 mins)\n  3. [Tuesday, 3:45 PM · The suburban park where they did homework yesterday]\n     WHAT CHANGES: They search the park. It is quiet. Li Ming suggests looking in the usual spot. They spot Xiaohong sitting on a bench, looking at a pen.\n     BECAUSE: The last known location of the pen is the park\n     GOT THERE BY: Taking a shared bike from the cafe to the park (10 mins)\n  4. [Tuesday, 3:55 PM · The park bench] · uses 其他\n     WHAT CHANGES: Li Ming approaches Xiaohong. Little Ming recognizes the pen. Xiaohong says she found it on the grass yesterday and kept it for its owner.\n     BECAUSE: They saw a familiar object with a stranger\n  5. [Tuesday, 4:10 PM · The park bench] · uses 结束、生活、当然、或者\n     WHAT CHANGES: Xiaohong returns the pen. Little Ming is very happy. They talk about how they lost and found it. Li Ming says this is a good end to the busy day.\n     BECAUSE: The owner and finder have met\nRESOLUTION: The pen is returned to Little Ming, resolving the loss and the emotional distress.\nTARGET WORDS:\n  发生 → beat 1: Li Ming asks 'What happened?'. This is the most natural, high-frequency usage for 发生 when asking about an immediate, visible negative event.\n  来自 → beat 2: Little Ming needs to describe the origin of the pen to help Li Ming identify it if they find it. He says 'It comes from a friend...'\n  国家 → beat 2: Continuing the description, Little Ming specifies the friend is 'from another country'. This requires the noun 国家.\n  其他 → beat 4: Xiaohong explains she didn't know who it belonged to, so she kept it to see if the owner or someone else (other people) would come looking for it.\n  结束 → beat 5: After the resolution, Li Ming comments that the 'day' or the 'incident' has finished/ended. He might say 'Today's trouble is finished.'\n  生活 → beat 5: In a concluding reflection, Li Ming might make a simple philosophical point suitable for HSK 3, such as 'Life is full of small surprises' or 'This is part of daily life.'\n  当然 → beat 5: Little Ming thanks Xiaohong. She replies, 'Of course (当然), I would help you.' This fits the polite, positive resolution.\n  或者 → beat 5: During the conversation after returning the pen, Little Ming might suggest, 'You can come to our house to play, or (或者) we can go buy ice cream.'",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小明",
+            "小红"
+          ],
+          "beats": 5,
+          "placed": {
+            "发生": 1,
+            "来自": 2,
+            "国家": 2,
+            "其他": 4,
+            "结束": 5,
+            "生活": 5,
+            "当然": 5,
+            "或者": 5
+          }
+        },
+        "score": {
+          "label": "B",
+          "contradiction": false,
+          "overall": 9,
+          "reason": "Highly coherent \"lost item\" plot with natural target word usage in dialogue and action; fits the short, concrete style of HSK 3 readers perfectly.",
+          "causal": 9,
+          "chronology": 8,
+          "plausibility": 9,
+          "simplicity": 9,
+          "targetFit": 9,
+          "suitability": 9
+        },
+        "acceptable": true
+      },
+      {
+        "label": null,
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The International Street Festival",
+          "setting": "A rainy Saturday afternoon in a busy city district with international shops and food stalls.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming and Xiaohong want to find a specific European grocery store to buy ingredients for dinner, but the sign is missing and they only have a vague, possibly incorrect, description.",
+          "incitingEvent": "Li Ming receives a text with a picture of a store front but the store name is blurry, only showing it is for a specific country's food.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "4:00 PM",
+              "where": "Li Ming's apartment living room",
+              "what": "Li Ming shows Xiaohong a blurry photo on his phone. He says he wants to buy food. Xiaohong asks where. Li Ming guesses the store is for a foreign country.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "4:15 PM",
+              "where": "The nearest subway station platform",
+              "what": "They rush to the subway. Xiaohong asks what country the store is from. Li Ming says it is difficult to know. He thinks maybe France, or maybe Italy.",
+              "because": "they need to travel to the city center to find the area mentioned in the photo",
+              "arrivedHow": "walked from apartment to station",
+              "targets": [
+                "来自",
+                "国家",
+                "或者",
+                "其他"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "4:40 PM",
+              "where": "International Food District Entrance",
+              "what": "They arrive and look for the store. The street is crowded due to a small festival. They see many signs but none match. Li Ming is worried the event will last too long.",
+              "because": "they took the subway to the location of the store",
+              "arrivedHow": "subway",
+              "targets": [
+                "当然"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "4:50 PM",
+              "where": "Middle of the crowded street",
+              "what": "Xiaohong finds a person selling flags. She asks where the French or Italian store is. The seller points to the end of the street. They start walking there.",
+              "because": "they realized they couldn't find it by looking at distant signs in the crowd",
+              "arrivedHow": "walking through the crowd",
+              "targets": [],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "5:10 PM",
+              "where": "The end of the street, in front of a shop",
+              "what": "They find a shop with no sign, only a French flag. Li Ming checks his photo. It matches. He realizes what happened with the blurry name.",
+              "because": "they followed the direction given by the seller",
+              "arrivedHow": "walking",
+              "targets": [
+                "发生"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "5:20 PM",
+              "where": "The shop entrance",
+              "what": "The bell rings as they enter. The store is small but has what they need. They buy the items and prepare to leave as the festival starts to wind down.",
+              "because": "they confirmed this was the right store",
+              "arrivedHow": "entering the shop",
+              "targets": [
+                "结束"
+              ],
+              "lines": 3
+            }
+          ],
+          "resolution": "They successfully identify and enter the correct store by recognizing the national flag, resolving the confusion caused by the blurry photo.",
+          "targetPlan": [
+            {
+              "word": "来自",
+              "beat": 2,
+              "why": "Xiaohong tries to narrow down the search by asking the origin of the food store, e.g., 'This store comes from which country?'"
+            },
+            {
+              "word": "国家",
+              "beat": 2,
+              "why": "Used in the question about the specific nation, e.g., 'Which country does it come from?' to define the search parameter."
+            },
+            {
+              "word": "或者",
+              "beat": 2,
+              "why": "Li Ming expresses uncertainty between two options, e.g., 'Maybe France, or (或者) maybe Italy?'"
+            },
+            {
+              "word": "其他",
+              "beat": 2,
+              "why": "Li Ming considers if it might be any other place if not the first two guesses, e.g., 'Or perhaps some other (其他) place?'"
+            },
+            {
+              "word": "当然",
+              "beat": 3,
+              "why": "Xiaohong responds to Li Ming's worry about the crowd, saying of course they will find it, or Li Ming says of course he is worried, establishing their attitude."
+            },
+            {
+              "word": "发生",
+              "beat": 5,
+              "why": "Li Ming reflects on the situation, realizing what happened (what occurred) to make the sign unreadable or why he didn't recognize it immediately."
+            },
+            {
+              "word": "结束",
+              "beat": 6,
+              "why": "They notice the festival is finishing or their errand is finishing, providing a natural closing thought to the scene."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "target_unplaced",
+              "message": "生活 has no beat where it naturally belongs"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "来自": 2,
+            "国家": 2,
+            "或者": 2,
+            "其他": 2,
+            "当然": 3,
+            "发生": 5,
+            "结束": 6
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:openai/gpt-oss-120b/low",
+        "attempt": 1,
+        "blueprint": {
+          "title": "A Morning Errand in the City",
+          "setting": "Beijing, modern day, early morning to late afternoon",
+          "cast": [
+            "李明",
+            "妈妈"
+          ],
+          "problem": "妈妈的感冒药忘在家里，李明必须赶快去药店买药，否则她会不舒服。",
+          "incitingEvent": "李明早上起床发现妈妈的药不在药箱里。",
+          "beats": [
+            {
+              "id": 1,
+              "when": "早上七点",
+              "where": "李明家客厅",
+              "what": "李明检查药箱，发现药不见了，决定立刻去最近的药店。",
+              "because": "故事开端，李明发现问题需要解决。",
+              "arrivedHow": "",
+              "targets": [],
+              "lines": 6
+            },
+            {
+              "id": 2,
+              "when": "早上七点十五分",
+              "where": "步行到街口的药店",
+              "what": "李明走出小区，穿过马路到药店。",
+              "because": "因为药不在家里，他必须去药店买药。",
+              "arrivedHow": "步行",
+              "targets": [],
+              "lines": 6
+            },
+            {
+              "id": 3,
+              "when": "早上七点三十分",
+              "where": "药店入口",
+              "what": "刚进门就发生停电，店内灯光全部熄灭，顾客只能等。",
+              "because": "因为他已经到达药店，才会遇到突发的停电。",
+              "arrivedHow": "",
+              "targets": [
+                "发生"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "早上七点四十五分",
+              "where": "药店临时照明的柜台",
+              "what": "在等待恢复电力时，李明看到一张宣传单，上面写着“来自法国的文化展”，提到不同国家的艺术。",
+              "because": "因为停电让他有时间站在柜台旁，看到宣传单。",
+              "arrivedHow": "",
+              "targets": [
+                "来自",
+                "国家"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "上午八点十五分",
+              "where": "药店结账区",
+              "what": "电力恢复后，李明买到药，回到家把药交给妈妈，事情结束，感叹今天的生活充满意外。",
+              "because": "因为停电结束后他才能完成购买，回家解决了最初的问题。",
+              "arrivedHow": "步行返回",
+              "targets": [
+                "结束",
+                "生活"
+              ],
+              "lines": 6
+            }
+          ],
+          "resolution": "妈妈得到感冒药，身体好转，李明体会到即使是普通的生活也会有意外的发现。",
+          "targetPlan": [
+            {
+              "word": "发生",
+              "beat": 3,
+              "why": "停电是一个突发事件，必须用‘发生’来描述这种意外。"
+            },
+            {
+              "word": "国家",
+              "beat": 4,
+              "why": "宣传单介绍的是来自法国的文化展，需要提到‘国家’来说明来源。"
+            },
+            {
+              "word": "结束",
+              "beat": 5,
+              "why": "在药买完并交给妈妈后，整个紧急的事情‘结束’了。"
+            },
+            {
+              "word": "来自",
+              "beat": 4,
+              "why": "宣传单上写着‘来自法国的文化展’，需要用‘来自’说明展览的来源。"
+            },
+            {
+              "word": "生活",
+              "beat": 5,
+              "why": "李明在回顾今天的经历时，用‘生活’来概括日常中的小插曲。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 2 moves to \"步行到街口的药店\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 3 moves to \"药店入口\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 4 moves to \"药店临时照明的柜台\" without saying how"
+            }
+          ],
+          "cast": [
+            "李明",
+            "妈妈"
+          ],
+          "beats": 5,
+          "placed": {
+            "发生": 3,
+            "国家": 4,
+            "结束": 5,
+            "来自": 4,
+            "生活": 5
+          }
+        },
+        "score": null,
+        "acceptable": false
+      }
+    ],
+    "judgeRaw": "PLAN A: CAUSAL 6 CHRONOLOGY 8 PLAUSIBILITY 8 SIMPLICITY 9 TARGETFIT 7 SUITABILITY 8 CONTRADICTION no OVERALL 7 — Strong causal chain and simple plot, but target word integration for \"发生\" (used in a sign text rather than narrative action) and \"结束\" (cafe closing) feels slightly forced for HSk 3 dialogue.\nPLAN B: CAUSAL 9 CHRONOLOGY 8 PLAUSIBILITY 9 SIMPLICITY 9 TARGETFIT 9 SUITABILITY 9 CONTRADICTION no OVERALL 9 — Highly coherent \"lost item\" plot with natural target word usage in dialogue and action; fits the short, concrete style of HSK 3 readers perfectly.",
+    "selection": {
+      "code": null,
+      "label": "B",
+      "planner": "groq:qwen/qwen3.6-27b/none",
+      "attempt": 1,
+      "allocation": [
+        {
+          "beat": 1,
+          "lines": 5,
+          "from": 1,
+          "to": 5
+        },
+        {
+          "beat": 2,
+          "lines": 6,
+          "from": 6,
+          "to": 11
+        },
+        {
+          "beat": 3,
+          "lines": 6,
+          "from": 12,
+          "to": 17
+        },
+        {
+          "beat": 4,
+          "lines": 5,
+          "from": 18,
+          "to": 22
+        },
+        {
+          "beat": 5,
+          "lines": 6,
+          "from": 23,
+          "to": 28
+        }
+      ],
+      "targetPlan": [
+        {
+          "word": "发生",
+          "beat": 1,
+          "why": "Li Ming asks 'What happened?'. This is the most natural, high-frequency usage for 发生 when asking about an immediate, visible negative event."
+        },
+        {
+          "word": "来自",
+          "beat": 2,
+          "why": "Little Ming needs to describe the origin of the pen to help Li Ming identify it if they find it. He says 'It comes from a friend...'"
+        },
+        {
+          "word": "国家",
+          "beat": 2,
+          "why": "Continuing the description, Little Ming specifies the friend is 'from another country'. This requires the noun 国家."
+        },
+        {
+          "word": "其他",
+          "beat": 4,
+          "why": "Xiaohong explains she didn't know who it belonged to, so she kept it to see if the owner or someone else (other people) would come looking for it."
+        },
+        {
+          "word": "结束",
+          "beat": 5,
+          "why": "After the resolution, Li Ming comments that the 'day' or the 'incident' has finished/ended. He might say 'Today's trouble is finished.'"
+        },
+        {
+          "word": "生活",
+          "beat": 5,
+          "why": "In a concluding reflection, Li Ming might make a simple philosophical point suitable for HSK 3, such as 'Life is full of small surprises' or 'This is part of daily life.'"
+        },
+        {
+          "word": "当然",
+          "beat": 5,
+          "why": "Little Ming thanks Xiaohong. She replies, 'Of course (当然), I would help you.' This fits the polite, positive resolution."
+        },
+        {
+          "word": "或者",
+          "beat": 5,
+          "why": "During the conversation after returning the pen, Little Ming might suggest, 'You can come to our house to play, or (或者) we can go buy ice cream.'"
+        }
+      ]
+    },
+    "draft": {
+      "title": "丢失的钢笔",
+      "content": "星期二下午三点，小明站在学校门口哭。\n他找不到他的新钢笔，心里非常着急。\n李明看见他，走过去问发生了什么事。\n小明说：“我的钢笔不见了，我非常生气。”\n李明安慰他，让他不要着急，一起找找。\n他们来到附近的小咖啡店坐下休息。\n小明说：“这支笔是我的外国朋友送的礼物。”\n李明问：“那个朋友来自哪个国家？”\n小明回答：“他来自另一个国家，笔很特别。”\n李明说：“知道了，我们回公园找找吧。”\n他们骑共享单车去了昨天的公园。\n公园里很安静，只有几个人在散步。\n李明说：“你昨天在哪里做作业？”\n小明说：“就在那个长椅旁边。”\n他们开始在草地上仔细寻找。\n突然，他们看见小红坐在长椅上。\n她手里拿着一支蓝色的钢笔。\n李明走过去，问小红那是不是她的笔。\n小明跑过去，一眼就认出了自己的笔。\n小红说：“是我昨天在草地上捡到的。\n我不认识你，也没看到其他主人。\n所以我把笔留着，等人来拿。”\n小红把钢笔还给了小明。\n小明笑了，不再担心，事情结束了。\n李明说：“这是今天忙碌生活的结束。”\n小明对小红说：“谢谢你，你当然会帮我。”\n小红说：“当然，我们是好朋友。\n或者我们一起去吃冰淇淋庆祝一下？”",
+      "lines": 28,
+      "attempts": [
+        {
+          "attempt": 1,
+          "ok": true,
+          "error": null
+        }
+      ]
+    },
+    "before": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "invalid_manifest",
+          "message": "manifest is invalid: invalid length bounds"
+        }
+      ],
+      "reviews": [],
+      "warnings": [],
+      "metrics": {}
+    },
+    "preRepairCritique": {
+      "scores": {
+        "natural": 4,
+        "coherence": 3,
+        "integration": 2,
+        "level": 6,
+        "human": 5,
+        "interest": 4
+      },
+      "strengths": "The basic structure of a lost-and-found story is present, providing a clear framework for entry-level learners.",
+      "weaknesses": "The integration of target vocabulary is extremely forced and unnatural (e.g., \"这是今天忙碌生活的结束\" is not something natives say in this context; \"你当然会帮我\" is a weird thing to say to a new friend).",
+      "mechanical": true,
+      "contradiction": null,
+      "contradictionDetail": "",
+      "overall": 4
+    },
+    "decision": {
+      "ok": false,
+      "code": "DRAFT_QUALITY_FAILED",
+      "reason": "overall 4 < 6; natural 4 < 5; coherence 3 < 5; integration 2 < 5",
+      "quality": {
+        "ok": false,
+        "code": "DRAFT_QUALITY_FAILED",
+        "reasons": [
+          "overall 4 < 6",
+          "natural 4 < 5",
+          "coherence 3 < 5",
+          "integration 2 < 5"
+        ],
+        "scores": {
+          "natural": 4,
+          "coherence": 3,
+          "integration": 2,
+          "level": 6,
+          "human": 5,
+          "interest": 4
+        },
+        "overall": 4,
+        "mechanical": true,
+        "contradiction": false,
+        "contradictionDetail": null,
+        "thresholds": {
+          "overall": 6,
+          "natural": 5,
+          "coherence": 5,
+          "integration": 5,
+          "human": 5
+        }
+      },
+      "repairability": null
+    },
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "blueprint-2-L3-002",
+    "status": "rejected",
+    "title": "丢失的钢笔",
+    "content": "星期二下午三点，小明站在学校门口哭。\n他找不到他的新钢笔，心里非常着急。\n李明看见他，走过去问发生了什么事。\n小明说：“我的钢笔不见了，我非常生气。”\n李明安慰他，让他不要着急，一起找找。\n他们来到附近的小咖啡店坐下休息。\n小明说：“这支笔是我的外国朋友送的礼物。”\n李明问：“那个朋友来自哪个国家？”\n小明回答：“他来自另一个国家，笔很特别。”\n李明说：“知道了，我们回公园找找吧。”\n他们骑共享单车去了昨天的公园。\n公园里很安静，只有几个人在散步。\n李明说：“你昨天在哪里做作业？”\n小明说：“就在那个长椅旁边。”\n他们开始在草地上仔细寻找。\n突然，他们看见小红坐在长椅上。\n她手里拿着一支蓝色的钢笔。\n李明走过去，问小红那是不是她的笔。\n小明跑过去，一眼就认出了自己的笔。\n小红说：“是我昨天在草地上捡到的。\n我不认识你，也没看到其他主人。\n所以我把笔留着，等人来拿。”\n小红把钢笔还给了小明。\n小明笑了，不再担心，事情结束了。\n李明说：“这是今天忙碌生活的结束。”\n小明对小红说：“谢谢你，你当然会帮我。”\n小红说：“当然，我们是好朋友。\n或者我们一起去吃冰淇淋庆祝一下？”",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "invalid_manifest",
+          "message": "manifest is invalid: invalid length bounds"
+        }
+      ],
+      "reviews": [],
+      "warnings": [],
+      "metrics": {}
+    },
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}

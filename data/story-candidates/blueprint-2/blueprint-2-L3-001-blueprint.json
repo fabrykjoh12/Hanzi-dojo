@@ -1,0 +1,1007 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "blueprint-2",
+  "generatedAt": "2026-08-22T12:52:12.057Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "blueprint-2-L3-001",
+    "batchId": "blueprint-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 28,
+      "maxLines": 28,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "关系",
+      "女人",
+      "男人",
+      "帮助",
+      "需要"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "blueprints": [
+      {
+        "label": "A",
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Helpful Neighbor",
+          "setting": "A modern apartment complex on a rainy Saturday afternoon.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming's bicycle chain has broken, stranding him in the rain with a heavy bag of groceries, and he needs a tool to fix it.",
+          "incitingEvent": "Li Ming's bike chain falls off while he is riding home from the market.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday afternoon, raining",
+              "where": "Outside the apartment building stairs",
+              "what": "Li Ming stops because his bike chain is broken. He sees his bike is useless and his wet groceries are heavy.",
+              "because": "the story opens with the inciting incident",
+              "arrivedHow": "N/A",
+              "targets": [
+                "女人",
+                "男人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Immediately after",
+              "where": "Outside the apartment building stairs",
+              "what": "Xiao Hong walks out. Li Ming realizes he cannot carry the water and rice alone. He decides he must ask for a tool to fix the bike, not just carry bags.",
+              "because": "He needs a solution that solves the bike problem, not just the weight problem",
+              "arrivedHow": "N/A",
+              "targets": [
+                "需要",
+                "必须"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 3,
+              "when": "A moment later",
+              "where": "Outside the apartment building stairs",
+              "what": "Li Ming explains the situation. He points out that a man (男人) would typically have the right heavy tool, but his neighbor is a woman (女人). He asks if she has a wrench.",
+              "because": "He is assessing if Xiao Hong can solve the specific mechanical problem based on common stereotypes/tools available",
+              "arrivedHow": "N/A",
+              "targets": [],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "Immediately after",
+              "where": "Xiao Hong's apartment (ground floor)",
+              "what": "Xiao Hong agrees. She says if (如果) he comes in, she can find a tool. Li Ming pushes the bike into her living room.",
+              "because": "Xiao Hong wanted to help and had a solution",
+              "arrivedHow": "Pushed bike into ground-floor unit next door",
+              "targets": [
+                "如果"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 5,
+              "when": "10 minutes later",
+              "where": "Xiao Hong's apartment",
+              "what": "Xiao Hong finds a wrench. She helps (帮助) Li Ming fix the chain. They talk about how good it is that neighbors help each other.",
+              "because": "The tool was found and the problem was mechanical",
+              "arrivedHow": "N/A",
+              "targets": [
+                "帮助"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "After fixing the bike",
+              "where": "Outside the apartment building",
+              "what": "Li Ming fixes the last bolt. He thanks Xiao Hong. He reflects that their relationship (关系) is good because they help each other.",
+              "because": "The bike is fixed and the interaction is complete",
+              "arrivedHow": "Walked back out to the entryway",
+              "targets": [
+                "关系",
+                "而且"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "Li Ming fixes his bike with Xiao Hong's tool, realizing that their neighborly relationship is strengthened by this act of assistance.",
+          "targetPlan": [
+            {
+              "word": "女人",
+              "beat": 1,
+              "why": "Li Ming observes Xiao Hong and mentally categorizes her as a woman (女人) to assess if she might have the 'heavy tools' he assumes men usually keep, highlighting his initial hesitation or assessment."
+            },
+            {
+              "word": "男人",
+              "beat": 1,
+              "why": "Contrasting with the woman (Xiao Hong), Li Ming thinks about how a man (男人) might typically have a household toolkit, framing his surprise when she offers to help."
+            },
+            {
+              "word": "需要",
+              "beat": 2,
+              "why": "Li Ming explicitly states he needs (需要) a wrench, not just strength, shifting the request from carrying help to mechanical help."
+            },
+            {
+              "word": "必须",
+              "beat": 2,
+              "why": "Li Ming reasons that he must (必须) ask her now because the rain is getting heavier and he cannot leave the groceries there."
+            },
+            {
+              "word": "如果",
+              "beat": 4,
+              "why": "Xiao Hong uses 'if' (如果) to set the condition: 'If you come in, I will look for a tool,' inviting him into her private space to solve the problem."
+            },
+            {
+              "word": "帮助",
+              "beat": 5,
+              "why": "Xiao Hong is actively helping (帮助) Li Ming turn the wrench, making this the core action of the story."
+            },
+            {
+              "word": "关系",
+              "beat": 6,
+              "why": "Li Ming concludes that this event improved their relationship (关系), moving the story theme from transactional help to social bonding."
+            },
+            {
+              "word": "而且",
+              "beat": 6,
+              "why": "Li Ming adds that the relationship is good AND (而且) he learned she has many tools, reinforcing the positive outcome."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "rendered": "TITLE CONCEPT: The Helpful Neighbor\nSETTING: A modern apartment complex on a rainy Saturday afternoon.\nCAST: 李明、小红\nCENTRAL PROBLEM: Li Ming's bicycle chain has broken, stranding him in the rain with a heavy bag of groceries, and he needs a tool to fix it.\nINCITING EVENT: Li Ming's bike chain falls off while he is riding home from the market.\nBEATS:\n  1. [Saturday afternoon, raining · Outside the apartment building stairs] · uses 女人、男人\n     WHAT CHANGES: Li Ming stops because his bike chain is broken. He sees his bike is useless and his wet groceries are heavy.\n     GOT THERE BY: N/A\n  2. [Immediately after · Outside the apartment building stairs] · uses 需要、必须\n     WHAT CHANGES: Xiao Hong walks out. Li Ming realizes he cannot carry the water and rice alone. He decides he must ask for a tool to fix the bike, not just carry bags.\n     BECAUSE: He needs a solution that solves the bike problem, not just the weight problem\n     GOT THERE BY: N/A\n  3. [A moment later · Outside the apartment building stairs]\n     WHAT CHANGES: Li Ming explains the situation. He points out that a man (男人) would typically have the right heavy tool, but his neighbor is a woman (女人). He asks if she has a wrench.\n     BECAUSE: He is assessing if Xiao Hong can solve the specific mechanical problem based on common stereotypes/tools available\n     GOT THERE BY: N/A\n  4. [Immediately after · Xiao Hong's apartment (ground floor)] · uses 如果\n     WHAT CHANGES: Xiao Hong agrees. She says if (如果) he comes in, she can find a tool. Li Ming pushes the bike into her living room.\n     BECAUSE: Xiao Hong wanted to help and had a solution\n     GOT THERE BY: Pushed bike into ground-floor unit next door\n  5. [10 minutes later · Xiao Hong's apartment] · uses 帮助\n     WHAT CHANGES: Xiao Hong finds a wrench. She helps (帮助) Li Ming fix the chain. They talk about how good it is that neighbors help each other.\n     BECAUSE: The tool was found and the problem was mechanical\n     GOT THERE BY: N/A\n  6. [After fixing the bike · Outside the apartment building] · uses 关系、而且\n     WHAT CHANGES: Li Ming fixes the last bolt. He thanks Xiao Hong. He reflects that their relationship (关系) is good because they help each other.\n     BECAUSE: The bike is fixed and the interaction is complete\n     GOT THERE BY: Walked back out to the entryway\nRESOLUTION: Li Ming fixes his bike with Xiao Hong's tool, realizing that their neighborly relationship is strengthened by this act of assistance.\nTARGET WORDS:\n  女人 → beat 1: Li Ming observes Xiao Hong and mentally categorizes her as a woman (女人) to assess if she might have the 'heavy tools' he assumes men usually keep, highlighting his initial hesitation or assessment.\n  男人 → beat 1: Contrasting with the woman (Xiao Hong), Li Ming thinks about how a man (男人) might typically have a household toolkit, framing his surprise when she offers to help.\n  需要 → beat 2: Li Ming explicitly states he needs (需要) a wrench, not just strength, shifting the request from carrying help to mechanical help.\n  必须 → beat 2: Li Ming reasons that he must (必须) ask her now because the rain is getting heavier and he cannot leave the groceries there.\n  如果 → beat 4: Xiao Hong uses 'if' (如果) to set the condition: 'If you come in, I will look for a tool,' inviting him into her private space to solve the problem.\n  帮助 → beat 5: Xiao Hong is actively helping (帮助) Li Ming turn the wrench, making this the core action of the story.\n  关系 → beat 6: Li Ming concludes that this event improved their relationship (关系), moving the story theme from transactional help to social bonding.\n  而且 → beat 6: Li Ming adds that the relationship is good AND (而且) he learned she has many tools, reinforcing the positive outcome.",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "女人": 1,
+            "男人": 1,
+            "需要": 2,
+            "必须": 2,
+            "如果": 4,
+            "帮助": 5,
+            "关系": 6,
+            "而且": 6
+          }
+        },
+        "score": {
+          "label": "A",
+          "contradiction": false,
+          "overall": 7,
+          "reason": "Strong causal chain and timeline, but the stereotypical \"men have tools\" justification for using 男人/女人 feels forced and naturalness for 如果 is weak.",
+          "causal": 8,
+          "chronology": 10,
+          "plausibility": 7,
+          "simplicity": 9,
+          "targetFit": 6,
+          "suitability": 8
+        },
+        "acceptable": true
+      },
+      {
+        "label": null,
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Neighborly Visit",
+          "setting": "A residential apartment building in the afternoon.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming needs to deliver a package to Xiao Hong's neighbor, but he is afraid of speaking to a stranger.",
+          "incitingEvent": "Li Ming receives a package at his door intended for the vacant apartment next door, which Xiao Hong said her neighbor currently occupies.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "2:00 PM",
+              "where": "Li Ming's apartment building hallway",
+              "what": "Li Ming holds the package and knocks on the neighbor's door. Xiao Hong opens it, looking surprised. Li Ming explains that the courier delivered this by mistake, but Xiao Hong says her neighbor moved back in two days ago.",
+              "because": "the story opens",
+              "targets": [],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "2:05 PM",
+              "where": "Li Ming's apartment building hallway",
+              "what": "Xiao Hong explains that the neighbor is a new tenant and is very shy. Li Ming is nervous because he doesn't speak good Chinese and doesn't know if he should go in. Xiao Hong tells him that good neighbors help each other.",
+              "because": "Li Ming needs to know if he has the authority or social permission to enter.",
+              "targets": [
+                "帮助"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "2:07 PM",
+              "where": "The neighbor's apartment (living room)",
+              "what": "Li Ming walks in with Xiao Hong's permission. He sees an older man sitting in the chair. Li Ming is confused because he expected a young student based on Xiao Hong's previous description or general assumption.",
+              "because": "They entered the apartment to deliver the package.",
+              "arrivedHow": "Walked through the open door",
+              "targets": [
+                "男人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "2:08 PM",
+              "where": "The neighbor's apartment (living room)",
+              "what": "The man looks sad and tired. Xiao Hong translates that he is sick and lonely. Li Ming realizes that this person needs more than just a package; he needs a friend. Li Ming thinks about how difficult it is to be new in a city.",
+              "because": "Li Ming observes the man's emotional state upon entering.",
+              "targets": [
+                "需要"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "2:10 PM",
+              "where": "The neighbor's apartment (living room)",
+              "what": "Li Ming decides to sit down and talk. He says that if he stays, he can translate for the man or just be nice. Xiao Hong smiles and says their relationship will become good.",
+              "because": "Li Ming wants to solve the problem of the man's loneliness.",
+              "targets": [
+                "如果",
+                "关系"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 6,
+              "when": "2:15 PM",
+              "where": "The neighbor's apartment (living room)",
+              "what": "The man smiles for the first time. Li Ming gives the package. They all agree that neighbors must be kind. The problem of the delivered item is solved, and a new friendship starts.",
+              "because": "Li Ming successfully connected with the neighbor.",
+              "targets": [
+                "必须"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "Li Ming delivers the package and befriends the lonely new neighbor, resolving his fear and delivering the item.",
+          "targetPlan": [
+            {
+              "word": "帮助",
+              "beat": 2,
+              "why": "Xiao Hong uses this word to explain the moral reason why Li Ming should interact with the neighbor, establishing the theme of neighborly aid."
+            },
+            {
+              "word": "男人",
+              "beat": 3,
+              "why": "Li Ming needs to identify the person he is facing; since the gender was ambiguous or unexpected based on prior assumptions, he specifically categorizes the tenant as a 'man'."
+            },
+            {
+              "word": "需要",
+              "beat": 4,
+              "why": "Li Ming realizes the superficial task (delivery) is less important than the emotional void, so he recognizes the neighbor 'needs' connection, not just goods."
+            },
+            {
+              "word": "如果",
+              "beat": 5,
+              "why": "Li Ming proposes a hypothetical action to overcome his hesitation: 'If I stay, then...'"
+            },
+            {
+              "word": "关系",
+              "beat": 5,
+              "why": "Xiao Hong confirms that the social bond between them and the neighbor is improving, using the word to describe the state of their connection."
+            },
+            {
+              "word": "必须",
+              "beat": 6,
+              "why": "The characters reflect on the moral conclusion of the interaction, stating that kindness is a requirement in community living."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "target_unplaced",
+              "message": "女人 has no beat where it naturally belongs"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "帮助": 2,
+            "男人": 3,
+            "需要": 4,
+            "如果": 5,
+            "关系": 5,
+            "必须": 6
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:openai/gpt-oss-120b/low",
+        "attempt": 1,
+        "blueprint": {
+          "title": "A Neighbor Helps Fix a Flat Tire",
+          "setting": "A residential street in a Chinese city, weekday morning to afternoon",
+          "cast": [
+            "李明",
+            "小红",
+            "小明"
+          ],
+          "problem": "李明的自行车胎漏气，必须在上班前修好。",
+          "incitingEvent": "李明在家门口发现自行车轮胎没气，急需帮助。",
+          "beats": [
+            {
+              "id": 1,
+              "when": "早上七点",
+              "where": "李明家门口",
+              "what": "李明检查自行车发现轮胎漏气，决定去修理。",
+              "because": "故事开场，展示问题的出现。",
+              "arrivedHow": "",
+              "targets": [
+                "需要"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "早上七点十五分",
+              "where": "街道上",
+              "what": "李明遇到正在遛狗的小红，向她请求帮助。",
+              "because": "因为李明需要帮助才能继续前进。",
+              "arrivedHow": "",
+              "targets": [
+                "帮助",
+                "女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "早上七点二十分",
+              "where": "小红的家门口",
+              "what": "小红说她的兄弟小明（男人）会修自行车，叫他来。",
+              "because": "因为小红想帮助李明，但自己不会修车。",
+              "arrivedHow": "",
+              "targets": [
+                "男人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "早上七点三十分",
+              "where": "李明的自行车旁",
+              "what": "小明到达后帮李明修好轮胎，两人聊起邻里关系。",
+              "because": "因为小明来了，问题得以解决的关键。",
+              "arrivedHow": "",
+              "targets": [
+                "帮助",
+                "关系"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "早上七点四十五分",
+              "where": "街道尽头的咖啡店",
+              "what": "李明感谢小红和小明，约定以后互相帮助，如果有需要也一起解决。",
+              "because": "因为问题已解决，角色之间建立了更紧密的联系。",
+              "arrivedHow": "他们一起走到咖啡店。",
+              "targets": [],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "上午八点",
+              "where": "公司门口",
+              "what": "李明骑好自行车准时到达公司，问题圆满结束。",
+              "because": "因为自行车已修好，李明能够按时上班。",
+              "arrivedHow": "",
+              "targets": [],
+              "lines": 3
+            }
+          ],
+          "resolution": "自行车被修好，李明准时上班，邻居之间建立了互助的关系。",
+          "targetPlan": [
+            {
+              "word": "需要",
+              "beat": 1,
+              "why": "李明发现自行车漏气后，需要找人帮助才能继续上班。"
+            },
+            {
+              "word": "帮助",
+              "beat": 2,
+              "why": "李明向路上的小红请求帮助修车。"
+            },
+            {
+              "word": "女人",
+              "beat": 2,
+              "why": "小红是出现的女性角色，李明向她求助。"
+            },
+            {
+              "word": "男人",
+              "beat": 3,
+              "why": "小红提到她的兄弟小明是男性，能够修车。"
+            },
+            {
+              "word": "帮助",
+              "beat": 4,
+              "why": "小明实际帮助李明修好轮胎。"
+            },
+            {
+              "word": "关系",
+              "beat": 4,
+              "why": "在修车过程中，三人讨论了邻里关系的重要性。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 2 moves to \"街道上\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 3 moves to \"小红的家门口\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 4 moves to \"李明的自行车旁\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 6 moves to \"公司门口\" without saying how"
+            },
+            {
+              "code": "target_unjustified",
+              "message": "帮助 has no reason for belonging in beat 4"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红",
+            "小明"
+          ],
+          "beats": 6,
+          "placed": {
+            "需要": 1,
+            "帮助": 2,
+            "女人": 2,
+            "男人": 3,
+            "关系": 4
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:openai/gpt-oss-120b/low",
+        "attempt": 2,
+        "blueprint": {
+          "title": "A neighbor needs help moving a heavy box",
+          "setting": "A modern Chinese apartment building, summer afternoon",
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "problem": "李明's elderly female neighbour cannot lift a heavy box up to her apartment",
+          "incitingEvent": "小红 sees the neighbour struggling with the box in the hallway and calls 李明 for help",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Afternoon, just after lunch",
+              "where": "Building hallway near the elevators",
+              "what": "小红 meets the neighbour, a 老女人, trying to carry a big box up the stairs",
+              "because": "the story opens with the neighbour in difficulty",
+              "arrivedHow": "",
+              "targets": [
+                "女人"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "Immediately after",
+              "where": "Same hallway",
+              "what": "小红 asks 李明, who is returning from work, for help because the box is too heavy",
+              "because": "beat 1 shows the need, so 小红 calls 李明",
+              "arrivedHow": "",
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "A few minutes later",
+              "where": "Staircase leading to the neighbour's floor",
+              "what": "李明 and 小红 try to lift the box, but realize they need more strength; they spot a 男子 (male passerby) nearby",
+              "because": "beat 2 creates the need for extra assistance",
+              "arrivedHow": "",
+              "targets": [
+                "男人",
+                "帮助"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "Shortly after",
+              "where": "Staircase, now with the 男子 joining",
+              "what": "The three of them lift the box together; 李明 mentions the neighbour's 关系 (relationship) as a good neighbor, and they feel it’s 必须 (must) help each other",
+              "because": "beat 3 introduces the man who can help, leading to collaborative effort",
+              "arrivedHow": "",
+              "targets": [
+                "关系",
+                "必须"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "Soon after reaching the floor",
+              "where": "Neighbour's apartment doorway",
+              "what": "They place the box inside; the neighbour thanks them, and 小红 says that if anyone needs help again, they should call her mom, who is a doctor, showing community support",
+              "because": "beat 4 resolves the lifting problem and sets up future help",
+              "arrivedHow": "they walk into the neighbour's apartment together",
+              "targets": [
+                "如果",
+                "帮助"
+              ],
+              "lines": 8
+            }
+          ],
+          "resolution": "The heavy box is successfully moved into the neighbour’s apartment, and the neighbour feels grateful, strengthening the neighbourly 关系.",
+          "targetPlan": [
+            {
+              "word": "关系",
+              "beat": 4,
+              "why": "李明 talks about the neighbourly relationship (关系) to emphasize why they feel they must help."
+            },
+            {
+              "word": "女人",
+              "beat": 1,
+              "why": "The neighbour is described as an elderly woman (女人) struggling with the box."
+            },
+            {
+              "word": "男人",
+              "beat": 3,
+              "why": "A passing male (男人) appears and is asked to join the effort."
+            },
+            {
+              "word": "帮助",
+              "beat": 2,
+              "why": "小红 asks 李明 for help (帮助) because the box is too heavy."
+            },
+            {
+              "word": "需要",
+              "beat": 2,
+              "why": "小红 says they 需要 (need) extra hands to move the box."
+            },
+            {
+              "word": "如果",
+              "beat": 5,
+              "why": "小红 says 如果 (if) anyone needs help later, they can call her mom."
+            },
+            {
+              "word": "必须",
+              "beat": 4,
+              "why": "李明 says it is 必须 (must) to help neighbors in such situations."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 3 moves to \"Staircase leading to the neighbour's floor\" without saying how"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "beats": 5,
+          "placed": {
+            "关系": 4,
+            "女人": 1,
+            "男人": 3,
+            "帮助": 2,
+            "需要": 2,
+            "如果": 5,
+            "必须": 4
+          }
+        },
+        "score": null,
+        "acceptable": false
+      }
+    ],
+    "judgeRaw": "PLAN A: CAUSAL 8 CHRONOLOGY 10 PLAUSIBILITY 7 SIMPLICITY 9 TARGETFIT 6 SUITABILITY 8 CONTRADICTION no OVERALL 7 — Strong causal chain and timeline, but the stereotypical \"men have tools\" justification for using 男人/女人 feels forced and naturalness for 如果 is weak.",
+    "selection": {
+      "code": null,
+      "label": "A",
+      "planner": "groq:qwen/qwen3.6-27b/none",
+      "attempt": 2,
+      "allocation": [
+        {
+          "beat": 1,
+          "lines": 5,
+          "from": 1,
+          "to": 5
+        },
+        {
+          "beat": 2,
+          "lines": 4,
+          "from": 6,
+          "to": 9
+        },
+        {
+          "beat": 3,
+          "lines": 5,
+          "from": 10,
+          "to": 14
+        },
+        {
+          "beat": 4,
+          "lines": 4,
+          "from": 15,
+          "to": 18
+        },
+        {
+          "beat": 5,
+          "lines": 5,
+          "from": 19,
+          "to": 23
+        },
+        {
+          "beat": 6,
+          "lines": 5,
+          "from": 24,
+          "to": 28
+        }
+      ],
+      "targetPlan": [
+        {
+          "word": "女人",
+          "beat": 1,
+          "why": "Li Ming observes Xiao Hong and mentally categorizes her as a woman (女人) to assess if she might have the 'heavy tools' he assumes men usually keep, highlighting his initial hesitation or assessment."
+        },
+        {
+          "word": "男人",
+          "beat": 1,
+          "why": "Contrasting with the woman (Xiao Hong), Li Ming thinks about how a man (男人) might typically have a household toolkit, framing his surprise when she offers to help."
+        },
+        {
+          "word": "需要",
+          "beat": 2,
+          "why": "Li Ming explicitly states he needs (需要) a wrench, not just strength, shifting the request from carrying help to mechanical help."
+        },
+        {
+          "word": "必须",
+          "beat": 2,
+          "why": "Li Ming reasons that he must (必须) ask her now because the rain is getting heavier and he cannot leave the groceries there."
+        },
+        {
+          "word": "如果",
+          "beat": 4,
+          "why": "Xiao Hong uses 'if' (如果) to set the condition: 'If you come in, I will look for a tool,' inviting him into her private space to solve the problem."
+        },
+        {
+          "word": "帮助",
+          "beat": 5,
+          "why": "Xiao Hong is actively helping (帮助) Li Ming turn the wrench, making this the core action of the story."
+        },
+        {
+          "word": "关系",
+          "beat": 6,
+          "why": "Li Ming concludes that this event improved their relationship (关系), moving the story theme from transactional help to social bonding."
+        },
+        {
+          "word": "而且",
+          "beat": 6,
+          "why": "Li Ming adds that the relationship is good AND (而且) he learned she has many tools, reinforcing the positive outcome."
+        }
+      ]
+    },
+    "draft": {
+      "title": "好邻居",
+      "content": "今天是星期六下午，外面正在下雨。\n李明骑着自行车去超市买东西。\n突然，自行车链条掉了，他只好停下来。\n他看着地上的自行车，心里很着急。\n他想，旁边那个女人能帮我吗？\n他需要修理工具，但是雨越下越大了。\n他必须尽快解决问题，不能把菜放在雨里。\n他想，通常男人家里会有工具箱。\n但是他的邻居是一位年轻的邻居。\n邻居小红从楼里走了出来。\n李明想到了，一般的男人可能有扳手。\n但是小红是一个女人，她会有吗？\n他决定问一问，心里有点不好意思。\n他指着自行车，问小红有没有修理的工具。\n小红站在门口，友好地看着他。\n如果进屋，我可以找一下工具。\n李明把自行车推到了小红的客厅里。\n他非常感谢小红的帮助。\n十分钟后，小红找到了一个扳手。\n她开始帮助李明修理自行车的链条。\n两个人一起工作，很快就有进展了。\n李明觉得，邻居之间互相帮助真好。\n链条修好了，李明试着骑了一下。\n自行车恢复正常，可以骑走了。\n李明谢谢小红，说我们的关系很好。\n而且，他还发现小红家里有很多好用的工具。\n李明认为，这是很好的邻居关系。\n他高兴地骑车离开了。",
+      "lines": 28,
+      "attempts": [
+        {
+          "attempt": 1,
+          "ok": true,
+          "error": null
+        }
+      ]
+    },
+    "before": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "invalid_manifest",
+          "message": "manifest is invalid: invalid length bounds"
+        }
+      ],
+      "reviews": [],
+      "warnings": [],
+      "metrics": {}
+    },
+    "preRepairCritique": {
+      "scores": {
+        "natural": 4,
+        "coherence": 3,
+        "integration": 2,
+        "level": 5,
+        "human": 3,
+        "interest": 4
+      },
+      "strengths": "The basic vocabulary used for the setting (rain, bicycle, supermarket) is appropriate for the level.",
+      "weaknesses": "The story contains severe logical contradictions (pushing a bike into a living room, finding tools after building unrealistic gender stereotypes), resulting in incoherent nonsense.",
+      "mechanical": true,
+      "contradiction": true,
+      "contradictionDetail": "the narrator explicitly thinks neighbors are usually men with tools, then identifies the neighbor as \"a woman\" to doubt she has tools, yet she immediately has the exact \"wrench\" needed; additionally, pushing a bicycle into a typical apartment living room is physically improbable and breaks immersion.",
+      "overall": 4
+    },
+    "decision": {
+      "ok": false,
+      "code": "DRAFT_QUALITY_FAILED",
+      "reason": "overall 4 < 6; natural 4 < 5; coherence 3 < 5; integration 2 < 5; human 3 < 5; the judge reported a serious contradiction or nonsensical plot: the narrator explicitly thinks neighbors are usually men with tools, then identifies the neighbor as \"a woman\" to doubt she has tools, yet she immediately has the exact \"wrench\" needed; additionally, pushing a bicycle into a typical apartment living room is physically improbable and breaks immersion.",
+      "quality": {
+        "ok": false,
+        "code": "DRAFT_QUALITY_FAILED",
+        "reasons": [
+          "overall 4 < 6",
+          "natural 4 < 5",
+          "coherence 3 < 5",
+          "integration 2 < 5",
+          "human 3 < 5",
+          "the judge reported a serious contradiction or nonsensical plot: the narrator explicitly thinks neighbors are usually men with tools, then identifies the neighbor as \"a woman\" to doubt she has tools, yet she immediately has the exact \"wrench\" needed; additionally, pushing a bicycle into a typical apartment living room is physically improbable and breaks immersion."
+        ],
+        "scores": {
+          "natural": 4,
+          "coherence": 3,
+          "integration": 2,
+          "level": 5,
+          "human": 3,
+          "interest": 4
+        },
+        "overall": 4,
+        "mechanical": true,
+        "contradiction": true,
+        "contradictionDetail": "the narrator explicitly thinks neighbors are usually men with tools, then identifies the neighbor as \"a woman\" to doubt she has tools, yet she immediately has the exact \"wrench\" needed; additionally, pushing a bicycle into a typical apartment living room is physically improbable and breaks immersion.",
+        "thresholds": {
+          "overall": 6,
+          "natural": 5,
+          "coherence": 5,
+          "integration": 5,
+          "human": 5
+        }
+      },
+      "repairability": null
+    },
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "blueprint-2-L3-001",
+    "status": "rejected",
+    "title": "好邻居",
+    "content": "今天是星期六下午，外面正在下雨。\n李明骑着自行车去超市买东西。\n突然，自行车链条掉了，他只好停下来。\n他看着地上的自行车，心里很着急。\n他想，旁边那个女人能帮我吗？\n他需要修理工具，但是雨越下越大了。\n他必须尽快解决问题，不能把菜放在雨里。\n他想，通常男人家里会有工具箱。\n但是他的邻居是一位年轻的邻居。\n邻居小红从楼里走了出来。\n李明想到了，一般的男人可能有扳手。\n但是小红是一个女人，她会有吗？\n他决定问一问，心里有点不好意思。\n他指着自行车，问小红有没有修理的工具。\n小红站在门口，友好地看着他。\n如果进屋，我可以找一下工具。\n李明把自行车推到了小红的客厅里。\n他非常感谢小红的帮助。\n十分钟后，小红找到了一个扳手。\n她开始帮助李明修理自行车的链条。\n两个人一起工作，很快就有进展了。\n李明觉得，邻居之间互相帮助真好。\n链条修好了，李明试着骑了一下。\n自行车恢复正常，可以骑走了。\n李明谢谢小红，说我们的关系很好。\n而且，他还发现小红家里有很多好用的工具。\n李明认为，这是很好的邻居关系。\n他高兴地骑车离开了。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "invalid_manifest",
+          "message": "manifest is invalid: invalid length bounds"
+        }
+      ],
+      "reviews": [],
+      "warnings": [],
+      "metrics": {}
+    },
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
