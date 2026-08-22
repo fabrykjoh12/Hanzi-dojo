@@ -160,7 +160,10 @@ export function readingCoveragePct(cards, totalActiveWords) {
 // due_at is NOT NULL in the schema so it must hold something; state 'new' makes
 // its value irrelevant. The DB's cards_unverified_claim_is_inert CHECK enforces
 // this shape server-side, so no client can write a claim with scheduler state.
-export function priorKnownCardRow(userId, vocabId, source, now = Date.now()) {
+// `readyAt` is when calibration may first offer this claim for checking. It
+// rides in due_at, which is NOT NULL and otherwise unused here: state 'new'
+// means isCardDue() ignores it, so it steers calibration and nothing else.
+export function priorKnownCardRow(userId, vocabId, source, now = Date.now(), readyAt = null) {
   const stamp = new Date(now).toISOString()
   return {
     user_id: userId,
@@ -177,7 +180,7 @@ export function priorKnownCardRow(userId, vocabId, source, now = Date.now()) {
     elapsed_days: 0,
     interval_days: 0,
     learning_step: 0,
-    due_at: stamp,
+    due_at: readyAt || stamp,
     prior_known_at: stamp,
     prior_source: source,
     verified_at: null,

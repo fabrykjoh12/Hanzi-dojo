@@ -16,12 +16,14 @@ export const SEED_BATCH_SIZE = 500
 // seedClaim({ userId, vocabIds, perDay, source, now }) → { inserted, batches }
 //
 // `vocabIds` must already be in frequency order (see spreadDueDates). `source`
-// is 'placement' | 'paste' | 'checklist', recorded for analytics only.
+// is one of knowledgeState.PRIOR_SOURCES and is now PERSISTED on every row as
+// `prior_source` — until this change it existed only inside an analytics event,
+// so there was no way to ask which of a learner's cards were claimed.
 export async function seedClaim({ userId, vocabIds, perDay, source, now = Date.now() }) {
   const spread = spreadDueDates(vocabIds, perDay, now)
   if (!spread.length) return { inserted: 0, batches: 0 }
 
-  const rows = seedCardRows(userId, spread, now)
+  const rows = seedCardRows(userId, spread, now, source)
   let batches = 0
   for (let i = 0; i < rows.length; i += SEED_BATCH_SIZE) {
     const chunk = rows.slice(i, i + SEED_BATCH_SIZE)

@@ -2,18 +2,25 @@
 //
 // A "claim" is a set of vocab ids the learner says they already know, from a
 // placement tier, a pasted word list, or the browsable checklist. This module
-// turns a claim into ordinary FSRS review cards whose due dates are spread over
-// the coming days, so the claim is verified a few words at a time instead of
-// dumping hundreds of reviews on the learner at once.
+// turns a claim into INERT prior-knowledge rows (see knowledgeState.js) whose
+// calibration dates are spread over the coming days, so the claim is checked a
+// few words at a time instead of arriving as one wall.
+//
+// What changed, and why: a claim used to be written as a finished FSRS review
+// card — state 'review', stability exactly at the mastery threshold, learned
+// true, reps 0. That asserted three weeks of proven recall on the strength of
+// one tap, and was indistinguishable in the database from a word the learner
+// had genuinely studied. A claim now carries no scheduler state at all; the
+// first real graded review is what creates it.
 //
 // Nothing here talks to the network — see priorKnowledgeSeed.js for the write.
 
-import { MASTERY_STABILITY_DAYS } from './mastery'
+import { priorKnownCardRow } from './knowledgeState'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 
 // How fast the claimed words come back to be checked. The learner picks one of
-// these at claim time; the number is nothing more than the due-date spread.
+// these at claim time; the number is nothing more than the calibration spread.
 export const PACING = [
   { key: 'relaxed', label: 'Relaxed', perDay: 8 },
   { key: 'steady', label: 'Steady', perDay: 15 },
@@ -33,6 +40,10 @@ export function estimateDays(count, perDay) {
 // (they get the ordering from `order('sort_order')` on the vocabulary query).
 // The first `perDay` ids land on day 0 (today), so the first check-ups appear in
 // the learner's very next session.
+//
+// The dates it produces are CALIBRATION-ready dates, not due dates: they land
+// in due_at on a row whose state is 'new', which isCardDue() never reports as
+// due. They steer the calibration queue and nothing else.
 export function spreadDueDates(ids, perDay, now = Date.now()) {
   if (!ids || !ids.length || !perDay || perDay <= 0) return []
   return ids.map((vocabId, i) => {
@@ -45,29 +56,12 @@ export function spreadDueDates(ids, perDay, now = Date.now()) {
   })
 }
 
-// seedCardRows(userId, spread, now) → rows ready to upsert into `cards`.
+// seedCardRows(userId, spread, now, source) → inert rows ready to upsert.
 //
-// Stability sits exactly at the mastery threshold, so a claimed word counts as
-// known everywhere from day one. `scheduled_days` is the spread offset rather
-// than the stability, which makes the first check-up an EARLY review relative to
-// a 21-day stability — FSRS then grants less stability on success, which is the
-// right conservative bias for a claim we have not verified yet.
-export function seedCardRows(userId, spread, now = Date.now()) {
-  const lastReview = new Date(now).toISOString()
-  return (spread || []).map(entry => ({
-    user_id: userId,
-    vocab_id: entry.vocabId,
-    state: 'review',
-    learned: true,
-    stability: MASTERY_STABILITY_DAYS,
-    difficulty: 5,
-    reps: 0,
-    lapses: 0,
-    // Never true outside the SRS grading flow (CLAUDE.md §13.3).
-    is_easy: false,
-    last_review: lastReview,
-    scheduled_days: entry.dayOffset,
-    elapsed_days: 0,
-    due_at: entry.dueAt,
-  }))
+// Every FSRS field is absent rather than zero-with-meaning, so the claim cannot
+// be read as evidence by any predicate, filtered or not. The database enforces
+// the same shape through cards_unverified_claim_is_inert.
+export function seedCardRows(userId, spread, now = Date.now(), source = 'placement') {
+  return (spread || []).map(entry =>
+    priorKnownCardRow(userId, entry.vocabId, source, now, entry.dueAt))
 }
