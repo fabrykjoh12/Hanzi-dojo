@@ -6,6 +6,7 @@ import { outboxDelete } from './offline'
 import { getTrackCards } from './data'
 import { studyFloorLevel } from './levelScope'
 import { schedule, previewLabels, endOfLocalDay } from './srs'
+import { calibrationUpdates } from './calibration'
 import { weakCards } from './studyAvailability'
 import { buildStudySession, takePreparedSession } from './sessionPrep'
 import { flipTransform, takeDeskHandoff } from './deskTransition'
@@ -624,6 +625,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     }
   }
 
+  // A prior-knowledge check is answered yes/no; the two buttons pass the
+  // canonical grades (Easy / Again) straight into handleGrade, so the write,
+  // the review log and the undo snapshot are all the ordinary grade path.
+
   const applyGrade = async (grade) => {
     const card = queue[0]
     // The learner's retention dial lives on the profile, so pass it explicitly:
@@ -631,7 +636,12 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     // device-local mirror to a fallback for when the column isn't loaded yet
     // (e.g. the migration is still unapplied). Without this a fresh device would
     // schedule at the default until Settings was opened once.
-    const res = schedule(card, grade, { targetRetention: profile.target_retention })
+    // A calibration check is this word's FIRST real review: srs.buildFsrsCard
+    // returns a fresh createEmptyCard() for any row in state 'new', so there is
+    // no seeded stability to inherit. calibrationUpdates adds verified_at.
+    const res = card.isCalibration
+      ? calibrationUpdates(card, grade >= 2, { targetRetention: profile.target_retention })
+      : schedule(card, grade, { targetRetention: profile.target_retention })
     const online = isOnline()
 
     // A new grade invalidates any pending undo — its snapshot predates this one.
@@ -1535,7 +1545,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
               borderTop: '1px solid var(--surface-2)', paddingTop: layout.footerPadTop + 'px',
             }}>
               <span style={{ fontSize: '12px', color: 'var(--text-faint)', fontWeight: 650 }}>
-                {flipped ? 'How well did you remember this?' : (isTyped ? 'Type the reading, then check' : 'Recall first, then reveal')}
+                {card.isCalibration
+                  ? (flipped ? 'You told us you knew this one — did you?' : 'You told us you knew this one')
+                  : (flipped ? 'How well did you remember this?' : (isTyped ? 'Type the reading, then check' : 'Recall first, then reveal'))}
               </span>
             </div>
           )}
@@ -1607,15 +1619,25 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                   studyLayout shrinks the buttons instead, never past 44px. */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(4, minmax(0, 1fr))',
+                gridTemplateColumns: card.isCalibration
+                  ? 'repeat(2, minmax(0, 1fr))'
+                  : 'repeat(4, minmax(0, 1fr))',
                 gap: layout.gradeGap + 'px',
               }}>
-                {[
-                  { grade: 0, label: 'Again' },
-                  { grade: 1, label: 'Hard' },
-                  { grade: 2, label: 'Good' },
-                  { grade: 3, label: 'Easy' },
-                ].map(item => (
+                {(card.isCalibration
+                  ? [
+                    // Binary by design: a claim is a yes/no question, and asking
+                    // for a four-way self-assessment of a word the app has never
+                    // taught invites noise rather than signal.
+                    { grade: 0, label: 'Didn’t know it' },
+                    { grade: 3, label: 'I knew it' },
+                  ]
+                  : [
+                    { grade: 0, label: 'Again' },
+                    { grade: 1, label: 'Hard' },
+                    { grade: 2, label: 'Good' },
+                    { grade: 3, label: 'Easy' },
+                  ]).map(item => (
                   <GradeButton
                     key={item.grade}
                     grade={item.grade}
