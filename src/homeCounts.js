@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { fetchPagedResult } from './supabasePaging'
 import { countMastery } from './mastery'
+import { isPriorKnown, isLearned, isMastered } from './knowledgeState'
 import { studyFloorLevel } from './levelScope'
 import { endOfLocalDay } from './srs'
 import { dueLearningCards, dueReviewCards, weakCards } from './studyAvailability'
@@ -29,7 +30,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 6)
   const [cards, actsResult, grammarDueCount] = await Promise.all([
     getTrackCards(userId, track, {
-      columns: 'vocab_id, state, due_at, created_at, is_easy, learned, stability, lapses',
+      columns: 'vocab_id, state, due_at, created_at, is_easy, learned, stability, lapses, reps, prior_known_at',
     }),
     supabase
       .from('daily_activity')
@@ -64,8 +65,10 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const vocabIds = new Set((vocab || []).map(v => v.id))
 
   const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
+  // Claims excluded: a placement claim writes hundreds of rows at once, and
+  // counting them here zeroed the learner's daily new-card allowance on day one.
   const introducedToday = (cards || [])
-    .filter(c => new Date(c.created_at) >= startOfToday && vocabIds.has(c.vocab_id)).length
+    .filter(c => !isPriorKnown(c) && new Date(c.created_at) >= startOfToday && vocabIds.has(c.vocab_id)).length
   const remainingNew = Math.max(0, dailyNewCards - introducedToday)
 
   const startedVocabIds = new Set((cards || []).map(c => c.vocab_id))
@@ -130,8 +133,11 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   // Fluency counts: every level of the ACTIVE language only (not other
   // languages the user also studies) — which is exactly the scope of the
   // server-side fetch above. Named "lifetime" for continuity.
-  const lifetimeLearned = (cards || []).filter(c => c.learned).length
-  const lifetimeMastered = (cards || []).filter(c => (c.stability || 0) >= 21).length
+  // Through the canonical predicates: these read `learned` and a hardcoded 21
+  // directly, which both counted a fabricated claim as fluency and would have
+  // drifted if MASTERY_STABILITY_DAYS ever moved.
+  const lifetimeLearned = (cards || []).filter(isLearned).length
+  const lifetimeMastered = (cards || []).filter(isMastered).length
 
   return {
     newCount, learnCount, dueCount, easyCount, totalWords,

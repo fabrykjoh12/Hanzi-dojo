@@ -92,7 +92,7 @@ export async function getDailyStoryCard(userId, track, learnedCount, dateStr = t
     if (!story) return null
 
     // Reuse the cached card fetch rather than issuing a fourth query.
-    const cards = await getTrackCards(userId, track, { columns: 'vocab_id, state, due_at, stability, lapses' })
+    const cards = await getTrackCards(userId, track, { columns: 'vocab_id, state, due_at, stability, lapses, reps, learned, is_easy, prior_known_at' })
     const cardsMap = {}
     ;(cards || []).forEach(c => { cardsMap[c.vocab_id] = c })
     const vocabMap = {}

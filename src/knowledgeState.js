@@ -32,6 +32,14 @@ export const MASTERY_STABILITY_DAYS = 21
 // mastered — genuinely, which prior knowledge alone can never satisfy.
 export const TEST_UNLOCK_MASTERY_PCT = 0.9
 
+// The level test ALSO opens when this fraction of the level is readable —
+// genuine knowledge plus unverified claims. It is deliberately the same 0.9
+// bar, and it decides only who may SIT the test: passing still requires 30 of
+// 30 correct, and passing writes no per-word FSRS state. This is the route that
+// stops an experienced learner having to calibrate hundreds of words one at a
+// time purely to progress.
+export const TEST_UNLOCK_COVERAGE_PCT = 0.9
+
 export const KNOWLEDGE = {
   UNKNOWN: 'unknown',
   PRIOR_KNOWN: 'prior_known',

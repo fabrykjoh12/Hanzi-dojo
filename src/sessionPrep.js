@@ -23,6 +23,7 @@ import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { cacheGet, cacheSet } from './offline'
 import { fetchPaged, fetchChunkedIn } from './supabasePaging'
+import { hasGenuineObservation, isPriorKnown } from './knowledgeState'
 import { studyFloorLevel } from './levelScope'
 import { missingVocabIds, mergeVocab } from './deckVocab'
 import { dueLearningCards, dueReviewCards } from './studyAvailability'
@@ -101,8 +102,11 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
 
   const startOfToday = new Date()
   startOfToday.setHours(0, 0, 0, 0)
+  // Prior-knowledge claims are excluded: a placement claim writes hundreds of
+  // rows in one moment, and counting them as "words introduced today" zeroed
+  // the learner's entire daily new-card allowance on the day they signed up.
   const introducedToday = (cards || [])
-    .filter(c => new Date(c.created_at) >= startOfToday && vocabById[c.vocab_id]).length
+    .filter(c => !isPriorKnown(c) && new Date(c.created_at) >= startOfToday && vocabById[c.vocab_id]).length
   const remainingNew = Math.max(0, profile.daily_new_cards - introducedToday)
 
   const now = new Date()
@@ -131,12 +135,15 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
   // First-run detection: a brand-new learner (no cards anywhere on the
   // account) gets a gentle, capped first session. Only queried when this
   // level is empty; any failure falls back to a normal session.
+  // Genuine study only: a learner whose very first act was a placement claim
+  // has still never studied a card, and must still get the gentle first session.
   let firstRun = false
-  if ((cards || []).length === 0) {
+  if (!(cards || []).some(hasGenuineObservation)) {
     try {
       const { count } = await supabase
         .from('cards').select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
+        .gte('reps', 1)
       firstRun = isFirstRunSession({ mode, accountCardCount: count || 0 })
     } catch { /* offline / error — treat as a normal session (no cap) */ }
   }

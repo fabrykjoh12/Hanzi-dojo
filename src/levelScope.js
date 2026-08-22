@@ -1,3 +1,5 @@
+import { hasGenuineObservation } from './knowledgeState'
+
 // Cumulative level scope — pure and testable.
 //
 // A track's `current_level` is the highest level the user has unlocked. The
@@ -28,9 +30,19 @@ function cardLevel(card) {
 }
 
 // studyFloorLevel(cards, currentLevel) → the lowest level in the cumulative deck.
+//
+// Only GENUINELY studied cards move the floor. A prior-knowledge claim is an
+// assertion about the past, not a record of study, so it must not drag the
+// floor down: a learner placed into HSK 3 who claimed HSK 1-2 has not started
+// studying at HSK 1, and pulling the floor there would widen the session
+// vocabulary window and re-scope Home's level-progress denominator to ~950
+// words the learner never agreed to study. This is what the module's own note
+// above always intended; before prior knowledge was distinguishable there was
+// no way to express it.
 export function studyFloorLevel(cards, currentLevel) {
   let floor = null
   for (const c of cards || []) {
+    if (!hasGenuineObservation(c)) continue
     const lvl = cardLevel(c)
     if (lvl != null && (floor == null || lvl < floor)) floor = lvl
   }

@@ -49,7 +49,7 @@ describe('hasActiveFilters', () => {
 describe('DICT_FILTERS', () => {
   it('leads with All and covers the key states', () => {
     expect(DICT_FILTERS[0]).toEqual({ key: 'all', label: 'All' })
-    expect(DICT_FILTERS.map(f => f.key)).toEqual(['all', 'in_deck', 'learning', 'mastered', 'not_started'])
+    expect(DICT_FILTERS.map(f => f.key)).toEqual(['all', 'in_deck', 'learning', 'prior_known', 'mastered', 'not_started'])
     expect(DICT_FILTERS.every(f => f.label)).toBe(true)
   })
 })

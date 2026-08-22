@@ -16,7 +16,7 @@ describe('wordStatus', () => {
   })
 
   it('exposes the bucket order', () => {
-    expect(MAP_BUCKETS).toEqual(['mastered', 'known', 'learning', 'new'])
+    expect(MAP_BUCKETS).toEqual(['mastered', 'known', 'prior_known', 'learning', 'new'])
   })
 })
 

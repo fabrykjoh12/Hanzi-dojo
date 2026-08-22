@@ -6,6 +6,7 @@ import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { PageHeader } from './panels'
 import { isLearned, isMastered } from './mastery'
+import { isPriorKnown } from './knowledgeState'
 import { cleanMeaning } from './cleanMeaning'
 import { useIsMobile } from './useIsMobile'
 import { SecondaryButton } from './ui'
@@ -24,6 +25,7 @@ const STATUS = {
   new: { label: 'New', color: '#71717A' },
   learning: { label: 'Learning', color: '#D97706' },
   learned: { label: 'Learned', color: '#3E63DD' },
+  prior_known: { label: 'Previously known', color: '#9A6A15' },
   mastered: { label: 'Mastered', color: '#2F9E6D' },
 }
 
@@ -31,6 +33,8 @@ function statusOf(card) {
   if (!card) return 'new'
   if (isMastered(card)) return 'mastered'
   if (isLearned(card)) return 'learned'
+  // Told to us, not yet checked — see knowledgeState.js.
+  if (isPriorKnown(card)) return 'prior_known'
   return 'learning'
 }
 
@@ -78,7 +82,7 @@ export default function Words({ session, profile, track, onBack }) {
           .order('id', { ascending: true })),
         getTrackCards(session.user.id, track, {
           level: track.current_level,
-          columns: 'vocab_id, state, learned, stability, lapses',
+          columns: 'vocab_id, state, learned, stability, lapses, reps, prior_known_at',
         }),
       ])
       if (cancelled) return
@@ -105,7 +109,7 @@ export default function Words({ session, profile, track, onBack }) {
   }, [vocab, cardByVocab, filter, query])
 
   const counts = useMemo(() => {
-    const c = { all: vocab.length, new: 0, learning: 0, learned: 0, mastered: 0 }
+    const c = { all: vocab.length, new: 0, learning: 0, learned: 0, prior_known: 0, mastered: 0 }
     for (const v of vocab) c[statusOf(cardByVocab[v.id])] += 1
     return c
   }, [vocab, cardByVocab])
@@ -169,6 +173,7 @@ export default function Words({ session, profile, track, onBack }) {
             { key: 'new', ...STATUS.new },
             { key: 'learning', ...STATUS.learning },
             { key: 'learned', ...STATUS.learned },
+            { key: 'prior_known', ...STATUS.prior_known },
             { key: 'mastered', ...STATUS.mastered },
           ].map(f => {
             const active = filter === f.key

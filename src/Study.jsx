@@ -509,7 +509,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         supabase.from('stories').select('id, title, content, tier, story_number, level')
           .eq('language', track.language).eq('system', track.system)
           .lte('level', track.current_level).eq('is_published', true),
-        fetchPaged(() => supabase.from('cards').select('vocab_id, is_easy, state, learned')
+        fetchPaged(() => supabase.from('cards').select('vocab_id, is_easy, state, learned, reps, stability, prior_known_at')
           .eq('user_id', session.user.id)
           .order('vocab_id', { ascending: true })),
         supabase.from('story_reads').select('story_id').eq('user_id', session.user.id),
