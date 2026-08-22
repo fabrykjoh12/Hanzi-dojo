@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { fetchPaged } from './supabasePaging'
 import { getAudioUrl } from './utils'
 import { cacheSet } from './offline'
 import { ensureAudio } from './audioCache'
@@ -14,12 +15,14 @@ import { ensureAudio } from './audioCache'
 export async function prefetchLevel(track, level, onProgress) {
   let vocab = []
   try {
-    const { data } = await supabase
+    // Paged: HSK 5/6 levels are past the 1000-row cap — an unpaged read
+    // silently prefetched only part of the level for offline use.
+    vocab = await fetchPaged(() => supabase
       .from('vocabulary').select('*')
       .eq('language', track.language).eq('system', track.system)
       .eq('level', level).eq('is_active', true)
       .order('sort_order', { ascending: true })
-    vocab = data || []
+      .order('id', { ascending: true }))
   } catch { /* offline / no network — keep the empty list */ }
 
   if (vocab.length) cacheSet('vocab:' + track.language + ':' + track.system + ':' + level, vocab)

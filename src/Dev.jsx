@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
+import { fetchPaged, fetchPagedSafe } from './supabasePaging'
 import { isDevAllowed, masteredCardRow, learningCardRow, chunk } from './devTools'
 import { getLevels, getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
@@ -69,12 +70,14 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
 
   // Live card-state snapshot for the active language (all levels).
   async function loadCounts() {
-    const { data } = await supabase
+    // Paged: a lifetime deck passes the 1000-row cap.
+    const data = await fetchPagedSafe(() => supabase
       .from('cards')
       .select('state, vocabulary!inner(language, system)')
       .eq('user_id', session.user.id)
       .eq('vocabulary.language', track.language)
       .eq('vocabulary.system', track.system)
+      .order('id', { ascending: true }))
     const c = { new: 0, learning: 0, review: 0, relearning: 0, total: 0 }
     for (const r of data || []) { c[r.state] = (c[r.state] || 0) + 1; c.total += 1 }
     setCounts(c)
@@ -97,13 +100,16 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
   }
 
   const vocabIdsAtLevels = async (maxLevel, exactLevel) => {
-    let q = supabase.from('vocabulary').select('id')
-      .eq('language', track.language).eq('system', track.system).eq('is_active', true)
-    if (exactLevel != null) q = q.eq('level', exactLevel)
-    else q = q.lte('level', maxLevel)
-    const { data, error } = await q
-    if (error) throw new Error(error.message)
-    return (data || []).map(v => v.id)
+    // Paged, and NOT the safe variant: these ids feed bulk card writes, so a
+    // silently short list must throw rather than half-apply an action.
+    const data = await fetchPaged(() => {
+      let q = supabase.from('vocabulary').select('id')
+        .eq('language', track.language).eq('system', track.system).eq('is_active', true)
+      if (exactLevel != null) q = q.eq('level', exactLevel)
+      else q = q.lte('level', maxLevel)
+      return q.order('id', { ascending: true })
+    })
+    return data.map(v => v.id)
   }
 
   const upsertCards = async (ids, rowFor) => {

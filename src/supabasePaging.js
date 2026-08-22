@@ -41,3 +41,34 @@ export async function fetchPagedSafe(build) {
     return []
   }
 }
+
+// fetchPaged, packaged in PostgREST's { data, error } result shape — for call
+// sites whose error handling branches on `.error` (loadError banners, the
+// test-gate's fabricated-lock guard). A mid-pagination failure surfaces as an
+// error, never as a silently short list.
+export async function fetchPagedResult(build) {
+  try {
+    return { data: await fetchPaged(build), error: null }
+  } catch (e) {
+    return { data: null, error: e }
+  }
+}
+
+// For `.in('col', ids)` queries: a long id list breaks BEFORE the row cap does
+// — every id is serialized into the request URL — so the fix is to split the
+// LIST, not the response window. Each chunk stays far under both the URL limit
+// and the row cap. `build(chunk)` returns a fresh query for that chunk; rows
+// come back concatenated in chunk order. Throws on the first error, like
+// fetchPaged.
+export const IN_CHUNK = 200
+
+export async function fetchChunkedIn(ids, build, chunkSize = IN_CHUNK) {
+  const out = []
+  const list = ids || []
+  for (let i = 0; i < list.length; i += chunkSize) {
+    const { data, error } = await build(list.slice(i, i + chunkSize))
+    if (error) throw new Error(error.message)
+    for (const r of data || []) out.push(r)
+  }
+  return out
+}

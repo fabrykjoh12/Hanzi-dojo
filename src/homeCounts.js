@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { getTrackCards } from './data'
+import { fetchPagedResult } from './supabasePaging'
 import { countMastery } from './mastery'
 import { studyFloorLevel } from './levelScope'
 import { endOfLocalDay } from './srs'
@@ -41,8 +42,10 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
 
   // Cumulative deck: every level from the study floor up to the current level,
   // so advancing a level keeps the earlier levels' words in the counts.
+  // Paged: this window passes PostgREST's 1000-row cap at HSK 4, and a
+  // truncated read makes totalWords / newCount / level progress all wrong.
   const floorLevel = studyFloorLevel(cards, track.current_level)
-  const { data: vocab, error: vocabError } = await supabase
+  const { data: vocab, error: vocabError } = await fetchPagedResult(() => supabase
     .from('vocabulary')
     .select('id')
     .eq('language', track.language)
@@ -50,6 +53,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     .gte('level', floorLevel)
     .lte('level', track.current_level)
     .eq('is_active', true)
+    .order('id', { ascending: true }))
 
   // A failed vocabulary fetch must not masquerade as an empty queue: every
   // count below would come out zero and the UI would show "all caught up" for

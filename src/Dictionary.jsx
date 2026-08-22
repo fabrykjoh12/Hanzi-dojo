@@ -119,8 +119,11 @@ export default function Dictionary({ session, profile, track, onBack }) {
             .eq('system', track.system)
             .eq('is_active', true)
             .not('level', 'is', null)
+            // `id` breaks (level, sort_order) ties — offset pages over a
+            // non-unique sort can overlap or skip rows.
             .order('level', { ascending: true })
-            .order('sort_order', { ascending: true })),
+            .order('sort_order', { ascending: true })
+            .order('id', { ascending: true })),
           getTrackCards(session.user.id, track, { columns: 'vocab_id, state, stability' }),
         ])
         if (cancelled) return

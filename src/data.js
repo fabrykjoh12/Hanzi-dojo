@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { cacheGet, cacheSet } from './offline'
+import { fetchPaged } from './supabasePaging'
 
 // Shared, server-side-scoped card queries.
 //
@@ -22,29 +23,31 @@ export async function getTrackCards(userId, track, { level, maxLevel, columns = 
   const scope = level != null ? String(level) : (maxLevel != null ? 'lte' + maxLevel + (includeUnleveled ? '+u' : '') : 'all')
   const key = 'cards:' + userId + ':' + track.language + ':' + track.system + ':' + scope + ':' + columns
   try {
-    let query = client
-      .from('cards')
-      .select(columns + ', vocabulary!inner(id, level)')
-      .eq('user_id', userId)
-      .eq('vocabulary.language', track.language)
-      .eq('vocabulary.system', track.system)
-    // `level` pins one exact level; `maxLevel` includes every level up to it
-    // (the cumulative deck). They're mutually exclusive — `level` wins.
-    if (level != null) {
-      query = query.eq('vocabulary.level', level)
-    } else if (maxLevel != null) {
-      if (includeUnleveled) {
-        // dictionary-sourced words (level IS NULL) belong to the review deck too.
-        query = query.or('level.lte.' + maxLevel + ',level.is.null', { referencedTable: 'vocabulary' })
-      } else {
-        query = query.lte('vocabulary.level', maxLevel)
+    // Paged: a deck past PostgREST's 1000-row cap (an HSK 1-4 window is
+    // already 1,879 words) must never lose cards to a truncated response —
+    // a dropped row here is a due review that silently vanishes from Home
+    // and the session. `id` gives the pages a stable, unique order.
+    const data = await fetchPaged(() => {
+      let query = client
+        .from('cards')
+        .select(columns + ', vocabulary!inner(id, level)')
+        .eq('user_id', userId)
+        .eq('vocabulary.language', track.language)
+        .eq('vocabulary.system', track.system)
+      // `level` pins one exact level; `maxLevel` includes every level up to it
+      // (the cumulative deck). They're mutually exclusive — `level` wins.
+      if (level != null) {
+        query = query.eq('vocabulary.level', level)
+      } else if (maxLevel != null) {
+        if (includeUnleveled) {
+          // dictionary-sourced words (level IS NULL) belong to the review deck too.
+          query = query.or('level.lte.' + maxLevel + ',level.is.null', { referencedTable: 'vocabulary' })
+        } else {
+          query = query.lte('vocabulary.level', maxLevel)
+        }
       }
-    }
-    const { data, error } = await query
-    if (error || !data) {
-      const cached = await cacheGet(key)
-      return cached || data || []
-    }
+      return query.order('id', { ascending: true })
+    })
     cacheSet(key, data)
     return data
   } catch {

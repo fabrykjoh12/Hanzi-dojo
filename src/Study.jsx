@@ -40,6 +40,7 @@ import AudioButton from './AudioButton'
 import { shouldOfferCoach, charBreakdown } from './stuckWord'
 import StuckWordCoach from './StuckWordCoach'
 import { loadTtsAudio, flashcardAudio } from './ttsAudio'
+import { fetchPaged, fetchPagedSafe } from './supabasePaging'
 import {
   Volume2, VolumeX, RotateCcw, AlertTriangle, Check,
   Sparkles, BookOpenCheck, X,
@@ -410,14 +411,18 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // Lifetime stats that feed achievements (cross-language, like Profile).
   // Two cheap queries: two columns of the cards table + a row count.
   async function loadAchievementStats() {
-    const [cardsResult, daysResult] = await Promise.all([
-      supabase.from('cards').select('learned, stability').eq('user_id', session.user.id),
+    // The cards read is paged — a lifetime deck passes the 1000-row cap and
+    // an unpaged read undercounted every achievement. Display-only, so a
+    // failure degrades to empty rather than throwing (fetchPagedSafe).
+    const [rows, daysResult] = await Promise.all([
+      fetchPagedSafe(() => supabase.from('cards')
+        .select('learned, stability').eq('user_id', session.user.id)
+        .order('id', { ascending: true })),
       supabase.from('daily_activity')
         .select('activity_date', { count: 'exact', head: true })
         .eq('user_id', session.user.id)
         .gt('studied_cards', 0),
     ])
-    const rows = cardsResult.data || []
     return {
       learned: rows.filter(c => c.learned).length,
       mastered: rows.filter(c => (c.stability || 0) >= 21).length,
@@ -453,7 +458,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       includeUnleveled: true,
     })
     const floorLevel = studyFloorLevel(cards, track.current_level)
-    const { data: vocab } = await supabase
+    // Paged (display-only, so failure degrades to empty): the cumulative
+    // window passes the 1000-row cap at HSK 4.
+    const vocab = await fetchPagedSafe(() => supabase
       .from('vocabulary')
       .select('id')
       .eq('language', track.language)
@@ -461,6 +468,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       .gte('level', floorLevel)
       .lte('level', track.current_level)
       .eq('is_active', true)
+      .order('id', { ascending: true }))
 
     const started = new Set((cards || []).map(c => c.vocab_id))
     // Reviews due AFTER today and by end of tomorrow — today's reviews are part
@@ -488,24 +496,26 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // storyMatch.js so the "% known" mirrors what the reader then shows.
   async function loadStoryUnlock() {
     try {
-      const [vres, sres, cres, rres] = await Promise.all([
-        supabase.from('vocabulary').select('id, word, level')
-          .eq('language', track.language).eq('system', track.system).eq('is_active', true),
+      // vocabulary and cards are paged — the whole track (4,995 words) and a
+      // lifetime deck both pass the 1000-row cap. stories and story_reads stay
+      // unpaged: both are bounded by the published-story count.
+      const [vocabRows, sres, cards, rres] = await Promise.all([
+        fetchPaged(() => supabase.from('vocabulary').select('id, word, level')
+          .eq('language', track.language).eq('system', track.system).eq('is_active', true)
+          .order('id', { ascending: true })),
         // Cumulative shelf: every level the learner has reached, not just the
         // current one — so the recap still has something to recommend at a
         // level whose own stories don't exist yet.
         supabase.from('stories').select('id, title, content, tier, story_number, level')
           .eq('language', track.language).eq('system', track.system)
           .lte('level', track.current_level).eq('is_published', true),
-        supabase.from('cards').select('vocab_id, is_easy, state, learned')
-          .eq('user_id', session.user.id),
+        fetchPaged(() => supabase.from('cards').select('vocab_id, is_easy, state, learned')
+          .eq('user_id', session.user.id)
+          .order('vocab_id', { ascending: true })),
         supabase.from('story_reads').select('story_id').eq('user_id', session.user.id),
       ])
       const stories = sres.data || []
       if (stories.length === 0) { setStoryUnlock(null); return }
-
-      const vocabRows = vres.data || []
-      const cards = cres.data || []
       const vocabMap = {}
       vocabRows.forEach(v => { vocabMap[v.word] = v })
       const userCards = {}

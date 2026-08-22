@@ -22,6 +22,7 @@
 import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { cacheGet, cacheSet } from './offline'
+import { fetchPaged, fetchChunkedIn } from './supabasePaging'
 import { studyFloorLevel } from './levelScope'
 import { missingVocabIds, mergeVocab } from './deckVocab'
 import { dueLearningCards, dueReviewCards } from './studyAvailability'
@@ -58,7 +59,11 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
   const vocabKey = 'vocab:' + track.language + ':' + track.system + ':' + floorLevel + '-' + track.current_level
   let vocab = null
   try {
-    const res = await supabase
+    // Paged: the cumulative window outgrows PostgREST's 1000-row cap at
+    // HSK 4 (1,879 words) — an unpaged read silently dropped the tail levels
+    // from the session. The trailing `id` sort keeps (level, sort_order) ties
+    // from letting pages overlap.
+    vocab = await fetchPaged(() => supabase
       .from('vocabulary')
       .select('*')
       .eq('language', track.language)
@@ -68,7 +73,7 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
       .eq('is_active', true)
       .order('level', { ascending: true })
       .order('sort_order', { ascending: true })
-    vocab = res.data
+      .order('id', { ascending: true }))
   } catch { /* offline — fall back to the cached vocabulary below */ }
   if (vocab && vocab.length) cacheSet(vocabKey, vocab)
   else { const cached = await cacheGet(vocabKey); if (cached) vocab = cached }
@@ -83,11 +88,13 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
   const missingIds = missingVocabIds(cards, vocabById)
   if (missingIds.length) {
     try {
-      const extra = await supabase
-        .from('vocabulary').select('*').in('id', missingIds)
-      if (extra.data && extra.data.length) {
-        vocabById = mergeVocab(vocabById, extra.data)
-        vocabList = [...vocabList, ...extra.data]
+      // Chunked: every id rides in the request URL, so a long list must be
+      // split — see fetchChunkedIn.
+      const extra = await fetchChunkedIn(missingIds, (chunk) => supabase
+        .from('vocabulary').select('*').in('id', chunk))
+      if (extra.length) {
+        vocabById = mergeVocab(vocabById, extra)
+        vocabList = [...vocabList, ...extra]
       }
     } catch { /* offline — those cards stay out of this session, as before */ }
   }
