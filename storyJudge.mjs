@@ -29,12 +29,20 @@ export const JUDGE_DIMENSIONS = [
   ['interest', 'Actually interesting to read — a reason to reach the last line'],
 ]
 
-export function judgePrompt({ candidate, manifest, levelName }) {
+// `preRepair` judges an UNTOUCHED writer draft that has not passed the
+// mechanical checks yet (the pre-repair quality gate, storyDraftQuality.mjs).
+// The framing has to change — telling the model the story already passed
+// would be a lie it can see through — but the job does not: writing quality
+// only, mechanical problems ignored entirely.
+export function judgePrompt({ candidate, manifest, levelName, preRepair = false }) {
   const targets = manifest.targets.map(t => t.word).join('、')
   return 'You are a demanding editor of Chinese graded readers, judging a story written for ' + levelName + ' learners.\n\n' +
-    'This story has ALREADY passed every mechanical check (required vocabulary present in the right amounts, level-appropriate word list, structure, no duplication). ' +
-    'Do NOT re-check vocabulary counts, difficulty or formatting, and do not comment on them. ' +
-    'Judge ONLY the writing quality a human editor would care about.\n\n' +
+    (preRepair
+      ? 'This is an unedited first draft. It may still break mechanical rules — wrong word counts, too many lines, vocabulary above the level. IGNORE all of that completely: those are fixed mechanically afterwards. '
+        + 'Judge ONLY whether the story underneath is worth keeping.\n\n'
+      : 'This story has ALREADY passed every mechanical check (required vocabulary present in the right amounts, level-appropriate word list, structure, no duplication). '
+        + 'Do NOT re-check vocabulary counts, difficulty or formatting, and do not comment on them. '
+        + 'Judge ONLY the writing quality a human editor would care about.\n\n') +
     'The story was required to teach these words naturally: ' + targets + '\n\n' +
     'Story:\n' + candidate.content + '\n\n' +
     'Score each dimension 1-10:\n' +
@@ -50,7 +58,8 @@ export function judgePrompt({ candidate, manifest, levelName }) {
     'OVERALL: <1-10>\n' +
     'STRENGTHS: <one line — what genuinely works>\n' +
     'WEAKNESSES: <one line — the most important problems>\n' +
-    'MECHANICAL: <yes or no — does it read as machine-generated?>'
+    'MECHANICAL: <yes or no — does it read as machine-generated?>\n' +
+    'CONTRADICTION: <no, or yes followed by the contradiction — a plot that contradicts itself, an event that makes no sense where it is, a character doing something impossible in the scene>'
 }
 
 // Tolerant line parser: models drift on casing, punctuation and stray prose,
@@ -68,7 +77,7 @@ function firstScore(value) {
 }
 
 export function parseJudgment(text) {
-  const out = { scores: {}, strengths: '', weaknesses: '', mechanical: null, overall: null }
+  const out = { scores: {}, strengths: '', weaknesses: '', mechanical: null, contradiction: null, contradictionDetail: '', overall: null }
   const keys = new Set(JUDGE_DIMENSIONS.map(([k]) => k))
   for (const rawLine of String(text || '').split('\n')) {
     const line = rawLine.trim().replace(/^[-*•\s]+/, '')
@@ -85,6 +94,10 @@ export function parseJudgment(text) {
     } else if (key === 'strengths') out.strengths = value
     else if (key === 'weaknesses') out.weaknesses = value
     else if (key === 'mechanical') out.mechanical = /^y/i.test(value)
+    else if (key === 'contradiction') {
+      out.contradiction = /^y/i.test(value)
+      out.contradictionDetail = out.contradiction ? value.replace(/^yes[\s,:；;—–-]*/i, '').trim() : ''
+    }
   }
   if (out.overall == null) {
     const vals = Object.values(out.scores)

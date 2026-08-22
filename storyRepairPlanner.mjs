@@ -488,11 +488,21 @@ export async function executeRepairPlan({
 
   // One line, start to finish: generate → deterministic gate → semantic judge.
   // Returns the winning candidate or null; the story is never touched here.
+  //
+  // Generators are tried IN ORDER, not all at once. repair-3 measured the
+  // difference: Qwen passed the deterministic gate 8/8 and won every judged
+  // contest, gpt-oss passed 5/8 and was adopted zero times. So the primary
+  // writer goes first and the fallback is only paid for when the primary
+  // cannot produce an eligible line — same candidates, fewer calls, and the
+  // fallback stays available for exactly the case it earns its keep in.
   const attemptLine = async (task, label) => {
-    const passing = []
-    const shots = judge ? candidatesPerGenerator : attemptsPerGenerator
+    const judging = Boolean(judge && buildJudgePrompt && parseLineJudgment)
+    const shots = judging ? candidatesPerGenerator : attemptsPerGenerator
+    let lastWhy = 'no candidate passed the deterministic gate'
+
     for (let gi = 0; gi < generators.length; gi += 1) {
       const g = generators[gi]
+      const passing = []
       let feedback = null
       for (let a = 1; a <= shots; a += 1) {
         const prompt = buildPrompt({ manifest, task, meanings, context: ctx(task.line), feedback })
@@ -508,64 +518,62 @@ export async function executeRepairPlan({
         const stat = compliance.get(g.name)
         stat.attempts += 1
         if (gate.ok) stat.passed += 1
-        attempts.push({ line: task.line, for: label, generator: g.name, attempt: a, output: parsed, ok: gate.ok, failures: gate.failures, metrics: gate.metrics })
+        attempts.push({ line: task.line, for: label, generator: g.name, role: gi === 0 ? 'primary' : 'fallback', attempt: a, output: parsed, ok: gate.ok, failures: gate.failures, metrics: gate.metrics })
         if (gate.ok && !passing.some(p => p.text === parsed)) passing.push({ generator: g.name, gi, text: parsed, metrics: gate.metrics })
-        if (gate.ok && !judge) break
+        if (gate.ok && !judging) break
         if (!gate.ok) feedback = gate.failures.map(f => f.message)
       }
-    }
-    if (!passing.length) return { winner: null, why: 'no candidate passed the deterministic gate' }
 
-    if (!(judge && buildJudgePrompt && parseLineJudgment)) {
-      const sorted = passing.slice().sort((a, b) =>
-        (a.metrics.outChars - b.metrics.outChars)
-        || (Math.abs(a.metrics.lengthRatio - 1) - Math.abs(b.metrics.lengthRatio - 1))
-        || (a.gi - b.gi))
-      return { winner: sorted[0], why: null }
-    }
+      if (!passing.length) continue                       // nothing to judge — next generator
+      if (!judging) {
+        const sorted = passing.slice().sort((a, b) =>
+          (a.metrics.outChars - b.metrics.outChars)
+          || (Math.abs(a.metrics.lengthRatio - 1) - Math.abs(b.metrics.lengthRatio - 1)))
+        return { winner: sorted[0], why: null }
+      }
 
-    const labelled = anonymise(passing)
-    let scores = null
-    try {
-      const text = await judge.send({
-        kind: 'line-judge',
-        prompt: buildJudgePrompt({
-          manifest,
-          original: task.text,
-          targets: task.addTargets,
-          context: ctx(task.line),
-          candidates: labelled.map(c => ({ label: c.label, text: c.text })),
-        }),
-        maxTokens,
+      const labelled = anonymise(passing)
+      let scores = null
+      try {
+        const text = await judge.send({
+          kind: 'line-judge',
+          prompt: buildJudgePrompt({
+            manifest,
+            original: task.text,
+            targets: task.addTargets,
+            context: ctx(task.line),
+            candidates: labelled.map(c => ({ label: c.label, text: c.text })),
+          }),
+          maxTokens,
+        })
+        scores = parseLineJudgment(text, labelled.map(c => c.label))
+      } catch { scores = null }
+      const scored = labelled.map(c => ({ ...c, score: (scores || []).find(s => s.label === c.label) || null }))
+      judgments.push({
+        line: task.line,
+        for: label,
+        round: gi === 0 ? 'primary' : 'fallback',
+        judge: judge.name,
+        candidates: scored.map(c => ({
+          label: c.label,
+          generator: c.generator,
+          text: c.text,
+          score: c.score,
+          effectiveOverall: c.score ? effectiveOverall(c.score, thresholds) : null,
+          accepted: acceptableLine(c.score, thresholds),
+        })),
       })
-      scores = parseLineJudgment(text, labelled.map(c => c.label))
-    } catch { scores = null }
-    const scored = labelled.map(c => ({ ...c, score: (scores || []).find(s => s.label === c.label) || null }))
-    judgments.push({
-      line: task.line,
-      for: label,
-      judge: judge.name,
-      candidates: scored.map(c => ({
-        label: c.label,
-        generator: c.generator,
-        text: c.text,
-        score: c.score,
-        effectiveOverall: c.score ? effectiveOverall(c.score, thresholds) : null,
-        accepted: acceptableLine(c.score, thresholds),
-      })),
-    })
-    const acceptable = scored.filter(c => acceptableLine(c.score, thresholds))
-    acceptable.sort((a, b) => (effectiveOverall(b.score, thresholds) - effectiveOverall(a.score, thresholds))
-      || (b.score.grammar - a.score.grammar)
-      || (a.metrics.outChars - b.metrics.outChars)
-      || (a.label < b.label ? -1 : 1))
-    if (acceptable[0]) return { winner: acceptable[0], why: null }
-    return {
-      winner: null,
-      why: scores
+      const acceptable = scored.filter(c => acceptableLine(c.score, thresholds))
+      acceptable.sort((a, b) => (effectiveOverall(b.score, thresholds) - effectiveOverall(a.score, thresholds))
+        || (b.score.grammar - a.score.grammar)
+        || (a.metrics.outChars - b.metrics.outChars)
+        || (a.label < b.label ? -1 : 1))
+      if (acceptable[0]) return { winner: acceptable[0], why: null }
+      lastWhy = scores
         ? 'no candidate met the naturalness threshold (overall ≥ ' + thresholds.overall + ' after the mechanical penalty, grammar ≥ ' + thresholds.grammar + ')'
-        : 'the semantic judge returned nothing usable',
+        : 'the semantic judge returned nothing usable'
     }
+    return { winner: null, why: lastWhy }
   }
 
   const adopt = (task, winner) => {

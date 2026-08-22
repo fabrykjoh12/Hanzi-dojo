@@ -209,15 +209,25 @@ describe('executeRepairPlan — one tiny task per line, compliance measured not 
     return { name, seen, send: async ({ prompt }) => { seen.push(prompt); return replies.shift() } }
   }
 
-  it('adopts a passing line, keeps the deletions, and reports per-generator compliance', async () => {
+  it('the primary writer alone is paid for when it succeeds; the fallback is never called', async () => {
     const a = gen('A', ['小红也想一起去买铅笔。'])
     const b = gen('B', ['小红也想一起去森林买铅笔。', '小红也想一起去森林买铅笔。'])
     const r = await run([a, b])
     expect(r.ops).toEqual([{ op: 'replace', line: 5, text: '小红也想一起去买铅笔。' }, { op: 'delete', line: 8 }])
     expect(r.unresolved).toEqual([])
     expect(r.compliance.A).toEqual({ attempts: 1, passed: 1, adopted: 1 })
-    expect(r.compliance.B).toEqual({ attempts: 2, passed: 0, adopted: 0 })   // both tries rejected
-    expect(r.attempts.filter(x => !x.ok).every(x => x.failures.length > 0)).toBe(true)
+    expect(r.compliance.B).toEqual({ attempts: 0, passed: 0, adopted: 0 })   // repair-3: gpt-oss never won one
+    expect(b.seen.length).toBe(0)
+  })
+
+  it('the fallback writer runs when the primary produces nothing eligible', async () => {
+    const a = gen('A', ['小红也想一起去森林买铅笔。', '小红也想一起去森林买铅笔。'])   // above-level both times
+    const b = gen('B', ['小红也想一起去买铅笔。'])
+    const r = await run([a, b])
+    expect(r.compliance.A.passed).toBe(0)
+    expect(r.compliance.B.adopted).toBe(1)
+    expect(r.ops.find(o => o.op === 'replace').text).toBe('小红也想一起去买铅笔。')
+    expect(r.attempts.map(x => x.role)).toEqual(['primary', 'primary', 'fallback'])
   })
 
   it('feeds the exact per-line failure back on the retry', async () => {
@@ -374,14 +384,16 @@ describe('contextual naturalness ranking', () => {
     ...over,
   })
 
-  it('judges every gate survivor in context, anonymised, and adopts the best', async () => {
+  it('judges every gate survivor from the primary in context, anonymised, and adopts the best', async () => {
     const a = gen('A-model', ['小红也想一起去买铅笔。', '小红也想去商店买铅笔。'])
-    const b = gen('B-model', ['小红也想一起去买铅笔和东西。', '小红买铅笔。'])   // second is too short → gate rejects
-    const judge = gen('J', ['A: GRAMMAR 8 CONTINUITY 8 ROLE 8 INTEGRATION 8 VOICE 7 MECHANICAL no OVERALL 8 — natural\nB: GRAMMAR 6 CONTINUITY 6 ROLE 6 INTEGRATION 5 VOICE 6 MECHANICAL no OVERALL 6 — flat\nC: GRAMMAR 5 CONTINUITY 4 ROLE 5 INTEGRATION 4 VOICE 5 MECHANICAL yes OVERALL 4 — wedged'])
+    const b = gen('B-model', ['小红也想一起去买铅笔和东西。', '小红买铅笔。'])
+    const judge = gen('J', ['A: GRAMMAR 8 CONTINUITY 8 ROLE 8 INTEGRATION 8 VOICE 7 MECHANICAL no OVERALL 8 — natural\nB: GRAMMAR 6 CONTINUITY 6 ROLE 6 INTEGRATION 5 VOICE 6 MECHANICAL no OVERALL 6 — flat'])
     const r = await run({ generators: [a, b], judge })
     const j = r.judgments[0]
-    expect(j.candidates.length).toBe(3)                       // one of B's four was gate-rejected
-    expect(j.candidates.map(c => c.label)).toEqual(['A', 'B', 'C'])
+    expect(j.candidates.length).toBe(2)                       // the primary's two; the fallback was not needed
+    expect(j.round).toBe('primary')
+    expect(b.seen.length).toBe(0)
+    expect(j.candidates.map(c => c.label)).toEqual(['A', 'B'])
     // the judge never learns who wrote what
     expect(judge.seen[0]).not.toContain('A-model')
     expect(judge.seen[0]).not.toContain('B-model')

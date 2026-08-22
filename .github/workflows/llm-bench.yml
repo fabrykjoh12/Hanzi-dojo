@@ -22,7 +22,7 @@ on:
       mode:
         description: "smoke = probe; bench = benchmark; select = K-draft selection (production flow); duo = retired edit flow (diagnostic); writer-test = one draft"
         type: choice
-        options: [smoke, bench, duo, select, writer-test, patch-test, repair-test]
+        options: [smoke, bench, duo, select, writer-test, patch-test, repair-test, quality-gate]
         default: smoke
       max_tests:
         description: "smoke only: how many models to probe (capped at 16)"
@@ -376,6 +376,53 @@ jobs:
             --input reports/story-corpus-dump.json \
             --candidate "$MANIFEST" --stage "$STAGE" \
             --writers "$WRITERS" $CRITIC_FLAGS \
+            --out "data/story-candidates/$PREFIX"
+
+      - name: Fresh corpus dump for quality-gate (read-only)
+        if: inputs.mode == 'quality-gate'
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node dump-story-corpus.mjs --out reports/story-corpus-dump.json
+
+      - name: "Quality gate — draft, validate, gate, repair only if worth it"
+        if: inputs.mode == 'quality-gate'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MODEL_A: ${{ inputs.model_a }}      # primary writer / ranker / judge
+          EFFORT_A: ${{ inputs.effort_a }}
+          MODEL_B: ${{ inputs.model_b }}      # line-repair fallback only
+          EFFORT_B: ${{ inputs.effort_b }}
+          MANIFEST: ${{ inputs.manifest_path }}   # stored CANDIDATE file to gate (blank = fresh manifests)
+          STAGE: ${{ inputs.stage_name }}
+          PREFIX: ${{ inputs.batch_prefix }}
+          COUNT: ${{ inputs.count }}
+          LEVEL: ${{ inputs.level }}
+        run: |
+          set -e
+          case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
+          case "$MODEL_A" in (""|*[!A-Za-z0-9._/:-]*) echo "bad or missing model_a"; exit 1;; esac
+          case "$EFFORT_A" in (""|none|low|medium|high|default) ;; (*) echo "bad effort_a"; exit 1;; esac
+          case "$COUNT" in (*[!0-9]*|"") COUNT=3;; esac
+          [ "$COUNT" -gt 4 ] && COUNT=4
+          case "$LEVEL" in (*[!0-9]*|"") LEVEL=3;; esac
+          case "$STAGE" in (*[!A-Za-z0-9-]*|"") STAGE=draft-1;; esac
+          W_FLAGS="--writer $MODEL_A"; [ -n "$EFFORT_A" ] && W_FLAGS="$W_FLAGS --writer-effort $EFFORT_A"
+          if [ -n "$MODEL_B" ]; then
+            case "$MODEL_B" in (*[!A-Za-z0-9._/:-]*) echo "bad model_b"; exit 1;; esac
+            case "$EFFORT_B" in (""|none|low|medium|high|default) ;; (*) echo "bad effort_b"; exit 1;; esac
+            W_FLAGS="$W_FLAGS --fallback $MODEL_B"
+            [ -n "$EFFORT_B" ] && W_FLAGS="$W_FLAGS --fallback-effort $EFFORT_B"
+          fi
+          SRC="--count $COUNT --level $LEVEL"
+          if [ -n "$MANIFEST" ]; then
+            case "$MANIFEST" in (*[!A-Za-z0-9._/-]*|/*|*..*) echo "bad manifest_path"; exit 1;; esac
+            [ -f "$MANIFEST" ] || { echo "candidate not found: $MANIFEST"; exit 1; }
+            SRC="--candidate $MANIFEST --stage $STAGE"
+          fi
+          node draft-quality-pilot.mjs \
+            --input reports/story-corpus-dump.json \
+            $SRC $W_FLAGS --batch "$PREFIX" \
             --out "data/story-candidates/$PREFIX"
 
       - name: Show reports
