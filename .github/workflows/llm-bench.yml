@@ -22,7 +22,7 @@ on:
       mode:
         description: "smoke = probe; bench = benchmark; select = K-draft selection (production flow); duo = retired edit flow (diagnostic); writer-test = one draft"
         type: choice
-        options: [smoke, bench, duo, select, writer-test, patch-test, repair-test, quality-gate]
+        options: [smoke, bench, duo, select, writer-test, patch-test, repair-test, quality-gate, blueprint]
         default: smoke
       max_tests:
         description: "smoke only: how many models to probe (capped at 16)"
@@ -428,6 +428,49 @@ jobs:
           node draft-quality-pilot.mjs \
             --input reports/story-corpus-dump.json \
             $SRC $W_FLAGS --batch "$PREFIX" \
+            --out "data/story-candidates/$PREFIX"
+
+      - name: Fresh corpus dump for blueprint (read-only)
+        if: inputs.mode == 'blueprint'
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node dump-story-corpus.mjs --out reports/story-corpus-dump.json
+
+      - name: "Blueprint-first — plan, rank, realize at a fixed length, gate, repair"
+        if: inputs.mode == 'blueprint'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MODEL_A: ${{ inputs.model_a }}      # Chinese realization + all judging (Qwen)
+          EFFORT_A: ${{ inputs.effort_a }}
+          MODEL_B: ${{ inputs.model_b }}      # second PLANNER, and line-repair fallback
+          EFFORT_B: ${{ inputs.effort_b }}
+          PREFIX: ${{ inputs.batch_prefix }}
+          COUNT: ${{ inputs.count }}
+          LEVEL: ${{ inputs.level }}
+          LINES: ${{ inputs.writer_max_tokens }}   # reused: exact story length for this pilot
+        run: |
+          set -e
+          case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
+          case "$MODEL_A" in (""|*[!A-Za-z0-9._/:-]*) echo "bad or missing model_a"; exit 1;; esac
+          case "$EFFORT_A" in (""|none|low|medium|high|default) ;; (*) echo "bad effort_a"; exit 1;; esac
+          case "$COUNT" in (*[!0-9]*|"") COUNT=3;; esac
+          if [ "$COUNT" -gt 4 ]; then COUNT=4; fi
+          case "$LEVEL" in (*[!0-9]*|"") LEVEL=3;; esac
+          case "$LINES" in (*[!0-9]*|"") LINES=28;; esac
+          if [ "$LINES" -lt 14 ] || [ "$LINES" -gt 38 ]; then LINES=28; fi
+          FLAGS="--writer $MODEL_A"
+          if [ -n "$EFFORT_A" ]; then FLAGS="$FLAGS --writer-effort $EFFORT_A"; fi
+          if [ -n "$MODEL_B" ]; then
+            case "$MODEL_B" in (*[!A-Za-z0-9._/:-]*) echo "bad model_b"; exit 1;; esac
+            case "$EFFORT_B" in (""|none|low|medium|high|default) ;; (*) echo "bad effort_b"; exit 1;; esac
+            FLAGS="$FLAGS --planner-b $MODEL_B"
+            if [ -n "$EFFORT_B" ]; then FLAGS="$FLAGS --planner-b-effort $EFFORT_B"; fi
+          fi
+          node blueprint-pilot.mjs \
+            --input reports/story-corpus-dump.json \
+            --count "$COUNT" --level "$LEVEL" --lines "$LINES" \
+            $FLAGS --batch "$PREFIX" \
             --out "data/story-candidates/$PREFIX"
 
       - name: Show reports

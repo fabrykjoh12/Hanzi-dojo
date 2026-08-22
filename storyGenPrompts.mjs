@@ -482,6 +482,149 @@ export function parseLineJudgment(text, labels) {
   return out.length ? out : null
 }
 
+// ── Blueprint-first generation (fab9-blueprint@1) ───────────────────────────
+// Planning is asked for as data, in English, with no Chinese prose in it. A
+// planner that writes the story has not planned it, and a plan written in the
+// story's own language invites the model to start drafting.
+
+export function blueprintPrompt({ manifest, meanings = {}, totalLines, targets = null, feedback = null }) {
+  const name = levelName(manifest)
+  const need = targets || manifest.targets.map(t => t.word)
+  const list = manifest.targets
+    .map(t => t.word + (meanings[t.word] ? ' (' + meanings[t.word] + ')' : '') + (need.includes(t.word) ? ' — REQUIRED' : ' — optional'))
+    .join('\n')
+  return 'Plan a short ' + name + ' Chinese graded-reader story. Do NOT write the story. Return a PLAN, in English, as JSON.\n\n'
+    + (feedback ? 'YOUR PREVIOUS PLAN WAS REJECTED:\n' + feedback.map(f => '- ' + f).join('\n') + '\nFix exactly these problems.\n\n' : '')
+    + 'Characters available (use 2-3 of them, no one else):\n' + manifest.speakers.join('、') + '\n\n'
+    + 'Words the finished story must teach. Each REQUIRED word needs a beat where a person would genuinely need that word:\n' + list + '\n\n'
+    + (manifest.theme ? 'Theme: ' + manifest.theme + '\n\n' : '')
+    + 'Rules for the plan:\n'
+    + '- ONE central problem. No subplots, no side quests, nothing invented just to fit a word in.\n'
+    + '- 5 or 6 beats. Every beat after the first must happen BECAUSE of the beat before it — "because → therefore", never "and then".\n'
+    + '- Every beat states when it happens and where. If a beat is somewhere new, say how they got there.\n'
+    + '- Nothing may happen before the thing it depends on. Nobody appears where they could not be.\n'
+    + '- The ending must resolve the problem the story started with.\n'
+    + '- Keep it ordinary and concrete — a story a ' + name + ' learner can follow: everyday places, small stakes, real motives.\n'
+    + '- The whole story is exactly ' + totalLines + ' lines of Chinese. Give each beat a share of that (2-8 lines each), adding up to about ' + totalLines + '.\n'
+    + '- If a REQUIRED word has no place where it would naturally be needed, say so in "impossibleTargets" instead of forcing it.\n\n'
+    + 'Output JSON only, no commentary, exactly this shape:\n'
+    + '{\n'
+    + '  "title": "<what the story is about, in English>",\n'
+    + '  "setting": "<where and when, one line>",\n'
+    + '  "cast": ["<2-3 names from the list above>"],\n'
+    + '  "problem": "<the ONE thing the story is about>",\n'
+    + '  "incitingEvent": "<what starts it>",\n'
+    + '  "beats": [\n'
+    + '    { "id": 1, "when": "<time>", "where": "<place>", "what": "<what changes here>", "because": "<why this follows — beat 1: \\"the story opens\\">", "arrivedHow": "<only if the place changed>", "targets": ["<target words used here>"], "lines": <2-8> }\n'
+    + '  ],\n'
+    + '  "resolution": "<how the central problem ends>",\n'
+    + '  "targetPlan": [ { "word": "<target>", "beat": <n>, "why": "<why a person would need this word right here — at least a sentence>" } ],\n'
+    + '  "impossibleTargets": ["<any required word with no natural home>"]\n'
+    + '}'
+}
+
+// JSON out of a model that may fence it, prefix it, or explain it first.
+export function parseJsonObject(text) {
+  const raw = String(text || '')
+  const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)```/i)
+  const body = fenced ? fenced[1] : raw
+  const start = body.indexOf('{')
+  if (start === -1) return null
+  let depth = 0
+  let inString = false
+  let escaped = false
+  for (let i = start; i < body.length; i += 1) {
+    const ch = body[i]
+    if (inString) {
+      if (escaped) escaped = false
+      else if (ch === '\\') escaped = true
+      else if (ch === '"') inString = false
+      continue
+    }
+    if (ch === '"') inString = true
+    else if (ch === '{') depth += 1
+    else if (ch === '}') {
+      depth -= 1
+      if (depth === 0) {
+        try { return JSON.parse(body.slice(start, i + 1)) } catch { return null }
+      }
+    }
+  }
+  return null
+}
+
+export const parseBlueprint = parseJsonObject
+
+// Ranking plans, anonymised, on the axes a plan can actually be judged on.
+export function blueprintJudgePrompt({ manifest, levelName: level, candidates, dimensions }) {
+  return 'You are choosing between story PLANS for a ' + level + ' Chinese graded reader. These are plans, not stories — judge the plotting, not the wording.\n\n'
+    + candidates.map(c => 'PLAN ' + c.label + ':\n' + c.rendered).join('\n\n---\n\n') + '\n\n'
+    + 'Score EVERY plan 1-10 on each:\n'
+    + dimensions.map(([key, desc]) => '- ' + key.toUpperCase() + ': ' + desc).join('\n') + '\n'
+    + 'and answer CONTRADICTION yes/no: does the plan contradict itself anywhere — a timeline that cannot happen, someone in two places, an object that moves without explanation, an ending about a different problem than the one it started with?\n'
+    + 'Then OVERALL 1-10. Be strict: 8+ means you would hand this plan to a writer as-is, 5 means workable but thin, below 5 means the plot does not hold.\n\n'
+    + 'Output — one line per plan, nothing else:\n'
+    + '<LABEL>: ' + dimensions.map(([k]) => k.toUpperCase() + ' <n>').join(' ') + ' CONTRADICTION <yes|no> OVERALL <n> — <short reason>'
+}
+
+export function parseBlueprintJudgment(text, labels, dimensions) {
+  const want = new Set(labels)
+  const out = []
+  const num = (body, key) => {
+    const m = body.match(new RegExp(key + '\\s*[:：]?\\s*(\\d{1,2})', 'i'))
+    return m ? Math.min(10, parseInt(m[1], 10)) : null
+  }
+  for (const raw of String(text || '').split('\n')) {
+    const t = raw.trim()
+    const m = t.match(/^\**([A-H])\**\s*[:：.)]\s*(.+)$/)
+    if (!m || !want.has(m[1]) || out.some(x => x.label === m[1])) continue
+    const body = m[2]
+    const mech = body.match(/CONTRADICTION\s*[:：]?\s*(yes|no|true|false)/i)
+    const entry = { label: m[1], contradiction: mech ? /^(yes|true)$/i.test(mech[1]) : null, overall: num(body, 'OVERALL'), reason: (body.split(/[—–]/)[1] || '').trim() }
+    for (const [key] of dimensions) entry[key] = num(body, key.toUpperCase())
+    out.push(entry)
+  }
+  return out.length ? out : null
+}
+
+// ── Realization: the writer stops inventing ─────────────────────────────────
+// The plan is settled, the line count is a contract, and the only freedom left
+// is the Chinese itself. Structured output because prose instructions have not
+// once held the length: nine drafts asked for 22-30 lines came back 39-53.
+export function realizePrompt({ manifest, blueprint, rendered, allocation, meanings = {}, totalLines, pool = null, feedback = null }) {
+  const name = levelName(manifest)
+  const beats = allocation.map(a => '  lines ' + a.from + '-' + a.to + ' → beat ' + a.beat).join('\n')
+  return 'Write the Chinese for a ' + name + ' graded-reader story that has ALREADY been planned. Follow the plan exactly.\n\n'
+    + (feedback ? 'YOUR PREVIOUS ATTEMPT WAS REJECTED:\n' + feedback.map(f => '- ' + f).join('\n') + '\n\n' : '')
+    + 'THE PLAN:\n' + rendered + '\n\n'
+    + 'LINE BUDGET — exactly ' + totalLines + ' lines of Chinese:\n' + beats + '\n\n'
+    + 'You are the writer, not the author: the story is decided.\n'
+    + '- Tell exactly the events in the plan, in that order. Do NOT add characters, places, scenes, subplots or a different ending.\n'
+    + '- Do NOT change the chronology or invent an explanation the plan does not have.\n'
+    + '- Your freedom is the wording: natural sentences, real dialogue, character voice.\n\n'
+    + 'The Chinese:\n'
+    + '- Use ONLY vocabulary a ' + name + ' learner knows. At most ' + manifest.difficulty.maxOutOfLevelDistinct + ' distinct words above ' + name + ', and at most ' + manifest.difficulty.maxUnknownDistinct + ' that are not standard vocabulary at all. If you are unsure a word is simple enough, do not use it.\n'
+    + '- Target words, used the number of times shown:\n' + targetList(manifest, meanings) + '\n'
+    + '- A dialogue line is a bare name from ' + manifest.speakers.join('、') + ' then ：then the speech. Never "李明说：", never a described speaker.\n'
+    + '- Narration lines have no name prefix. Around ' + manifest.length.maxLineChars + ' characters per line.\n'
+    + (pool ? '- Build the rest mainly from these words:\n' + poolForPrompt(pool, 200) + '\n' : '')
+    + '\nOutput JSON only, nothing else:\n'
+    + '{"title": "<Chinese title>", "lines": ["<line 1>", "<line 2>", … exactly ' + totalLines + ' strings]}'
+}
+
+// Exactly N lines or nothing. The caller retries once; it never accepts 27 or
+// 31 and never asks an editor to trim the difference afterwards.
+export function parseStructuredStory(text, expectedLines) {
+  const obj = parseJsonObject(text)
+  if (!obj || !Array.isArray(obj.lines)) return null
+  const title = String(obj.title || '').trim()
+  const lines = obj.lines.map(l => String(l == null ? '' : l).trim()).filter(Boolean)
+  if (!title || title.includes('\n')) return null
+  if (lines.length !== expectedLines) return null
+  if (lines.some(l => !/[一-鿿]/.test(l))) return null
+  return { title, content: lines.join('\n') }
+}
+
 // IMPOSSIBLE is a VALID terminal patcher answer — the prompt offers it as the
 // alternative to exceeding the budget. Callers must check this BEFORE
 // parseStructuralPatch and treat a hit as final: no retry, no reprompt (the
