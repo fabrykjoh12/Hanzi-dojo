@@ -1,0 +1,1006 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "repair-test",
+  "generatedAt": "2026-08-22T09:39:46.983Z",
+  "provider": {
+    "name": "multi",
+    "model": "groq:openai/gpt-oss-120b:low,groq:qwen/qwen3.6-27b:none",
+    "reasoningEffort": null
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "duo-2-L3-002",
+    "batchId": "duo-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "结束",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "来自",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "out in the city: places, errands, and a small discovery",
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "composition": {
+      "bucket": "places",
+      "reason": "4 pending hard targets share the \"places\" theme",
+      "hard": [
+        {
+          "word": "发生",
+          "meaning": "to happen; to occur; to take place; to break out"
+        },
+        {
+          "word": "国家",
+          "meaning": "country; nation; state"
+        },
+        {
+          "word": "结束",
+          "meaning": "termination; to finish"
+        },
+        {
+          "word": "来自",
+          "meaning": "to come from (a place); From: (in email header)"
+        },
+        {
+          "word": "生活",
+          "meaning": "to live; life"
+        }
+      ],
+      "soft": [
+        {
+          "word": "其他",
+          "meaning": "other; (sth or sb) else"
+        },
+        {
+          "word": "或者",
+          "meaning": "or; possibly; maybe; perhaps"
+        },
+        {
+          "word": "当然",
+          "meaning": "only natural; as it should be"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "repairExperiment": {
+    "source": {
+      "candidate": "data/story-candidates/select-1/duo-2-L3-002.json",
+      "stage": "draft-1"
+    },
+    "numberedOriginal": [
+      "1: 李明：妈妈，下周五的国际文化比赛开始了，我们要准备什么？",
+      "2: 妈妈：我们要买来自中国的传统食物，你要去超市买东西。",
+      "3: 李明：好！我和小明一起去，小红也要参加，对吗？",
+      "4: 小明：我有点累，但是为了比赛，我一定去。",
+      "5: 小红：当然，我不能落后，你们两个要快点决定。",
+      "6: 李明：我们去银行取钱，然后去买礼物吗？",
+      "7: 妈妈：不，先检查家里有没有需要的东西，别浪费钱。",
+      "8: 李明：好，我看看我的本子和笔，都带好了吗？",
+      "9: 突然，大白猫大毛跳到了桌上，压住了我的钱包。",
+      "10: 李明：哎呀！大毛，别动，我的钱包！",
+      "11: 小红：哈哈，李明，你总是这样不小心，注意一点。",
+      "12: 李明：没关系，我拿出来，我们去车站坐地铁吧。",
+      "13: 小明：外面下雨了，我们打车或者等雨停？",
+      "14: 李明：雨不大，我们可以走路，这也是一次锻炼。",
+      "15: 他们走在城市里，看着两边的商店和行人。",
+      "16: 李明：你看，那个女人穿着红色的衣服，真漂亮。",
+      "17: 小红：看她后面的书店，我要进去看看有没有好书。",
+      "18: 李明：我也去，小明，你要来吗？",
+      "19: 小明：我不喜欢书店，我喜欢玩游戏，你们去吧。",
+      "20: 李明和小红走进书店，寻找关于国家的书籍。",
+      "21: 小红：李明，你看这本，讲了很多其他国家的文化。",
+      "22: 李明：哇，真有趣，我想知道它们的生活是什么样。",
+      "23: 突然，书里掉出一张旧照片，上面有一个男人。",
+      "24: 李明：这是谁？他看起来很开心，在什么地方？",
+      "25: 小红：不知道，也许这是一个故事，我们看看背面。",
+      "26: 李明：背面写着，这是来自日本的礼物，好神秘啊。",
+      "27: 小红：我们把它放在口袋里，回家问妈妈吧。",
+      "28: 李明：好主意，比赛结束前，我们可以研究一下。",
+      "29: 他们回到公交车站，心情很好，觉得今天很快活。",
+      "30: 小明：你们找到什么了吗？快去快回，车来了。",
+      "31: 李明：我们有个发现，一个有关旅行和友情的秘密。",
+      "32: 妈妈：你们回来了，发生什么事了？看起来很开心。",
+      "33: 李明：妈妈，小红发现了一张照片，来自另一个国家。",
+      "34: 妈妈：哦，也许是以前谁留在这里的，很有趣。",
+      "35: 李明：我想了解这个人，他的生活，他的故事。",
+      "36: 小红：也许我们可以把照片交给图书馆，让大家看看。",
+      "37: 妈妈：好主意，这是一种帮助，也解决了问题。",
+      "38: 李明：谢谢妈妈，我觉得这次比赛会很有趣。",
+      "39: 小明：我也觉得，只要大家在一起，什么困难都不怕。",
+      "40: 大毛跳出来，好像在说，我也支持你们，加油！"
+    ],
+    "plan": {
+      "plannerVersion": "fab9-repair-plan@1",
+      "budget": 6,
+      "feasible": true,
+      "impossible": null,
+      "metrics": {
+        "lines": 40,
+        "maxLines": 38,
+        "cjkChars": 632,
+        "outChars": 66,
+        "share": 0.104,
+        "ceiling": 0.105,
+        "averageDensity": 0.104
+      },
+      "required": {
+        "lineReduction": 2,
+        "missingTargets": [
+          {
+            "word": "发生",
+            "have": 1,
+            "need": 1,
+            "min": 2,
+            "max": 4
+          },
+          {
+            "word": "结束",
+            "have": 1,
+            "need": 1,
+            "min": 2,
+            "max": 4
+          }
+        ],
+        "excessTargets": [],
+        "unknownDistinct": 5,
+        "unknownCap": 2,
+        "unknownExcess": 3,
+        "unknownRuns": {
+          "桌上": [
+            9
+          ],
+          "一张": [
+            23,
+            33
+          ],
+          "背面": [
+            25,
+            26
+          ],
+          "留在": [
+            34
+          ],
+          "不怕": [
+            39
+          ]
+        }
+      },
+      "deletes": [
+        {
+          "line": 34,
+          "text": "妈妈：哦，也许是以前谁留在这里的，很有趣。",
+          "cjkChars": 15,
+          "outChars": 5,
+          "density": 0.333,
+          "removesRuns": [
+            "留在"
+          ],
+          "safeForShare": true,
+          "reason": "line count 1/2; removes unknown 留在; density 0.333 ≥ story average 0.104"
+        },
+        {
+          "line": 39,
+          "text": "小明：我也觉得，只要大家在一起，什么困难都不怕。",
+          "cjkChars": 18,
+          "outChars": 2,
+          "density": 0.111,
+          "removesRuns": [
+            "不怕"
+          ],
+          "safeForShare": true,
+          "reason": "line count 2/2; removes unknown 不怕; density 0.111 ≥ story average 0.104"
+        }
+      ],
+      "replaces": [
+        {
+          "line": 9,
+          "text": "突然，大白猫大毛跳到了桌上，压住了我的钱包。",
+          "speaker": null,
+          "cjkChars": 17,
+          "addTargets": [
+            "发生"
+          ],
+          "removeTargets": [],
+          "removeRuns": [
+            "桌上"
+          ],
+          "reasons": [
+            "remove unknown word 桌上",
+            "add target 发生"
+          ]
+        },
+        {
+          "line": 31,
+          "text": "李明：我们有个发现，一个有关旅行和友情的秘密。",
+          "speaker": "李明",
+          "cjkChars": 18,
+          "addTargets": [
+            "结束"
+          ],
+          "removeTargets": [],
+          "removeRuns": [],
+          "reasons": [
+            "add target 结束"
+          ]
+        }
+      ],
+      "projected": {
+        "ops": 4,
+        "lines": 38,
+        "cjkChars": 599,
+        "outChars": 59,
+        "share": 0.098,
+        "shareDelta": -0.006,
+        "unknownRunsRemaining": [
+          "桌上",
+          "一张",
+          "背面"
+        ],
+        "unknownAfterReplacements": 2,
+        "note": "deterministic deletions only — replacement text is generated later and re-measured"
+      },
+      "facts": [
+        {
+          "line": 1,
+          "speaker": "李明",
+          "cjkChars": 22,
+          "outChars": 2,
+          "density": 0.091,
+          "unknownRuns": []
+        },
+        {
+          "line": 2,
+          "speaker": "妈妈",
+          "cjkChars": 21,
+          "outChars": 4,
+          "density": 0.19,
+          "unknownRuns": []
+        },
+        {
+          "line": 3,
+          "speaker": "李明",
+          "cjkChars": 12,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 4,
+          "speaker": "小明",
+          "cjkChars": 14,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 5,
+          "speaker": "小红",
+          "cjkChars": 16,
+          "outChars": 2,
+          "density": 0.125,
+          "unknownRuns": []
+        },
+        {
+          "line": 6,
+          "speaker": "李明",
+          "cjkChars": 14,
+          "outChars": 1,
+          "density": 0.071,
+          "unknownRuns": []
+        },
+        {
+          "line": 7,
+          "speaker": "妈妈",
+          "cjkChars": 18,
+          "outChars": 2,
+          "density": 0.111,
+          "unknownRuns": []
+        },
+        {
+          "line": 8,
+          "speaker": "李明",
+          "cjkChars": 15,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 9,
+          "speaker": null,
+          "cjkChars": 17,
+          "outChars": 1,
+          "density": 0.059,
+          "unknownRuns": [
+            "桌上"
+          ]
+        },
+        {
+          "line": 10,
+          "speaker": "李明",
+          "cjkChars": 8,
+          "outChars": 2,
+          "density": 0.25,
+          "unknownRuns": []
+        },
+        {
+          "line": 11,
+          "speaker": "小红",
+          "cjkChars": 14,
+          "outChars": 2,
+          "density": 0.143,
+          "unknownRuns": []
+        },
+        {
+          "line": 12,
+          "speaker": "李明",
+          "cjkChars": 16,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 13,
+          "speaker": "小明",
+          "cjkChars": 14,
+          "outChars": 1,
+          "density": 0.071,
+          "unknownRuns": []
+        },
+        {
+          "line": 14,
+          "speaker": "李明",
+          "cjkChars": 16,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 15,
+          "speaker": null,
+          "cjkChars": 17,
+          "outChars": 2,
+          "density": 0.118,
+          "unknownRuns": []
+        },
+        {
+          "line": 16,
+          "speaker": "李明",
+          "cjkChars": 16,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 17,
+          "speaker": "小红",
+          "cjkChars": 18,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 18,
+          "speaker": "李明",
+          "cjkChars": 7,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 19,
+          "speaker": "小明",
+          "cjkChars": 16,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 20,
+          "speaker": null,
+          "cjkChars": 14,
+          "outChars": 4,
+          "density": 0.286,
+          "unknownRuns": []
+        },
+        {
+          "line": 21,
+          "speaker": "小红",
+          "cjkChars": 15,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 22,
+          "speaker": "李明",
+          "cjkChars": 17,
+          "outChars": 4,
+          "density": 0.235,
+          "unknownRuns": []
+        },
+        {
+          "line": 23,
+          "speaker": null,
+          "cjkChars": 18,
+          "outChars": 1,
+          "density": 0.056,
+          "unknownRuns": [
+            "一张"
+          ]
+        },
+        {
+          "line": 24,
+          "speaker": "李明",
+          "cjkChars": 15,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 25,
+          "speaker": "小红",
+          "cjkChars": 17,
+          "outChars": 2,
+          "density": 0.118,
+          "unknownRuns": [
+            "背面"
+          ]
+        },
+        {
+          "line": 26,
+          "speaker": "李明",
+          "cjkChars": 17,
+          "outChars": 2,
+          "density": 0.118,
+          "unknownRuns": [
+            "背面"
+          ]
+        },
+        {
+          "line": 27,
+          "speaker": "小红",
+          "cjkChars": 15,
+          "outChars": 2,
+          "density": 0.133,
+          "unknownRuns": []
+        },
+        {
+          "line": 28,
+          "speaker": "李明",
+          "cjkChars": 16,
+          "outChars": 4,
+          "density": 0.25,
+          "unknownRuns": []
+        },
+        {
+          "line": 29,
+          "speaker": null,
+          "cjkChars": 19,
+          "outChars": 3,
+          "density": 0.158,
+          "unknownRuns": []
+        },
+        {
+          "line": 30,
+          "speaker": "小明",
+          "cjkChars": 15,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 31,
+          "speaker": "李明",
+          "cjkChars": 18,
+          "outChars": 6,
+          "density": 0.333,
+          "unknownRuns": []
+        },
+        {
+          "line": 32,
+          "speaker": "妈妈",
+          "cjkChars": 17,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 33,
+          "speaker": "李明",
+          "cjkChars": 16,
+          "outChars": 1,
+          "density": 0.063,
+          "unknownRuns": [
+            "一张"
+          ]
+        },
+        {
+          "line": 34,
+          "speaker": "妈妈",
+          "cjkChars": 15,
+          "outChars": 5,
+          "density": 0.333,
+          "unknownRuns": [
+            "留在"
+          ]
+        },
+        {
+          "line": 35,
+          "speaker": "李明",
+          "cjkChars": 15,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 36,
+          "speaker": "小红",
+          "cjkChars": 19,
+          "outChars": 3,
+          "density": 0.158,
+          "unknownRuns": []
+        },
+        {
+          "line": 37,
+          "speaker": "妈妈",
+          "cjkChars": 15,
+          "outChars": 2,
+          "density": 0.133,
+          "unknownRuns": []
+        },
+        {
+          "line": 38,
+          "speaker": "李明",
+          "cjkChars": 15,
+          "outChars": 2,
+          "density": 0.133,
+          "unknownRuns": []
+        },
+        {
+          "line": 39,
+          "speaker": "小明",
+          "cjkChars": 18,
+          "outChars": 2,
+          "density": 0.111,
+          "unknownRuns": [
+            "不怕"
+          ]
+        },
+        {
+          "line": 40,
+          "speaker": null,
+          "cjkChars": 15,
+          "outChars": 4,
+          "density": 0.267,
+          "unknownRuns": []
+        }
+      ]
+    },
+    "execution": {
+      "ops": [
+        {
+          "op": "replace",
+          "line": 9,
+          "text": "突然发生的事是大白猫跳上桌子压住我的钱包"
+        },
+        {
+          "op": "replace",
+          "line": 31,
+          "text": "李明：今天结束了，我们发现了友情。"
+        },
+        {
+          "op": "delete",
+          "line": 34
+        },
+        {
+          "op": "delete",
+          "line": 39
+        }
+      ],
+      "attempts": [
+        {
+          "line": 9,
+          "generator": "groq:openai/gpt-oss-120b/low",
+          "attempt": 1,
+          "output": "突然，发生大毛跳上来，压住我的钱包。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 13,
+            "outChars": 1,
+            "outCharsBefore": 1,
+            "unknownRuns": [],
+            "speaker": null,
+            "lengthRatio": 0.765
+          }
+        },
+        {
+          "line": 9,
+          "generator": "groq:qwen/qwen3.6-27b/none",
+          "attempt": 1,
+          "output": "突然发生的事是大白猫跳上桌子压住我的钱包",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 20,
+            "outChars": 1,
+            "outCharsBefore": 1,
+            "unknownRuns": [],
+            "speaker": null,
+            "lengthRatio": 1.176
+          }
+        },
+        {
+          "line": 31,
+          "generator": "groq:openai/gpt-oss-120b/low",
+          "attempt": 1,
+          "output": "李明：我们发现旅行和友情的秘密，快要结束了。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 17,
+            "outChars": 6,
+            "outCharsBefore": 6,
+            "unknownRuns": [],
+            "speaker": "李明",
+            "lengthRatio": 0.944
+          }
+        },
+        {
+          "line": 31,
+          "generator": "groq:qwen/qwen3.6-27b/none",
+          "attempt": 1,
+          "output": "李明：今天结束了，我们发现了友情。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 12,
+            "outChars": 2,
+            "outCharsBefore": 6,
+            "unknownRuns": [],
+            "speaker": "李明",
+            "lengthRatio": 0.667
+          }
+        }
+      ],
+      "unresolved": [],
+      "compliance": {
+        "groq:openai/gpt-oss-120b/low": {
+          "attempts": 2,
+          "passed": 2,
+          "adopted": 0
+        },
+        "groq:qwen/qwen3.6-27b/none": {
+          "attempts": 2,
+          "passed": 2,
+          "adopted": 2
+        }
+      }
+    },
+    "regressions": [],
+    "before": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "40 lines (need 14-38)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "发生 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "结束 appears 1× (need 2-4)"
+        },
+        {
+          "code": "unknown_words",
+          "message": "5 unknown (non-vocabulary) runs (max 2): 桌上、一张、背面、留在、不怕"
+        }
+      ],
+      "reviews": [
+        {
+          "code": "out_of_level_share_review",
+          "message": "out-of-level vocabulary 10.4% sits in the experimental review band (7.0%-10.5%) — mandatory human review before publication"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "33 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 40,
+        "cjkChars": 632,
+        "distinctVocab": 210,
+        "targetCounts": {
+          "发生": 1,
+          "国家": 3,
+          "结束": 1,
+          "来自": 3,
+          "生活": 2,
+          "其他": 1,
+          "或者": 1,
+          "当然": 1
+        },
+        "inLevelCoverage": 0.873,
+        "outOfLevelDistinct": 33,
+        "outOfLevelCharShare": 0.104,
+        "unknownDistinct": 5,
+        "unknownCharShare": 0.022,
+        "unknownRuns": [
+          "桌上",
+          "一张",
+          "背面",
+          "留在",
+          "不怕"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.04,
+        "nearestNeighbor": {
+          "title": "1. 新的地方",
+          "level": 1,
+          "jaccard": 0.02,
+          "containment": 0.088
+        }
+      }
+    },
+    "after": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "REVIEW_REQUIRED",
+      "failures": [],
+      "reviews": [
+        {
+          "code": "out_of_level_share_review",
+          "message": "out-of-level vocabulary 9.2% sits in the experimental review band (7.0%-10.5%) — mandatory human review before publication"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "29 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 38,
+        "cjkChars": 596,
+        "distinctVocab": 204,
+        "targetCounts": {
+          "发生": 2,
+          "国家": 3,
+          "结束": 2,
+          "来自": 3,
+          "生活": 2,
+          "其他": 1,
+          "或者": 1,
+          "当然": 1
+        },
+        "inLevelCoverage": 0.894,
+        "outOfLevelDistinct": 29,
+        "outOfLevelCharShare": 0.092,
+        "unknownDistinct": 2,
+        "unknownCharShare": 0.013,
+        "unknownRuns": [
+          "一张",
+          "背面"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.036,
+        "nearestNeighbor": {
+          "title": "1. 新的地方",
+          "level": 1,
+          "jaccard": 0.021,
+          "containment": 0.088
+        },
+        "edit": {
+          "jaccard": 0.854,
+          "containment": 0.948,
+          "titleChanged": false,
+          "speakersAdded": [],
+          "speakersLost": []
+        }
+      }
+    }
+  },
+  "candidate": {
+    "manifestId": "duo-2-L3-002",
+    "status": "review_required",
+    "title": "城市里的秘密发现",
+    "content": "李明：妈妈，下周五的国际文化比赛开始了，我们要准备什么？\n妈妈：我们要买来自中国的传统食物，你要去超市买东西。\n李明：好！我和小明一起去，小红也要参加，对吗？\n小明：我有点累，但是为了比赛，我一定去。\n小红：当然，我不能落后，你们两个要快点决定。\n李明：我们去银行取钱，然后去买礼物吗？\n妈妈：不，先检查家里有没有需要的东西，别浪费钱。\n李明：好，我看看我的本子和笔，都带好了吗？\n突然发生的事是大白猫跳上桌子压住我的钱包\n李明：哎呀！大毛，别动，我的钱包！\n小红：哈哈，李明，你总是这样不小心，注意一点。\n李明：没关系，我拿出来，我们去车站坐地铁吧。\n小明：外面下雨了，我们打车或者等雨停？\n李明：雨不大，我们可以走路，这也是一次锻炼。\n他们走在城市里，看着两边的商店和行人。\n李明：你看，那个女人穿着红色的衣服，真漂亮。\n小红：看她后面的书店，我要进去看看有没有好书。\n李明：我也去，小明，你要来吗？\n小明：我不喜欢书店，我喜欢玩游戏，你们去吧。\n李明和小红走进书店，寻找关于国家的书籍。\n小红：李明，你看这本，讲了很多其他国家的文化。\n李明：哇，真有趣，我想知道它们的生活是什么样。\n突然，书里掉出一张旧照片，上面有一个男人。\n李明：这是谁？他看起来很开心，在什么地方？\n小红：不知道，也许这是一个故事，我们看看背面。\n李明：背面写着，这是来自日本的礼物，好神秘啊。\n小红：我们把它放在口袋里，回家问妈妈吧。\n李明：好主意，比赛结束前，我们可以研究一下。\n他们回到公交车站，心情很好，觉得今天很快活。\n小明：你们找到什么了吗？快去快回，车来了。\n李明：今天结束了，我们发现了友情。\n妈妈：你们回来了，发生什么事了？看起来很开心。\n李明：妈妈，小红发现了一张照片，来自另一个国家。\n李明：我想了解这个人，他的生活，他的故事。\n小红：也许我们可以把照片交给图书馆，让大家看看。\n妈妈：好主意，这是一种帮助，也解决了问题。\n李明：谢谢妈妈，我觉得这次比赛会很有趣。\n大毛跳出来，好像在说，我也支持你们，加油！",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "REVIEW_REQUIRED",
+      "failures": [],
+      "reviews": [
+        {
+          "code": "out_of_level_share_review",
+          "message": "out-of-level vocabulary 9.2% sits in the experimental review band (7.0%-10.5%) — mandatory human review before publication"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "29 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 38,
+        "cjkChars": 596,
+        "distinctVocab": 204,
+        "targetCounts": {
+          "发生": 2,
+          "国家": 3,
+          "结束": 2,
+          "来自": 3,
+          "生活": 2,
+          "其他": 1,
+          "或者": 1,
+          "当然": 1
+        },
+        "inLevelCoverage": 0.894,
+        "outOfLevelDistinct": 29,
+        "outOfLevelCharShare": 0.092,
+        "unknownDistinct": 2,
+        "unknownCharShare": 0.013,
+        "unknownRuns": [
+          "一张",
+          "背面"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.036,
+        "nearestNeighbor": {
+          "title": "1. 新的地方",
+          "level": 1,
+          "jaccard": 0.021,
+          "containment": 0.088
+        },
+        "edit": {
+          "jaccard": 0.854,
+          "containment": 0.948,
+          "titleChanged": false,
+          "speakersAdded": [],
+          "speakersLost": []
+        }
+      }
+    },
+    "critique": {
+      "judgeVersion": "fab9-judge@1",
+      "judge": {
+        "provider": "groq",
+        "model": "qwen/qwen3.6-27b"
+      },
+      "scores": {
+        "natural": 3,
+        "coherence": 4,
+        "integration": 5,
+        "level": 7,
+        "human": 3,
+        "interest": 4
+      },
+      "strengths": "The sentence structures are grammatically simple and clear, adhering strictly to HSK 3 syntactic rules without over-complication.",
+      "weaknesses": "The narrative is incoherent and disjointed; the sudden appearance of a cat crushing a wallet lacks context, the transition from a cultural fair to a random bookstore photo plot is illogical, and the dialogue is stiff, unnatural, and serves only as a vehicle for vocabulary insertion rather than revealing character or advancing a plot.",
+      "mechanical": true,
+      "overall": 4
+    },
+    "attempts": 4,
+    "calls": 5,
+    "generatorVersion": "fab9-deterministic-repair@1",
+    "promptVersion": "fab9-prompts@2",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": {
+      "critic": {
+        "requests": 2,
+        "failures": 1,
+        "promptTokens": 1033,
+        "completionTokens": 152,
+        "latencyMsTotal": 578,
+        "rateLimit429s": 1,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 1000
+      },
+      "wallMs": null
+    }
+  },
+  "staged": null
+}
