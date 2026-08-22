@@ -166,8 +166,19 @@ describe('rate awareness (bench-1..5: 70-80% of requests were predictable 429s)'
       text: async () => '{}',
     }))
     const p = directProvider('groq', 'm', ENV, { tpmBudget: null, maxWaitMs: 100000, sleep: vt.sleep, now: vt.now })
-    await expect(p.send({ prompt: 'x', maxTokens: 10 })).rejects.toThrow(/still rate-limited after/)
+    await expect(p.send({ prompt: 'x', maxTokens: 10 })).rejects.toThrow(/waited \d+s, provider asks for 60s more/)
     expect(p.usage.rateLimit429s).toBeGreaterThan(1)
+  })
+
+  // blueprint-smoke-1 failed four times with "still rate-limited after 0s of
+  // waiting", which reads like the pacing never ran. It had: the provider
+  // asked for longer than this client may wait, which is a quota window and
+  // not throttling. The error has to say which of the two it is.
+  it('a backoff longer than the cap is reported as the provider asking, not as no waiting', async () => {
+    const vt = virtualTime()
+    mockFetch(async () => ({ ok: false, status: 429, headers: { get: () => '900' }, text: async () => '{}' }))
+    const p = directProvider('groq', 'm', ENV, { tpmBudget: null, maxWaitMs: 240000, sleep: vt.sleep, now: vt.now })
+    await expect(p.send({ prompt: 'x', maxTokens: 10 })).rejects.toThrow(/waited 0s, provider asks for 900s more \(cap 240s\)/)
   })
 
   it('a 413 still fails immediately — permanent errors are not waited on', async () => {

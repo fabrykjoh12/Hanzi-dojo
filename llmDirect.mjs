@@ -226,7 +226,14 @@ export function directProvider(providerName, model, env = process.env, {
       // 429 despite pacing: honor the provider's own clock, inside send(), so
       // the caller's generation/repair attempts are never spent on waiting.
       if (waitedTotal + result.retryMs > maxWaitMs) {
-        throw new Error(providerName + '/' + model + ' HTTP 429: still rate-limited after ' + Math.round(waitedTotal / 1000) + 's of waiting')
+        // Say how long the provider asked for. Without it "still rate-limited
+        // after 0s of waiting" reads like a pacing bug, when a 0s wait plus a
+        // refusal means the opposite: the provider handed back a backoff
+        // longer than this client is allowed to wait, which is a quota
+        // window, not per-minute throttling. The smoke run could not be
+        // diagnosed from its own artifact without this number.
+        throw new Error(providerName + '/' + model + ' HTTP 429: waited ' + Math.round(waitedTotal / 1000)
+          + 's, provider asks for ' + Math.round(result.retryMs / 1000) + 's more (cap ' + Math.round(maxWaitMs / 1000) + 's)')
       }
       usage.retryAfterWaitMs += result.retryMs
       waitedTotal += result.retryMs
