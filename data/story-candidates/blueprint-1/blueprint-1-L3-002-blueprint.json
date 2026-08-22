@@ -1,0 +1,668 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "blueprint-1",
+  "generatedAt": "2026-08-22T12:40:45.255Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "blueprint-1-L3-002",
+    "batchId": "blueprint-1",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "结束",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "来自",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 28,
+      "maxLines": 28,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "out in the city: places, errands, and a small discovery",
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "composition": {
+      "bucket": "places",
+      "reason": "4 pending hard targets share the \"places\" theme",
+      "hard": [
+        {
+          "word": "发生",
+          "meaning": "to happen; to occur; to take place; to break out"
+        },
+        {
+          "word": "国家",
+          "meaning": "country; nation; state"
+        },
+        {
+          "word": "结束",
+          "meaning": "termination; to finish"
+        },
+        {
+          "word": "来自",
+          "meaning": "to come from (a place); From: (in email header)"
+        },
+        {
+          "word": "生活",
+          "meaning": "to live; life"
+        }
+      ],
+      "soft": [
+        {
+          "word": "其他",
+          "meaning": "other; (sth or sb) else"
+        },
+        {
+          "word": "或者",
+          "meaning": "or; possibly; maybe; perhaps"
+        },
+        {
+          "word": "当然",
+          "meaning": "only natural; as it should be"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "发生",
+      "国家",
+      "结束",
+      "来自",
+      "生活"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "blueprints": [
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Passport and the Park",
+          "setting": "A busy Saturday afternoon in a mid-sized Chinese city.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming needs to retrieve his passport from a cafe before his flight, but the cafe is closed for a weekend maintenance shutdown.",
+          "incitingEvent": "Li Ming realizes he left his passport at 'Star Cafe' after his meeting ended.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday, 2:00 PM",
+              "where": "Central Park (near the lake)",
+              "what": "Li Ming is relaxing after work. Xiaohong finds him and asks why he looks worried. He explains he left his passport at the cafe near the park entrance. Xiaohong, who is **来自** Canada, offers to help him check.",
+              "because": "the story opens",
+              "arrivedHow": "n/a",
+              "targets": [
+                "来自",
+                "生活"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 2,
+              "when": "Saturday, 2:15 PM",
+              "where": "Star Cafe (Exterior)",
+              "what": "They walk to the cafe. The door is locked with a sign saying 'Closed for Renovation.' Li Ming panics because his plane is tomorrow morning. He asks Xiaohong if they can speak to the manager. Xiaohong suggests they go to the police station or the mall office.",
+              "because": "they need to access the cafe to get the passport, but it is closed",
+              "arrivedHow": "walked 5 minutes from the park",
+              "targets": [
+                "其他",
+                "或者"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Saturday, 2:30 PM",
+              "where": "Street corner near City Hall",
+              "what": "They walk to City Hall to ask for help. Li Ming admits he forgot his ID too. Xiaohong says he must wait until tomorrow. Li Ming says that is impossible because he needs to **结束** his current visa status before Monday. He feels hopeless.",
+              "because": "the cafe was inaccessible, forcing them to seek authority, revealing the time pressure",
+              "arrivedHow": "walked 10 minutes from the cafe",
+              "targets": [
+                "结束"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "Saturday, 2:45 PM",
+              "where": "Crosswalk near City Hall",
+              "what": "As they stand frustrated, a man running towards them drops his wallet. Inside is a key card for 'Star Cafe Renovations.' Xiaohong spots the logo. She asks if this event **发生** often here? The man apologizes, says he is the property manager, and can go back to the cafe to check the lost and found immediately if she comes with him.",
+              "because": "the failure of official channels creates a desperate situation where a random encounter becomes the only hope",
+              "arrivedHow": "approached from the opposite direction",
+              "targets": [
+                "发生"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "Saturday, 3:10 PM",
+              "where": "Star Cafe (Interior)",
+              "what": "The manager leads them inside. He checks the lost and found box. He finds Li Ming's passport. He explains that customers often leave things when the staff asks them to leave for cleaning. Li Ming is relieved. He says, \"Thank you, it is **当然** good that you kept it safe.\"",
+              "because": "the manager had the key and access, resolving the physical barrier",
+              "arrivedHow": "led by the manager through the back entrance",
+              "targets": [
+                "当然"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "Saturday, 3:30 PM",
+              "where": "Central Park (near the lake)",
+              "what": "They return to the park. Li Ming buys Xiaohong drinks. He says this city has strange **事情** (things) that **发生**, but good people who help. Xiaohong agrees that **生活** in this **国家** is exciting. They laugh and rest.",
+              "because": "the conflict is resolved, allowing for a return to normalcy",
+              "arrivedHow": "walked 5 minutes from the cafe",
+              "targets": [],
+              "lines": 1
+            }
+          ],
+          "resolution": "Li Ming retrieves his passport with the help of a property manager who happened to drop his keys, allowing him to catch his flight.",
+          "targetPlan": [
+            {
+              "word": "来自",
+              "beat": 1,
+              "why": "Xiaohong is introduced as a foreigner; this is the standard, natural way to state her origin in casual conversation ('I come from Canada')."
+            },
+            {
+              "word": "其他",
+              "beat": 2,
+              "why": "When the first option (ask manager) is impossible, Xiaohong suggests 'other' places like the police or mall office. This is the logical connector for alternatives."
+            },
+            {
+              "word": "或者",
+              "beat": 2,
+              "why": "Paired with 'other,' Xiaohong offers 'or' the police station. This is the grammatical necessity for listing mutually exclusive backup options."
+            },
+            {
+              "word": "结束",
+              "beat": 3,
+              "why": "Li Ming explains the urgency: he must 'finish/complete' his visa procedures. The word 'finish' is required to describe the administrative deadline."
+            },
+            {
+              "word": "发生",
+              "beat": 4,
+              "why": "Xiaohong reacts to the coincidence of the manager dropping the key right when they are looking for help. She asks if 'this happens' often. This is the natural verb for events occurring."
+            },
+            {
+              "word": "当然",
+              "beat": 5,
+              "why": "Li Ming expresses gratitude and agreement that it is 'natural/expected' for honest people to keep lost items. This fits the polite, conversational tone of relief."
+            },
+            {
+              "word": "生活",
+              "beat": 6,
+              "why": "In the resolution, they reflect on their daily existence. Xiaohong comments on 'living' in this country. This is the standard noun/verb for general life experiences."
+            },
+            {
+              "word": "国家",
+              "beat": 6,
+              "why": "Xiaohong refers to China as a 'country.' This is the specific noun needed to contrast her origin with her current residence in the closing reflection."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "beat_lines",
+              "message": "beat 6 asks for 1 lines (need 2-8)"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "来自": 1,
+            "其他": 2,
+            "或者": 2,
+            "结束": 3,
+            "发生": 4,
+            "当然": 5,
+            "生活": 6,
+            "国家": 6
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": null,
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unparseable",
+              "message": "no JSON plan in the response"
+            }
+          ]
+        }
+      },
+      {
+        "planner": "groq:openai/gpt-oss-120b/low",
+        "attempt": 1,
+        "blueprint": {
+          "title": "Finding a Lost Ticket in the City",
+          "setting": "Beijing, a Saturday morning to afternoon",
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "problem": "李明 lost his metro ticket and may miss the evening concert he promised his mom to attend.",
+          "incitingEvent": "李明 discovers the ticket is missing while preparing to leave home.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "早上 8:00",
+              "where": "家里客厅",
+              "what": "李明检查钱包，发现地铁票不见了。",
+              "because": "the story opens with the central problem appearing.",
+              "arrivedHow": "",
+              "targets": [],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "早上 8:10",
+              "where": "厨房",
+              "what": "李明问妈妈是否看到票，妈妈说没有，建议先去超市买点东西再回来找。",
+              "because": "because the ticket is lost, they need to think where it could be, and a quick errand gives a chance to retrace steps.",
+              "arrivedHow": "",
+              "targets": [
+                "发生"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "早上 8:30",
+              "where": "社区便利店",
+              "what": "李明在便利店里找钱包，店员提醒他票可能掉在路上。",
+              "because": "because he went to the store, he can ask for help and consider where the ticket could have fallen.",
+              "arrivedHow": "walked from home to the nearby store",
+              "targets": [
+                "来自"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "早上 9:00",
+              "where": "地铁站入口",
+              "what": "李明回到地铁站，看到一名乘客（小红）捡到一张票并询问来源。",
+              "because": "because the ticket likely fell on the way to the station, he returns there and meets someone who may have found it.",
+              "arrivedHow": "took the bus from the store to the station",
+              "targets": [
+                "国家"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "早上 9:15",
+              "where": "地铁站售票窗口",
+              "what": "小红把票交给工作人员，工作人员说明票已作废，需要重新购买，但可以用同一张票的号码在系统里找回。",
+              "because": "because the ticket was found, the next step is to resolve its status.",
+              "arrivedHow": "",
+              "targets": [
+                "生活"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "上午 10:00",
+              "where": "家里客厅",
+              "what": "李明用手机重新买票，妈妈高兴地说演唱会快结束了，赶紧去。",
+              "because": "because the ticket issue is solved, they can now prepare for the concert.",
+              "arrivedHow": "took the subway back home",
+              "targets": [
+                "结束"
+              ],
+              "lines": 4
+            }
+          ],
+          "resolution": "李明顺利买到新票，和妈妈一起按时到达演唱会，问题得到圆满解决。",
+          "targetPlan": [
+            {
+              "word": "发生",
+              "beat": 2,
+              "why": "When 李明 asks his mom about the missing ticket, the conversation naturally includes the verb ‘发生’ to describe the unexpected loss that happened."
+            },
+            {
+              "word": "国家",
+              "beat": 4,
+              "why": "小红在询问票的来源时会说‘这张票是从哪个国家的旅行者那里来的？’，因为地铁票上有发行地区的标记，需要说明来源国家。"
+            },
+            {
+              "word": "结束",
+              "beat": 6,
+              "why": "在妈妈提醒演唱会快结束时，需要使用 the word ‘结束’ to indicate the concert is about to finish."
+            },
+            {
+              "word": "来自",
+              "beat": 3,
+              "why": "店员提醒李明票可能‘来自’路上的某个地方，使用‘来自’描述票的来源。"
+            },
+            {
+              "word": "生活",
+              "beat": 5,
+              "why": "工作人员解释票在‘生活’中的使用规则时，自然会提到‘在我们的日常生活中，票的使用有一定规定’。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 2 moves to \"厨房\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 5 moves to \"地铁站售票窗口\" without saying how"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "beats": 6,
+          "placed": {
+            "发生": 2,
+            "国家": 4,
+            "结束": 6,
+            "来自": 3,
+            "生活": 5
+          }
+        }
+      },
+      {
+        "planner": "groq:openai/gpt-oss-120b/low",
+        "attempt": 2,
+        "blueprint": {
+          "title": "Finding the Lost Bus Card",
+          "setting": "Modern city, weekday morning to afternoon",
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "problem": "李明的公交卡在出门时不见了，需要找到它才能上班。",
+          "incitingEvent": "李明在公交站检查口袋，发现卡不见了。",
+          "beats": [
+            {
+              "id": 1,
+              "when": "早上 7:30",
+              "where": "公交站",
+              "what": "李明发现公交卡不见，决定先去最近的便利店问路。",
+              "because": "故事打开，卡丢失导致他必须寻找帮助。",
+              "arrivedHow": "",
+              "targets": [],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "早上 7:45",
+              "where": "便利店",
+              "what": "店员告诉他今天市中心有一个展览，展览**发生**在社区中心，展览主题是**来自**不同**国家**的传统艺术。",
+              "because": "因为李明在寻找卡的线索，店员提供了可能的线索——展览的传单在店里。",
+              "arrivedHow": "步行从公交站到便利店，大约 5 分钟。",
+              "targets": [
+                "发生",
+                "来自",
+                "国家"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "上午 8:10",
+              "where": "社区中心的展览入口",
+              "what": "李明进入展览，看到一幅描绘城市**生活**的画作，提醒他平时的**其他**事务都要按时完成。",
+              "because": "因为他跟随传单来到这里，希望在展览的宣传单上找到卡的线索。",
+              "arrivedHow": "乘坐公交，从便利店到社区中心，大约 10 分钟。",
+              "targets": [
+                "生活",
+                "其他"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "上午 9:00",
+              "where": "社区中心的咖啡区",
+              "what": "李明和小红坐下来聊，决定先把找卡的任务**结束**，再继续观看展览。",
+              "because": "因为他们意识到时间紧迫，需要先解决最重要的问题——找回公交卡。",
+              "arrivedHow": "从展览厅走到咖啡区，步行几分钟。",
+              "targets": [
+                "结束"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "下午 3:30",
+              "where": "妈妈的家",
+              "what": "李明回到家，向妈妈说明情况，妈妈帮他翻找，终于在妈妈的旧钱包里找到了丢失的公交卡，问题**结束**。",
+              "because": "因为他们决定先回家整理，妈妈的帮助最终解决了卡丢失的问题。",
+              "arrivedHow": "乘坐地铁回家，约 30 分钟。",
+              "targets": [
+                "结束"
+              ],
+              "lines": 8
+            }
+          ],
+          "resolution": "李明找回公交卡，能够准时上班，整个找卡的过程结束。",
+          "targetPlan": [
+            {
+              "word": "发生",
+              "beat": 2,
+              "why": "在展览介绍中，需要说明展览何时何地‘发生’。"
+            },
+            {
+              "word": "国家",
+              "beat": 2,
+              "why": "展览的主题是来自不同‘国家’的艺术作品，需要使用该词。"
+            },
+            {
+              "word": "来自",
+              "beat": 2,
+              "why": "描述展览作品‘来自’哪些国家。"
+            },
+            {
+              "word": "生活",
+              "beat": 3,
+              "why": "画作描绘城市‘生活’，自然出现该词。"
+            },
+            {
+              "word": "结束",
+              "beat": 4,
+              "why": "人物决定先‘结束’找卡任务再继续观展。"
+            },
+            {
+              "word": "结束",
+              "beat": 5,
+              "why": "问题最终‘结束’，卡找回。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "target_unjustified",
+              "message": "结束 has no reason for belonging in beat 5"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "beats": 5,
+          "placed": {
+            "发生": 2,
+            "国家": 2,
+            "来自": 2,
+            "生活": 3,
+            "结束": 4
+          }
+        }
+      }
+    ],
+    "selection": {
+      "code": "NO_VALID_BLUEPRINT"
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "blueprint-1-L3-002",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}

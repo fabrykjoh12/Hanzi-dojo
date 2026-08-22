@@ -1,0 +1,793 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "blueprint-1",
+  "generatedAt": "2026-08-22T12:40:45.254Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "blueprint-1-L3-001",
+    "batchId": "blueprint-1",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 28,
+      "maxLines": 28,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "关系",
+      "女人",
+      "男人",
+      "帮助",
+      "需要"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "blueprints": [
+      {
+        "label": "A",
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Neighbor in Need",
+          "setting": "A quiet residential apartment building, on a rainy Saturday afternoon.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "An elderly neighbor is stuck in her apartment with a dangerous electrical leak, and the characters must coordinate a safe solution without entering the hazard zone.",
+          "incitingEvent": "李明 和 小红 hear a scream and see water pooling from under their neighbor's door.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday, 2:00 PM",
+              "where": "Hallway outside Apartment 201",
+              "what": "李明 and 小红 notice water leaking from under 201 and hear someone calling for help.",
+              "because": "the story opens",
+              "arrivedHow": "",
+              "targets": [],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "Saturday, 2:05 PM",
+              "where": "Hallway outside Apartment 201",
+              "what": "They peek through the window and see an elderly woman struggling with a sparking socket. They realize they cannot help physically because it is dangerous.",
+              "because": "They need to identify the hazard level before acting, revealing that the **女人** (woman) is in physical danger from electricity, not just water.",
+              "arrivedHow": "",
+              "targets": [
+                "女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Saturday, 2:10 PM",
+              "where": "Lift Lobby",
+              "what": "李明 decides they **需要** (need) professional help immediately. He says they **必须** (must) call the repairman. They wait for him to arrive.",
+              "because": "Recognizing the danger requires specialized aid, not amateur fixes, creating the demand for external resources.",
+              "arrivedHow": "They walk from the 2nd floor hallway down to the lobby to get better signal and wait away from the water.",
+              "targets": [
+                "需要",
+                "必须"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "Saturday, 2:30 PM",
+              "where": "Lift Lobby",
+              "what": "The repairman calls and says he is busy. He asks if a neighbor can check the total power switch **如果** (if) no one is touching the water. 小红 volunteers.",
+              "because": "The professional cannot arrive fast enough, forcing a conditional plan where the risk is mitigated by checking the main switch.",
+              "arrivedHow": "",
+              "targets": [
+                "如果"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Saturday, 2:35 PM",
+              "where": "Stairwell leading to 2nd Floor",
+              "what": "A young man (**男人**) living downstairs runs up the stairs to offer **帮助** (help). He sees the situation and agrees to cut the power with 小红 while 李明 talks to the old lady to calm her.",
+              "because": "The plan requires two people to execute safely, and the neighbors' involvement deepens the community aspect of the **关系** (relationship).",
+              "arrivedHow": "They run up the stairs from the lobby.",
+              "targets": [
+                "男人",
+                "帮助"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "Saturday, 2:50 PM",
+              "where": "Hallway outside Apartment 201",
+              "what": "The power is off. The repairman arrives. The old lady is safe. 李明 and 小红 realize that good neighborly **关系** (relationship) means knowing your neighbors.",
+              "because": "The immediate danger is resolved, allowing reflection on the social bond that facilitated the solution.",
+              "arrivedHow": "They return to the hallway after the repairman handles the technical fix.",
+              "targets": [
+                "关系"
+              ],
+              "lines": 4
+            }
+          ],
+          "resolution": "The electrical leak is fixed by the professional, and the neighbors establish a stronger trust and communication channel due to the shared crisis.",
+          "targetPlan": [
+            {
+              "word": "女人",
+              "beat": 2,
+              "why": "The characters visually identify the victim through the window. Describing her as a 'woman' (specifically an elderly one) distinguishes her from the male repairman and neighbors, grounding the observation in concrete visual facts."
+            },
+            {
+              "word": "需要",
+              "beat": 3,
+              "why": "After assessing the danger, 李明 logically concludes that their current skills are insufficient. Using 'need' expresses the objective requirement for professional intervention, a critical turning point from panic to planning."
+            },
+            {
+              "word": "必须",
+              "beat": 3,
+              "why": "Following the realization of 'need', 李明 strengthens the urgency by stating they 'must' act now. This word carries the moral and safety obligation to not delay, driving the next action of calling the repairman."
+            },
+            {
+              "word": "如果",
+              "beat": 4,
+              "why": "The repairman proposes a conditional solution. He cannot guarantee safety without a premise. 'If' introduces the boundary condition (no one touching water) under which the amateur attempt is permissible, teaching conditional reasoning in safety contexts."
+            },
+            {
+              "word": "男人",
+              "beat": 5,
+              "why": "A new character enters the scene to assist. Identifying him as a 'man' (specifically a young neighbor) introduces the physical help required for the task, contrasting with the victim (woman) and the initiators."
+            },
+            {
+              "word": "帮助",
+              "beat": 5,
+              "why": "The young man's intent is to provide aid. Using 'help' explicitly labels his action as assistance, validating the theme of neighbors supporting each other. It is the verb that drives the resolution of the physical problem."
+            },
+            {
+              "word": "关系",
+              "beat": 6,
+              "why": "The story concludes with a reflection on the social bond. The characters realize that their 'relationship' with their neighbors is what made the complex coordination possible. This abstractly summarizes the concrete events, typical of HSK 3 moral conclusions."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "rendered": "TITLE CONCEPT: The Neighbor in Need\nSETTING: A quiet residential apartment building, on a rainy Saturday afternoon.\nCAST: 李明、小红\nCENTRAL PROBLEM: An elderly neighbor is stuck in her apartment with a dangerous electrical leak, and the characters must coordinate a safe solution without entering the hazard zone.\nINCITING EVENT: 李明 和 小红 hear a scream and see water pooling from under their neighbor's door.\nBEATS:\n  1. [Saturday, 2:00 PM · Hallway outside Apartment 201]\n     WHAT CHANGES: 李明 and 小红 notice water leaking from under 201 and hear someone calling for help.\n  2. [Saturday, 2:05 PM · Hallway outside Apartment 201] · uses 女人\n     WHAT CHANGES: They peek through the window and see an elderly woman struggling with a sparking socket. They realize they cannot help physically because it is dangerous.\n     BECAUSE: They need to identify the hazard level before acting, revealing that the **女人** (woman) is in physical danger from electricity, not just water.\n  3. [Saturday, 2:10 PM · Lift Lobby] · uses 需要、必须\n     WHAT CHANGES: 李明 decides they **需要** (need) professional help immediately. He says they **必须** (must) call the repairman. They wait for him to arrive.\n     BECAUSE: Recognizing the danger requires specialized aid, not amateur fixes, creating the demand for external resources.\n     GOT THERE BY: They walk from the 2nd floor hallway down to the lobby to get better signal and wait away from the water.\n  4. [Saturday, 2:30 PM · Lift Lobby] · uses 如果\n     WHAT CHANGES: The repairman calls and says he is busy. He asks if a neighbor can check the total power switch **如果** (if) no one is touching the water. 小红 volunteers.\n     BECAUSE: The professional cannot arrive fast enough, forcing a conditional plan where the risk is mitigated by checking the main switch.\n  5. [Saturday, 2:35 PM · Stairwell leading to 2nd Floor] · uses 男人、帮助\n     WHAT CHANGES: A young man (**男人**) living downstairs runs up the stairs to offer **帮助** (help). He sees the situation and agrees to cut the power with 小红 while 李明 talks to the old lady to calm her.\n     BECAUSE: The plan requires two people to execute safely, and the neighbors' involvement deepens the community aspect of the **关系** (relationship).\n     GOT THERE BY: They run up the stairs from the lobby.\n  6. [Saturday, 2:50 PM · Hallway outside Apartment 201] · uses 关系\n     WHAT CHANGES: The power is off. The repairman arrives. The old lady is safe. 李明 and 小红 realize that good neighborly **关系** (relationship) means knowing your neighbors.\n     BECAUSE: The immediate danger is resolved, allowing reflection on the social bond that facilitated the solution.\n     GOT THERE BY: They return to the hallway after the repairman handles the technical fix.\nRESOLUTION: The electrical leak is fixed by the professional, and the neighbors establish a stronger trust and communication channel due to the shared crisis.\nTARGET WORDS:\n  女人 → beat 2: The characters visually identify the victim through the window. Describing her as a 'woman' (specifically an elderly one) distinguishes her from the male repairman and neighbors, grounding the observation in concrete visual facts.\n  需要 → beat 3: After assessing the danger, 李明 logically concludes that their current skills are insufficient. Using 'need' expresses the objective requirement for professional intervention, a critical turning point from panic to planning.\n  必须 → beat 3: Following the realization of 'need', 李明 strengthens the urgency by stating they 'must' act now. This word carries the moral and safety obligation to not delay, driving the next action of calling the repairman.\n  如果 → beat 4: The repairman proposes a conditional solution. He cannot guarantee safety without a premise. 'If' introduces the boundary condition (no one touching water) under which the amateur attempt is permissible, teaching conditional reasoning in safety contexts.\n  男人 → beat 5: A new character enters the scene to assist. Identifying him as a 'man' (specifically a young neighbor) introduces the physical help required for the task, contrasting with the victim (woman) and the initiators.\n  帮助 → beat 5: The young man's intent is to provide aid. Using 'help' explicitly labels his action as assistance, validating the theme of neighbors supporting each other. It is the verb that drives the resolution of the physical problem.\n  关系 → beat 6: The story concludes with a reflection on the social bond. The characters realize that their 'relationship' with their neighbors is what made the complex coordination possible. This abstractly summarizes the concrete events, typical of HSK 3 moral conclusions.",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "女人": 2,
+            "需要": 3,
+            "必须": 3,
+            "如果": 4,
+            "男人": 5,
+            "帮助": 5,
+            "关系": 6
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": "B",
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Neighbour's Visit",
+          "setting": "A residential apartment building in Beijing, a rainy Tuesday afternoon.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Liam answers the door for a stranger because his neighbor is unavailable, creating a social obligation he doesn't immediately understand.",
+          "incitingEvent": "The doorbell rings, and Li Ming answers it to find a woman he does not recognize.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "4:00 PM",
+              "where": "Li Ming's apartment door",
+              "what": "Li Ming hears the doorbell, opens it, and sees a woman standing outside holding an umbrella.",
+              "because": "the story opens",
+              "arrivedHow": "start",
+              "targets": [
+                "女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "4:02 PM",
+              "where": "Li Ming's apartment lobby",
+              "what": "The woman explains she moved in next door. She mentions her husband is not home; he is busy working. She is alone because the man is absent.",
+              "because": "Li Ming asked who she was, and she explained her situation to justify the visit.",
+              "arrivedHow": "standing there",
+              "targets": [
+                "男人"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 3,
+              "when": "4:05 PM",
+              "where": "Li Ming's apartment living room",
+              "what": "The woman asks for help moving a heavy box. Li Ming feels he needs to assist her because she seems tired.",
+              "because": "She identified herself as a neighbour in need and made a specific request.",
+              "arrivedHow": "invited inside briefly",
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "lines": 7
+            },
+            {
+              "id": 4,
+              "when": "4:15 PM",
+              "where": "Next door apartment (Xiao Hong's empty place)",
+              "what": "Li Ming helps the woman move the box. She gives advice on being a good neighbour in the future.",
+              "because": "Li Ming agreed to the request, so the action takes place.",
+              "arrivedHow": "walked next door",
+              "targets": [],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "4:30 PM",
+              "where": "Li Ming's apartment door",
+              "what": "The woman leaves. Li Ming tells Xiao Hong (who just returned) that they met. Li Ming states the importance of the relationship between neighbours.",
+              "because": "The task is done, and he must report the event to his housemate/roommate contextually established as Xiao Hong.",
+              "arrivedHow": "back to own door",
+              "targets": [
+                "关系"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "Li Ming helps the new neighbour move her box, establishing a friendly relationship with her.",
+          "targetPlan": [
+            {
+              "word": "女人",
+              "beat": 1,
+              "why": "Li Ming opens the door and must identify the stranger as a female adult to understand who he is talking to before engaging in conversation."
+            },
+            {
+              "word": "男人",
+              "beat": 2,
+              "why": "The woman contrasts her current state (alone/needing help) with the man's state (away/busy), explaining why she is asking a stranger instead of her spouse."
+            },
+            {
+              "word": "需要",
+              "beat": 3,
+              "why": "The woman explicitly states her requirement ('I need...') to justify her intrusion and make the specific request for assistance."
+            },
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "After stating the need, she specifies the type of aid required ('...help with this box'), making the transactional nature of the interaction clear."
+            },
+            {
+              "word": "关系",
+              "beat": 5,
+              "why": "Li Ming reflects on the interaction, realizing that this small act defines the 'relationship' (good or bad) that will exist between them going forward."
+            }
+          ],
+          "impossibleTargets": [
+            "如果",
+            "而且",
+            "必须"
+          ]
+        },
+        "rendered": "TITLE CONCEPT: The Neighbour's Visit\nSETTING: A residential apartment building in Beijing, a rainy Tuesday afternoon.\nCAST: 李明、小红\nCENTRAL PROBLEM: Liam answers the door for a stranger because his neighbor is unavailable, creating a social obligation he doesn't immediately understand.\nINCITING EVENT: The doorbell rings, and Li Ming answers it to find a woman he does not recognize.\nBEATS:\n  1. [4:00 PM · Li Ming's apartment door] · uses 女人\n     WHAT CHANGES: Li Ming hears the doorbell, opens it, and sees a woman standing outside holding an umbrella.\n     GOT THERE BY: start\n  2. [4:02 PM · Li Ming's apartment lobby] · uses 男人\n     WHAT CHANGES: The woman explains she moved in next door. She mentions her husband is not home; he is busy working. She is alone because the man is absent.\n     BECAUSE: Li Ming asked who she was, and she explained her situation to justify the visit.\n     GOT THERE BY: standing there\n  3. [4:05 PM · Li Ming's apartment living room] · uses 需要、帮助\n     WHAT CHANGES: The woman asks for help moving a heavy box. Li Ming feels he needs to assist her because she seems tired.\n     BECAUSE: She identified herself as a neighbour in need and made a specific request.\n     GOT THERE BY: invited inside briefly\n  4. [4:15 PM · Next door apartment (Xiao Hong's empty place)]\n     WHAT CHANGES: Li Ming helps the woman move the box. She gives advice on being a good neighbour in the future.\n     BECAUSE: Li Ming agreed to the request, so the action takes place.\n     GOT THERE BY: walked next door\n  5. [4:30 PM · Li Ming's apartment door] · uses 关系\n     WHAT CHANGES: The woman leaves. Li Ming tells Xiao Hong (who just returned) that they met. Li Ming states the importance of the relationship between neighbours.\n     BECAUSE: The task is done, and he must report the event to his housemate/roommate contextually established as Xiao Hong.\n     GOT THERE BY: back to own door\nRESOLUTION: Li Ming helps the new neighbour move her box, establishing a friendly relationship with her.\nTARGET WORDS:\n  女人 → beat 1: Li Ming opens the door and must identify the stranger as a female adult to understand who he is talking to before engaging in conversation.\n  男人 → beat 2: The woman contrasts her current state (alone/needing help) with the man's state (away/busy), explaining why she is asking a stranger instead of her spouse.\n  需要 → beat 3: The woman explicitly states her requirement ('I need...') to justify her intrusion and make the specific request for assistance.\n  帮助 → beat 3: After stating the need, she specifies the type of aid required ('...help with this box'), making the transactional nature of the interaction clear.\n  关系 → beat 5: Li Ming reflects on the interaction, realizing that this small act defines the 'relationship' (good or bad) that will exist between them going forward.",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 5,
+          "placed": {
+            "女人": 1,
+            "男人": 2,
+            "需要": 3,
+            "帮助": 3,
+            "关系": 5
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:openai/gpt-oss-120b/low",
+        "attempt": 1,
+        "blueprint": {
+          "title": "Helping a Neighbor with a Leak",
+          "setting": "A modern apartment building in a Chinese city, summer morning to afternoon",
+          "cast": [
+            "李明",
+            "小红",
+            "小明"
+          ],
+          "problem": "A water pipe leaks in the hallway, causing a flood risk for the residents",
+          "incitingEvent": "李明 hears a splash and sees water pooling in the hallway",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Morning, right after breakfast",
+              "where": "Apartment hallway near the stairwell",
+              "what": "李明 sees 小红, a woman (女人), looking worried because water is spreading",
+              "because": "the story opens with the leak being discovered",
+              "arrivedHow": "",
+              "targets": [
+                "女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Immediately after the discovery",
+              "where": "Same hallway, they stand by the leaking pipe",
+              "what": "小红 says she needs (需要) help (帮助) to stop the water, and 李明 offers to assist",
+              "because": "because 小红 is worried and cannot handle the situation alone",
+              "arrivedHow": "",
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 3,
+              "when": "A few minutes later",
+              "where": "Near the building management office on the ground floor",
+              "what": "李明 calls the repair man (男人) named 小明, who comes with tools",
+              "because": "because the leak cannot be fixed without a professional",
+              "arrivedHow": "李明 and 小红 walk down the stairs to the office",
+              "targets": [
+                "男人"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "Mid‑morning, after the repair man arrives",
+              "where": "Back in the hallway, the pipe is being patched",
+              "what": "During the repair, the three discuss how helping each other builds good neighbor relationships (关系)",
+              "because": "because the shared effort makes them realize the importance of a friendly relationship",
+              "arrivedHow": "",
+              "targets": [
+                "关系"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Late morning, after the repair is done",
+              "where": "Hallway, now dry and clean",
+              "what": "The leak is fixed, the water stops, and the residents feel relieved; the problem is solved",
+              "because": "because the repair man successfully fixed the pipe, ending the crisis",
+              "arrivedHow": "",
+              "targets": [],
+              "lines": 6
+            }
+          ],
+          "resolution": "The water leak is repaired, the hallway is safe again, and the neighbors feel a stronger friendship.",
+          "targetPlan": [
+            {
+              "word": "关系",
+              "beat": 4,
+              "why": "The characters talk about how helping each other creates a good relationship between neighbors."
+            },
+            {
+              "word": "女人",
+              "beat": 1,
+              "why": "小红 is introduced as a woman, so the word '女人' is needed to identify her gender."
+            },
+            {
+              "word": "男人",
+              "beat": 3,
+              "why": "The repair person is a male, and the story must mention that a man (男人) is called to fix the pipe."
+            },
+            {
+              "word": "帮助",
+              "beat": 2,
+              "why": "小红 explicitly says she needs help, and 李明 offers assistance, requiring the word '帮助'."
+            },
+            {
+              "word": "需要",
+              "beat": 2,
+              "why": "小红 states that she needs (需要) help with the leaking water."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 2 moves to \"Same hallway, they stand by the leaking pipe\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 4 moves to \"Back in the hallway, the pipe is being patched\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 5 moves to \"Hallway, now dry and clean\" without saying how"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红",
+            "小明"
+          ],
+          "beats": 5,
+          "placed": {
+            "关系": 4,
+            "女人": 1,
+            "男人": 3,
+            "帮助": 2,
+            "需要": 2
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:openai/gpt-oss-120b/low",
+        "attempt": 2,
+        "blueprint": {
+          "title": "A Neighbor Helps Fix a Leaking Pipe",
+          "setting": "Modern apartment building, Beijing, early afternoon",
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "problem": "The bathroom pipe is leaking and the water is flooding the floor.",
+          "incitingEvent": "李明 discovers water spreading on the bathroom floor when he comes home from work.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Afternoon, just after 李明 returns home",
+              "where": "李明's bathroom",
+              "what": "李明 sees water on the floor and realizes the pipe is broken.",
+              "because": "the story opens",
+              "arrivedHow": "",
+              "targets": [
+                "需要"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "A few minutes later",
+              "where": "Li Ming's living room",
+              "what": "He calls his mother for help because he needs a tool to stop the leak.",
+              "because": "the pipe is broken and water is spreading, so he needs assistance",
+              "arrivedHow": "",
+              "targets": [
+                "帮助",
+                "需要"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Shortly after the call",
+              "where": "Hallway outside 李明's apartment",
+              "what": "妈妈 arrives with a wrench, and they notice the building manager (a man) is also in the hallway.",
+              "because": "妈妈 comes to help, and the manager is there to check the building's plumbing",
+              "arrivedHow": "",
+              "targets": [
+                "男人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "Immediately after the manager arrives",
+              "where": "Bathroom doorway",
+              "what": "The manager, a man, explains the pipe's relation (关系) to the main water line and says the repair must be done quickly.",
+              "because": "understanding the pipe's relationship to the main line is essential for fixing it",
+              "arrivedHow": "",
+              "targets": [
+                "关系",
+                "必须"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "After the explanation",
+              "where": "Bathroom",
+              "what": "小红, a woman neighbor who lives upstairs, hears the noise and offers to fetch another tool.",
+              "because": "the repair needs an extra tool, and 小红 hears the commotion",
+              "arrivedHow": "She comes down the stairs after hearing the water splashing",
+              "targets": [
+                "女人"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 6,
+              "when": "Soon after 小红 arrives",
+              "where": "Bathroom",
+              "what": "With the wrench and the extra tool, they stop the leak, dry the floor, and thank each other.",
+              "because": "the combined help resolves the leak, ending the problem",
+              "arrivedHow": "",
+              "targets": [],
+              "lines": 4
+            }
+          ],
+          "resolution": "The pipe is fixed, the floor dries, and 李明 feels grateful for the help of his mother, the manager (男人), and the neighbor 小红 (女人).",
+          "targetPlan": [
+            {
+              "word": "关系",
+              "beat": 4,
+              "why": "They need to explain how the leaking pipe is connected to the main water line, so they must discuss its relation (关系)."
+            },
+            {
+              "word": "女人",
+              "beat": 5,
+              "why": "The helpful neighbor who brings an extra tool is a woman, so the story naturally uses the word 女人."
+            },
+            {
+              "word": "男人",
+              "beat": 3,
+              "why": "The building manager who arrives to assist is a man, providing a context for the word 男人."
+            },
+            {
+              "word": "帮助",
+              "beat": 2,
+              "why": "李明 calls his mother because he needs help (帮助) with the leaking pipe."
+            },
+            {
+              "word": "需要",
+              "beat": 1,
+              "why": "李明 realizes he needs to stop the water, introducing the word 需要."
+            },
+            {
+              "word": "必须",
+              "beat": 4,
+              "why": "The manager says the repair must be done quickly, using 必须."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 2 moves to \"Li Ming's living room\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 3 moves to \"Hallway outside 李明's apartment\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 4 moves to \"Bathroom doorway\" without saying how"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "beats": 6,
+          "placed": {
+            "关系": 4,
+            "女人": 5,
+            "男人": 3,
+            "帮助": 2,
+            "需要": 1,
+            "必须": 4
+          }
+        },
+        "score": null,
+        "acceptable": false
+      }
+    ],
+    "selection": {
+      "code": "BLUEPRINT_QUALITY_FAILED",
+      "reason": "the judge returned nothing usable"
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "blueprint-1-L3-001",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}

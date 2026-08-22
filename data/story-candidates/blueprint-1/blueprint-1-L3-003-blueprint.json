@@ -1,0 +1,824 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "blueprint-1",
+  "generatedAt": "2026-08-22T12:40:45.255Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "blueprint-1-L3-003",
+    "batchId": "blueprint-1",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "得到",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "了解",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "参加",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "安全",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "选择",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "只要",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "关于",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "特别",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 28,
+      "maxLines": 28,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a bigger outing or adventure away from home with a genuine surprise in the middle",
+    "series": null,
+    "composition": {
+      "bucket": "general",
+      "reason": "top-priority hard targets are general-purpose vocabulary that fits any theme",
+      "hard": [
+        {
+          "word": "得到",
+          "meaning": "to get; to obtain"
+        },
+        {
+          "word": "了解",
+          "meaning": "to understand; to realize"
+        },
+        {
+          "word": "参加",
+          "meaning": "to participate; to take part"
+        },
+        {
+          "word": "安全",
+          "meaning": "safe; secure; safety; security"
+        },
+        {
+          "word": "选择",
+          "meaning": "to select; to pick"
+        }
+      ],
+      "soft": [
+        {
+          "word": "只要",
+          "meaning": "if only; so long as"
+        },
+        {
+          "word": "关于",
+          "meaning": "pertaining to; concerning"
+        },
+        {
+          "word": "特别",
+          "meaning": "unusual; special; very; especially; particularly"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸",
+        "卡",
+        "辆"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "得到",
+      "了解",
+      "参加",
+      "安全",
+      "选择"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "blueprints": [
+      {
+        "label": "A",
+        "planner": "groq:openai/gpt-oss-120b/low",
+        "attempt": 2,
+        "blueprint": {
+          "title": "Finding a Safe Place for the School Trip",
+          "setting": "Modern city, a school day in early September",
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "problem": "The class needs a safe venue for a field trip, but the usual park is closed for repairs.",
+          "incitingEvent": "老师告诉大家，原来的公园要维修，必须另找地方参加春游。",
+          "beats": [
+            {
+              "id": 1,
+              "when": "上午 8:00",
+              "where": "学校教室",
+              "what": "老师宣布公园关闭，要求学生们提出新的地点",
+              "because": "the story opens with the problem being presented",
+              "arrivedHow": "",
+              "targets": [],
+              "lines": 3
+            },
+            {
+              "id": 2,
+              "when": "上午 8:10",
+              "where": "学校教室",
+              "what": "李明向老师提出去城市图书馆的儿童阅读区",
+              "because": "because the class needs a replacement venue, students start suggesting places",
+              "arrivedHow": "",
+              "targets": [
+                "选择"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 3,
+              "when": "上午 8:20",
+              "where": "学校教室",
+              "what": "小红说明图书馆人很多，可能不够安全，提醒大家考虑安全因素",
+              "because": "because 李明的提议引发了对安全的担忧",
+              "arrivedHow": "",
+              "targets": [
+                "安全"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 4,
+              "when": "上午 8:30",
+              "where": "学校教室",
+              "what": "妈妈（小红的妈妈）恰好来学校，告诉他们社区中心有专门的儿童活动室，已经通过安全检查",
+              "because": "because 小红提到安全问题，老师请家长提供信息",
+              "arrivedHow": "妈妈步行来到学校",
+              "targets": [
+                "得到"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "上午 9:00",
+              "where": "社区中心",
+              "what": "全班到达社区中心，老师向大家介绍设施并说明活动安排",
+              "because": "because 老师得到妈妈提供的地点信息后，需要实地考察",
+              "arrivedHow": "乘坐校车前往社区中心",
+              "targets": [
+                "了解"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "上午 9:30",
+              "where": "社区中心",
+              "what": "老师宣布正式把社区中心选为春游地点，所有同学都可以参加",
+              "because": "because 他们已经了解场地并确认安全，决定使用它",
+              "arrivedHow": "",
+              "targets": [
+                "参加"
+              ],
+              "lines": 3
+            }
+          ],
+          "resolution": "班级顺利决定并使用社区中心作为春游地点，问题得到解决。",
+          "targetPlan": [
+            {
+              "word": "得到",
+              "beat": 4,
+              "why": "妈妈提供了一个新地点，这让老师和同学们得到了解决方案。"
+            },
+            {
+              "word": "了解",
+              "beat": 5,
+              "why": "在社区中心，老师向学生们解释设施，使他们了解场地的具体情况。"
+            },
+            {
+              "word": "参加",
+              "beat": 6,
+              "why": "老师宣布所有同学都可以参加这次春游，使用新地点。"
+            },
+            {
+              "word": "安全",
+              "beat": 3,
+              "why": "小红指出如果场地不安全，春游就会有隐患，她强调必须考虑安全。"
+            },
+            {
+              "word": "选择",
+              "beat": 2,
+              "why": "李明在老师要求下选择了一个可能的地点——城市图书馆。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "rendered": "TITLE CONCEPT: Finding a Safe Place for the School Trip\nSETTING: Modern city, a school day in early September\nCAST: 李明、小红、妈妈\nCENTRAL PROBLEM: The class needs a safe venue for a field trip, but the usual park is closed for repairs.\nINCITING EVENT: 老师告诉大家，原来的公园要维修，必须另找地方参加春游。\nBEATS:\n  1. [上午 8:00 · 学校教室]\n     WHAT CHANGES: 老师宣布公园关闭，要求学生们提出新的地点\n  2. [上午 8:10 · 学校教室] · uses 选择\n     WHAT CHANGES: 李明向老师提出去城市图书馆的儿童阅读区\n     BECAUSE: because the class needs a replacement venue, students start suggesting places\n  3. [上午 8:20 · 学校教室] · uses 安全\n     WHAT CHANGES: 小红说明图书馆人很多，可能不够安全，提醒大家考虑安全因素\n     BECAUSE: because 李明的提议引发了对安全的担忧\n  4. [上午 8:30 · 学校教室] · uses 得到\n     WHAT CHANGES: 妈妈（小红的妈妈）恰好来学校，告诉他们社区中心有专门的儿童活动室，已经通过安全检查\n     BECAUSE: because 小红提到安全问题，老师请家长提供信息\n     GOT THERE BY: 妈妈步行来到学校\n  5. [上午 9:00 · 社区中心] · uses 了解\n     WHAT CHANGES: 全班到达社区中心，老师向大家介绍设施并说明活动安排\n     BECAUSE: because 老师得到妈妈提供的地点信息后，需要实地考察\n     GOT THERE BY: 乘坐校车前往社区中心\n  6. [上午 9:30 · 社区中心] · uses 参加\n     WHAT CHANGES: 老师宣布正式把社区中心选为春游地点，所有同学都可以参加\n     BECAUSE: because 他们已经了解场地并确认安全，决定使用它\nRESOLUTION: 班级顺利决定并使用社区中心作为春游地点，问题得到解决。\nTARGET WORDS:\n  得到 → beat 4: 妈妈提供了一个新地点，这让老师和同学们得到了解决方案。\n  了解 → beat 5: 在社区中心，老师向学生们解释设施，使他们了解场地的具体情况。\n  参加 → beat 6: 老师宣布所有同学都可以参加这次春游，使用新地点。\n  安全 → beat 3: 小红指出如果场地不安全，春游就会有隐患，她强调必须考虑安全。\n  选择 → beat 2: 李明在老师要求下选择了一个可能的地点——城市图书馆。",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "beats": 6,
+          "placed": {
+            "得到": 4,
+            "了解": 5,
+            "参加": 6,
+            "安全": 3,
+            "选择": 2
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Safe Choice for the Field Trip",
+          "setting": "A primary school classroom and the school activity center, one afternoon.",
+          "cast": [
+            "李明",
+            "小明",
+            "小红"
+          ],
+          "problem": "Li Ming and Xiao Ming must choose one club activity for their class to participate in, but they disagree on which one is best.",
+          "incitingEvent": "The teacher announces that each class must pick exactly one activity for the upcoming school festival next week.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "4:00 PM",
+              "where": "Classroom",
+              "what": "The teacher tells the class they need to pick an activity. Li Ming and Xiao Ming volunteer to decide.",
+              "because": "the story opens",
+              "arrivedHow": "",
+              "targets": [
+                "参加"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "4:15 PM",
+              "where": "School Hallway",
+              "what": "Li Ming wants to join the hiking club. Xiao Ming says it is too dangerous. They disagree.",
+              "because": "Li Ming and Xiao Ming must now make a decision and have differing preferences",
+              "arrivedHow": "walked out of the classroom",
+              "targets": [
+                "安全",
+                "选择"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 3,
+              "when": "4:25 PM",
+              "where": "Xiao Hong's Desk (Corridor)",
+              "what": "They ask Xiao Hong for advice. She suggests thinking about what the majority of the class likes.",
+              "because": "They are stuck in their disagreement and need a third opinion",
+              "arrivedHow": "turned to Xiao Hong, who was packing her bag nearby",
+              "targets": [],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "4:35 PM",
+              "where": "Classroom (via WeChat Group)",
+              "what": "They message the class group chat to ask everyone's preference. They see most people want something easy and fun.",
+              "because": "Xiao Hong advised them to consider the majority's wish",
+              "arrivedHow": "returned to the classroom to use phones",
+              "targets": [
+                "了解"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "4:50 PM",
+              "where": "Classroom",
+              "what": "They realize the photography club is the best choice. It is safe and everyone can do it. Li Ming accepts the result.",
+              "because": "The class feedback clarifies that hiking is unpopular, so they must find the common ground",
+              "arrivedHow": "",
+              "targets": [
+                "得到",
+                "特别"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "5:00 PM",
+              "where": "Teacher's Office",
+              "what": "They tell the teacher the class has chosen the photography club. The teacher agrees.",
+              "because": "They reached a consensus based on the class vote",
+              "arrivedHow": "walked to the office to report",
+              "targets": [
+                "只要"
+              ],
+              "lines": 1
+            }
+          ],
+          "resolution": "The trio successfully selects the photography club, satisfying the teacher's requirement and the class's desire for a low-risk, fun activity.",
+          "targetPlan": [
+            {
+              "word": "参加",
+              "beat": 1,
+              "why": "The teacher explicitly states the goal: the students need to 'take part in' (参加) one specific activity for the school festival."
+            },
+            {
+              "word": "安全",
+              "beat": 2,
+              "why": "Xiao Ming rejects the hiking option specifically because he worries about safety (安全), creating the conflict."
+            },
+            {
+              "word": "选择",
+              "beat": 2,
+              "why": "Li Ming argues that it is difficult to make this specific 'choice' (选择) because they haven't asked everyone yet."
+            },
+            {
+              "word": "了解",
+              "beat": 4,
+              "why": "By reading the group chat, they finally 'understand' (了解) or realize what the other students actually want."
+            },
+            {
+              "word": "得到",
+              "beat": 5,
+              "why": "Li Ming is happy because they have 'obtained' (得到) a clear answer from the class, ending the confusion."
+            },
+            {
+              "word": "特别",
+              "beat": 5,
+              "why": "They describe the photography club as 'especially' (特别) good because it fits everyone's level."
+            },
+            {
+              "word": "只要",
+              "beat": 6,
+              "why": "The teacher concludes that 'as long as' (只要) the class is happy with the choice, the specific activity doesn't matter."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 5 moves to \"Classroom\" without saying how"
+            },
+            {
+              "code": "beat_lines",
+              "message": "beat 6 asks for 1 lines (need 2-8)"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "参加": 1,
+            "安全": 2,
+            "选择": 2,
+            "了解": 4,
+            "得到": 5,
+            "特别": 5,
+            "只要": 6
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Group Project Choice",
+          "setting": "A university classroom and library, present day.",
+          "cast": [
+            "李明",
+            "小红",
+            "小明"
+          ],
+          "problem": "Three friends need to choose a topic for a group presentation but have conflicting ideas that cause stress.",
+          "incitingEvent": "The teacher announces a mandatory group presentation about 'Safety' and requires the group to submit a topic proposal by the end of the day.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Morning, 10:00 AM",
+              "where": "Classroom",
+              "what": "Li Ming, Xiao Hong, and Xiao Ming are grouped together. The teacher assigns the topic 'Safety' and they must pick a specific angle.",
+              "because": "the story opens with the assignment that creates the central conflict",
+              "targets": [
+                "安全"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Lunchtime, 12:30 PM",
+              "where": "Cafeteria (moved from Classroom by walking)",
+              "what": "They discuss options. Xiao Ming wants to talk about fire safety because it is 'special' and exciting. Xiao Hong thinks it is too technical and wants to talk about traffic safety instead.",
+              "because": "they need to brainstorm ideas immediately after class to meet the deadline",
+              "arrivedHow": "walked to cafeteria",
+              "targets": [
+                "特别"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 3,
+              "when": "Afternoon, 2:00 PM",
+              "where": "Library study room (moved from Cafeteria by walking)",
+              "what": "They debate further. Li Ming realizes ('understands') that neither topic fits their strengths: Xiao Hong is shy, so she can't do the exciting fire demo, and Xiao Ming doesn't drive, so he knows little about traffic rules. They are stuck.",
+              "because": "the initial ideas revealed flaws that require deeper reflection on their capabilities",
+              "arrivedHow": "walked to library",
+              "targets": [
+                "了解"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "Afternoon, 3:30 PM",
+              "where": "Library study room",
+              "what": "Li Ming suggests a new idea: Internet Safety. He argues that they don't need a car or special effects; they just need the internet. As long as they 'select' this topic, they can all contribute equally using skills they already have.",
+              "because": "the realization of their limitations in Beat 3 forces a compromise that leverages their existing shared resources",
+              "targets": [
+                "选择",
+                "只要"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "Late afternoon, 4:30 PM",
+              "where": "Library study room",
+              "what": "They agree. They feel relieved because they finally 'got' a plan that works. They submit the proposal, resolving the stress.",
+              "because": "the compromise in Beat 4 was accepted, leading to the successful resolution of the central problem",
+              "targets": [
+                "得到",
+                "关于"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "They successfully submit a unified proposal on Internet Safety, eliminating the conflict over topic choice.",
+          "targetPlan": [
+            {
+              "word": "安全",
+              "beat": 1,
+              "why": "The teacher sets the broad theme of the assignment, which is the root cause of all subsequent decisions."
+            },
+            {
+              "word": "特别",
+              "beat": 2,
+              "why": "Xiao Ming uses this word to justify why his idea (fire safety) is better/more interesting than others, showing his initial preference."
+            },
+            {
+              "word": "了解",
+              "beat": 3,
+              "why": "Li Ming uses this word to express the cognitive shift where he realizes why the previous ideas won't work for their specific group dynamics."
+            },
+            {
+              "word": "选择",
+              "beat": 4,
+              "why": "Li Ming presents the act of choosing the new topic as the critical decision that aligns with their actual abilities."
+            },
+            {
+              "word": "只要",
+              "beat": 4,
+              "why": "This word frames the condition for success: if they pick this specific topic, the difficulty disappears, highlighting the low barrier to entry."
+            },
+            {
+              "word": "关于",
+              "beat": 5,
+              "why": "They define the final submission title, e.g., 'A report concerning internet safety', formally closing the loop on the assignment."
+            },
+            {
+              "word": "得到",
+              "beat": 5,
+              "why": "They reflect on the outcome: they 'gained' or 'obtained' a working plan, contrasting with their earlier frustration."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 4 moves to \"Library study room\" without saying how"
+            },
+            {
+              "code": "target_unplaced",
+              "message": "参加 has no beat where it naturally belongs"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红",
+            "小明"
+          ],
+          "beats": 5,
+          "placed": {
+            "安全": 1,
+            "特别": 2,
+            "了解": 3,
+            "选择": 4,
+            "只要": 4,
+            "关于": 5,
+            "得到": 5
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:openai/gpt-oss-120b/low",
+        "attempt": 1,
+        "blueprint": {
+          "title": "Choosing a Safe Summer Camp",
+          "setting": "A small Chinese town, summer vacation of the current year",
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "problem": "李明想参加夏令营，但不知道哪个营最安全、最适合他",
+          "incitingEvent": "妈妈给李明发了一张关于本地夏令营的宣传单",
+          "beats": [
+            {
+              "id": 1,
+              "when": "上午",
+              "where": "家里的客厅",
+              "what": "李明和妈妈一起看宣传单，决定要去夏令营",
+              "because": "the story opens with the inciting event that gives them information",
+              "arrivedHow": "",
+              "targets": [],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "上午稍后",
+              "where": "客厅的书桌前",
+              "what": "李明向妈妈请求得到（obtain）更多关于营地的详细资料",
+              "because": "because he wants to know which camp is best, he asks for more info",
+              "arrivedHow": "",
+              "targets": [
+                "得到"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "上午中段",
+              "where": "社区中心的公告板旁",
+              "what": "妈妈帮助李明了解（understand）各营地的设施、教师和活动安排",
+              "because": "because after getting the brochures, they need to understand the differences",
+              "arrivedHow": "",
+              "targets": [
+                "了解"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "下午",
+              "where": "社区中心的会议室",
+              "what": "李明决定参加（take part in）一个他最感兴趣的科学实验营",
+              "because": "because after understanding the options, he chooses to join the science camp",
+              "arrivedHow": "",
+              "targets": [
+                "参加"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "下午稍后",
+              "where": "营地入口处",
+              "what": "李明检查营地的安全（safety）措施，确认有救生员和消防设施",
+              "because": "because before actually enrolling, he must be sure the camp is safe",
+              "arrivedHow": "",
+              "targets": [
+                "安全"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "傍晚",
+              "where": "家里的餐桌",
+              "what": "李明和妈妈最终选择（select）这所科学实验营并报名",
+              "because": "because after confirming safety, they can finally make the final choice and register",
+              "arrivedHow": "",
+              "targets": [
+                "选择"
+              ],
+              "lines": 4
+            }
+          ],
+          "resolution": "李明顺利报名参加了安全可靠的科学实验营，问题解决",
+          "targetPlan": [
+            {
+              "word": "得到",
+              "beat": 2,
+              "why": "李明需要得到更多资料才能比较不同的营地。"
+            },
+            {
+              "word": "了解",
+              "beat": 3,
+              "why": "他必须了解每个营地的具体情况才能做出决定。"
+            },
+            {
+              "word": "参加",
+              "beat": 4,
+              "why": "在了解后，他决定参加自己感兴趣的营地。"
+            },
+            {
+              "word": "安全",
+              "beat": 5,
+              "why": "参加前必须确认营地的安全措施符合标准。"
+            },
+            {
+              "word": "选择",
+              "beat": 6,
+              "why": "确认安全后，他和妈妈可以正式选择并报名。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 2 moves to \"客厅的书桌前\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 3 moves to \"社区中心的公告板旁\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 4 moves to \"社区中心的会议室\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 5 moves to \"营地入口处\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 6 moves to \"家里的餐桌\" without saying how"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "beats": 6,
+          "placed": {
+            "得到": 2,
+            "了解": 3,
+            "参加": 4,
+            "安全": 5,
+            "选择": 6
+          }
+        },
+        "score": null,
+        "acceptable": false
+      }
+    ],
+    "selection": {
+      "code": "BLUEPRINT_QUALITY_FAILED",
+      "reason": "the judge returned nothing usable"
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "blueprint-1-L3-003",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
