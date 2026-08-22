@@ -449,6 +449,7 @@ jobs:
           COUNT: ${{ inputs.count }}
           LEVEL: ${{ inputs.level }}
           LINES: ${{ inputs.writer_max_tokens }}   # reused: exact story length for this pilot
+          MANIFEST: ${{ inputs.manifest_path }}    # stored artifact to resume, or "none" to plan fresh
         run: |
           set -e
           case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
@@ -467,12 +468,22 @@ jobs:
             FLAGS="$FLAGS --planner-b $MODEL_B"
             if [ -n "$EFFORT_B" ]; then FLAGS="$FLAGS --planner-b-effort $EFFORT_B"; fi
           fi
+          # manifest_path here means: resume that stored artifact's plan at the
+          # lexical repair step instead of planning fresh ("none" = plan fresh).
+          SRC="--count $COUNT --level $LEVEL"
+          case "$MANIFEST" in
+            none|fresh|-|"") ;;
+            *)
+              case "$MANIFEST" in (*[!A-Za-z0-9._/-]*|/*|*..*) echo "bad manifest_path"; exit 1;; esac
+              if [ ! -f "$MANIFEST" ]; then echo "artifact not found: $MANIFEST"; exit 1; fi
+              SRC="--resume-plan $MANIFEST"
+            ;;
+          esac
           node blueprint-pilot.mjs \
             --input reports/story-corpus-dump.json \
-            --count "$COUNT" --level "$LEVEL" --lines "$LINES" \
+            $SRC --lines "$LINES" \
             $FLAGS --batch "$PREFIX" \
             --out "data/story-candidates/$PREFIX"
-
       - name: Show reports
         if: always()
         run: |
