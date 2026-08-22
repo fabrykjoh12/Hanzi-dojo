@@ -1,30 +1,19 @@
-// A word is "mastered" when FSRS stability reaches this many days.
-// Stability = predicted days until recall drops to ~90%.
-export const MASTERY_STABILITY_DAYS = 21
+// Mastery — now a thin re-export of the canonical knowledge model.
+//
+// These names and this import path predate `knowledgeState.js` and are used by
+// a dozen screens plus docs/METRICS.md, so they stay exactly where callers
+// expect them. The definitions themselves moved, because "does the learner know
+// this word?" had grown four different answers and needed one.
+//
+// The behavioural change that came with the move: `isLearned` and `isMastered`
+// now require a genuine observation (reps >= 1), so a prior-knowledge claim can
+// never satisfy either. See knowledgeState.js for why `reps` is the fact a
+// claim cannot fabricate.
 
-// The level test unlocks when this fraction of the level's active words are mastered.
-export const TEST_UNLOCK_MASTERY_PCT = 0.9
-
-// A word is "learned" once it has graduated out of the initial learning phase at least once.
-// The `learned` DB column is set true when a card first reaches review/relearning state.
-export function isLearned(card) {
-  if (!card) return false
-  return Boolean(card.learned) || card.state === 'review' || card.state === 'relearning'
-}
-
-// A word is "mastered" when the FSRS algorithm predicts the user will still recall it
-// roughly 3 weeks out — real, time-proven retention that cannot be faked by button clicks.
-export function isMastered(card) {
-  if (!card) return false
-  return (card.stability || 0) >= MASTERY_STABILITY_DAYS
-}
-
-// Given an array of card rows scoped to the current level and the total active vocab count,
-// returns { learnedCount, masteredCount, total, masteredPct }.
-export function countMastery(cards, totalActiveWords) {
-  const learnedCount = cards.filter(isLearned).length
-  const masteredCount = cards.filter(isMastered).length
-  const total = totalActiveWords
-  const masteredPct = total > 0 ? masteredCount / total : 0
-  return { learnedCount, masteredCount, total, masteredPct }
-}
+export {
+  MASTERY_STABILITY_DAYS,
+  TEST_UNLOCK_MASTERY_PCT,
+  isLearned,
+  isMastered,
+  countMastery,
+} from './knowledgeState'

@@ -26,7 +26,7 @@
 // Japanese and Russian keep exactly their current thresholds.
 
 import { getLevelLabel } from './utils'
-import { isLearned } from './mastery'
+import { countsForReading } from './knowledgeState'
 
 const TIER_LABELS = { 1: 'First Steps', 2: 'Growing', 3: 'Fluent' }
 
@@ -143,13 +143,15 @@ export function tiersFor(language, level) {
 // The cumulative shelf gates each level's stories on that level's own progress,
 // so both the Stories screen and the post-study recap need per-level counts from
 // the same rule. `vocabRows` need only carry `{ id, level }`; `cards` need
-// `{ vocab_id, learned, state }` (whatever `isLearned` reads).
+// `{ vocab_id, learned, state, reps, prior_known_at }` (whatever
+// `countsForReading` reads — genuine reading knowledge plus unverified claims,
+// because story tiers are the product's deliberately low comprehension bar).
 export function learnedByLevel(vocabRows, cards) {
   const levelOf = new Map()
   for (const v of vocabRows || []) if (v && v.level != null) levelOf.set(v.id, v.level)
   const counts = {}
   for (const c of cards || []) {
-    if (!isLearned(c)) continue
+    if (!countsForReading(c)) continue
     const lvl = levelOf.get(c.vocab_id)
     if (lvl == null) continue
     counts[lvl] = (counts[lvl] || 0) + 1

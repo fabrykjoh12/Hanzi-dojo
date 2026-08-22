@@ -2,6 +2,7 @@ import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { fetchPagedResult } from './supabasePaging'
 import { isMastered, TEST_UNLOCK_MASTERY_PCT } from './mastery'
+import { countsForReading, TEST_UNLOCK_COVERAGE_PCT } from './knowledgeState'
 
 // Normalize for tone-insensitive comparison.
 //
@@ -79,13 +80,35 @@ export function resolveTestStatus(vocabResult, levelCards, unlockResult) {
   const masteredPct = totalWords > 0 ? masteredCount / totalWords : 0
   const levelPassed = Boolean(unlockResult && unlockResult.data)
 
+  // The experienced-learner route. A learner who told us they already know this
+  // level has masteredPct 0 by construction — a claim is not mastery — so
+  // without this they could not even ATTEMPT the test, and their only way
+  // forward would be calibrating hundreds of words one at a time.
+  //
+  // This gates who may SIT the test, never who has passed it. The test itself
+  // is the aggregate proof: 30 questions drawn fresh each attempt, 100% correct
+  // required, 3 attempts a day. A learner who genuinely knows ~90% of the level
+  // passes in a few days; at 70% it takes ~700 days, and guessing 30 four-option
+  // questions is a 1-in-10^18 event. Passing advances the level and writes NO
+  // per-word FSRS state — the claims stay claims until calibration checks them.
+  const coveredCount = (levelCards || []).filter(c => countsForReading(c)).length
+  const coveragePct = totalWords > 0 ? coveredCount / totalWords : 0
+
   return {
     error: false,
     masteredCount,
     totalWords,
     masteredPct,
+    coveredCount,
+    coveragePct,
     levelPassed,
-    testUnlocked: levelPassed || masteredPct >= TEST_UNLOCK_MASTERY_PCT,
+    // True when the learner reached the bar through genuine study, false when
+    // they are here on the strength of a claim — the screen uses this to frame
+    // the test as "prove it" rather than "you're ready".
+    unlockedByMastery: masteredPct >= TEST_UNLOCK_MASTERY_PCT,
+    testUnlocked: levelPassed
+      || masteredPct >= TEST_UNLOCK_MASTERY_PCT
+      || coveragePct >= TEST_UNLOCK_COVERAGE_PCT,
   }
 }
 
@@ -112,7 +135,9 @@ export async function getTestStatus(userId, track) {
         .order('id', { ascending: true })),
       getTrackCards(userId, track, {
         level: track.current_level,
-        columns: 'vocab_id, stability',
+        // reps and prior_known_at are what tell a genuine card from a claim:
+        // isMastered needs reps, countsForReading needs prior_known_at.
+        columns: 'vocab_id, stability, reps, learned, state, prior_known_at',
       }),
       supabase
         .from('level_unlocks')

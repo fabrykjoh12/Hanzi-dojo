@@ -63,3 +63,6 @@ reports/
 *.pem
 AuthKey*.txt
 store-screenshots/
+
+# Pre-apply migration snapshots — complete copies of user card rows.
+legacy-claim-snapshot-*.json

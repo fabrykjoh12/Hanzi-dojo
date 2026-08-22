@@ -151,15 +151,15 @@ describe('learnedByLevel', () => {
 
   it('counts learned cards per level', () => {
     const cards = [
-      { vocab_id: 'v1', learned: true }, { vocab_id: 'v2', state: 'review' },
-      { vocab_id: 'v3', state: 'new' },
-      { vocab_id: 'v4', state: 'relearning' },
+      { vocab_id: 'v1', reps: 2, learned: true }, { vocab_id: 'v2', reps: 5, state: 'review' },
+      { vocab_id: 'v3', reps: 0, state: 'new' },
+      { vocab_id: 'v4', reps: 3, state: 'relearning' },
     ]
     expect(learnedByLevel(VOCAB, cards)).toEqual({ 1: 2, 2: 1 })
   })
 
   it('ignores unlevelled (dictionary-sourced) words and unknown vocab ids', () => {
-    const cards = [{ vocab_id: 'v6', learned: true }, { vocab_id: 'zzz', learned: true }]
+    const cards = [{ vocab_id: 'v6', reps: 2, learned: true }, { vocab_id: 'zzz', reps: 2, learned: true }]
     expect(learnedByLevel(VOCAB, cards)).toEqual({})
   })
 

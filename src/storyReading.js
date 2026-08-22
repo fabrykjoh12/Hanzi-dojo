@@ -3,6 +3,7 @@
 // well as by the readers.
 import { CHARACTER_READINGS, PLACE_WORDS } from './characterNames.js'
 import { collectStoryNames } from './storyNames.js'
+import { isPriorKnown } from './knowledgeState'
 
 // Canonical story readability + the pure token/status helpers the immersion
 // reader is built from. This is the single source of truth for "% known": the
@@ -24,14 +25,23 @@ import { collectStoryNames } from './storyNames.js'
 export const JP_PARTICLES = new Set(['は', 'が', 'を', 'に', 'へ', 'と', 'も', 'の', 'で', 'か', 'ね', 'よ', 'わ', 'や', 'な', 'ば'])
 const NO_PARTICLES = new Set()
 
-// A vocab card → its reading status, moved verbatim from the reader.
+// A vocab card → its reading status.
 //   not_started — no card yet (unknown / new)
-//   mastered    — card.is_easy
+//   prior_known — the learner told us they already knew it, and we have not
+//                 checked it yet. Reads as known: comprehensible input is the
+//                 point, and this app's reading bar is deliberately the low one.
+//   mastered    — card.is_easy (a kept-but-dead flag; stability is the real gate)
 //   review      — reached the review state
 //   learning    — started but not yet review
+//
+// prior_known is deliberately its OWN status rather than folded into 'review':
+// the reader must not distinguish it (reading stays clean — every caller below
+// treats it exactly like a known word), but the word-details and progress
+// surfaces need to be able to say "previously known, not yet verified".
 export function wordStatus(vocabId, userCards) {
   const card = userCards[vocabId]
   if (!card) return 'not_started'
+  if (isPriorKnown(card)) return 'prior_known'
   if (card.is_easy) return 'mastered'
   if (card.state === 'review') return 'review'
   return 'learning'
@@ -891,9 +901,10 @@ export function calculateStoryReadability({ content, vocabMap = {}, cards = {}, 
     })
   })
 
-  let known = 0, learning = 0, fresh = 0
+  let known = 0, learning = 0, fresh = 0, assumed = 0
   statuses.forEach(st => {
-    if (st === 'review' || st === 'mastered') known += 1
+    if (st === 'prior_known') { known += 1; assumed += 1 }
+    else if (st === 'review' || st === 'mastered') known += 1
     else if (st === 'learning') learning += 1
     else fresh += 1
   })
@@ -902,6 +913,10 @@ export function calculateStoryReadability({ content, vocabMap = {}, cards = {}, 
   return {
     totalUnique,
     knownCount: known,
+    // Of knownCount, how many rest on an unverified claim. Nothing is required
+    // to render this yet; it exists so "72% — 12% of it assumed" can be shown
+    // later without another change to the readability engine.
+    assumedCount: assumed,
     learningCount: learning,
     newCount: fresh,
     knownPct: totalUnique ? Math.round((known / totalUnique) * 100) : 0,

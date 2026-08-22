@@ -2,19 +2,31 @@ import { describe, it, expect } from 'vitest'
 import { studyFloorLevel, inCumulativeScope } from './levelScope'
 
 describe('studyFloorLevel — after a prior-knowledge claim', () => {
-  it('drops to the claimed level so earlier words are studied again', () => {
-    // Placed at 3, then claimed HSK 1-2: the seeded cards are real cards, so the
-    // floor follows them down and unclaimed words at 1-2 become teachable.
+  // Reversed deliberately. A claim used to be written as a real review card, so
+  // it dragged the floor down and re-scoped the whole session window. A claim is
+  // an assertion about the past, not a record of study: it must leave the floor
+  // where the learner actually started.
+  it('does NOT drop to the claimed level — a claim is not study', () => {
     const cards = [
-      { vocabulary: { level: 1 } },
-      { vocabulary: { level: 2 } },
-      { vocabulary: { level: 3 } },
+      { reps: 0, prior_known_at: '2026-08-22T12:00:00.000Z', vocabulary: { level: 1 } },
+      { reps: 0, prior_known_at: '2026-08-22T12:00:00.000Z', vocabulary: { level: 2 } },
+      { reps: 4, vocabulary: { level: 3 } },
+    ]
+    expect(studyFloorLevel(cards, 3)).toBe(3)
+  })
+
+  it('drops to a claimed level once that word has genuinely been checked', () => {
+    // Calibration verified the HSK 1 claim, so it is now real study history and
+    // the floor follows it — the learner really is reviewing at that level.
+    const cards = [
+      { reps: 1, prior_known_at: '2026-08-22T12:00:00.000Z', verified_at: '2026-08-23T12:00:00.000Z', vocabulary: { level: 1 } },
+      { reps: 4, vocabulary: { level: 3 } },
     ]
     expect(studyFloorLevel(cards, 3)).toBe(1)
   })
 
   it('is unchanged for a placed learner who declined the claim', () => {
-    const cards = [{ vocabulary: { level: 3 } }]
+    const cards = [{ reps: 3, vocabulary: { level: 3 } }]
     expect(studyFloorLevel(cards, 3)).toBe(3)
   })
 })
@@ -27,9 +39,9 @@ describe('studyFloorLevel', () => {
 
   it('is 1 for a natural learner who started at level 1', () => {
     const cards = [
-      { vocabulary: { level: 1 } },
-      { vocabulary: { level: 2 } },
-      { vocabulary: { level: 3 } },
+      { reps: 2, vocabulary: { level: 1 } },
+      { reps: 2, vocabulary: { level: 2 } },
+      { reps: 2, vocabulary: { level: 3 } },
     ]
     expect(studyFloorLevel(cards, 3)).toBe(1)
   })
@@ -38,24 +50,24 @@ describe('studyFloorLevel', () => {
     // Placed at level 4, studied only levels 4 and 5 — levels 1..3 were assumed
     // known and never introduced, so they must never resurface as new cards.
     const cards = [
-      { vocabulary: { level: 4 } },
-      { vocabulary: { level: 5 } },
+      { reps: 2, vocabulary: { level: 4 } },
+      { reps: 2, vocabulary: { level: 5 } },
     ]
     expect(studyFloorLevel(cards, 5)).toBe(4)
   })
 
   it('reads the level off a resolved vocab object too', () => {
-    const cards = [{ vocab: { level: 2 } }, { vocab: { level: 4 } }]
+    const cards = [{ reps: 2, vocab: { level: 2 } }, { reps: 2, vocab: { level: 4 } }]
     expect(studyFloorLevel(cards, 4)).toBe(2)
   })
 
   it('never exceeds the current level even if a stray higher card exists', () => {
-    const cards = [{ vocabulary: { level: 5 } }]
+    const cards = [{ reps: 2, vocabulary: { level: 5 } }]
     expect(studyFloorLevel(cards, 3)).toBe(3)
   })
 
   it('ignores cards with no resolvable level', () => {
-    const cards = [{ foo: 1 }, { vocabulary: { level: 2 } }]
+    const cards = [{ reps: 2, foo: 1 }, { reps: 2, vocabulary: { level: 2 } }]
     expect(studyFloorLevel(cards, 4)).toBe(2)
   })
 })
@@ -77,8 +89,8 @@ describe('inCumulativeScope', () => {
 describe('levelScope excludes NULL-level (dictionary-sourced) cards', () => {
   it('studyFloorLevel ignores cards whose vocabulary.level is null', () => {
     const cards = [
-      { vocabulary: { level: 3 } },
-      { vocabulary: { level: null } }, // dictionary-sourced
+      { reps: 2, vocabulary: { level: 3 } },
+      { reps: 2, vocabulary: { level: null } }, // dictionary-sourced
     ]
     expect(studyFloorLevel(cards, 5)).toBe(3) // null card does not drag the floor
   })

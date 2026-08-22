@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { PACING, estimateDays, spreadDueDates, seedCardRows } from './priorKnowledge'
+import { isMastered, isLearned, isPriorKnown } from './knowledgeState'
+import { isCardDue } from './srs'
 
 const NOW = new Date('2026-07-23T09:00:00.000Z').getTime()
 const dayOf = (iso) => iso.slice(0, 10)
@@ -50,33 +52,67 @@ describe('spreadDueDates', () => {
   })
 })
 
-describe('seedCardRows', () => {
+describe('seedCardRows — inert prior-knowledge rows', () => {
   const spread = spreadDueDates(['v1', 'v2'], 1, NOW)
-  const rows = seedCardRows('user-1', spread, NOW)
+  const rows = seedCardRows('user-1', spread, NOW, 'placement')
 
-  it('creates one review-state row per claimed word', () => {
+  it('creates one row per claimed word, carrying no scheduler state', () => {
     expect(rows).toHaveLength(2)
     rows.forEach(r => {
       expect(r.user_id).toBe('user-1')
-      expect(r.state).toBe('review')
-      expect(r.learned).toBe(true)
-      expect(r.stability).toBe(21)
-      expect(r.difficulty).toBe(5)
+      expect(r.state).toBe('new')
+      expect(r.learned).toBe(false)
+      expect(r.stability).toBeNull()
+      expect(r.difficulty).toBeNull()
+      expect(r.last_review).toBeNull()
       expect(r.reps).toBe(0)
       expect(r.lapses).toBe(0)
     })
     expect(rows.map(r => r.vocab_id)).toEqual(['v1', 'v2'])
   })
 
-  it('never marks a seeded card easy', () => {
+  // The regression this model exists to prevent. A claim used to be written as
+  // state 'review' with stability exactly at the mastery threshold, so hundreds
+  // of words became "mastered" on one tap.
+  it('never fabricates mastery, review state or a review history', () => {
+    rows.forEach(r => {
+      expect(r.state).not.toBe('review')
+      expect(r.stability).not.toBe(21)
+      expect(isMastered(r)).toBe(false)
+      expect(isLearned(r)).toBe(false)
+      expect(isPriorKnown(r)).toBe(true)
+    })
+  })
+
+  it('never marks a claimed card easy', () => {
     rows.forEach(r => expect(r.is_easy).toBe(false))
   })
 
-  it('schedules each row to its own spread day', () => {
-    expect(rows[0].scheduled_days).toBe(0)
-    expect(rows[1].scheduled_days).toBe(1)
+  it('records provenance on every row and leaves verification open', () => {
+    rows.forEach(r => {
+      expect(r.prior_source).toBe('placement')
+      expect(r.prior_known_at).toBe(new Date(NOW).toISOString())
+      expect(r.verified_at).toBeNull()
+    })
+  })
+
+  it('passes each source through to the row', () => {
+    for (const source of ['paste', 'checklist', 'assumed_prerequisite']) {
+      const [row] = seedCardRows('user-1', spreadDueDates(['v1'], 1, NOW), NOW, source)
+      expect(row.prior_source).toBe(source)
+    }
+  })
+
+  it('spreads the calibration-ready date without making the row due', () => {
+    expect(dayOf(rows[0].due_at)).toBe('2026-07-23')
     expect(dayOf(rows[1].due_at)).toBe('2026-07-24')
-    rows.forEach(r => expect(r.last_review).toBe(new Date(NOW).toISOString()))
+    // due_at is inert here: a 'new' card is never reported as due.
+    rows.forEach(r => expect(isCardDue(r, new Date(NOW + 40 * 86400000))).toBe(false))
+  })
+
+  it('defaults the source when a caller omits it', () => {
+    const [row] = seedCardRows('user-1', spreadDueDates(['v1'], 1, NOW), NOW)
+    expect(row.prior_source).toBe('placement')
   })
 
   it('returns nothing for an empty spread', () => {
