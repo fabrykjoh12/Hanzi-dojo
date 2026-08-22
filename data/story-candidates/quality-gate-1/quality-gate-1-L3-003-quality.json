@@ -1,0 +1,421 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "quality-gate-1",
+  "generatedAt": "2026-08-22T12:10:42.261Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "quality-gate-1-L3-003",
+    "batchId": "quality-gate-1",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "得到",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "了解",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "参加",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "安全",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "选择",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "只要",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "关于",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "特别",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a bigger outing or adventure away from home with a genuine surprise in the middle",
+    "series": null,
+    "composition": {
+      "bucket": "general",
+      "reason": "top-priority hard targets are general-purpose vocabulary that fits any theme",
+      "hard": [
+        {
+          "word": "得到",
+          "meaning": "to get; to obtain"
+        },
+        {
+          "word": "了解",
+          "meaning": "to understand; to realize"
+        },
+        {
+          "word": "参加",
+          "meaning": "to participate; to take part"
+        },
+        {
+          "word": "安全",
+          "meaning": "safe; secure; safety; security"
+        },
+        {
+          "word": "选择",
+          "meaning": "to select; to pick"
+        }
+      ],
+      "soft": [
+        {
+          "word": "只要",
+          "meaning": "if only; so long as"
+        },
+        {
+          "word": "关于",
+          "meaning": "pertaining to; concerning"
+        },
+        {
+          "word": "特别",
+          "meaning": "unusual; special; very; especially; particularly"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸",
+        "卡",
+        "辆"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "qualityGate": {
+    "thresholds": {
+      "overall": 6,
+      "natural": 5,
+      "coherence": 5,
+      "integration": 5,
+      "human": 5
+    },
+    "repairableLimits": {
+      "lineExcess": 4,
+      "missingOccurrences": 3,
+      "excessOccurrences": 3,
+      "unknownExcess": 4,
+      "longLines": 2,
+      "unknownSpeakers": 2
+    },
+    "lineQuality": {
+      "overall": 6,
+      "grammar": 6,
+      "mechanicalPenalty": 1
+    },
+    "source": "fresh",
+    "draft": {
+      "title": "特别的惊喜",
+      "content": "周末早晨，妈妈告诉我们有一个特别的活动要参加。\n李明：我早就想去了，是什么活动呀？\n妈妈说这是一个关于城市安全的教育游戏。\n小红：我们要选一个安全的路线，然后开始。\n小明有点懒，想在家里睡觉，但还是跟来了。\n我们来到公园，那里有很多人都在参加游戏。\n只要我们一起努力，就能得到很多好吃的奖品。\n李明跑得最快，他问：我们要找什么？\n小红发现草丛里有一张地图，说：看这里。\n地图上标出了几个地点，我们需要去这些地方。\n大毛突然出现在我们前面，是一只白猫。\n李明：大毛，你也要参加比赛吗？\n大毛只是叫了一声，然后跳上了树。\n妈妈说：注意安全，不要跑得太快。\n我们决定先找第一个地点，那里有一个标志。\n小明说：我有点饿了，我们可以吃点东西吗？\n小红笑着说：先完成游戏，就能得到食物。\n我们走了很久，终于找到了第二个地点。\n那里有一个老人，他在教我们怎么做。\n李明问：我们要做什么才能了解安全知识？\n老人说：只要回答对问题，就能通过。\n小红很快就回答了，她得到了一枚徽章。\n李明也试了一下，但是答错了，很不好意思。\n小明帮李明想，最后他们一起解决了问题。\n突然，天变了，开始下起小雨来。\n妈妈拿出雨衣，说：我们必须小心，别滑倒。\n我们互相帮忙，把雨衣分给每个人。\n大毛也躲在树下，看着我们淋雨。\n最后我们到达了终点，那里有很多奖品。\n因为我们安全地完成了任务，大家都很开心。\n李明：我得到了一个汉堡，太棒了！\n小红：我也得到了纪念品，这次选择很正确。\n妈妈：只要大家在一起，任何困难都能解决。\n小明：下次我还想参加这样的活动。\n我们坐在长椅上，吃着东西，看着外面的雨。\n李明问：关于这个城市，你还有什么了解吗？\n小红说：还有很多，我们可以慢慢去发现。\n大毛跳下来，舔了舔爪子，显得很可爱。\n妈妈看着我们，脸上露出了温柔的笑容。",
+      "lines": 39
+    },
+    "preRepairCritique": {
+      "scores": {
+        "natural": 7,
+        "coherence": 6,
+        "integration": 5,
+        "level": 8,
+        "human": 7,
+        "interest": 5
+      },
+      "strengths": "The dialogue is functional and fits the HSK 3 register well, offering clear, simple exchanges that learners can understand without struggling with syntax.",
+      "weaknesses": "The required vocabulary feels artificially inserted to meet a list, particularly \"关于\" and \"了解\" in the final paragraph, which serve no narrative purpose and break the immersion.",
+      "mechanical": false,
+      "contradiction": true,
+      "contradictionDetail": "the story begins with the activity described as an \"education game\" (教育游戏), but the mechanics described (finding maps, answering questions to get badges, running to checkpoints) are clearly a parkour/escape-room style scavenger hunt; the educational aspect is never demonstrated through the activity itself, making the premise inconsistent with the plot actions.",
+      "overall": 6
+    },
+    "decision": {
+      "ok": false,
+      "code": "DRAFT_QUALITY_FAILED",
+      "reason": "the judge reported a serious contradiction or nonsensical plot: the story begins with the activity described as an \"education game\" (教育游戏), but the mechanics described (finding maps, answering questions to get badges, running to checkpoints) are clearly a parkour/escape-room style scavenger hunt; the educational aspect is never demonstrated through the activity itself, making the premise inconsistent with the plot actions.",
+      "quality": {
+        "ok": false,
+        "code": "DRAFT_QUALITY_FAILED",
+        "reasons": [
+          "the judge reported a serious contradiction or nonsensical plot: the story begins with the activity described as an \"education game\" (教育游戏), but the mechanics described (finding maps, answering questions to get badges, running to checkpoints) are clearly a parkour/escape-room style scavenger hunt; the educational aspect is never demonstrated through the activity itself, making the premise inconsistent with the plot actions."
+        ],
+        "scores": {
+          "natural": 7,
+          "coherence": 6,
+          "integration": 5,
+          "level": 8,
+          "human": 7,
+          "interest": 5
+        },
+        "overall": 6,
+        "mechanical": false,
+        "contradiction": true,
+        "contradictionDetail": "the story begins with the activity described as an \"education game\" (教育游戏), but the mechanics described (finding maps, answering questions to get badges, running to checkpoints) are clearly a parkour/escape-room style scavenger hunt; the educational aspect is never demonstrated through the activity itself, making the premise inconsistent with the plot actions.",
+        "thresholds": {
+          "overall": 6,
+          "natural": 5,
+          "coherence": 5,
+          "integration": 5,
+          "human": 5
+        }
+      },
+      "repairability": null
+    },
+    "repair": null,
+    "before": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "39 lines (need 14-38)"
+        },
+        {
+          "code": "unknown_speaker",
+          "message": "speakers outside the cast: 妈妈说、小明说、小红笑着说、李明问、老人说、小红说 (allowed: 李明、小红、小明、妈妈)"
+        },
+        {
+          "code": "target_above_max",
+          "message": "得到 appears 5× (max 4) — reads as spam"
+        },
+        {
+          "code": "target_above_max",
+          "message": "安全 appears 5× (max 4) — reads as spam"
+        },
+        {
+          "code": "target_below_min",
+          "message": "选择 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 10.6% > 10.5%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "12 unknown (non-vocabulary) runs (max 2): 懒、草丛里、一张、上标、一枚、徽章、滑倒、汉堡、长椅、舔"
+        }
+      ],
+      "reviews": [],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "30 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 39,
+        "cjkChars": 556,
+        "distinctVocab": 175,
+        "targetCounts": {
+          "得到": 5,
+          "了解": 2,
+          "参加": 4,
+          "安全": 5,
+          "选择": 1,
+          "只要": 3,
+          "关于": 2,
+          "特别": 1
+        },
+        "inLevelCoverage": 0.851,
+        "outOfLevelDistinct": 30,
+        "outOfLevelCharShare": 0.106,
+        "unknownDistinct": 12,
+        "unknownCharShare": 0.043,
+        "unknownRuns": [
+          "懒",
+          "草丛里",
+          "一张",
+          "上标",
+          "一枚",
+          "徽章",
+          "滑倒",
+          "汉堡",
+          "长椅",
+          "舔"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.053,
+        "nearestNeighbor": {
+          "title": "2. 和朋友玩",
+          "level": 1,
+          "jaccard": 0.013,
+          "containment": 0.113
+        }
+      }
+    },
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "quality-gate-1-L3-003",
+    "status": "rejected",
+    "title": "特别的惊喜",
+    "content": "周末早晨，妈妈告诉我们有一个特别的活动要参加。\n李明：我早就想去了，是什么活动呀？\n妈妈说这是一个关于城市安全的教育游戏。\n小红：我们要选一个安全的路线，然后开始。\n小明有点懒，想在家里睡觉，但还是跟来了。\n我们来到公园，那里有很多人都在参加游戏。\n只要我们一起努力，就能得到很多好吃的奖品。\n李明跑得最快，他问：我们要找什么？\n小红发现草丛里有一张地图，说：看这里。\n地图上标出了几个地点，我们需要去这些地方。\n大毛突然出现在我们前面，是一只白猫。\n李明：大毛，你也要参加比赛吗？\n大毛只是叫了一声，然后跳上了树。\n妈妈说：注意安全，不要跑得太快。\n我们决定先找第一个地点，那里有一个标志。\n小明说：我有点饿了，我们可以吃点东西吗？\n小红笑着说：先完成游戏，就能得到食物。\n我们走了很久，终于找到了第二个地点。\n那里有一个老人，他在教我们怎么做。\n李明问：我们要做什么才能了解安全知识？\n老人说：只要回答对问题，就能通过。\n小红很快就回答了，她得到了一枚徽章。\n李明也试了一下，但是答错了，很不好意思。\n小明帮李明想，最后他们一起解决了问题。\n突然，天变了，开始下起小雨来。\n妈妈拿出雨衣，说：我们必须小心，别滑倒。\n我们互相帮忙，把雨衣分给每个人。\n大毛也躲在树下，看着我们淋雨。\n最后我们到达了终点，那里有很多奖品。\n因为我们安全地完成了任务，大家都很开心。\n李明：我得到了一个汉堡，太棒了！\n小红：我也得到了纪念品，这次选择很正确。\n妈妈：只要大家在一起，任何困难都能解决。\n小明：下次我还想参加这样的活动。\n我们坐在长椅上，吃着东西，看着外面的雨。\n李明问：关于这个城市，你还有什么了解吗？\n小红说：还有很多，我们可以慢慢去发现。\n大毛跳下来，舔了舔爪子，显得很可爱。\n妈妈看着我们，脸上露出了温柔的笑容。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "39 lines (need 14-38)"
+        },
+        {
+          "code": "unknown_speaker",
+          "message": "speakers outside the cast: 妈妈说、小明说、小红笑着说、李明问、老人说、小红说 (allowed: 李明、小红、小明、妈妈)"
+        },
+        {
+          "code": "target_above_max",
+          "message": "得到 appears 5× (max 4) — reads as spam"
+        },
+        {
+          "code": "target_above_max",
+          "message": "安全 appears 5× (max 4) — reads as spam"
+        },
+        {
+          "code": "target_below_min",
+          "message": "选择 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 10.6% > 10.5%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "12 unknown (non-vocabulary) runs (max 2): 懒、草丛里、一张、上标、一枚、徽章、滑倒、汉堡、长椅、舔"
+        }
+      ],
+      "reviews": [],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "30 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 39,
+        "cjkChars": 556,
+        "distinctVocab": 175,
+        "targetCounts": {
+          "得到": 5,
+          "了解": 2,
+          "参加": 4,
+          "安全": 5,
+          "选择": 1,
+          "只要": 3,
+          "关于": 2,
+          "特别": 1
+        },
+        "inLevelCoverage": 0.851,
+        "outOfLevelDistinct": 30,
+        "outOfLevelCharShare": 0.106,
+        "unknownDistinct": 12,
+        "unknownCharShare": 0.043,
+        "unknownRuns": [
+          "懒",
+          "草丛里",
+          "一张",
+          "上标",
+          "一枚",
+          "徽章",
+          "滑倒",
+          "汉堡",
+          "长椅",
+          "舔"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.053,
+        "nearestNeighbor": {
+          "title": "2. 和朋友玩",
+          "level": 1,
+          "jaccard": 0.013,
+          "containment": 0.113
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 0,
+    "calls": 1,
+    "generatorVersion": "fab9-quality-gate@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}

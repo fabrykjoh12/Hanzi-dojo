@@ -1,0 +1,407 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "quality-gate-1",
+  "generatedAt": "2026-08-22T12:10:42.261Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "quality-gate-1-L3-002",
+    "batchId": "quality-gate-1",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "结束",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "来自",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "out in the city: places, errands, and a small discovery",
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "composition": {
+      "bucket": "places",
+      "reason": "4 pending hard targets share the \"places\" theme",
+      "hard": [
+        {
+          "word": "发生",
+          "meaning": "to happen; to occur; to take place; to break out"
+        },
+        {
+          "word": "国家",
+          "meaning": "country; nation; state"
+        },
+        {
+          "word": "结束",
+          "meaning": "termination; to finish"
+        },
+        {
+          "word": "来自",
+          "meaning": "to come from (a place); From: (in email header)"
+        },
+        {
+          "word": "生活",
+          "meaning": "to live; life"
+        }
+      ],
+      "soft": [
+        {
+          "word": "其他",
+          "meaning": "other; (sth or sb) else"
+        },
+        {
+          "word": "或者",
+          "meaning": "or; possibly; maybe; perhaps"
+        },
+        {
+          "word": "当然",
+          "meaning": "only natural; as it should be"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "qualityGate": {
+    "thresholds": {
+      "overall": 6,
+      "natural": 5,
+      "coherence": 5,
+      "integration": 5,
+      "human": 5
+    },
+    "repairableLimits": {
+      "lineExcess": 4,
+      "missingOccurrences": 3,
+      "excessOccurrences": 3,
+      "unknownExcess": 4,
+      "longLines": 2,
+      "unknownSpeakers": 2
+    },
+    "lineQuality": {
+      "overall": 6,
+      "grammar": 6,
+      "mechanicalPenalty": 1
+    },
+    "source": "fresh",
+    "draft": {
+      "title": "城市的秘密",
+      "content": "李明： 妈妈，我们学校要来一个音乐比赛，我想参加。\n妈妈： 当然可以，但是你需要每天练习。\n李明： 我知道，可是我很饿，现在就去吃饭。\n小明： 我帮你画一张海报，你在家练习吧。\n小红： 这个比赛很重要，来自不同国家的选手都来了。\n李明： 真的吗？其他国家的人也会参加比赛吗？\n小红： 是的，生活在这里的外国人很多。\n李明： 我想看看他们怎么演奏，感觉一定很酷。\n大毛在窗台上睡觉，它很懒，不想动。\n李明第一天练习，但是琴弦断了。\n妈妈： 别担心，我去修好它。\n李明： 万一发生错误怎么办？\n妈妈： 你刚才的问题发生得太突然了，没事。\n第二天，李明去商店买新琴弦。\n小红： 你迟到了，比赛快开始了。\n李明： 对不起，我找不到那个地方。\n小明： 我们一起去找，或者问路人。\n他们走在城市里，看到很多不同的面孔。\n李明： 这里的人来自哪里？\n小红： 他们来自世界各地，为了生活在这里。\n突然，大毛跑过来，停在一家小店前。\n李明： 它好像发现了什么。\n进去一看，里面全是乐器。\n老板： 欢迎光临，你要买什么？\n李明： 我要一根新的琴弦。\n老板： 好的，这个很便宜。\n李明： 谢谢，我马上付钱。\n回家路上，李明心里很开心。\n但是，明天就是比赛了。\n李明： 我还没完全准备好。\n小红： 只要你努力，就可以成功。\n小明： 对，别紧张。\n妈妈： 吃饭吧，补充能量很重要。\n李明吃饭很快，他担心时间不够。\n比赛那天，天气很好。\n李明： 我会加油的。\n小红： 我相信你。\n裁判说比赛开始。\n李明弹奏了一首简单的曲子。\n观众安静地听。\n结束的时候，大家鼓掌。\n李明： 我做得怎么样？\n小红： 不错，你进步了很多。\n小明： 是啊，虽然有小错误。\n李明： 没关系，下次更好。\n他看到大毛在台下睡着了。\n这个故事告诉我们，努力才有收获。\n城市很大，机会很多。\n李明觉得今天很充实。",
+      "lines": 49
+    },
+    "preRepairCritique": {
+      "scores": {
+        "natural": 3,
+        "coherence": 2,
+        "integration": 4,
+        "level": 8,
+        "human": 6,
+        "interest": 3
+      },
+      "strengths": "The dialogue is generally grammatical and fits the HSK 3 vocabulary limit well.",
+      "weaknesses": "The plot is logically broken (Li Ming buys a new string on Day 2 but competes the \"next\" day using it, despite the first string breaking on Day 1? Also, why go to the store if he already bought one?), and contains a glaring timestamp error (\"Another accident happened too suddenly\" referring to a question just asked).",
+      "mechanical": true,
+      "contradiction": true,
+      "contradictionDetail": "The timeline is incoherent. Day 1: String breaks. Day 2: Goes to store. Day 3 (implied \"Tomorrow is the competition\"): Competes. However, the dialogue \"You are late, the competition is about to start\" occurs immediately after he goes to the store on Day 2, implying the competition is on Day 2, but he hasn't bought the string yet. Also, Mom's response \"The question you just asked happened too suddenly\" makes no semantic sense.",
+      "overall": 3
+    },
+    "decision": {
+      "ok": false,
+      "code": "DRAFT_QUALITY_FAILED",
+      "reason": "overall 3 < 6; natural 3 < 5; coherence 2 < 5; integration 4 < 5; the judge reported a serious contradiction or nonsensical plot: The timeline is incoherent. Day 1: String breaks. Day 2: Goes to store. Day 3 (implied \"Tomorrow is the competition\"): Competes. However, the dialogue \"You are late, the competition is about to start\" occurs immediately after he goes to the store on Day 2, implying the competition is on Day 2, but he hasn't bought the string yet. Also, Mom's response \"The question you just asked happened too suddenly\" makes no semantic sense.",
+      "quality": {
+        "ok": false,
+        "code": "DRAFT_QUALITY_FAILED",
+        "reasons": [
+          "overall 3 < 6",
+          "natural 3 < 5",
+          "coherence 2 < 5",
+          "integration 4 < 5",
+          "the judge reported a serious contradiction or nonsensical plot: The timeline is incoherent. Day 1: String breaks. Day 2: Goes to store. Day 3 (implied \"Tomorrow is the competition\"): Competes. However, the dialogue \"You are late, the competition is about to start\" occurs immediately after he goes to the store on Day 2, implying the competition is on Day 2, but he hasn't bought the string yet. Also, Mom's response \"The question you just asked happened too suddenly\" makes no semantic sense."
+        ],
+        "scores": {
+          "natural": 3,
+          "coherence": 2,
+          "integration": 4,
+          "level": 8,
+          "human": 6,
+          "interest": 3
+        },
+        "overall": 3,
+        "mechanical": true,
+        "contradiction": true,
+        "contradictionDetail": "The timeline is incoherent. Day 1: String breaks. Day 2: Goes to store. Day 3 (implied \"Tomorrow is the competition\"): Competes. However, the dialogue \"You are late, the competition is about to start\" occurs immediately after he goes to the store on Day 2, implying the competition is on Day 2, but he hasn't bought the string yet. Also, Mom's response \"The question you just asked happened too suddenly\" makes no semantic sense.",
+        "thresholds": {
+          "overall": 6,
+          "natural": 5,
+          "coherence": 5,
+          "integration": 5,
+          "human": 5
+        }
+      },
+      "repairability": null
+    },
+    "repair": null,
+    "before": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "49 lines (need 14-38)"
+        },
+        {
+          "code": "unknown_speaker",
+          "message": "speakers outside the cast: 老板 (allowed: 李明、小红、小明、妈妈)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "结束 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 10.9% > 10.5%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "12 unknown (non-vocabulary) runs (max 2): 一张、海报、懒、琴弦、修好、面孔、全是、付钱、我还没、弹奏"
+        }
+      ],
+      "reviews": [],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "29 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 49,
+        "cjkChars": 497,
+        "distinctVocab": 179,
+        "targetCounts": {
+          "发生": 2,
+          "国家": 2,
+          "结束": 1,
+          "来自": 3,
+          "生活": 2,
+          "其他": 1,
+          "或者": 1,
+          "当然": 1
+        },
+        "inLevelCoverage": 0.835,
+        "outOfLevelDistinct": 29,
+        "outOfLevelCharShare": 0.109,
+        "unknownDistinct": 12,
+        "unknownCharShare": 0.056,
+        "unknownRuns": [
+          "一张",
+          "海报",
+          "懒",
+          "琴弦",
+          "修好",
+          "面孔",
+          "全是",
+          "付钱",
+          "我还没",
+          "弹奏"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.016,
+        "nearestNeighbor": {
+          "title": "14. 六天",
+          "level": 3,
+          "jaccard": 0.015,
+          "containment": 0.047
+        }
+      }
+    },
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "quality-gate-1-L3-002",
+    "status": "rejected",
+    "title": "城市的秘密",
+    "content": "李明： 妈妈，我们学校要来一个音乐比赛，我想参加。\n妈妈： 当然可以，但是你需要每天练习。\n李明： 我知道，可是我很饿，现在就去吃饭。\n小明： 我帮你画一张海报，你在家练习吧。\n小红： 这个比赛很重要，来自不同国家的选手都来了。\n李明： 真的吗？其他国家的人也会参加比赛吗？\n小红： 是的，生活在这里的外国人很多。\n李明： 我想看看他们怎么演奏，感觉一定很酷。\n大毛在窗台上睡觉，它很懒，不想动。\n李明第一天练习，但是琴弦断了。\n妈妈： 别担心，我去修好它。\n李明： 万一发生错误怎么办？\n妈妈： 你刚才的问题发生得太突然了，没事。\n第二天，李明去商店买新琴弦。\n小红： 你迟到了，比赛快开始了。\n李明： 对不起，我找不到那个地方。\n小明： 我们一起去找，或者问路人。\n他们走在城市里，看到很多不同的面孔。\n李明： 这里的人来自哪里？\n小红： 他们来自世界各地，为了生活在这里。\n突然，大毛跑过来，停在一家小店前。\n李明： 它好像发现了什么。\n进去一看，里面全是乐器。\n老板： 欢迎光临，你要买什么？\n李明： 我要一根新的琴弦。\n老板： 好的，这个很便宜。\n李明： 谢谢，我马上付钱。\n回家路上，李明心里很开心。\n但是，明天就是比赛了。\n李明： 我还没完全准备好。\n小红： 只要你努力，就可以成功。\n小明： 对，别紧张。\n妈妈： 吃饭吧，补充能量很重要。\n李明吃饭很快，他担心时间不够。\n比赛那天，天气很好。\n李明： 我会加油的。\n小红： 我相信你。\n裁判说比赛开始。\n李明弹奏了一首简单的曲子。\n观众安静地听。\n结束的时候，大家鼓掌。\n李明： 我做得怎么样？\n小红： 不错，你进步了很多。\n小明： 是啊，虽然有小错误。\n李明： 没关系，下次更好。\n他看到大毛在台下睡着了。\n这个故事告诉我们，努力才有收获。\n城市很大，机会很多。\n李明觉得今天很充实。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "49 lines (need 14-38)"
+        },
+        {
+          "code": "unknown_speaker",
+          "message": "speakers outside the cast: 老板 (allowed: 李明、小红、小明、妈妈)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "结束 appears 1× (need 2-4)"
+        },
+        {
+          "code": "out_of_level_share",
+          "message": "out-of-level vocabulary: 10.9% > 10.5%"
+        },
+        {
+          "code": "unknown_words",
+          "message": "12 unknown (non-vocabulary) runs (max 2): 一张、海报、懒、琴弦、修好、面孔、全是、付钱、我还没、弹奏"
+        }
+      ],
+      "reviews": [],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "29 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 49,
+        "cjkChars": 497,
+        "distinctVocab": 179,
+        "targetCounts": {
+          "发生": 2,
+          "国家": 2,
+          "结束": 1,
+          "来自": 3,
+          "生活": 2,
+          "其他": 1,
+          "或者": 1,
+          "当然": 1
+        },
+        "inLevelCoverage": 0.835,
+        "outOfLevelDistinct": 29,
+        "outOfLevelCharShare": 0.109,
+        "unknownDistinct": 12,
+        "unknownCharShare": 0.056,
+        "unknownRuns": [
+          "一张",
+          "海报",
+          "懒",
+          "琴弦",
+          "修好",
+          "面孔",
+          "全是",
+          "付钱",
+          "我还没",
+          "弹奏"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.016,
+        "nearestNeighbor": {
+          "title": "14. 六天",
+          "level": 3,
+          "jaccard": 0.015,
+          "containment": 0.047
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 0,
+    "calls": 1,
+    "generatorVersion": "fab9-quality-gate@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}

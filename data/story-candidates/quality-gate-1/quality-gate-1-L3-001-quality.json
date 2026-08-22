@@ -1,0 +1,414 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "quality-gate-1",
+  "generatedAt": "2026-08-22T12:10:42.261Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "quality-gate-1-L3-001",
+    "batchId": "quality-gate-1",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "qualityGate": {
+    "thresholds": {
+      "overall": 6,
+      "natural": 5,
+      "coherence": 5,
+      "integration": 5,
+      "human": 5
+    },
+    "repairableLimits": {
+      "lineExcess": 4,
+      "missingOccurrences": 3,
+      "excessOccurrences": 3,
+      "unknownExcess": 4,
+      "longLines": 2,
+      "unknownSpeakers": 2
+    },
+    "lineQuality": {
+      "overall": 6,
+      "grammar": 6,
+      "mechanicalPenalty": 1
+    },
+    "source": "fresh",
+    "draft": {
+      "title": "消失的苹果",
+      "content": "李明：小红，我的苹果不见了。\n小红：你看，苹果还在桌子上。\n李明：不，那个是昨天的。\n小明：我也找不到我的笔了。\n妈妈：你们昨天做了什么？\n李明：我们去公园玩了一下午。\n小红：那里有那个白色的猫。\n大毛坐在长椅上看我们。\n李明：大毛很可爱，但是奇怪的。\n小红：你注意那个女人了吗？\n李明：哪个女人？\n小红：穿红色衣服的女人。\n李明：我看见了，她在喂猫。\n妈妈：那个女人看起来很温柔。\n小红：但是她的包里有很多东西。\n李明：我的苹果是她拿的吗？\n小明：我不知道，我不小心睡着了。\n小红：我们必须检查一下周围。\n李明：好，我们去街道那边看看。\n他们走到街角开始寻找。\n那里站着一个男人和一个女人。\n李明：他们在说什么？\n小红：他们在找丢失的东西。\n那个男人说他的钱包不见了。\n那个女人说她的钥匙丢了。\n李明：小偷在这里吗？\n小红：也许，我们要小心一点。\n大毛突然从灌木丛后面跑出来。\n李明：大毛，你在那里干什么？\n大毛嘴里叼着一个红色的苹果。\n小明：那是李明的苹果。\n小红：还有那个男人的钱包。\n李明：大毛帮了我们大忙。\n妈妈：邻居之间的关系很好。\n小明：大毛是英雄。\n小红：我们感谢大毛的帮助。\n李明：我们需要给大毛买鱼。\n妈妈：如果大毛帮助了别人，\n我们当然应该感谢它。\n那个男人和女人走了过来。\n小红：这是你们的钱包和钥匙。\n男人说谢谢，而且很感激。\n女人也说谢谢，而且很友好。\n李明：他们现在是我们的朋友。\n小明：这真是一个有趣的故事。\n妈妈：帮助别人也是帮助自己。\n李明：我明白了，这很重要。\n小红：是的，我很开心。\n李明：现在，我真的很饿。\n妈妈：我们回家吃饭吧。\n李明：好，我肚子饿了。",
+      "lines": 51
+    },
+    "preRepairCritique": {
+      "scores": {
+        "natural": 6,
+        "coherence": 4,
+        "integration": 7,
+        "level": 8,
+        "human": 5,
+        "interest": 6
+      },
+      "strengths": "The vocabulary integration is largely seamless, and the sentence structures are perfectly appropriate for HSK 3 learners without being overly simplistic.",
+      "weaknesses": "The narrative logic collapses in the finale; a cat physically cannot retrieve a wallet from a bush or a stranger, and the sudden shift from a \"missing apple\" mystery to a \"lost wallet\" mystery involving random bystanders is disjointed and confusing.",
+      "mechanical": true,
+      "contradiction": null,
+      "contradictionDetail": "",
+      "overall": 5
+    },
+    "decision": {
+      "ok": false,
+      "code": "DRAFT_QUALITY_FAILED",
+      "reason": "overall 5 < 6; coherence 4 < 5",
+      "quality": {
+        "ok": false,
+        "code": "DRAFT_QUALITY_FAILED",
+        "reasons": [
+          "overall 5 < 6",
+          "coherence 4 < 5"
+        ],
+        "scores": {
+          "natural": 6,
+          "coherence": 4,
+          "integration": 7,
+          "level": 8,
+          "human": 5,
+          "interest": 6
+        },
+        "overall": 5,
+        "mechanical": true,
+        "contradiction": false,
+        "contradictionDetail": null,
+        "thresholds": {
+          "overall": 6,
+          "natural": 5,
+          "coherence": 5,
+          "integration": 5,
+          "human": 5
+        }
+      },
+      "repairability": null
+    },
+    "repair": null,
+    "before": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "51 lines (need 14-38)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "关系 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_above_max",
+          "message": "女人 appears 8× (max 4) — reads as spam"
+        },
+        {
+          "code": "target_above_max",
+          "message": "男人 appears 5× (max 4) — reads as spam"
+        },
+        {
+          "code": "target_below_min",
+          "message": "需要 appears 1× (need 2-4)"
+        },
+        {
+          "code": "unknown_words",
+          "message": "7 unknown (non-vocabulary) runs (max 2): 午、长椅、街角、灌木、丛、干什么、叼"
+        }
+      ],
+      "reviews": [
+        {
+          "code": "out_of_level_share_review",
+          "message": "out-of-level vocabulary 7.5% sits in the experimental review band (7.0%-10.5%) — mandatory human review before publication"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "15 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 51,
+        "cjkChars": 438,
+        "distinctVocab": 131,
+        "targetCounts": {
+          "关系": 1,
+          "女人": 8,
+          "男人": 5,
+          "帮助": 4,
+          "需要": 1,
+          "如果": 1,
+          "而且": 2,
+          "必须": 1
+        },
+        "inLevelCoverage": 0.897,
+        "outOfLevelDistinct": 15,
+        "outOfLevelCharShare": 0.075,
+        "unknownDistinct": 7,
+        "unknownCharShare": 0.027,
+        "unknownRuns": [
+          "午",
+          "长椅",
+          "街角",
+          "灌木",
+          "丛",
+          "干什么",
+          "叼"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.07,
+        "nearestNeighbor": {
+          "title": "1. 不见了的苹果",
+          "level": 1,
+          "jaccard": 0.021,
+          "containment": 0.065
+        }
+      }
+    },
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "quality-gate-1-L3-001",
+    "status": "rejected",
+    "title": "消失的苹果",
+    "content": "李明：小红，我的苹果不见了。\n小红：你看，苹果还在桌子上。\n李明：不，那个是昨天的。\n小明：我也找不到我的笔了。\n妈妈：你们昨天做了什么？\n李明：我们去公园玩了一下午。\n小红：那里有那个白色的猫。\n大毛坐在长椅上看我们。\n李明：大毛很可爱，但是奇怪的。\n小红：你注意那个女人了吗？\n李明：哪个女人？\n小红：穿红色衣服的女人。\n李明：我看见了，她在喂猫。\n妈妈：那个女人看起来很温柔。\n小红：但是她的包里有很多东西。\n李明：我的苹果是她拿的吗？\n小明：我不知道，我不小心睡着了。\n小红：我们必须检查一下周围。\n李明：好，我们去街道那边看看。\n他们走到街角开始寻找。\n那里站着一个男人和一个女人。\n李明：他们在说什么？\n小红：他们在找丢失的东西。\n那个男人说他的钱包不见了。\n那个女人说她的钥匙丢了。\n李明：小偷在这里吗？\n小红：也许，我们要小心一点。\n大毛突然从灌木丛后面跑出来。\n李明：大毛，你在那里干什么？\n大毛嘴里叼着一个红色的苹果。\n小明：那是李明的苹果。\n小红：还有那个男人的钱包。\n李明：大毛帮了我们大忙。\n妈妈：邻居之间的关系很好。\n小明：大毛是英雄。\n小红：我们感谢大毛的帮助。\n李明：我们需要给大毛买鱼。\n妈妈：如果大毛帮助了别人，\n我们当然应该感谢它。\n那个男人和女人走了过来。\n小红：这是你们的钱包和钥匙。\n男人说谢谢，而且很感激。\n女人也说谢谢，而且很友好。\n李明：他们现在是我们的朋友。\n小明：这真是一个有趣的故事。\n妈妈：帮助别人也是帮助自己。\n李明：我明白了，这很重要。\n小红：是的，我很开心。\n李明：现在，我真的很饿。\n妈妈：我们回家吃饭吧。\n李明：好，我肚子饿了。",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "51 lines (need 14-38)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "关系 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_above_max",
+          "message": "女人 appears 8× (max 4) — reads as spam"
+        },
+        {
+          "code": "target_above_max",
+          "message": "男人 appears 5× (max 4) — reads as spam"
+        },
+        {
+          "code": "target_below_min",
+          "message": "需要 appears 1× (need 2-4)"
+        },
+        {
+          "code": "unknown_words",
+          "message": "7 unknown (non-vocabulary) runs (max 2): 午、长椅、街角、灌木、丛、干什么、叼"
+        }
+      ],
+      "reviews": [
+        {
+          "code": "out_of_level_share_review",
+          "message": "out-of-level vocabulary 7.5% sits in the experimental review band (7.0%-10.5%) — mandatory human review before publication"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "15 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 51,
+        "cjkChars": 438,
+        "distinctVocab": 131,
+        "targetCounts": {
+          "关系": 1,
+          "女人": 8,
+          "男人": 5,
+          "帮助": 4,
+          "需要": 1,
+          "如果": 1,
+          "而且": 2,
+          "必须": 1
+        },
+        "inLevelCoverage": 0.897,
+        "outOfLevelDistinct": 15,
+        "outOfLevelCharShare": 0.075,
+        "unknownDistinct": 7,
+        "unknownCharShare": 0.027,
+        "unknownRuns": [
+          "午",
+          "长椅",
+          "街角",
+          "灌木",
+          "丛",
+          "干什么",
+          "叼"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.07,
+        "nearestNeighbor": {
+          "title": "1. 不见了的苹果",
+          "level": 1,
+          "jaccard": 0.021,
+          "containment": 0.065
+        }
+      }
+    },
+    "critique": null,
+    "attempts": 0,
+    "calls": 1,
+    "generatorVersion": "fab9-quality-gate@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
