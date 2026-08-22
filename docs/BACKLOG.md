@@ -320,6 +320,28 @@ migration to drop them, since this removed the feature, not historical data.
   reads them.
 
 ## Frontend cleanup
+- [x] **B1: every core query paged past PostgREST's 1000-row cap (2026-08-22).**
+  The engine-audit's top blocker: `getTrackCards`, the session-build and
+  Home-counts vocabulary windows, the level-test gate (`testLogic.js` +
+  `Test.jsx`), the onboarding placement claim, KnownWords' carded set, and a
+  sweep of per-level/whole-track reads (Study's recap loaders, Profile stats
+  incl. all-time `review_logs`, PlacementTest, Words/Listen/Tones/Speaking/
+  FillBlank/SentenceBuilder/Writer/Writing, Analyzer, ChatMission, homeStory,
+  prefetch, LanguageSwitcher, Dev) all ran unpaged, so anything past 1,000 rows
+  was silently dropped — an HSK 1–4 window is already 1,879 words, HSK 6 alone
+  is 1,621, and an HSK 6 placement claim is 3,374. All now go through
+  `fetchPaged`/`fetchPagedSafe`/`fetchPagedResult` (new) or `fetchChunkedIn`
+  (new, for `.in()` id lists), each with a unique trailing `.order('id')` so
+  offset pages can't overlap on tied sort keys. Extracted
+  `priorKnowledgeVocab.js` and `knownWordsData.js` so the two inline component
+  queries are unit-tested. `src/fakePostgrest.js` (test-only) emulates the
+  capped server; specs assert exact counts at real HSK sizes and failed
+  against the old code. **The invariant:** any new query that can return a
+  whole track, a whole deck, or a learner's whole history MUST page, and MUST
+  order by a unique key. Deliberately left unpaged (bounded): stories /
+  story_reads (bounded by the published-story count — page these if the
+  library ever approaches 1,000), `review_logs` recent-window with `.limit(400)`
+  in Stories, small `.in()` lists, singleton/config reads.
 - [x] **`Stories.jsx` shelf logic extracted to `src/storyShelves.js` (2026-07-30).** The
   screen held two closures over render scope (`shelvesForTier`, `tierInfo`) plus a
   ~70-line IIFE inside the JSX that filtered, arc-grouped and split every level of
