@@ -52,9 +52,8 @@ export default function Onboarding({ session, onComplete }) {
   const [goal, setGoal] = useState(10)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
-  // When the learner placed above the lowest tier, offer to bring the earlier
-  // levels into review as spread-out check-ups (prior-knowledge claim).
-  const [claimEarlier, setClaimEarlier] = useState(true)
+  // Placing above the lowest tier claims the earlier levels as prior knowledge.
+  // That is not optional — see handleFinish. Only the check-up pace is a choice.
   const [claimPacing, setClaimPacing] = useState('steady')
   // Tier 2's word threshold for the chosen language — the "next library" the
   // goal step projects a days-to-unlock estimate against.
@@ -146,11 +145,17 @@ export default function Onboarding({ session, onComplete }) {
       })
       if (trackError) throw trackError
 
-      // Claim the levels below the placed level so prior knowledge stays sharp.
+      // Choosing a higher starting level IS the prior-knowledge claim, so this
+      // is unconditional — there is no "decline" that would leave the app
+      // believing the learner knows nothing below their own level. The rows are
+      // INERT (knowledgeState.priorKnownCardRow): nothing enters the review
+      // queue, nothing counts as mastered, and each word is checked once,
+      // gradually, by calibration.
+      //
       // Best-effort: never block onboarding if the seed write fails. The fetch
       // is paged (priorKnowledgeVocab.js) — an HSK 6 placement covers 3,374
       // earlier words, far past PostgREST's 1000-row cap.
-      if (claimEarlier && level > 1) {
+      if (level > 1) {
         try {
           const perDay = (PACING.find(p => p.key === claimPacing) || PACING[1]).perDay
           const ids = await fetchEarlierVocabIds(supabase, { language, system, level })
@@ -557,20 +562,30 @@ export default function Onboarding({ session, onComplete }) {
             {tiers.length > 0 && level > tiers[0].level && (
               <div style={{ border: '1px solid var(--border)', borderRadius: '12px', padding: '16px', marginTop: '18px', background: 'var(--surface)' }}>
                 <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text)', marginBottom: '6px' }}>
-                  Bring your earlier words into review?
+                  About the earlier levels
                 </div>
+                {/* Choosing a higher starting level IS the prior-knowledge claim
+                    — there is no separate opt-in, because declining would leave
+                    the app believing the learner knows nothing below their own
+                    level and quietly under-count every story they can read.
+                    Nothing enters review: a claim is inert until a check. */}
                 <p style={{ fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.6, marginBottom: '14px' }}>
-                  You placed at {getLevelLabel(language, languageTheme(language).system, level)}, so we treat the
-                  earlier words as known. We can check a few each day so they stay sharp instead of quietly fading.
+                  You'll start at {getLevelLabel(language, languageTheme(language).system, level)}. We'll assume you
+                  know most of the earlier vocabulary — those words count towards what you can read straight away,
+                  and we'll occasionally check a few of them as you study rather than adding them to your reviews.
                 </p>
-                <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-muted)', marginBottom: '8px' }}>
+                  How often should we check them?
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
                   {PACING.map(p => (
                     <button
                       key={p.key}
-                      onClick={() => { setClaimEarlier(true); setClaimPacing(p.key) }}
+                      onClick={() => setClaimPacing(p.key)}
+                      aria-pressed={claimPacing === p.key}
                       style={{
                         flex: 1, padding: '10px 8px', borderRadius: '10px', cursor: 'pointer',
-                        border: '2px solid ' + (claimEarlier && claimPacing === p.key ? accentHex : 'var(--border)'),
+                        border: '2px solid ' + (claimPacing === p.key ? accentHex : 'var(--border)'),
                         background: 'var(--surface)', color: 'var(--text)',
                         fontSize: '13px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
                       }}
@@ -582,12 +597,6 @@ export default function Onboarding({ session, onComplete }) {
                     </button>
                   ))}
                 </div>
-                <button
-                  onClick={() => setClaimEarlier(v => !v)}
-                  style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', fontSize: '12px', color: claimEarlier ? 'var(--text-muted)' : accentHex, fontFamily: 'Inter, sans-serif' }}
-                >
-                  {claimEarlier ? 'No thanks, skip this' : 'Skipped — tap to turn back on'}
-                </button>
               </div>
             )}
 

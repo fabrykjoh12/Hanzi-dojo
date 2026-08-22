@@ -21,9 +21,12 @@
 -- Everything here is ADDITIVE and idempotent. No existing column, policy, RPC
 -- or CHECK constraint is altered:
 --
---   * grade_card's column whitelist is untouched — these three columns are
---     never written by grading, exactly like source_sentence and the
---     source_story_* trio before them.
+--   * prior_known_at and prior_source are never written by grading, exactly
+--     like source_sentence and the source_story_* trio before them, so
+--     provenance survives every review. verified_at is the exception: the
+--     companion migration 20260822170000 teaches grade_card to stamp it in the
+--     SAME transaction as the grade, because the inert CHECK below would
+--     otherwise reject a claim's first real review. Apply BOTH together.
 --   * reset_language_progress and delete_my_account already clear `cards`,
 --     so claims are removed with everything else and neither RPC changes.
 --   * cards_state_check is untouched — a claim reuses 'new' rather than
@@ -84,6 +87,29 @@ alter table public.cards
       and is_easy = false
     )
   );
+
+-- ── Metadata invariants (B2.2) ──────────────────────────────────────────────
+-- Impossible combinations must be impossible, not merely unlikely. Every one of
+-- these validates against production as it stands, because every existing row
+-- has all three columns NULL.
+
+-- A claim always knows where it came from, and provenance never exists without
+-- a claim. Stated as an equivalence so neither half can drift.
+alter table public.cards drop constraint if exists cards_prior_claim_has_source;
+alter table public.cards add constraint cards_prior_claim_has_source
+  check ((prior_known_at is null) = (prior_source is null));
+
+-- Verification is verification OF a claim. A card that was never claimed has
+-- nothing to verify, so verified_at on it would be meaningless.
+alter table public.cards drop constraint if exists cards_verified_requires_claim;
+alter table public.cards add constraint cards_verified_requires_claim
+  check (verified_at is null or prior_known_at is not null);
+
+-- You cannot check a claim before it was made. Guards against a clock-skewed
+-- client and against a migration that back-dates one half of the pair.
+alter table public.cards drop constraint if exists cards_verified_after_claim;
+alter table public.cards add constraint cards_verified_after_claim
+  check (verified_at is null or prior_known_at is null or verified_at >= prior_known_at);
 
 -- The calibration queue: claimed, not yet checked. Partial, so it indexes only
 -- the rows calibration actually selects and stays small.

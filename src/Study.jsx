@@ -859,6 +859,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           scheduled_days: c.scheduled_days,
           elapsed_days: c.elapsed_days,
           learning_step: c.learning_step,
+          // Undoing a calibration check un-verifies the claim: the snapshot
+          // holds verified_at as it was BEFORE the grade (null for a first
+          // check), so the word returns to the calibration queue instead of
+          // being left marked verified with the review taken back.
+          verified_at: c.verified_at ?? null,
         }).eq('id', u.cardId)
       }
       const serverPersisted = u.outboxId == null && isOnline()

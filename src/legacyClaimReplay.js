@@ -15,6 +15,33 @@
 //
 // Kept apart from legacyClaimMigration.js because this half needs the scheduler,
 // while classification is pure bookkeeping.
+//
+// ── WHAT THE REPLAY ASSUMES, AND CANNOT KNOW ────────────────────────────────
+//
+// FSRS intervals depend on `request_retention`, and the app lets a learner move
+// that dial (srs.js RETENTION_PRESETS: 0.85 / 0.9 / 0.95). The replay therefore
+// needs to know what retention was in force AT EACH HISTORICAL REVIEW.
+//
+// IT IS NOT RECORDED. `review_logs` stores id, user_id, card_id, vocab_id,
+// grade, previous_state, next_state, previous_interval_days, next_interval_days,
+// reviewed_at, client_op_id — and no retention. `profiles.target_retention`
+// holds only the learner's CURRENT setting, with no history. So the retention
+// that applied to a review in the past is unknowable from this database.
+//
+// The replay therefore uses srs.js's default (0.9) unless a caller passes
+// `targetRetention`. This is an ASSUMPTION, not a reconstruction, and the
+// resulting state is "what this history would produce at 0.9" rather than
+// "exactly what happened".
+//
+// Two things make it the most honest repair available anyway:
+//   * the alternative is leaving a stability of 21 that was never earned at all;
+//   * measured on this database, every profile sits at the 0.9 default and not
+//     one account has ever set a different value, so for the rows this migration
+//     actually touches the assumption is almost certainly the fact.
+//
+// If the dial is ever used, and a future migration needs exact reconstruction,
+// review_logs would have to start recording the retention in force. Worth doing
+// if FSRS parameter tuning is ever revisited; not worth blocking this on.
 
 import { schedule } from './srs.js'
 
