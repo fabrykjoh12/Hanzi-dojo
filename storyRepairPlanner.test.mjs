@@ -7,6 +7,7 @@ import {
   shareCeilingOf,
   anonymise,
   acceptableLine,
+  effectiveOverall,
   LINE_QUALITY,
   REPAIR_PLANNER_VERSION,
 } from './storyRepairPlanner.mjs'
@@ -345,7 +346,9 @@ describe('semantic host selection', () => {
     const chosen = r.hostSelections.map(h => h.chosen)
     expect(new Set(chosen).size).toBe(2)                       // 6 for the first, 7 for the second
     expect(chosen[0]).toBe(6)
-    expect(r.hostSelections[1].candidates.map(c => c.line)).not.toContain(6)
+    // line 6 is adopted, so it is never even attempted for the second target
+    expect(r.hostSelections[1].tried.map(t => t.line)).not.toContain(6)
+    expect(r.hostSelections[1].order).not.toContain(6)
   })
 
   it('a ranker that throws never blocks the repair', async () => {
@@ -398,13 +401,34 @@ describe('contextual naturalness ranking', () => {
     expect(r.unresolved[0].detail).toContain('threshold')
   })
 
-  it('a mechanically-constructed line is refused even with a high overall score', () => {
-    expect(acceptableLine({ overall: 9, grammar: 9, mechanical: true })).toBe(false)
-    expect(acceptableLine({ overall: 9, grammar: 5, mechanical: false })).toBe(false)
+  // repair-2 had the judge answer mechanical=true for all six candidates it
+  // scored — including one it called "solid and natural" at overall 8 /
+  // grammar 9 / continuity 9 / voice 8, which the veto then threw away. The
+  // flag is saturated, so it costs a point instead of carrying a rejection.
+  it('mechanical costs a point, it does not veto: a good line still passes', () => {
+    // the real repair-2 line-29 candidate: 8 → effective 7, still eligible
+    expect(effectiveOverall({ overall: 8, grammar: 9, mechanical: true })).toBe(7)
+    expect(acceptableLine({ overall: 8, grammar: 9, mechanical: true })).toBe(true)
+    expect(acceptableLine({ overall: 9, grammar: 9, mechanical: true })).toBe(true)
+    // exactly at the line: 7 → 6 passes, 6 → 5 does not
+    expect(acceptableLine({ overall: 7, grammar: 6, mechanical: true })).toBe(true)
+    expect(acceptableLine({ overall: 6, grammar: 6, mechanical: true })).toBe(false)
+    expect(LINE_QUALITY.mechanicalPenalty).toBe(1)
+  })
+
+  it('the flag never rescues a poor line either — quality still decides', () => {
+    // the real repair-2 line-9 candidates: 1-3 overall, hopeless either way
+    for (const overall of [1, 2, 3]) {
+      expect(acceptableLine({ overall, grammar: 3, mechanical: true })).toBe(false)
+      expect(acceptableLine({ overall, grammar: 3, mechanical: false })).toBe(false)
+    }
+    // clean of the flag but under the bar on either axis: still refused
     expect(acceptableLine({ overall: 5, grammar: 9, mechanical: false })).toBe(false)
+    expect(acceptableLine({ overall: 9, grammar: 5, mechanical: false })).toBe(false)
     expect(acceptableLine({ overall: 6, grammar: 6, mechanical: false })).toBe(true)
     expect(acceptableLine(null)).toBe(false)
     expect(LINE_QUALITY.overall).toBe(6)
+    expect(LINE_QUALITY.grammar).toBe(6)
   })
 
   it('the judge can never rescue a line the deterministic gate rejected', async () => {
@@ -420,6 +444,100 @@ describe('contextual naturalness ranking', () => {
     const one = anonymise([{ generator: 'x', text: '第一句。' }, { generator: 'y', text: '第二句。' }])
     const two = anonymise([{ generator: 'y', text: '第二句。' }, { generator: 'x', text: '第一句。' }])
     expect(one.map(c => c.label + c.text)).toEqual(two.map(c => c.label + c.text))
+  })
+})
+
+// repair-2 failed a whole story because the best host line could not produce
+// a natural sentence — with four more mechanically valid hosts sitting unused.
+// The ranking is an ordered fallback list now, capped, budget-respecting, and
+// a failed host attempt leaves the story untouched.
+describe('ranked host fallback', () => {
+  const m = manifest()
+  const candidates = [
+    { line: 3, text: '李明去问邻居。', speaker: null, cjkChars: 6, outChars: 0, free: false },
+    { line: 6, text: '他们打算明天买东西。', speaker: null, cjkChars: 9, outChars: 0, free: false },
+    { line: 7, text: '邻居给他们看地图。', speaker: null, cjkChars: 8, outChars: 0, free: false },
+    { line: 5, text: '小红也想一起去看墨镜。', speaker: null, cjkChars: 10, outChars: 0, free: false },
+  ]
+  const plan = { deletes: [], replaces: [], budget: 6, targetHosts: [{ word: '铅笔', candidates, deterministicPick: 3 }] }
+  const gen = (name, replies) => { const seen = []; return { name, seen, send: async ({ prompt }) => { seen.push(prompt); return replies.shift() } } }
+  const scores = (spec) => spec.map(([label, overall, grammar, mech]) =>
+    label + ': GRAMMAR ' + grammar + ' CONTINUITY 7 ROLE 7 INTEGRATION 6 VOICE 7 MECHANICAL ' + (mech ? 'yes' : 'no') + ' OVERALL ' + overall + ' — judged').join('\n')
+  const run = (over) => executeRepairPlan({
+    plan, manifest: m, vocabMap,
+    buildPrompt: lineRewritePrompt, parseLine: parseSingleLine,
+    buildHostPrompt: hostRankPrompt, parseHostRanking,
+    buildJudgePrompt: lineJudgePrompt, parseLineJudgment,
+    candidatesPerGenerator: 1,
+    ...over,
+  })
+
+  it('falls through to the next ranked host when the first cannot produce an acceptable line', async () => {
+    const ranker = gen('Q', ['LINE 6 — best\nLINE 7 — second\nLINE 3 — third\nLINE 5 — fourth'])
+    const writer = gen('W', ['他们打算明天买铅笔。', '邻居给他们看铅笔。'])
+    const judge = gen('J', [scores([['A', 3, 4, true]]), scores([['A', 8, 8, true]])])
+    const r = await run({ hostRanker: ranker, judge, generators: [writer] })
+    const sel = r.hostSelections[0]
+    expect(sel.tried.map(t => t.line)).toEqual([6, 7])          // 6 rejected, 7 accepted
+    expect(sel.tried[0].accepted).toBe(false)
+    expect(sel.tried[0].why).toContain('threshold')
+    expect(sel.tried[1].accepted).toBe(true)
+    expect(sel.chosen).toBe(7)
+    // the failed host changed nothing: exactly one replace, on line 7
+    expect(r.ops).toEqual([{ op: 'replace', line: 7, text: '邻居给他们看铅笔。' }])
+    expect(r.unresolved).toEqual([])
+  })
+
+  it('tries at most three hosts, then LINE_REPAIR_FAILED with every attempt recorded', async () => {
+    const ranker = gen('Q', ['LINE 6 — a\nLINE 7 — b\nLINE 3 — c\nLINE 5 — d'])
+    const writer = gen('W', ['他们打算明天买铅笔。', '邻居给他们看铅笔。', '李明去问邻居要铅笔。', '小红也想一起去买铅笔。'])
+    const judge = gen('J', [scores([['A', 3, 4, false]]), scores([['A', 4, 5, false]]), scores([['A', 2, 3, false]]), scores([['A', 9, 9, false]])])
+    const r = await run({ hostRanker: ranker, judge, generators: [writer], maxHostsPerTarget: 3 })
+    expect(r.hostSelections[0].tried.map(t => t.line)).toEqual([6, 7, 3])   // the 4th host is never tried
+    expect(r.hostSelections[0].chosen).toBeNull()
+    expect(r.ops).toEqual([])                                  // the story is untouched
+    expect(r.unresolved[0].code).toBe('LINE_REPAIR_FAILED')
+    expect(r.unresolved[0].detail).toContain('6, 7, 3')
+    expect(judge.seen.length).toBe(3)
+  })
+
+  it('a failed host costs no operation, but the budget still bounds what may be tried', async () => {
+    // A failed attempt changes nothing, so it must not consume budget either:
+    // with two deletions of a budget of three, one replacement slot is left
+    // and all three hosts may compete for it.
+    const tight = { ...plan, deletes: [{ line: 1 }, { line: 2 }], budget: 3 }
+    const ranker = gen('Q', ['LINE 6 — a\nLINE 7 — b\nLINE 3 — c'])
+    const writer = gen('W', ['他们打算明天买铅笔。', '邻居给他们看铅笔。', '李明去问邻居要铅笔。'])
+    const judge = gen('J', [scores([['A', 3, 3, false]]), scores([['A', 4, 4, false]]), scores([['A', 8, 8, false]])])
+    const r = await run({ plan: tight, hostRanker: ranker, judge, generators: [writer], maxHostsPerTarget: 3 })
+    expect(r.hostSelections[0].tried.map(t => t.line)).toEqual([6, 7, 3])
+    expect(r.hostSelections[0].chosen).toBe(3)
+    expect(r.ops.filter(o => o.op === 'replace').length).toBe(1)     // exactly the slot that was free
+
+    // With no slot at all, no host may be tried and no call is made.
+    const full = { ...plan, deletes: [{ line: 1 }, { line: 2 }], budget: 2 }
+    const r2 = await run({ plan: full, hostRanker: gen('Q', ['LINE 6 — a']), judge: gen('J', []), generators: [gen('W', [])], maxHostsPerTarget: 3 })
+    expect(r2.hostSelections[0].tried).toEqual([])
+    expect(r2.ops.filter(o => o.op === 'replace').length).toBe(0)
+    expect(r2.unresolved[0].detail).toContain('budget')
+  })
+
+  it('a host that also has to lose an unknown run does both jobs in one operation', async () => {
+    const withRun = {
+      deletes: [], budget: 6,
+      replaces: [{ line: 5, text: '小红也想一起去看墨镜。', speaker: null, cjkChars: 10, addTargets: [], removeTargets: [], removeRuns: ['墨镜'], reasons: ['remove unknown word 墨镜'] }],
+      targetHosts: [{ word: '铅笔', candidates: [{ line: 5, text: '小红也想一起去看墨镜。', speaker: null, cjkChars: 10, outChars: 0, free: true }, ...candidates.slice(0, 2)], deterministicPick: 5 }],
+    }
+    const ranker = gen('Q', ['LINE 5 — it is already being rewritten\nLINE 3 — next\nLINE 6 — next'])
+    const writer = gen('W', ['小红也想一起去买铅笔。'])
+    const judge = gen('J', [scores([['A', 8, 8, true]])])
+    const r = await run({ plan: withRun, hostRanker: ranker, judge, generators: [writer] })
+    expect(r.ops).toEqual([{ op: 'replace', line: 5, text: '小红也想一起去买铅笔。' }])   // ONE operation
+    expect(r.hostSelections[0].tried[0].free).toBe(true)
+    expect(r.unresolved).toEqual([])
+    // the writer was asked for both jobs at once
+    expect(writer.seen[0]).toContain('墨镜 must NOT appear')
+    expect(writer.seen[0]).toContain('MUST contain 铅笔')
   })
 })
 

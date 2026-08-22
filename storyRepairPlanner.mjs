@@ -386,14 +386,21 @@ export function validateReplacementLine({ original, replacement, task, manifest,
 // ── Semantic quality thresholds (pilot values, 2026-08-22) ──────────────────
 // A line that passes the mechanical gate can still be bad Chinese: repair-1
 // adopted 突然发生的事是大白猫跳上桌子压住我的钱包 — legal by every
-// deterministic measure, strained as a sentence — and gpt-oss's rejected
-// alternative was worse. So a semantic judge scores the survivors in context,
-// and a line that clears no threshold is not adopted at all. Provisional:
-// tune once human review has looked at accepted and rejected lines.
+// deterministic measure, strained as a sentence, and scored 2/10 by the judge
+// that later looked at it. So a judge scores the survivors in context, and a
+// line that clears no threshold is not adopted at all.
+//
+// MECHANICAL is scored, not a veto. repair-2 had the judge answer
+// mechanical=true for all six candidates it scored, including one it called
+// "solid and natural" at overall 8 / grammar 9 / continuity 9 / voice 8: a
+// judge told which word is required will nearly always say the sentence was
+// built around it, so the boolean is saturated and cannot carry a rejection.
+// It costs a point of the effective overall instead — enough to lose a close
+// contest, not enough to reject a good line.
 export const LINE_QUALITY = {
-  overall: 6,          // 1-10
+  overall: 6,               // 1-10, after the mechanical penalty
   grammar: 6,
-  rejectMechanical: true,   // "built around the target word" is the failure we are hunting
+  mechanicalPenalty: 1,
 }
 
 // Deterministic anonymisation: candidates are relabelled A, B, C… in an order
@@ -409,24 +416,34 @@ export function anonymise(candidates) {
   return ordered.map((c, i) => ({ ...c, label: String.fromCharCode(65 + i) }))
 }
 
+// The overall score a candidate is actually judged on: what the judge said,
+// less the mechanical penalty when it flagged the sentence as built around
+// the required word.
+export function effectiveOverall(score, thresholds = LINE_QUALITY) {
+  if (!score) return 0
+  const penalty = score.mechanical === true ? (thresholds.mechanicalPenalty || 0) : 0
+  return (score.overall || 0) - penalty
+}
+
 export function acceptableLine(score, thresholds = LINE_QUALITY) {
   if (!score) return false
-  if (thresholds.rejectMechanical && score.mechanical === true) return false
-  return (score.overall || 0) >= thresholds.overall && (score.grammar || 0) >= thresholds.grammar
+  return effectiveOverall(score, thresholds) >= thresholds.overall
+    && (score.grammar || 0) >= thresholds.grammar
 }
 
 // ── Execution ────────────────────────────────────────────────────────────────
-// Deletions are the planner's. For each line the planner wants rewritten:
+// Deletions are the planner's. For every line the planner wants rewritten:
 // generate several independent candidates across every generator, discard the
 // ones the deterministic gate rejects, then rank the survivors in their own
 // context with a semantic judge and adopt the best — but only if it clears the
-// quality threshold. Nothing else may overrule the deterministic gate: the
-// judge chooses among survivors, it never rescues a rejection.
+// quality threshold. The judge only ever chooses among survivors; it can never
+// rescue a deterministic rejection.
 //
-// Host selection for a missing target runs first, as a closed question: the
-// planner supplies the mechanically valid candidate lines, the ranker may only
-// reorder them, and a failed or unusable answer falls back to the planner's
-// own deterministic order.
+// Host selection for a missing target is a CLOSED question over the planner's
+// mechanically-eligible set, and the ranking is an ordered FALLBACK list, not
+// a single answer: if the best host cannot produce an acceptable line, the
+// next-best host is tried, up to maxHostsPerTarget. A failed host attempt
+// changes nothing — only an accepted replacement consumes an operation.
 export async function executeRepairPlan({
   plan,
   manifest,
@@ -444,6 +461,7 @@ export async function executeRepairPlan({
   thresholds = LINE_QUALITY,
   candidatesPerGenerator = 2,
   attemptsPerGenerator = 2,    // used only when there is no judge (legacy path)
+  maxHostsPerTarget = 3,
   maxTokens = 900,
   contextFor = null,           // (line) => { before: [], after: [] }
 } = {}) {
@@ -455,51 +473,22 @@ export async function executeRepairPlan({
   const compliance = new Map(generators.map(g => [g.name, { attempts: 0, passed: 0, adopted: 0 }]))
   const ctx = contextFor || (() => ({ before: [], after: [] }))
 
-  // ── Host selection — the model reorders, the planner decides the menu ──────
-  const tasks = new Map(plan.replaces.map(t => [t.line, { ...t, addTargets: [...t.addTargets], removeTargets: [...t.removeTargets], removeRuns: [...t.removeRuns], reasons: [...t.reasons] }]))
-  const usedHosts = new Set()
-  for (const host of (plan.targetHosts || [])) {
-    // Two guards the ranker cannot argue with: one target per host line (each
-    // tiny task stays tiny), and the operation budget still holds however the
-    // ranking comes out — a fresh host line costs an operation, a line already
-    // being rewritten does not.
-    const budgetLeft = (line) => tasks.has(line) || (plan.deletes.length + tasks.size + 1) <= plan.budget
-    const pool = host.candidates.filter(c => !usedHosts.has(c.line) && budgetLeft(c.line))
-    if (!pool.length) {
-      unresolved.push({ target: host.word, code: 'LINE_REPAIR_FAILED', detail: 'no host line left inside the operation budget for ' + host.word })
-      continue
-    }
-    const allowed = pool.map(c => c.line)
-    let chosen = allowed.includes(host.deterministicPick) ? host.deterministicPick : pool[0].line
-    let source = 'deterministic (no ranker)'
-    let ranking = null
-    if (hostRanker && buildHostPrompt && parseHostRanking && pool.length > 1) {
-      try {
-        const text = await hostRanker.send({
-          kind: 'host-rank',
-          prompt: buildHostPrompt({ manifest, target: host.word, meaning: meanings[host.word] || null, candidates: pool.map(c => ({ ...c, ...ctx(c.line) })) }),
-          maxTokens,
-        })
-        ranking = parseHostRanking(text, allowed)
-        if (ranking && ranking.length) { chosen = ranking[0].line; source = 'semantic ranking by ' + hostRanker.name }
-        else source = 'deterministic (ranking unusable)'
-      } catch (err) {
-        source = 'deterministic (ranker failed: ' + String((err && err.message) || err).slice(0, 80) + ')'
-      }
-    }
-    usedHosts.add(chosen)
-    hostSelections.push({ target: host.word, candidates: pool, ranking, chosen, source })
-    const f = pool.find(c => c.line === chosen)
-    if (!tasks.has(chosen)) {
-      tasks.set(chosen, { line: chosen, text: f.text, speaker: f.speaker, cjkChars: f.cjkChars, addTargets: [], removeTargets: [], removeRuns: [], reasons: [] })
-    }
-    const t = tasks.get(chosen)
-    t.addTargets.push(host.word)
-    t.reasons.push('add target ' + host.word)
-  }
+  const adopted = new Set()                         // lines already repaired
+  // Lines the planner requires rewritten for their own sake (an unknown run,
+  // an over-used target). A target host may coincide with one — then a single
+  // operation does both jobs — and until that happens the requirement stays
+  // pending and keeps its share of the budget reserved.
+  const pending = new Map(plan.replaces.map(t => [t.line, {
+    ...t,
+    addTargets: [...t.addTargets], removeTargets: [...t.removeTargets],
+    removeRuns: [...t.removeRuns], reasons: [...t.reasons],
+  }]))
+  const committedOps = () => plan.deletes.length + adopted.size
+  const pendingOps = () => [...pending.keys()].filter(line => !adopted.has(line)).length
 
-  // ── One line at a time: generate, gate, judge, adopt ──────────────────────
-  for (const task of [...tasks.values()].sort((a, b) => a.line - b.line)) {
+  // One line, start to finish: generate → deterministic gate → semantic judge.
+  // Returns the winning candidate or null; the story is never touched here.
+  const attemptLine = async (task, label) => {
     const passing = []
     const shots = judge ? candidatesPerGenerator : attemptsPerGenerator
     for (let gi = 0; gi < generators.length; gi += 1) {
@@ -519,71 +508,143 @@ export async function executeRepairPlan({
         const stat = compliance.get(g.name)
         stat.attempts += 1
         if (gate.ok) stat.passed += 1
-        attempts.push({ line: task.line, generator: g.name, attempt: a, output: parsed, ok: gate.ok, failures: gate.failures, metrics: gate.metrics })
+        attempts.push({ line: task.line, for: label, generator: g.name, attempt: a, output: parsed, ok: gate.ok, failures: gate.failures, metrics: gate.metrics })
         if (gate.ok && !passing.some(p => p.text === parsed)) passing.push({ generator: g.name, gi, text: parsed, metrics: gate.metrics })
-        // Without a judge the first compliant line wins (legacy path); with a
-        // judge every shot is a candidate worth having.
         if (gate.ok && !judge) break
         if (!gate.ok) feedback = gate.failures.map(f => f.message)
       }
     }
+    if (!passing.length) return { winner: null, why: 'no candidate passed the deterministic gate' }
 
-    if (!passing.length) {
-      unresolved.push({ line: task.line, reasons: task.reasons, code: 'LINE_REPAIR_FAILED', detail: 'no candidate passed the deterministic gate' })
-      continue
-    }
-
-    let winner = null
-    if (judge && buildJudgePrompt && parseLineJudgment) {
-      const labelled = anonymise(passing)
-      let scores = null
-      try {
-        const text = await judge.send({
-          kind: 'line-judge',
-          prompt: buildJudgePrompt({
-            manifest,
-            original: task.text,
-            targets: task.addTargets,
-            context: ctx(task.line),
-            candidates: labelled.map(c => ({ label: c.label, text: c.text })),
-          }),
-          maxTokens,
-        })
-        scores = parseLineJudgment(text, labelled.map(c => c.label))
-      } catch { scores = null }
-      const scored = labelled.map(c => ({ ...c, score: (scores || []).find(s => s.label === c.label) || null }))
-      judgments.push({
-        line: task.line,
-        judge: judge.name,
-        candidates: scored.map(c => ({ label: c.label, generator: c.generator, text: c.text, score: c.score })),
-      })
-      const acceptable = scored.filter(c => acceptableLine(c.score, thresholds))
-      acceptable.sort((a, b) => (b.score.overall - a.score.overall)
-        || (b.score.grammar - a.score.grammar)
-        || (a.metrics.outChars - b.metrics.outChars)
-        || (a.label < b.label ? -1 : 1))
-      winner = acceptable[0] || null
-      if (!winner) {
-        unresolved.push({
-          line: task.line,
-          reasons: task.reasons,
-          code: 'LINE_REPAIR_FAILED',
-          detail: scores
-            ? 'no candidate met the naturalness threshold (overall ≥ ' + thresholds.overall + ', grammar ≥ ' + thresholds.grammar + (thresholds.rejectMechanical ? ', not mechanical' : '') + ')'
-            : 'the semantic judge returned nothing usable',
-        })
-        continue
-      }
-    } else {
+    if (!(judge && buildJudgePrompt && parseLineJudgment)) {
       const sorted = passing.slice().sort((a, b) =>
         (a.metrics.outChars - b.metrics.outChars)
         || (Math.abs(a.metrics.lengthRatio - 1) - Math.abs(b.metrics.lengthRatio - 1))
         || (a.gi - b.gi))
-      winner = sorted[0]
+      return { winner: sorted[0], why: null }
     }
 
+    const labelled = anonymise(passing)
+    let scores = null
+    try {
+      const text = await judge.send({
+        kind: 'line-judge',
+        prompt: buildJudgePrompt({
+          manifest,
+          original: task.text,
+          targets: task.addTargets,
+          context: ctx(task.line),
+          candidates: labelled.map(c => ({ label: c.label, text: c.text })),
+        }),
+        maxTokens,
+      })
+      scores = parseLineJudgment(text, labelled.map(c => c.label))
+    } catch { scores = null }
+    const scored = labelled.map(c => ({ ...c, score: (scores || []).find(s => s.label === c.label) || null }))
+    judgments.push({
+      line: task.line,
+      for: label,
+      judge: judge.name,
+      candidates: scored.map(c => ({
+        label: c.label,
+        generator: c.generator,
+        text: c.text,
+        score: c.score,
+        effectiveOverall: c.score ? effectiveOverall(c.score, thresholds) : null,
+        accepted: acceptableLine(c.score, thresholds),
+      })),
+    })
+    const acceptable = scored.filter(c => acceptableLine(c.score, thresholds))
+    acceptable.sort((a, b) => (effectiveOverall(b.score, thresholds) - effectiveOverall(a.score, thresholds))
+      || (b.score.grammar - a.score.grammar)
+      || (a.metrics.outChars - b.metrics.outChars)
+      || (a.label < b.label ? -1 : 1))
+    if (acceptable[0]) return { winner: acceptable[0], why: null }
+    return {
+      winner: null,
+      why: scores
+        ? 'no candidate met the naturalness threshold (overall ≥ ' + thresholds.overall + ' after the mechanical penalty, grammar ≥ ' + thresholds.grammar + ')'
+        : 'the semantic judge returned nothing usable',
+    }
+  }
+
+  const adopt = (task, winner) => {
     ops.push({ op: 'replace', line: task.line, text: winner.text })
+    adopted.add(task.line)
     compliance.get(winner.generator).adopted += 1
+    pending.delete(task.line)
+  }
+
+  // ── Missing targets: ranked hosts, tried in order ─────────────────────────
+  for (const host of (plan.targetHosts || [])) {
+    const eligible = host.candidates.filter(c => !adopted.has(c.line))
+    let ranking = null
+    let source = 'deterministic (no ranker)'
+    if (hostRanker && buildHostPrompt && parseHostRanking && eligible.length > 1) {
+      try {
+        const text = await hostRanker.send({
+          kind: 'host-rank',
+          prompt: buildHostPrompt({ manifest, target: host.word, meaning: meanings[host.word] || null, candidates: eligible.map(c => ({ ...c, ...ctx(c.line) })) }),
+          maxTokens,
+        })
+        ranking = parseHostRanking(text, eligible.map(c => c.line))
+        source = ranking && ranking.length ? 'semantic ranking by ' + hostRanker.name : 'deterministic (ranking unusable)'
+      } catch (err) {
+        source = 'deterministic (ranker failed: ' + String((err && err.message) || err).slice(0, 80) + ')'
+      }
+    }
+    const order = (ranking && ranking.length ? ranking.map(r => r.line) : eligible.map(c => c.line))
+      .filter(line => eligible.some(c => c.line === line))
+
+    const tried = []
+    let chosen = null
+    for (const line of order) {
+      if (tried.length >= maxHostsPerTarget || chosen != null) break
+      if (adopted.has(line)) continue                                   // never conflict with an adopted repair
+      const free = pending.has(line)
+      if (!free && committedOps() + pendingOps() + 1 > plan.budget) continue   // the budget is not negotiable
+      const f = host.candidates.find(c => c.line === line)
+      const req = pending.get(line)
+      const task = {
+        line,
+        text: f.text,
+        speaker: f.speaker,
+        cjkChars: f.cjkChars,
+        addTargets: [host.word],
+        removeTargets: req ? [...req.removeTargets] : [],
+        removeRuns: req ? [...req.removeRuns] : [],
+        reasons: [...(req ? req.reasons : []), 'add target ' + host.word],
+      }
+      const { winner, why } = await attemptLine(task, host.word + ' → line ' + line)
+      tried.push({
+        line,
+        rank: tried.length + 1,
+        reason: (ranking && (ranking.find(r => r.line === line) || {}).reason) || null,
+        free,
+        accepted: Boolean(winner),
+        text: winner ? winner.text : null,
+        why: winner ? null : why,
+      })
+      if (winner) { adopt(task, winner); chosen = line }
+    }
+    hostSelections.push({ target: host.word, candidates: host.candidates, ranking, order, tried, chosen, source })
+    if (chosen == null) {
+      unresolved.push({
+        target: host.word,
+        code: 'LINE_REPAIR_FAILED',
+        detail: tried.length
+          ? 'all ' + tried.length + ' host line(s) tried (' + tried.map(t => t.line).join(', ') + ') failed: ' + tried.map(t => t.line + ' — ' + t.why).join('; ')
+          : 'no host line available inside the operation budget',
+      })
+    }
+  }
+
+  // ── Lines the planner requires rewritten for their own sake ───────────────
+  for (const task of [...pending.values()].sort((a, b) => a.line - b.line)) {
+    if (adopted.has(task.line)) continue
+    const { winner, why } = await attemptLine(task, task.reasons.join('; '))
+    if (winner) adopt(task, winner)
+    else unresolved.push({ line: task.line, reasons: task.reasons, code: 'LINE_REPAIR_FAILED', detail: why })
   }
 
   return {

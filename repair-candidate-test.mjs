@@ -161,32 +161,38 @@ if (!plan.feasible) {
   })
 
   for (const h of executed.hostSelections) {
-    console.log('  target ' + h.target + ' — candidates ' + h.candidates.map(c => c.line).join(', '))
+    console.log('  target ' + h.target + ' — mechanically eligible: ' + h.candidates.map(c => c.line).join(', ') + ' [' + h.source + ']')
     if (h.ranking) for (const r of h.ranking) console.log('    ranked: line ' + r.line + (r.reason ? ' — ' + r.reason : ''))
-    console.log('    → chose line ' + h.chosen + ' [' + h.source + ']')
+    for (const t of h.tried) {
+      console.log('    attempt ' + t.rank + ' → line ' + t.line + (t.free ? ' (already being rewritten — no extra operation)' : '')
+        + ': ' + (t.accepted ? 'ACCEPTED — ' + t.text : 'rejected — ' + t.why))
+    }
+    console.log('    → ' + (h.chosen != null ? 'host line ' + h.chosen : 'LINE_REPAIR_FAILED'))
   }
   console.log('\n=== LINE GENERATION (' + generators.length + ' model(s) × 2 candidates per line) ===')
   for (const a of executed.attempts) {
-    console.log('  line ' + a.line + ' · ' + a.generator + ' · candidate ' + a.attempt + ' → ' + (a.ok ? 'gate PASS' : 'gate REJECT'))
+    console.log('  line ' + a.line + ' [' + a.for + '] · ' + a.generator + ' · candidate ' + a.attempt + ' → ' + (a.ok ? 'gate PASS' : 'gate REJECT'))
     console.log('    ' + (a.output || '(nothing usable)'))
     if (!a.ok) for (const f of a.failures) console.log('      ✗ ' + f.code + ': ' + f.message)
   }
-  console.log('\n=== ANONYMISED NATURALNESS RANKING (threshold: overall ≥ ' + LINE_QUALITY.overall + ', grammar ≥ ' + LINE_QUALITY.grammar + ', not mechanical) ===')
+  console.log('\n=== ANONYMISED NATURALNESS RANKING (threshold: overall ≥ ' + LINE_QUALITY.overall
+    + ' after a −' + LINE_QUALITY.mechanicalPenalty + ' mechanical penalty, grammar ≥ ' + LINE_QUALITY.grammar + ') ===')
   for (const j of executed.judgments) {
-    console.log('  line ' + j.line + ' — judged by ' + j.judge)
+    console.log('  line ' + j.line + ' (' + j.for + ') — judged by ' + j.judge)
     for (const c of j.candidates) {
       const sc = c.score
       console.log('    ' + c.label + ' [' + c.generator + '] ' + c.text)
       console.log('      ' + (sc
         ? 'grammar ' + sc.grammar + ' continuity ' + sc.continuity + ' role ' + sc.role + ' integration ' + sc.integration + ' voice ' + sc.voice + ' mechanical ' + sc.mechanical + ' → OVERALL ' + sc.overall + (sc.reason ? ' — ' + sc.reason : '')
         : '(not scored)'))
+      if (sc) console.log('      effective overall ' + c.effectiveOverall + (sc.mechanical === true ? ' (mechanical −' + LINE_QUALITY.mechanicalPenalty + ')' : '') + ' → ' + (c.accepted ? 'eligible' : 'below threshold'))
     }
   }
   console.log('  compliance: ' + Object.entries(executed.compliance).map(([n, c]) => n + ' ' + c.passed + '/' + c.attempts + ' passed, ' + c.adopted + ' adopted').join(' | '))
 
   // ── 3. Apply the whole plan, then the complete validator ──────────────────
   for (const u of executed.unresolved) {
-    console.log('\n' + u.code + ' on line ' + u.line + ': ' + u.detail + ' — the plan cannot be applied in full')
+    console.log('\n' + u.code + ' — ' + (u.target ? 'target ' + u.target : 'line ' + u.line) + ': ' + u.detail)
   }
   patched = { title: original.title, content: applyStructuralPatch(original.content, executed.ops) }
   editCheck = validateEdit(original, patched, { allowNewSpeakers: false })
@@ -264,7 +270,7 @@ const file = {
     critique,
     attempts: executed ? executed.attempts.length : 0,
     calls: (executed ? executed.attempts.length : 0) + (critique ? 1 : 0),
-    generatorVersion: 'fab9-deterministic-repair@2',
+    generatorVersion: 'fab9-deterministic-repair@3',
     promptVersion: PROMPT_VERSION,
     plannerVersion: REPAIR_PLANNER_VERSION,
     usage: { critic: criticUsage, wallMs: null },

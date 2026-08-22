@@ -154,6 +154,34 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### Canonical segmentation splits unknown compounds into single characters (open, found 2026-08-22)
+
+**Do not fix this without a separate investigation** — it lives in the canonical
+vocabulary engine (`src/storyReading.js` → `segmentLine`, read through
+`storyCorpusCalibration.analyzeStory`), which the reader, the FAB-5 coverage
+audit, the calibration and the FAB-10 validator all share. Changing it would
+move readability and coverage numbers **globally**, so it needs regression
+examples and a measured before/after, not a quick patch.
+
+**What happens.** A compound that is not itself a vocabulary entry can fall
+apart into its characters, and each character is then judged as its own word.
+Measured example (repair-2, `data/story-candidates/repair-2/`): a generated
+line containing 公交站 was rejected by the per-line gate for "introducing"
+公 (HSK 6) and 交 (HSK 4) — neither is a word the line uses, and the original
+line's 公交车站 produced no such reading. Same class as the single-character
+findings in the targetability work (被 glossed "quilt", 中 "China").
+
+**Impact so far:** none on any decision. In repair-2 the affected candidate
+scored 3/10 with the semantic judge and would have lost anyway. The risk is
+false rejections in the per-line gate and inflated out-of-level counts for
+stories using unlisted compounds.
+
+**When it is investigated,** start from: which compounds in the published
+corpus decompose this way, whether the fix belongs in segmentation or in
+treating single-character residue as structural (as `storyTargetability.mjs`
+already does for targeting), and what the change does to FAB-5's per-word
+`availableByLevel` numbers.
+
 ### Targeted story generation: the free-tier ceiling (FAB-9, measured 2026-08-21)
 
 **Anthropic is not available to this project** (no API billing), and the
