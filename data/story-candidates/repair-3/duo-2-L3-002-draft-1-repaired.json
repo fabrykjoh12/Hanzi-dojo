@@ -1,0 +1,1771 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "repair-test",
+  "generatedAt": "2026-08-22T10:06:17.017Z",
+  "provider": {
+    "name": "multi",
+    "model": "groq:qwen/qwen3.6-27b:none,groq:openai/gpt-oss-120b:low",
+    "reasoningEffort": null
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "duo-2-L3-002",
+    "batchId": "duo-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "结束",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "来自",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "out in the city: places, errands, and a small discovery",
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "composition": {
+      "bucket": "places",
+      "reason": "4 pending hard targets share the \"places\" theme",
+      "hard": [
+        {
+          "word": "发生",
+          "meaning": "to happen; to occur; to take place; to break out"
+        },
+        {
+          "word": "国家",
+          "meaning": "country; nation; state"
+        },
+        {
+          "word": "结束",
+          "meaning": "termination; to finish"
+        },
+        {
+          "word": "来自",
+          "meaning": "to come from (a place); From: (in email header)"
+        },
+        {
+          "word": "生活",
+          "meaning": "to live; life"
+        }
+      ],
+      "soft": [
+        {
+          "word": "其他",
+          "meaning": "other; (sth or sb) else"
+        },
+        {
+          "word": "或者",
+          "meaning": "or; possibly; maybe; perhaps"
+        },
+        {
+          "word": "当然",
+          "meaning": "only natural; as it should be"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "repairExperiment": {
+    "source": {
+      "candidate": "data/story-candidates/select-1/duo-2-L3-002.json",
+      "stage": "draft-1"
+    },
+    "numberedOriginal": [
+      "1: 李明：妈妈，下周五的国际文化比赛开始了，我们要准备什么？",
+      "2: 妈妈：我们要买来自中国的传统食物，你要去超市买东西。",
+      "3: 李明：好！我和小明一起去，小红也要参加，对吗？",
+      "4: 小明：我有点累，但是为了比赛，我一定去。",
+      "5: 小红：当然，我不能落后，你们两个要快点决定。",
+      "6: 李明：我们去银行取钱，然后去买礼物吗？",
+      "7: 妈妈：不，先检查家里有没有需要的东西，别浪费钱。",
+      "8: 李明：好，我看看我的本子和笔，都带好了吗？",
+      "9: 突然，大白猫大毛跳到了桌上，压住了我的钱包。",
+      "10: 李明：哎呀！大毛，别动，我的钱包！",
+      "11: 小红：哈哈，李明，你总是这样不小心，注意一点。",
+      "12: 李明：没关系，我拿出来，我们去车站坐地铁吧。",
+      "13: 小明：外面下雨了，我们打车或者等雨停？",
+      "14: 李明：雨不大，我们可以走路，这也是一次锻炼。",
+      "15: 他们走在城市里，看着两边的商店和行人。",
+      "16: 李明：你看，那个女人穿着红色的衣服，真漂亮。",
+      "17: 小红：看她后面的书店，我要进去看看有没有好书。",
+      "18: 李明：我也去，小明，你要来吗？",
+      "19: 小明：我不喜欢书店，我喜欢玩游戏，你们去吧。",
+      "20: 李明和小红走进书店，寻找关于国家的书籍。",
+      "21: 小红：李明，你看这本，讲了很多其他国家的文化。",
+      "22: 李明：哇，真有趣，我想知道它们的生活是什么样。",
+      "23: 突然，书里掉出一张旧照片，上面有一个男人。",
+      "24: 李明：这是谁？他看起来很开心，在什么地方？",
+      "25: 小红：不知道，也许这是一个故事，我们看看背面。",
+      "26: 李明：背面写着，这是来自日本的礼物，好神秘啊。",
+      "27: 小红：我们把它放在口袋里，回家问妈妈吧。",
+      "28: 李明：好主意，比赛结束前，我们可以研究一下。",
+      "29: 他们回到公交车站，心情很好，觉得今天很快活。",
+      "30: 小明：你们找到什么了吗？快去快回，车来了。",
+      "31: 李明：我们有个发现，一个有关旅行和友情的秘密。",
+      "32: 妈妈：你们回来了，发生什么事了？看起来很开心。",
+      "33: 李明：妈妈，小红发现了一张照片，来自另一个国家。",
+      "34: 妈妈：哦，也许是以前谁留在这里的，很有趣。",
+      "35: 李明：我想了解这个人，他的生活，他的故事。",
+      "36: 小红：也许我们可以把照片交给图书馆，让大家看看。",
+      "37: 妈妈：好主意，这是一种帮助，也解决了问题。",
+      "38: 李明：谢谢妈妈，我觉得这次比赛会很有趣。",
+      "39: 小明：我也觉得，只要大家在一起，什么困难都不怕。",
+      "40: 大毛跳出来，好像在说，我也支持你们，加油！"
+    ],
+    "plan": {
+      "plannerVersion": "fab9-repair-plan@1",
+      "budget": 6,
+      "feasible": true,
+      "impossible": null,
+      "metrics": {
+        "lines": 40,
+        "maxLines": 38,
+        "cjkChars": 632,
+        "outChars": 66,
+        "share": 0.104,
+        "ceiling": 0.105,
+        "averageDensity": 0.104
+      },
+      "required": {
+        "lineReduction": 2,
+        "missingTargets": [
+          {
+            "word": "发生",
+            "have": 1,
+            "need": 1,
+            "min": 2,
+            "max": 4
+          },
+          {
+            "word": "结束",
+            "have": 1,
+            "need": 1,
+            "min": 2,
+            "max": 4
+          }
+        ],
+        "excessTargets": [],
+        "unknownDistinct": 5,
+        "unknownCap": 2,
+        "unknownExcess": 3,
+        "unknownRuns": {
+          "桌上": [
+            9
+          ],
+          "一张": [
+            23,
+            33
+          ],
+          "背面": [
+            25,
+            26
+          ],
+          "留在": [
+            34
+          ],
+          "不怕": [
+            39
+          ]
+        }
+      },
+      "deletes": [
+        {
+          "line": 34,
+          "text": "妈妈：哦，也许是以前谁留在这里的，很有趣。",
+          "cjkChars": 15,
+          "outChars": 5,
+          "density": 0.333,
+          "removesRuns": [
+            "留在"
+          ],
+          "safeForShare": true,
+          "reason": "line count 1/2; removes unknown 留在; density 0.333 ≥ story average 0.104"
+        },
+        {
+          "line": 39,
+          "text": "小明：我也觉得，只要大家在一起，什么困难都不怕。",
+          "cjkChars": 18,
+          "outChars": 2,
+          "density": 0.111,
+          "removesRuns": [
+            "不怕"
+          ],
+          "safeForShare": true,
+          "reason": "line count 2/2; removes unknown 不怕; density 0.111 ≥ story average 0.104"
+        }
+      ],
+      "replaces": [
+        {
+          "line": 9,
+          "text": "突然，大白猫大毛跳到了桌上，压住了我的钱包。",
+          "speaker": null,
+          "cjkChars": 17,
+          "addTargets": [],
+          "removeTargets": [],
+          "removeRuns": [
+            "桌上"
+          ],
+          "reasons": [
+            "remove unknown word 桌上"
+          ]
+        }
+      ],
+      "targetHosts": [
+        {
+          "word": "发生",
+          "meaning": null,
+          "candidates": [
+            {
+              "line": 9,
+              "text": "突然，大白猫大毛跳到了桌上，压住了我的钱包。",
+              "speaker": null,
+              "cjkChars": 17,
+              "outChars": 1,
+              "free": true
+            },
+            {
+              "line": 31,
+              "text": "李明：我们有个发现，一个有关旅行和友情的秘密。",
+              "speaker": "李明",
+              "cjkChars": 18,
+              "outChars": 6,
+              "free": false
+            },
+            {
+              "line": 2,
+              "text": "妈妈：我们要买来自中国的传统食物，你要去超市买东西。",
+              "speaker": "妈妈",
+              "cjkChars": 21,
+              "outChars": 4,
+              "free": false
+            },
+            {
+              "line": 20,
+              "text": "李明和小红走进书店，寻找关于国家的书籍。",
+              "speaker": null,
+              "cjkChars": 14,
+              "outChars": 4,
+              "free": false
+            },
+            {
+              "line": 22,
+              "text": "李明：哇，真有趣，我想知道它们的生活是什么样。",
+              "speaker": "李明",
+              "cjkChars": 17,
+              "outChars": 4,
+              "free": false
+            }
+          ],
+          "deterministicPick": 9
+        },
+        {
+          "word": "结束",
+          "meaning": null,
+          "candidates": [
+            {
+              "line": 31,
+              "text": "李明：我们有个发现，一个有关旅行和友情的秘密。",
+              "speaker": "李明",
+              "cjkChars": 18,
+              "outChars": 6,
+              "free": false
+            },
+            {
+              "line": 2,
+              "text": "妈妈：我们要买来自中国的传统食物，你要去超市买东西。",
+              "speaker": "妈妈",
+              "cjkChars": 21,
+              "outChars": 4,
+              "free": false
+            },
+            {
+              "line": 20,
+              "text": "李明和小红走进书店，寻找关于国家的书籍。",
+              "speaker": null,
+              "cjkChars": 14,
+              "outChars": 4,
+              "free": false
+            },
+            {
+              "line": 22,
+              "text": "李明：哇，真有趣，我想知道它们的生活是什么样。",
+              "speaker": "李明",
+              "cjkChars": 17,
+              "outChars": 4,
+              "free": false
+            },
+            {
+              "line": 29,
+              "text": "他们回到公交车站，心情很好，觉得今天很快活。",
+              "speaker": null,
+              "cjkChars": 19,
+              "outChars": 3,
+              "free": false
+            }
+          ],
+          "deterministicPick": 31
+        }
+      ],
+      "projected": {
+        "ops": 4,
+        "lines": 38,
+        "cjkChars": 599,
+        "outChars": 59,
+        "share": 0.098,
+        "shareDelta": -0.006,
+        "unknownRunsRemaining": [
+          "桌上",
+          "一张",
+          "背面"
+        ],
+        "unknownAfterReplacements": 2,
+        "note": "deterministic deletions only — replacement text is generated later and re-measured"
+      },
+      "facts": [
+        {
+          "line": 1,
+          "speaker": "李明",
+          "cjkChars": 22,
+          "outChars": 2,
+          "density": 0.091,
+          "unknownRuns": []
+        },
+        {
+          "line": 2,
+          "speaker": "妈妈",
+          "cjkChars": 21,
+          "outChars": 4,
+          "density": 0.19,
+          "unknownRuns": []
+        },
+        {
+          "line": 3,
+          "speaker": "李明",
+          "cjkChars": 12,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 4,
+          "speaker": "小明",
+          "cjkChars": 14,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 5,
+          "speaker": "小红",
+          "cjkChars": 16,
+          "outChars": 2,
+          "density": 0.125,
+          "unknownRuns": []
+        },
+        {
+          "line": 6,
+          "speaker": "李明",
+          "cjkChars": 14,
+          "outChars": 1,
+          "density": 0.071,
+          "unknownRuns": []
+        },
+        {
+          "line": 7,
+          "speaker": "妈妈",
+          "cjkChars": 18,
+          "outChars": 2,
+          "density": 0.111,
+          "unknownRuns": []
+        },
+        {
+          "line": 8,
+          "speaker": "李明",
+          "cjkChars": 15,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 9,
+          "speaker": null,
+          "cjkChars": 17,
+          "outChars": 1,
+          "density": 0.059,
+          "unknownRuns": [
+            "桌上"
+          ]
+        },
+        {
+          "line": 10,
+          "speaker": "李明",
+          "cjkChars": 8,
+          "outChars": 2,
+          "density": 0.25,
+          "unknownRuns": []
+        },
+        {
+          "line": 11,
+          "speaker": "小红",
+          "cjkChars": 14,
+          "outChars": 2,
+          "density": 0.143,
+          "unknownRuns": []
+        },
+        {
+          "line": 12,
+          "speaker": "李明",
+          "cjkChars": 16,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 13,
+          "speaker": "小明",
+          "cjkChars": 14,
+          "outChars": 1,
+          "density": 0.071,
+          "unknownRuns": []
+        },
+        {
+          "line": 14,
+          "speaker": "李明",
+          "cjkChars": 16,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 15,
+          "speaker": null,
+          "cjkChars": 17,
+          "outChars": 2,
+          "density": 0.118,
+          "unknownRuns": []
+        },
+        {
+          "line": 16,
+          "speaker": "李明",
+          "cjkChars": 16,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 17,
+          "speaker": "小红",
+          "cjkChars": 18,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 18,
+          "speaker": "李明",
+          "cjkChars": 7,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 19,
+          "speaker": "小明",
+          "cjkChars": 16,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 20,
+          "speaker": null,
+          "cjkChars": 14,
+          "outChars": 4,
+          "density": 0.286,
+          "unknownRuns": []
+        },
+        {
+          "line": 21,
+          "speaker": "小红",
+          "cjkChars": 15,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 22,
+          "speaker": "李明",
+          "cjkChars": 17,
+          "outChars": 4,
+          "density": 0.235,
+          "unknownRuns": []
+        },
+        {
+          "line": 23,
+          "speaker": null,
+          "cjkChars": 18,
+          "outChars": 1,
+          "density": 0.056,
+          "unknownRuns": [
+            "一张"
+          ]
+        },
+        {
+          "line": 24,
+          "speaker": "李明",
+          "cjkChars": 15,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 25,
+          "speaker": "小红",
+          "cjkChars": 17,
+          "outChars": 2,
+          "density": 0.118,
+          "unknownRuns": [
+            "背面"
+          ]
+        },
+        {
+          "line": 26,
+          "speaker": "李明",
+          "cjkChars": 17,
+          "outChars": 2,
+          "density": 0.118,
+          "unknownRuns": [
+            "背面"
+          ]
+        },
+        {
+          "line": 27,
+          "speaker": "小红",
+          "cjkChars": 15,
+          "outChars": 2,
+          "density": 0.133,
+          "unknownRuns": []
+        },
+        {
+          "line": 28,
+          "speaker": "李明",
+          "cjkChars": 16,
+          "outChars": 4,
+          "density": 0.25,
+          "unknownRuns": []
+        },
+        {
+          "line": 29,
+          "speaker": null,
+          "cjkChars": 19,
+          "outChars": 3,
+          "density": 0.158,
+          "unknownRuns": []
+        },
+        {
+          "line": 30,
+          "speaker": "小明",
+          "cjkChars": 15,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 31,
+          "speaker": "李明",
+          "cjkChars": 18,
+          "outChars": 6,
+          "density": 0.333,
+          "unknownRuns": []
+        },
+        {
+          "line": 32,
+          "speaker": "妈妈",
+          "cjkChars": 17,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 33,
+          "speaker": "李明",
+          "cjkChars": 16,
+          "outChars": 1,
+          "density": 0.063,
+          "unknownRuns": [
+            "一张"
+          ]
+        },
+        {
+          "line": 34,
+          "speaker": "妈妈",
+          "cjkChars": 15,
+          "outChars": 5,
+          "density": 0.333,
+          "unknownRuns": [
+            "留在"
+          ]
+        },
+        {
+          "line": 35,
+          "speaker": "李明",
+          "cjkChars": 15,
+          "outChars": 0,
+          "density": 0,
+          "unknownRuns": []
+        },
+        {
+          "line": 36,
+          "speaker": "小红",
+          "cjkChars": 19,
+          "outChars": 3,
+          "density": 0.158,
+          "unknownRuns": []
+        },
+        {
+          "line": 37,
+          "speaker": "妈妈",
+          "cjkChars": 15,
+          "outChars": 2,
+          "density": 0.133,
+          "unknownRuns": []
+        },
+        {
+          "line": 38,
+          "speaker": "李明",
+          "cjkChars": 15,
+          "outChars": 2,
+          "density": 0.133,
+          "unknownRuns": []
+        },
+        {
+          "line": 39,
+          "speaker": "小明",
+          "cjkChars": 18,
+          "outChars": 2,
+          "density": 0.111,
+          "unknownRuns": [
+            "不怕"
+          ]
+        },
+        {
+          "line": 40,
+          "speaker": null,
+          "cjkChars": 15,
+          "outChars": 4,
+          "density": 0.267,
+          "unknownRuns": []
+        }
+      ]
+    },
+    "execution": {
+      "ops": [
+        {
+          "op": "replace",
+          "line": 9,
+          "text": "这时发生了一件事，大白猫跳了上去，压住了钱包。"
+        },
+        {
+          "op": "replace",
+          "line": 31,
+          "text": "李明：我们结束了旅行，也发现了友情的秘密。"
+        },
+        {
+          "op": "delete",
+          "line": 34
+        },
+        {
+          "op": "delete",
+          "line": 39
+        }
+      ],
+      "attempts": [
+        {
+          "line": 9,
+          "for": "发生 → line 9",
+          "generator": "groq:qwen/qwen3.6-27b/none",
+          "attempt": 1,
+          "output": "突然发生的事，大毛跳上桌子，压住了我的钱包。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 17,
+            "outChars": 1,
+            "outCharsBefore": 1,
+            "unknownRuns": [],
+            "speaker": null,
+            "lengthRatio": 1
+          }
+        },
+        {
+          "line": 9,
+          "for": "发生 → line 9",
+          "generator": "groq:qwen/qwen3.6-27b/none",
+          "attempt": 2,
+          "output": "这时发生了一件事，大白猫跳了上去，压住了钱包。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 20,
+            "outChars": 1,
+            "outCharsBefore": 1,
+            "unknownRuns": [],
+            "speaker": null,
+            "lengthRatio": 1.176
+          }
+        },
+        {
+          "line": 9,
+          "for": "发生 → line 9",
+          "generator": "groq:openai/gpt-oss-120b/low",
+          "attempt": 1,
+          "output": "突然，发生大毛跳一下，压住了我的钱包。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 14,
+            "outChars": 1,
+            "outCharsBefore": 1,
+            "unknownRuns": [],
+            "speaker": null,
+            "lengthRatio": 0.824
+          }
+        },
+        {
+          "line": 9,
+          "for": "发生 → line 9",
+          "generator": "groq:openai/gpt-oss-120b/low",
+          "attempt": 2,
+          "output": "突然，发生大毛跳上来，压住我的钱包。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 13,
+            "outChars": 1,
+            "outCharsBefore": 1,
+            "unknownRuns": [],
+            "speaker": null,
+            "lengthRatio": 0.765
+          }
+        },
+        {
+          "line": 29,
+          "for": "结束 → line 29",
+          "generator": "groq:qwen/qwen3.6-27b/none",
+          "attempt": 1,
+          "output": "他们回到车站，比赛快结束了，觉得很快活。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 17,
+            "outChars": 1,
+            "outCharsBefore": 3,
+            "unknownRuns": [],
+            "speaker": null,
+            "lengthRatio": 0.895
+          }
+        },
+        {
+          "line": 29,
+          "for": "结束 → line 29",
+          "generator": "groq:qwen/qwen3.6-27b/none",
+          "attempt": 2,
+          "output": "他们回到车站，比赛结束，他们很高兴。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 15,
+            "outChars": 0,
+            "outCharsBefore": 3,
+            "unknownRuns": [],
+            "speaker": null,
+            "lengthRatio": 0.789
+          }
+        },
+        {
+          "line": 29,
+          "for": "结束 → line 29",
+          "generator": "groq:openai/gpt-oss-120b/low",
+          "attempt": 1,
+          "output": "他们回到公交站，心情很好，今天很快结束。",
+          "ok": false,
+          "failures": [
+            {
+              "code": "above_level_added",
+              "message": "introduces vocabulary above the story level: 公 (HSK 6)、交 (HSK 4)"
+            }
+          ],
+          "metrics": {
+            "cjkChars": 17,
+            "outChars": 4,
+            "outCharsBefore": 3,
+            "unknownRuns": [],
+            "speaker": null,
+            "lengthRatio": 0.895
+          }
+        },
+        {
+          "line": 29,
+          "for": "结束 → line 29",
+          "generator": "groq:openai/gpt-oss-120b/low",
+          "attempt": 2,
+          "output": "他们回到站台，心情很好，比赛快要结束了。",
+          "ok": false,
+          "failures": [
+            {
+              "code": "above_level_added",
+              "message": "introduces vocabulary above the story level: 站台 (HSK 5)"
+            }
+          ],
+          "metrics": {
+            "cjkChars": 17,
+            "outChars": 4,
+            "outCharsBefore": 3,
+            "unknownRuns": [],
+            "speaker": null,
+            "lengthRatio": 0.895
+          }
+        },
+        {
+          "line": 22,
+          "for": "结束 → line 22",
+          "generator": "groq:qwen/qwen3.6-27b/none",
+          "attempt": 1,
+          "output": "李明：真有趣，我想结束工作看看它们的生活。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 16,
+            "outChars": 2,
+            "outCharsBefore": 4,
+            "unknownRuns": [],
+            "speaker": "李明",
+            "lengthRatio": 0.941
+          }
+        },
+        {
+          "line": 22,
+          "for": "结束 → line 22",
+          "generator": "groq:qwen/qwen3.6-27b/none",
+          "attempt": 2,
+          "output": "李明：真有趣，想知道他们的生活是怎么样结束。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 17,
+            "outChars": 2,
+            "outCharsBefore": 4,
+            "unknownRuns": [],
+            "speaker": "李明",
+            "lengthRatio": 1
+          }
+        },
+        {
+          "line": 22,
+          "for": "结束 → line 22",
+          "generator": "groq:openai/gpt-oss-120b/low",
+          "attempt": 1,
+          "output": "李明：哇，好有趣，我真想知道他们的日常生活到底是怎样的，结束呀",
+          "ok": false,
+          "failures": [
+            {
+              "code": "above_level_added",
+              "message": "introduces vocabulary above the story level: 日常 (HSK 4)、到底 (HSK 4)、呀 (HSK 5)"
+            }
+          ],
+          "metrics": {
+            "cjkChars": 25,
+            "outChars": 8,
+            "outCharsBefore": 4,
+            "unknownRuns": [],
+            "speaker": "李明",
+            "lengthRatio": 1.471
+          }
+        },
+        {
+          "line": 22,
+          "for": "结束 → line 22",
+          "generator": "groq:openai/gpt-oss-120b/low",
+          "attempt": 2,
+          "output": "李明：我想知道他们的生活是怎样的，能结束吗？",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 17,
+            "outChars": 0,
+            "outCharsBefore": 4,
+            "unknownRuns": [],
+            "speaker": "李明",
+            "lengthRatio": 1
+          }
+        },
+        {
+          "line": 31,
+          "for": "结束 → line 31",
+          "generator": "groq:qwen/qwen3.6-27b/none",
+          "attempt": 1,
+          "output": "李明：我们结束了旅行，也发现了友情的秘密。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 16,
+            "outChars": 6,
+            "outCharsBefore": 6,
+            "unknownRuns": [],
+            "speaker": "李明",
+            "lengthRatio": 0.889
+          }
+        },
+        {
+          "line": 31,
+          "for": "结束 → line 31",
+          "generator": "groq:qwen/qwen3.6-27b/none",
+          "attempt": 2,
+          "output": "李明：我们结束旅行，发现一个友情的秘密。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 15,
+            "outChars": 6,
+            "outCharsBefore": 6,
+            "unknownRuns": [],
+            "speaker": "李明",
+            "lengthRatio": 0.833
+          }
+        },
+        {
+          "line": 31,
+          "for": "结束 → line 31",
+          "generator": "groq:openai/gpt-oss-120b/low",
+          "attempt": 1,
+          "output": "李明：我们发现了旅行和友情的秘密，快说吧，结束。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 18,
+            "outChars": 6,
+            "outCharsBefore": 6,
+            "unknownRuns": [],
+            "speaker": "李明",
+            "lengthRatio": 1
+          }
+        },
+        {
+          "line": 31,
+          "for": "结束 → line 31",
+          "generator": "groq:openai/gpt-oss-120b/low",
+          "attempt": 2,
+          "output": "李明：我们发现旅行和友情的秘密，结束。",
+          "ok": true,
+          "failures": [],
+          "metrics": {
+            "cjkChars": 14,
+            "outChars": 6,
+            "outCharsBefore": 6,
+            "unknownRuns": [],
+            "speaker": "李明",
+            "lengthRatio": 0.778
+          }
+        }
+      ],
+      "hostSelections": [
+        {
+          "target": "发生",
+          "candidates": [
+            {
+              "line": 9,
+              "text": "突然，大白猫大毛跳到了桌上，压住了我的钱包。",
+              "speaker": null,
+              "cjkChars": 17,
+              "outChars": 1,
+              "free": true
+            },
+            {
+              "line": 31,
+              "text": "李明：我们有个发现，一个有关旅行和友情的秘密。",
+              "speaker": "李明",
+              "cjkChars": 18,
+              "outChars": 6,
+              "free": false
+            },
+            {
+              "line": 2,
+              "text": "妈妈：我们要买来自中国的传统食物，你要去超市买东西。",
+              "speaker": "妈妈",
+              "cjkChars": 21,
+              "outChars": 4,
+              "free": false
+            },
+            {
+              "line": 20,
+              "text": "李明和小红走进书店，寻找关于国家的书籍。",
+              "speaker": null,
+              "cjkChars": 14,
+              "outChars": 4,
+              "free": false
+            },
+            {
+              "line": 22,
+              "text": "李明：哇，真有趣，我想知道它们的生活是什么样。",
+              "speaker": "李明",
+              "cjkChars": 17,
+              "outChars": 4,
+              "free": false
+            }
+          ],
+          "ranking": [
+            {
+              "line": 9,
+              "reason": "The sudden action of the cat jumping and crushing the wallet is a distinct, discrete event that naturally fits the usage of \"发生\" (e.g., \"这时发生了一件事...\")."
+            },
+            {
+              "line": 20,
+              "reason": "Entering the bookstore and searching is an activity/process, not typically described as a singular event \"happening\" with 发生."
+            },
+            {
+              "line": 31,
+              "reason": "Li Ming is stating a discovery/secret, not describing an event that occurred; 发生 is semantically mismatched."
+            },
+            {
+              "line": 2,
+              "reason": "The mother is giving an instruction/task, not describing an occurrence; 发生 is semantically mismatched."
+            },
+            {
+              "line": 22,
+              "reason": "Li Ming is expressing a thought/curiosity, not an external event; 发生 is semantically impossible."
+            }
+          ],
+          "order": [
+            9,
+            20,
+            31,
+            2,
+            22
+          ],
+          "tried": [
+            {
+              "line": 9,
+              "rank": 1,
+              "reason": "The sudden action of the cat jumping and crushing the wallet is a distinct, discrete event that naturally fits the usage of \"发生\" (e.g., \"这时发生了一件事...\").",
+              "free": true,
+              "accepted": true,
+              "text": "这时发生了一件事，大白猫跳了上去，压住了钱包。",
+              "why": null
+            }
+          ],
+          "chosen": 9,
+          "source": "semantic ranking by groq:qwen/qwen3.6-27b"
+        },
+        {
+          "target": "结束",
+          "candidates": [
+            {
+              "line": 31,
+              "text": "李明：我们有个发现，一个有关旅行和友情的秘密。",
+              "speaker": "李明",
+              "cjkChars": 18,
+              "outChars": 6,
+              "free": false
+            },
+            {
+              "line": 2,
+              "text": "妈妈：我们要买来自中国的传统食物，你要去超市买东西。",
+              "speaker": "妈妈",
+              "cjkChars": 21,
+              "outChars": 4,
+              "free": false
+            },
+            {
+              "line": 20,
+              "text": "李明和小红走进书店，寻找关于国家的书籍。",
+              "speaker": null,
+              "cjkChars": 14,
+              "outChars": 4,
+              "free": false
+            },
+            {
+              "line": 22,
+              "text": "李明：哇，真有趣，我想知道它们的生活是什么样。",
+              "speaker": "李明",
+              "cjkChars": 17,
+              "outChars": 4,
+              "free": false
+            },
+            {
+              "line": 29,
+              "text": "他们回到公交车站，心情很好，觉得今天很快活。",
+              "speaker": null,
+              "cjkChars": 19,
+              "outChars": 3,
+              "free": false
+            }
+          ],
+          "ranking": [
+            {
+              "line": 29,
+              "reason": "It naturally fits as the transition marking the end of their outing before returning to the bus stop."
+            },
+            {
+              "line": 22,
+              "reason": "It could awkwardly describe the \"end\" of the book's content or the reading experience."
+            },
+            {
+              "line": 31,
+              "reason": "It is semantically weak here as the \"discovery\" is a new beginning, not an ending."
+            },
+            {
+              "line": 20,
+              "reason": "It is redundant and unnatural since they are just entering the bookshop."
+            },
+            {
+              "line": 2,
+              "reason": "It is temporally incorrect as the event is just starting, not finishing."
+            }
+          ],
+          "order": [
+            29,
+            22,
+            31,
+            20,
+            2
+          ],
+          "tried": [
+            {
+              "line": 29,
+              "rank": 1,
+              "reason": "It naturally fits as the transition marking the end of their outing before returning to the bus stop.",
+              "free": false,
+              "accepted": false,
+              "text": null,
+              "why": "no candidate met the naturalness threshold (overall ≥ 6 after the mechanical penalty, grammar ≥ 6)"
+            },
+            {
+              "line": 22,
+              "rank": 2,
+              "reason": "It could awkwardly describe the \"end\" of the book's content or the reading experience.",
+              "free": false,
+              "accepted": false,
+              "text": null,
+              "why": "no candidate met the naturalness threshold (overall ≥ 6 after the mechanical penalty, grammar ≥ 6)"
+            },
+            {
+              "line": 31,
+              "rank": 3,
+              "reason": "It is semantically weak here as the \"discovery\" is a new beginning, not an ending.",
+              "free": false,
+              "accepted": true,
+              "text": "李明：我们结束了旅行，也发现了友情的秘密。",
+              "why": null
+            }
+          ],
+          "chosen": 31,
+          "source": "semantic ranking by groq:qwen/qwen3.6-27b"
+        }
+      ],
+      "judgments": [
+        {
+          "line": 9,
+          "for": "发生 → line 9",
+          "judge": "groq:qwen/qwen3.6-27b",
+          "candidates": [
+            {
+              "label": "A",
+              "generator": "groq:openai/gpt-oss-120b/low",
+              "text": "突然，发生大毛跳上来，压住我的钱包。",
+              "score": {
+                "label": "A",
+                "grammar": 2,
+                "continuity": 4,
+                "role": 6,
+                "integration": 2,
+                "voice": 5,
+                "mechanical": true,
+                "overall": 2,
+                "reason": "Grammatically incorrect syntax for \"发生\" requiring a subject/event, not just a verb phrase."
+              },
+              "effectiveOverall": 1,
+              "accepted": false
+            },
+            {
+              "label": "B",
+              "generator": "groq:qwen/qwen3.6-27b/none",
+              "text": "突然发生的事，大毛跳上桌子，压住了我的钱包。",
+              "score": {
+                "label": "B",
+                "grammar": 5,
+                "continuity": 7,
+                "role": 7,
+                "integration": 6,
+                "voice": 6,
+                "mechanical": true,
+                "overall": 6,
+                "reason": "Clunky noun phrase \"突然发生的事\" is unnatural for narrative flow; sounds like a forced summary."
+              },
+              "effectiveOverall": 5,
+              "accepted": false
+            },
+            {
+              "label": "C",
+              "generator": "groq:openai/gpt-oss-120b/low",
+              "text": "突然，发生大毛跳一下，压住了我的钱包。",
+              "score": {
+                "label": "C",
+                "grammar": 3,
+                "continuity": 5,
+                "role": 5,
+                "integration": 2,
+                "voice": 4,
+                "mechanical": true,
+                "overall": 3,
+                "reason": "\"发生大毛跳一下\" is grammatically wrong; \"发生\" cannot take a subject-verb clause as a direct object like this."
+              },
+              "effectiveOverall": 2,
+              "accepted": false
+            },
+            {
+              "label": "D",
+              "generator": "groq:qwen/qwen3.6-27b/none",
+              "text": "这时发生了一件事，大白猫跳了上去，压住了钱包。",
+              "score": {
+                "label": "D",
+                "grammar": 7,
+                "continuity": 8,
+                "role": 7,
+                "integration": 7,
+                "voice": 7,
+                "mechanical": true,
+                "overall": 7,
+                "reason": "\"这时发生了一件事\" is a valid, albeit slightly formal/dramatic, narrative device; fits the context but feels slightly stiff for casual dialogue."
+              },
+              "effectiveOverall": 6,
+              "accepted": true
+            }
+          ]
+        },
+        {
+          "line": 29,
+          "for": "结束 → line 29",
+          "judge": "groq:qwen/qwen3.6-27b",
+          "candidates": [
+            {
+              "label": "A",
+              "generator": "groq:qwen/qwen3.6-27b/none",
+              "text": "他们回到车站，比赛结束，他们很高兴。",
+              "score": {
+                "label": "A",
+                "grammar": 6,
+                "continuity": 4,
+                "role": 5,
+                "integration": 7,
+                "voice": 5,
+                "mechanical": false,
+                "overall": 5,
+                "reason": "The comma splice \"回到车站，比赛结束\" is awkward and lacks logical connectors; \"比赛结束\" feels like a isolated timestamp rather than a cohesive narrative flow, failing to bridge the gap to Xiao Ming's \"快去快回\"."
+              },
+              "effectiveOverall": 5,
+              "accepted": false
+            },
+            {
+              "label": "B",
+              "generator": "groq:qwen/qwen3.6-27b/none",
+              "text": "他们回到车站，比赛快结束了，觉得很快活。",
+              "score": {
+                "label": "B",
+                "grammar": 9,
+                "continuity": 8,
+                "role": 4,
+                "integration": 9,
+                "voice": 8,
+                "mechanical": true,
+                "overall": 6,
+                "reason": "While \"比赛快结束了\" flows naturally and fits the HSK 3 level perfectly, it breaks continuity because Line 30 explicitly demands they hurry back because the bus is coming, yet the narrative frames them as still analyzing a secret until the very last second, making the transition to the heavy \"friendship secret\" dialogue feel rushed and unjustified by the narrative pacing."
+              },
+              "effectiveOverall": 5,
+              "accepted": false
+            }
+          ]
+        },
+        {
+          "line": 22,
+          "for": "结束 → line 22",
+          "judge": "groq:qwen/qwen3.6-27b",
+          "candidates": [
+            {
+              "label": "A",
+              "generator": "groq:qwen/qwen3.6-27b/none",
+              "text": "李明：真有趣，想知道他们的生活是怎么样结束。",
+              "score": {
+                "label": "A",
+                "grammar": 2,
+                "continuity": 3,
+                "role": 5,
+                "integration": 2,
+                "voice": 6,
+                "mechanical": true,
+                "overall": 2,
+                "reason": "Grammatically incorrect; \"生活是怎么样结束\" is unidiomatic and syntactically broken, failing to make semantic sense in context."
+              },
+              "effectiveOverall": 1,
+              "accepted": false
+            },
+            {
+              "label": "B",
+              "generator": "groq:openai/gpt-oss-120b/low",
+              "text": "李明：我想知道他们的生活是怎样的，能结束吗？",
+              "score": {
+                "label": "B",
+                "grammar": 5,
+                "continuity": 2,
+                "role": 3,
+                "integration": 2,
+                "voice": 5,
+                "mechanical": true,
+                "overall": 3,
+                "reason": "Semantically absurd; asking if a culture's lifestyle \"can end\" is nonsensical and disrupts the narrative flow entirely."
+              },
+              "effectiveOverall": 2,
+              "accepted": false
+            },
+            {
+              "label": "C",
+              "generator": "groq:qwen/qwen3.6-27b/none",
+              "text": "李明：真有趣，我想结束工作看看它们的生活。",
+              "score": {
+                "label": "C",
+                "grammar": 7,
+                "continuity": 2,
+                "role": 2,
+                "integration": 3,
+                "voice": 6,
+                "mechanical": false,
+                "overall": 4,
+                "reason": "Grammatically okay but contextually incoherent; \"ending work to look at their lives\" creates a logical non-sequitur with the previous and following lines about a mystery photo."
+              },
+              "effectiveOverall": 4,
+              "accepted": false
+            }
+          ]
+        },
+        {
+          "line": 31,
+          "for": "结束 → line 31",
+          "judge": "groq:qwen/qwen3.6-27b",
+          "candidates": [
+            {
+              "label": "A",
+              "generator": "groq:openai/gpt-oss-120b/low",
+              "text": "李明：我们发现旅行和友情的秘密，结束。",
+              "score": {
+                "label": "A",
+                "grammar": 3,
+                "continuity": 2,
+                "role": 4,
+                "integration": 2,
+                "voice": 2,
+                "mechanical": true,
+                "overall": 2,
+                "reason": "\"结束\" used as a fragment is unnatural dialogue; grammar is broken."
+              },
+              "effectiveOverall": 1,
+              "accepted": false
+            },
+            {
+              "label": "B",
+              "generator": "groq:qwen/qwen3.6-27b/none",
+              "text": "李明：我们结束旅行，发现一个友情的秘密。",
+              "score": {
+                "label": "B",
+                "grammar": 6,
+                "continuity": 4,
+                "role": 5,
+                "integration": 5,
+                "voice": 4,
+                "mechanical": true,
+                "overall": 5,
+                "reason": "Grammatically passable but logically disjointed; implies trip ended when they are still at the bus stop."
+              },
+              "effectiveOverall": 4,
+              "accepted": false
+            },
+            {
+              "label": "C",
+              "generator": "groq:openai/gpt-oss-120b/low",
+              "text": "李明：我们发现了旅行和友情的秘密，快说吧，结束。",
+              "score": {
+                "label": "C",
+                "grammar": 4,
+                "continuity": 3,
+                "role": 3,
+                "integration": 2,
+                "voice": 3,
+                "mechanical": true,
+                "overall": 3,
+                "reason": "\"快说吧，结束\" is incoherent; forces the word into a nonsensical imperative structure."
+              },
+              "effectiveOverall": 2,
+              "accepted": false
+            },
+            {
+              "label": "D",
+              "generator": "groq:qwen/qwen3.6-27b/none",
+              "text": "李明：我们结束了旅行，也发现了友情的秘密。",
+              "score": {
+                "label": "D",
+                "grammar": 7,
+                "continuity": 6,
+                "role": 6,
+                "integration": 5,
+                "voice": 5,
+                "mechanical": false,
+                "overall": 6,
+                "reason": "Best option; grammatically sound and flows well, though \"finished the trip\" contradicts the immediate context of waiting for the bus."
+              },
+              "effectiveOverall": 6,
+              "accepted": true
+            }
+          ]
+        }
+      ],
+      "unresolved": [],
+      "compliance": {
+        "groq:qwen/qwen3.6-27b/none": {
+          "attempts": 8,
+          "passed": 8,
+          "adopted": 2
+        },
+        "groq:openai/gpt-oss-120b/low": {
+          "attempts": 8,
+          "passed": 5,
+          "adopted": 0
+        }
+      },
+      "thresholds": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "regressions": [],
+    "before": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "FAIL",
+      "failures": [
+        {
+          "code": "too_long",
+          "message": "40 lines (need 14-38)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "发生 appears 1× (need 2-4)"
+        },
+        {
+          "code": "target_below_min",
+          "message": "结束 appears 1× (need 2-4)"
+        },
+        {
+          "code": "unknown_words",
+          "message": "5 unknown (non-vocabulary) runs (max 2): 桌上、一张、背面、留在、不怕"
+        }
+      ],
+      "reviews": [
+        {
+          "code": "out_of_level_share_review",
+          "message": "out-of-level vocabulary 10.4% sits in the experimental review band (7.0%-10.5%) — mandatory human review before publication"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "33 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 40,
+        "cjkChars": 632,
+        "distinctVocab": 210,
+        "targetCounts": {
+          "发生": 1,
+          "国家": 3,
+          "结束": 1,
+          "来自": 3,
+          "生活": 2,
+          "其他": 1,
+          "或者": 1,
+          "当然": 1
+        },
+        "inLevelCoverage": 0.873,
+        "outOfLevelDistinct": 33,
+        "outOfLevelCharShare": 0.104,
+        "unknownDistinct": 5,
+        "unknownCharShare": 0.022,
+        "unknownRuns": [
+          "桌上",
+          "一张",
+          "背面",
+          "留在",
+          "不怕"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.04,
+        "nearestNeighbor": {
+          "title": "1. 新的地方",
+          "level": 1,
+          "jaccard": 0.02,
+          "containment": 0.088
+        }
+      }
+    },
+    "after": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "REVIEW_REQUIRED",
+      "failures": [],
+      "reviews": [
+        {
+          "code": "out_of_level_share_review",
+          "message": "out-of-level vocabulary 9.8% sits in the experimental review band (7.0%-10.5%) — mandatory human review before publication"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "31 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 38,
+        "cjkChars": 600,
+        "distinctVocab": 207,
+        "targetCounts": {
+          "发生": 2,
+          "国家": 3,
+          "结束": 2,
+          "来自": 3,
+          "生活": 2,
+          "其他": 1,
+          "或者": 1,
+          "当然": 1
+        },
+        "inLevelCoverage": 0.888,
+        "outOfLevelDistinct": 31,
+        "outOfLevelCharShare": 0.098,
+        "unknownDistinct": 2,
+        "unknownCharShare": 0.013,
+        "unknownRuns": [
+          "一张",
+          "背面"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.032,
+        "nearestNeighbor": {
+          "title": "1. 新的地方",
+          "level": 1,
+          "jaccard": 0.021,
+          "containment": 0.088
+        },
+        "edit": {
+          "jaccard": 0.86,
+          "containment": 0.946,
+          "titleChanged": false,
+          "speakersAdded": [],
+          "speakersLost": []
+        }
+      }
+    }
+  },
+  "candidate": {
+    "manifestId": "duo-2-L3-002",
+    "status": "review_required",
+    "title": "城市里的秘密发现",
+    "content": "李明：妈妈，下周五的国际文化比赛开始了，我们要准备什么？\n妈妈：我们要买来自中国的传统食物，你要去超市买东西。\n李明：好！我和小明一起去，小红也要参加，对吗？\n小明：我有点累，但是为了比赛，我一定去。\n小红：当然，我不能落后，你们两个要快点决定。\n李明：我们去银行取钱，然后去买礼物吗？\n妈妈：不，先检查家里有没有需要的东西，别浪费钱。\n李明：好，我看看我的本子和笔，都带好了吗？\n这时发生了一件事，大白猫跳了上去，压住了钱包。\n李明：哎呀！大毛，别动，我的钱包！\n小红：哈哈，李明，你总是这样不小心，注意一点。\n李明：没关系，我拿出来，我们去车站坐地铁吧。\n小明：外面下雨了，我们打车或者等雨停？\n李明：雨不大，我们可以走路，这也是一次锻炼。\n他们走在城市里，看着两边的商店和行人。\n李明：你看，那个女人穿着红色的衣服，真漂亮。\n小红：看她后面的书店，我要进去看看有没有好书。\n李明：我也去，小明，你要来吗？\n小明：我不喜欢书店，我喜欢玩游戏，你们去吧。\n李明和小红走进书店，寻找关于国家的书籍。\n小红：李明，你看这本，讲了很多其他国家的文化。\n李明：哇，真有趣，我想知道它们的生活是什么样。\n突然，书里掉出一张旧照片，上面有一个男人。\n李明：这是谁？他看起来很开心，在什么地方？\n小红：不知道，也许这是一个故事，我们看看背面。\n李明：背面写着，这是来自日本的礼物，好神秘啊。\n小红：我们把它放在口袋里，回家问妈妈吧。\n李明：好主意，比赛结束前，我们可以研究一下。\n他们回到公交车站，心情很好，觉得今天很快活。\n小明：你们找到什么了吗？快去快回，车来了。\n李明：我们结束了旅行，也发现了友情的秘密。\n妈妈：你们回来了，发生什么事了？看起来很开心。\n李明：妈妈，小红发现了一张照片，来自另一个国家。\n李明：我想了解这个人，他的生活，他的故事。\n小红：也许我们可以把照片交给图书馆，让大家看看。\n妈妈：好主意，这是一种帮助，也解决了问题。\n李明：谢谢妈妈，我觉得这次比赛会很有趣。\n大毛跳出来，好像在说，我也支持你们，加油！",
+    "englishContent": null,
+    "validation": {
+      "validatorVersion": "fab10-validator@3",
+      "verdict": "REVIEW_REQUIRED",
+      "failures": [],
+      "reviews": [
+        {
+          "code": "out_of_level_share_review",
+          "message": "out-of-level vocabulary 9.8% sits in the experimental review band (7.0%-10.5%) — mandatory human review before publication"
+        }
+      ],
+      "warnings": [
+        {
+          "code": "out_of_level_words",
+          "message": "31 distinct words above HSK 3 (advisory max 3)"
+        }
+      ],
+      "metrics": {
+        "lines": 38,
+        "cjkChars": 600,
+        "distinctVocab": 207,
+        "targetCounts": {
+          "发生": 2,
+          "国家": 3,
+          "结束": 2,
+          "来自": 3,
+          "生活": 2,
+          "其他": 1,
+          "或者": 1,
+          "当然": 1
+        },
+        "inLevelCoverage": 0.888,
+        "outOfLevelDistinct": 31,
+        "outOfLevelCharShare": 0.098,
+        "unknownDistinct": 2,
+        "unknownCharShare": 0.013,
+        "unknownRuns": [
+          "一张",
+          "背面"
+        ],
+        "repeatedLines": 0,
+        "repeatedTrigramShare": 0.032,
+        "nearestNeighbor": {
+          "title": "1. 新的地方",
+          "level": 1,
+          "jaccard": 0.021,
+          "containment": 0.088
+        },
+        "edit": {
+          "jaccard": 0.86,
+          "containment": 0.946,
+          "titleChanged": false,
+          "speakersAdded": [],
+          "speakersLost": []
+        }
+      }
+    },
+    "critique": {
+      "judgeVersion": "fab9-judge@1",
+      "judge": {
+        "provider": "groq",
+        "model": "qwen/qwen3.6-27b"
+      },
+      "scores": {
+        "natural": 3,
+        "coherence": 3,
+        "integration": 2,
+        "level": 6,
+        "human": 4,
+        "interest": 4
+      },
+      "strengths": "The dialogue tags are correctly formatted and distinct, which is a basic structural strength.",
+      "weaknesses": "The plot is nonsensical (seeking \"national\" books leads to a photo of a man; winning a competition is irrelevant to finding a photo) and the dialogue is painfully wooden (\"We went home, found a photo, from another country\"), failing completely to sound like natural human speech even at an HSK 3 level.",
+      "mechanical": true,
+      "overall": 3
+    },
+    "attempts": 16,
+    "calls": 17,
+    "generatorVersion": "fab9-deterministic-repair@3",
+    "promptVersion": "fab9-prompts@2",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": {
+      "critic": {
+        "requests": 1,
+        "failures": 0,
+        "promptTokens": 1037,
+        "completionTokens": 145,
+        "latencyMsTotal": 431,
+        "rateLimit429s": 0,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 0
+      },
+      "wallMs": null
+    }
+  },
+  "staged": null
+}
