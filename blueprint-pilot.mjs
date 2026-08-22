@@ -16,7 +16,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { publishedChineseStories, buildCoverageReport } from './storyCoverage.mjs'
 import { buildCoveragePlan, pendingTargets, useTargets } from './storyCoveragePlanner.mjs'
-import { composeSemanticManifests, manifestDefaults } from './storyManifestPlanner.mjs'
+import { composeSemanticManifests, manifestDefaults, validateManifest } from './storyManifestPlanner.mjs'
 import { validateCandidate, validateEdit, formatValidation, serializableValidation } from './storyCandidateValidation.mjs'
 import {
   blueprintPrompt, parseBlueprint,
@@ -89,8 +89,13 @@ console.log('Composed ' + composed.manifests.length + ' manifest(s) at HSK ' + l
 const results = []
 
 for (const manifest of composed.manifests) {
-  // The story is a fixed size now; the validator bounds move with it.
-  manifest.length = { ...manifest.length, minLines: totalLines, maxLines: totalLines }
+  // The exact length is enforced by parseStructuredStory, which accepts N
+  // lines or nothing — NOT by narrowing the manifest. blueprint-2 set
+  // minLines = maxLines = 28 and every draft came back "invalid_manifest",
+  // because validateManifest requires a real range: the deterministic
+  // validator then refused to look at any of the three stories.
+  const mCheck = validateManifest(manifest)
+  if (!mCheck.ok) { console.error('manifest ' + manifest.id + ' is invalid: ' + mCheck.problems.join('; ')); continue }
   const required = ((manifest.composition && manifest.composition.hard) || manifest.targets.filter(t => t.min >= 2))
     .map(t => t.word)
 
