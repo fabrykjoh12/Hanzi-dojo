@@ -45,6 +45,20 @@ describe('lexical feasibility — a plan must be writable at this level', () => 
     expect(checkAnchor('李明', opts).ok).toBe(true)      // a name
   })
 
+  // blueprint-3 rejected every plan it saw, largely for words like these:
+  // ordinary compounds that are not their own dictionary headwords. The
+  // question is whether a reader at this level can read it, which is what the
+  // canonical engine answers — not whether the string is an entry.
+  it('accepts readable compounds that are not dictionary entries', () => {
+    for (const w of ['回家', '找东西', '看家']) {
+      const r = checkAnchor(w, opts)
+      expect(r.ok, w + ' → ' + r.reason).toBe(true)
+    }
+    // and still refuses what the reader genuinely cannot read
+    expect(checkAnchor('扳手', opts).ok).toBe(false)
+    expect(checkAnchor('森林', opts).reason).toContain('above the story level')
+  })
+
   it('rejects the words blueprint-2 quietly required', () => {
     expect(checkAnchor('扳手', opts)).toMatchObject({ ok: false })       // HSK 6 wrench
     expect(checkAnchor('扳手', opts).reason).toContain('above the story level')

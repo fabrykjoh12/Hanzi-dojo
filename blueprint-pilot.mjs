@@ -123,17 +123,24 @@ for (const manifest of composed.manifests) {
     // words the reader does not have gets told exactly which ones, once.
     for (let attempt = 1; attempt <= 2; attempt += 1) {
       try {
-        rawText = await writer.send({ prompt: blueprintPrompt({ manifest, meanings, totalLines, targets: required, feedback }), maxTokens: 3000 })
+        // The plan JSON now carries anchors and usage sketches for 5-6 beats;
+        // blueprint-3 lost two first attempts to a truncated answer at 3000.
+        rawText = await writer.send({ prompt: blueprintPrompt({ manifest, meanings, totalLines, targets: required, feedback }), maxTokens: 4500 })
         bp = parseBlueprint(rawText)
       } catch (err) { error = String(err.message || err).slice(0, 160); bp = null }
       check = bp
         ? validateBlueprint(bp, { manifest, vocabMap, requiredTargets: required })
         : { ok: false, failures: [{ code: error ? 'provider_error' : 'unparseable', message: error || 'no JSON plan in the response' }] }
+      // Feed back only what the planner can act on, and only a handful of
+      // items: a wall of twenty rejections is not a repair brief.
+      feedback = check.failures.map(f => f.message).slice(0, 8)
+      raws.push({
+        planner: writer.name, attempt: k, repairAttempt: attempt, blueprint: bp, check,
+        raw: bp ? null : String(rawText || '').slice(0, 1200),
+        accepted: check.ok,
+      })
       if (check.ok) break
-      feedback = check.failures.map(f => f.message)
-      raws.push({ planner: writer.name, attempt: k, repairAttempt: attempt, blueprint: bp, check, raw: bp ? null : String(rawText || '').slice(0, 1200), superseded: true })
     }
-    raws.push({ planner: writer.name, attempt: k, repairAttempt: check.ok ? 'accepted' : 'final', blueprint: bp, check, raw: bp ? null : String(rawText || '').slice(0, 1200) })
   }
   const valid = raws.filter(r => r.check.ok)
   console.log('\nBLUEPRINTS: ' + raws.length + ' attempt(s), ' + valid.length + ' structurally + lexically valid')

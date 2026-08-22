@@ -108,10 +108,23 @@ export function checkAnchor(anchor, { manifest, vocabMap, cast = [] }) {
   if (hasLatin(word)) return { ok: false, reason: 'Latin text' }
   if (manifest.targets.some(t => t.word === word)) return { ok: true, why: 'target word' }
   if (cast.includes(word) || (manifest.speakers || []).includes(word)) return { ok: true, why: 'character name' }
-  const v = vocabMap && vocabMap[word]
-  if (!v) return { ok: false, reason: 'not standard vocabulary' }
-  if (Number.isFinite(v.level) && v.level > manifest.level) return { ok: false, reason: 'HSK ' + v.level + ', above the story level' }
-  return { ok: true, why: 'HSK ' + v.level }
+
+  // Read the anchor with the CANONICAL ENGINE, not a dictionary lookup.
+  // blueprint-3 rejected 很多, 看到, 坐下, 回家, 想要, 唱歌, 钱包 and 做到 as "not
+  // standard vocabulary" — every one of them is a compound the reader can read
+  // straight off, and none of them is its own dictionary entry. The question
+  // is not "is this string a headword" but "can a reader at this level read
+  // it", which is exactly what segmentLine answers.
+  const a = analyzeStory({ title: '', level: manifest.level, content: word }, vocabMap)
+  if (a.unknownRuns.length) return { ok: false, reason: 'not standard vocabulary' }
+  const targets = new Set(manifest.targets.map(t => t.word))
+  const above = [...a.counts.keys()].filter(w => !targets.has(w) && vocabMap[w] && vocabMap[w].level > manifest.level)
+  if (above.length) {
+    const worst = above.map(w => w + ' is HSK ' + vocabMap[w].level).join(', ')
+    return { ok: false, reason: worst + ', above the story level' }
+  }
+  if (a.cjkChars === 0) return { ok: false, reason: 'no Chinese in it' }
+  return { ok: true, why: 'readable at HSK ' + manifest.level }
 }
 
 // The usage sketch is what turns "结束 — Li Ming comments that the day has
