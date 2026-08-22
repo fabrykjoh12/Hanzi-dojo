@@ -43,7 +43,7 @@
 // review_logs would have to start recording the retention in force. Worth doing
 // if FSRS parameter tuning is ever revisited; not worth blocking this on.
 
-import { schedule } from './srs.js'
+import { schedule } from '../srs.js'
 
 // replayCard(history) → { updates, steps } | null
 //

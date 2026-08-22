@@ -22,7 +22,14 @@
 // Ambiguous rows never become manifest entries. Only their count is carried, so
 // post-apply verification can confirm the same number is still untouched.
 
+import { createHash } from 'node:crypto'
 import { CLASS, classifyCard, conversionPatch, orderedHistory, isReplayable } from './legacyClaimMigration.js'
+
+// NOTE ON node:crypto. This module lives in src/migration/, which is a
+// SERVER-ONLY tree like src/tts/: it is imported only by
+// migrate-legacy-claims.mjs and by tests, never by application code.
+// src/tts/serverOnly.test.js enforces that boundary for both trees, so a node
+// builtin here can never reach the browser bundle.
 
 export const MANIFEST_VERSION = 1
 
@@ -68,20 +75,18 @@ export function matchesPrecondition(card, precondition) {
 }
 
 // A deterministic digest of exactly what the replay consumes: the ordered
-// (grade, reviewed_at) pairs and nothing else. Pure JS so this module stays
-// bundler-safe and dependency-free; the hash only needs to change when the
-// input changes, not to be cryptographic.
+// (grade, reviewed_at) pairs and nothing else.
+//
+// SHA-256, not a 32-bit non-cryptographic hash. This is migration integrity —
+// it decides whether a row's history is unchanged enough to rewrite that row's
+// scheduler state — and a full digest costs nothing here. The count is kept as
+// a prefix so a mismatch is legible at a glance in the report.
 export function replayInputHash(logs) {
   const ordered = orderedHistory(logs)
-  const canonical = ordered.map(l => Number(l.grade) + '@' + new Date(l.reviewed_at).toISOString()).join('|')
-  // FNV-1a, 32-bit, rendered as 8 hex chars alongside the length for extra
-  // separation between histories that differ only in order.
-  let h = 0x811c9dc5
-  for (let i = 0; i < canonical.length; i += 1) {
-    h ^= canonical.charCodeAt(i)
-    h = Math.imul(h, 0x01000193) >>> 0
-  }
-  return ordered.length + ':' + h.toString(16).padStart(8, '0')
+  const canonical = ordered
+    .map(l => Number(l.grade) + '@' + new Date(l.reviewed_at).toISOString())
+    .join('|')
+  return ordered.length + ':' + createHash('sha256').update(canonical, 'utf8').digest('hex')
 }
 
 // What the row should look like once its action has been applied. Used both to
@@ -150,6 +155,10 @@ export function buildManifest({ cards, logsByCardId, replayFor, generatedAt, sou
         vocab_id: card.vocab_id,
         action: ACTION.CONVERT,
         precondition: preconditionOf(card),
+        // The UNTRUNCATED created_at, used verbatim when writing
+        // prior_known_at so the claim keeps its microsecond precision. The
+        // normalised copy in `precondition` is for comparison only.
+        created_at_raw: card.created_at,
         review_log_count: 0,
         replay_input_hash: replayInputHash([]),
         expected_post: expectedPostFor(ACTION.CONVERT, card),
@@ -164,6 +173,7 @@ export function buildManifest({ cards, logsByCardId, replayFor, generatedAt, sou
         vocab_id: card.vocab_id,
         action: ACTION.REPLAY,
         precondition: preconditionOf(card),
+        created_at_raw: card.created_at,
         review_log_count: ordered.length,
         // The replay input, recorded twice: readable, and as a digest the apply
         // path can compare in one comparison.
@@ -228,6 +238,44 @@ export function checkEntry(entry, card, logs) {
   }
 
   return { status: ENTRY_STATUS.OK }
+}
+
+// ── The compare-and-swap predicate ──────────────────────────────────────────
+//
+// The columns the UPDATE itself must match on, so that the write is conditional
+// in ONE statement and nothing can change between inspection and write. A
+// separate SELECT-then-UPDATE would still race.
+//
+// Deliberately EXCLUDES stability, difficulty, created_at and last_review, all
+// of which are lossy between Postgres and JSON and would make the CAS fail
+// spuriously. Measured on this database:
+//   * extra_float_digits = 0, so a real column round-trips through JSON badly —
+//     `difficulty = 6.666::real` matches ZERO of the 53 rows whose difficulty
+//     PostgREST reports as exactly 6.666.
+//   * every created_at carries microsecond precision (…10.003419+00) which an
+//     ISO-8601 millisecond normalisation truncates.
+//
+// What remains is exact in both systems — text, integers, booleans and NULL
+// checks — and it is sufficient, because `reps` is the canary: every genuine
+// grade goes through grade_card, which always increments reps and rewrites
+// state in the same transaction as the review log. A concurrent review
+// therefore cannot slip past this predicate, whatever it does to the floats.
+export function casPredicate(entry) {
+  const p = entry.precondition
+  return {
+    eq: {
+      state: p.state,
+      reps: p.reps,
+      lapses: p.lapses,
+      elapsed_days: p.elapsed_days,
+      learned: p.learned,
+      is_easy: p.is_easy,
+    },
+    // Null-valued columns are matched with IS NULL rather than equality.
+    isNull: ['prior_known_at', 'verified_at'].filter(k => p[k] === null),
+    // A claim that somehow already carries one of these is not our row.
+    notNull: ['prior_known_at', 'verified_at'].filter(k => p[k] !== null),
+  }
 }
 
 // Which field moved — so a skipped row is reported with a reason, not a shrug.

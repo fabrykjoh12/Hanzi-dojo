@@ -9,7 +9,7 @@
 // script builds a plan from these functions, prints it, and only then — after a
 // human has read the dry run — applies it.
 
-import { MASTERY_STABILITY_DAYS } from './knowledgeState.js'
+import { MASTERY_STABILITY_DAYS } from '../knowledgeState.js'
 
 export const CLASS = {
   // A claim that was never reviewed. Convert in place to an inert claim.
@@ -35,6 +35,12 @@ export const CLASS = {
 // reviewed-seed class came to exist. `reps` separates them.
 export function matchesSeedFingerprint(card) {
   if (!card) return false
+  // A row that already carries claim metadata is NOT an untouched legacy row —
+  // it has been through this migration, or was written by the new model. (Such
+  // a row cannot legally hold review-state scheduler data anyway;
+  // cards_unverified_claim_is_inert forbids it. This is belt and braces so the
+  // classifier never proposes re-converting something already converted.)
+  if (card.prior_known_at != null || card.verified_at != null) return false
   return card.state === 'review'
     && (card.reps || 0) === 0
     && card.stability === MASTERY_STABILITY_DAYS

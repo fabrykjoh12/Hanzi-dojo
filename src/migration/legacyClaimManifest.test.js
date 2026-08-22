@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   ACTION, ENTRY_STATUS, MANIFEST_VERSION,
   buildManifest, checkEntry, preconditionOf, matchesPrecondition,
-  matchesExpectedPost, replayInputHash,
+  matchesExpectedPost, replayInputHash, casPredicate,
 } from './legacyClaimManifest'
 import { replayCard } from './legacyClaimReplay'
 
@@ -73,7 +73,7 @@ describe('buildManifest', () => {
     const e = m.entries.find(x => x.action === ACTION.REPLAY)
     expect(e.review_log_count).toBe(1)
     expect(e.review_log_input).toEqual([{ grade: 1, reviewed_at: '2026-08-01T10:00:00.000Z' }])
-    expect(e.replay_input_hash).toMatch(/^1:[0-9a-f]{8}$/)
+    expect(e.replay_input_hash).toMatch(/^1:[0-9a-f]{64}$/)   // SHA-256
     expect(e.expected_post.reps).toBe(1)
     expect(e.expected_post.verified_at).toBe('2026-08-01T10:00:00.000Z')
   })
@@ -111,7 +111,61 @@ describe('replayInputHash', () => {
     expect(replayInputHash([]).startsWith('0:')).toBe(true)
     expect(replayInputHash([log(1, 1), log(2, 5)]).startsWith('2:')).toBe(true)
   })
+
+  it('is a full SHA-256, not a truncated or non-cryptographic digest', () => {
+    expect(replayInputHash([log(1, 1)]).split(':')[1]).toHaveLength(64)
+    // Pinned vector: the empty history is SHA-256 of the empty string.
+    expect(replayInputHash([])).toBe(
+      '0:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855')
+  })
 })
+
+// The CAS predicate is what makes the UPDATE itself conditional. It must
+// contain only columns that are exactly comparable between Postgres and JSON.
+describe('casPredicate', () => {
+  const cards = [seeded()]
+  const m = buildManifest({ cards, logsByCardId: {}, replayFor, generatedAt: 'g' })
+  const cas = casPredicate(m.entries[0])
+
+  it('matches on the exactly-representable columns', () => {
+    expect(cas.eq).toEqual({
+      state: 'review', reps: 0, lapses: 0, elapsed_days: 0, learned: true, is_easy: false,
+    })
+    expect(cas.isNull.sort()).toEqual(['prior_known_at', 'verified_at'])
+    expect(cas.notNull).toEqual([])
+  })
+
+  // The measured reason: extra_float_digits = 0 means a `real` column does not
+  // survive a JSON round-trip (`difficulty = 6.666::real` matches zero rows),
+  // and every created_at carries microseconds an ISO-ms normalisation truncates.
+  it('EXCLUDES the lossy columns, which would make the CAS fail spuriously', () => {
+    for (const lossy of ['stability', 'difficulty', 'created_at', 'last_review']) {
+      expect(Object.keys(cas.eq)).not.toContain(lossy)
+      expect(cas.isNull).not.toContain(lossy)
+      expect(cas.notNull).not.toContain(lossy)
+    }
+  })
+
+  // reps is the canary: grade_card always increments it, in the same
+  // transaction as the review log, so no concurrent grade can slip past.
+  it('always includes reps and state', () => {
+    expect(cas.eq).toHaveProperty('reps')
+    expect(cas.eq).toHaveProperty('state')
+  })
+
+  it('a row already carrying claim metadata produces no entry at all', () => {
+    const already = buildManifest({
+      cards: [seeded({ id: 'x', prior_known_at: CREATED, prior_source: 'legacy_claim' })],
+      logsByCardId: {}, replayFor, generatedAt: 'g',
+    })
+    // It is not an untouched legacy row, so it is never proposed for conversion.
+    expect(already.entries).toHaveLength(0)
+  })
+})
+
+// (The bundle boundary itself — no browser-reachable file may import this
+// tree — is enforced by src/tts/serverOnly.test.js, which owns that rule for
+// every server-only directory.)
 
 describe('checkEntry — the staleness gate', () => {
   const cards = [seeded(), reviewedSeed()]

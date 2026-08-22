@@ -4,7 +4,7 @@ import {
   provenanceFor, conversionPatch, orderedHistory, isReplayable, buildMigrationPlan,
 } from './legacyClaimMigration'
 import { replayCard, describeReplay } from './legacyClaimReplay'
-import { isPriorKnown, isMastered, isLearned, MASTERY_STABILITY_DAYS } from './knowledgeState'
+import { isPriorKnown, isMastered, isLearned, MASTERY_STABILITY_DAYS } from '../knowledgeState'
 
 const CREATED = '2026-07-28T10:00:00.000Z'
 

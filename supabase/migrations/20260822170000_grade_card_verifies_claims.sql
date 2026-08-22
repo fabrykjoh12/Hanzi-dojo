@@ -56,10 +56,19 @@ declare
   v_mode text;
   v_day date;
   v_inserted boolean := false;
-  -- The moment the learner actually answered. srs.schedule() sets last_review
-  -- to the grade time, so a claim is stamped verified at the review that
-  -- verified it — never at some later write time.
-  v_reviewed_at timestamptz := coalesce((p_updates->>'last_review')::timestamptz, now());
+  -- SERVER time, deliberately. An earlier draft derived this from the client's
+  -- p_updates->>'last_review', which meant the client could choose its own
+  -- verified_at — contradicting the guarantee this column exists to make — and
+  -- introduced a clock-skew failure: a claim made on device A and calibrated on
+  -- device B whose clock runs behind would produce last_review < prior_known_at
+  -- and be rejected by cards_verified_after_claim, killing a legitimate grade.
+  --
+  -- verified_at answers "when did the SERVER observe this learner genuinely
+  -- grade this claim", which is a fact about our own records. It deliberately
+  -- does NOT have to equal the scheduler's last_review: that stays exactly as
+  -- srs.schedule() produced it, because FSRS intervals are computed from it and
+  -- must keep the client's grading semantics unchanged.
+  v_verified_at timestamptz := now();
 begin
   if v_user_id is null then
     raise exception 'Not authenticated';
@@ -104,11 +113,11 @@ begin
       elapsed_days   = coalesce((p_updates->>'elapsed_days')::int, c.elapsed_days),
       learning_step  = coalesce((p_updates->>'learning_step')::int, c.learning_step),
       -- The claim is verified by this very grade, in this very statement.
-      -- Server-derived: the client cannot steer it, and it cannot be set on a
-      -- card that was never claimed.
+      -- Server-derived (now()), so the client cannot steer it, and it cannot be
+      -- set on a card that was never claimed.
       verified_at    = case
                          when c.prior_known_at is not null and c.verified_at is null
-                           then v_reviewed_at
+                           then v_verified_at
                          else c.verified_at
                        end
     where c.id = p_card_id
@@ -167,7 +176,7 @@ begin
       -- `c` is the EXISTING row here, so this reads the claim it is replacing.
       verified_at    = case
                          when c.prior_known_at is not null and c.verified_at is null
-                           then v_reviewed_at
+                           then v_verified_at
                          else c.verified_at
                        end
     returning c.id, c.vocab_id into v_card_id, v_vocab_id;

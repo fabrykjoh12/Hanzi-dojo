@@ -35,12 +35,26 @@ function relPath(file) {
   return relative(SRC, file).split('\\').join('/')
 }
 
-// Everything the browser can reach: src/*.js(x) outside src/tts, minus tests.
+// The server-only trees. src/tts/ synthesises audio with a paid credential;
+// src/migration/ is one-off data-repair tooling run from the CLI, which uses
+// node builtins (crypto) and the service key. Neither may reach the browser.
+const SERVER_ONLY_DIRS = ['tts/', 'migration/']
+const isServerOnly = (rel) => SERVER_ONLY_DIRS.some(d => rel.indexOf(d) === 0)
+
+// Everything the browser can reach: src/*.js(x) outside the server-only trees,
+// minus tests.
 const clientFiles = allFiles.filter(f => {
   const rel = relPath(f)
-  if (rel.indexOf('tts/') === 0) return false
+  if (isServerOnly(rel)) return false
   if (rel.indexOf('.test.') !== -1) return false
   return rel.endsWith('.js') || rel.endsWith('.jsx')
+})
+
+// src/migration/* is CLI-only. Nothing the browser can reach may import it —
+// the same rule src/tts/* lives under, for the same reason.
+const migrationFiles = allFiles.filter(f => {
+  const rel = relPath(f)
+  return rel.indexOf('migration/') === 0 && rel.indexOf('.test.') === -1
 })
 
 const ttsFiles = allFiles.filter(f => {
@@ -94,6 +108,25 @@ describe('client/server boundary', () => {
     for (const name of CLIENT_SAFE) {
       expect(read(join(SRC, 'tts', name)).indexOf("'node:")).toBe(-1)
     }
+  })
+
+  it('keeps CLI-only migration tooling out of every browser-reachable file', () => {
+    const violations = []
+    for (const file of clientFiles) {
+      const source = read(file)
+      if (source.indexOf('migration/legacyClaim') !== -1
+          || /from '\.\/legacyClaim/.test(source)) {
+        violations.push(relPath(file))
+      }
+    }
+    expect(violations).toEqual([])
+  })
+
+  it('migration tooling is reachable only from the CLI entry point', () => {
+    // It exists, it uses node builtins, and that is fine precisely because
+    // nothing in the client tree imports it.
+    expect(migrationFiles.length).toBeGreaterThan(0)
+    expect(read(join(SRC, 'migration', 'legacyClaimManifest.js')).indexOf("'node:crypto'")).toBeGreaterThan(-1)
   })
 
   it('never reads a credential from the environment inside src/', () => {

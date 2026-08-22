@@ -125,7 +125,7 @@ on it a learner can grade one of the very rows it describes, and the photographe
 action would then erase a real review.
 
 ```
-# a. snapshot first — this is the only safety net (see below)
+# a. snapshot first — a LOCAL file, the only safety net (see below)
 node --env-file=.env.script migrate-legacy-claims.mjs --snapshot
 
 # b. FRESH dry run, emitting the manifest. Never reuse an old one.
@@ -158,6 +158,31 @@ re-timestamped review is caught.
 
 Stale rows are never folded into the success count and never re-classified on the
 fly. A later fresh dry run reclassifies them correctly.
+
+**The write itself is a compare-and-swap.** The pre-check above exists so the
+report can name what drifted; it is NOT what makes the write safe. Every UPDATE
+carries its own precondition in its WHERE clause, so inspection and write are one
+statement and nothing can change in between. A conditional update that matches
+zero rows is reported as `STALE_ROW` — never as applied, never as failed.
+
+The predicate uses only exactly-comparable columns — `state`, `reps`, `lapses`,
+`elapsed_days`, `learned`, `is_easy`, and NULL checks on `prior_known_at` /
+`verified_at`. Floats and timestamps are deliberately excluded, because they are
+lossy between Postgres and JSON and would make the CAS fail on every row:
+
+* `extra_float_digits = 0`, so a `real` column does not round-trip. PostgREST
+  reports `difficulty` as `6.666` while the stored value is `6.66599559783936`;
+  `difficulty = 6.666::real` matches **0 of the 51** replay rows.
+* every `created_at` carries microsecond precision (`…10.003419+00`) that an
+  ISO-millisecond normalisation truncates.
+
+That is sufficient because **`reps` is the canary**: every genuine grade goes
+through `grade_card`, which always increments `reps` and rewrites `state` in the
+same transaction as the review log. A concurrent review cannot slip past the
+predicate whatever it does to the floats. Proven in
+`supabase/tests/prior_knowledge_verification.sql` (assertions 21–23): a grade
+landing between the read and the write leaves the CAS matching zero rows and the
+learner's grade intact, while the same CAS applies normally on an unchanged row.
 
 **Ambiguous rows never enter the manifest at all** — only their count is carried,
 so post-apply verification can confirm the same number is still sitting there
@@ -192,14 +217,56 @@ select id, state, reps, stability, prior_known_at from cards
 Then re-run `migrate-legacy-claims.mjs` (no `--apply`): it must plan **0**
 conversions and **0** replays. That is the idempotency proof.
 
+### 7. LAST: make the fabricated shape unrepresentable
+
+```
+supabase/migrations/20260822180000_scheduler_state_requires_observation.sql
+```
+
+Enforces `state in ('learning','relearning','review') ⟹ reps >= 1`. **Apply only
+after step 6 passes** — production currently holds 594 rows in exactly the shape
+it forbids, and applying it earlier would correctly fail on all of them.
+
+This is the protection against stale TestFlight and old web clients. Store apps
+bundle a frozen build and there is no minimum-version gate anywhere, so an old
+client can keep attempting the legacy seed shape indefinitely. With this
+constraint that write is rejected — and an old client failing a bad legacy write
+is strictly better than it silently re-corrupting the knowledge model. The
+failure is confined to that one write, because `seedClaim` is already
+best-effort and never blocks onboarding.
+
+Re-run this immediately before applying; both numbers must be 0:
+
+```sql
+select count(*) filter (where state in ('learning','relearning','review')
+                          and coalesce(reps,0) = 0) as violations,
+       count(*) filter (where state = 'review' and coalesce(reps,0) = 0
+                          and stability = 21 and difficulty = 5
+                          and elapsed_days = 0) as of_which_legacy_seed
+  from cards;
+```
+
 ## Backup, resume, rollback
 
 **There is no rollback tooling in this repo** — no down migrations, no `pg_dump`
 anywhere, no backup script. Rollback means Supabase's own PITR/daily backups, or
 rolling forward with a new idempotent migration. Plan accordingly.
 
-**Pre-apply snapshot (do this, it is the only real safety net).** Before
-`--apply`, export the affected rows so any row can be restored individually:
+**Pre-apply snapshot (do this, it is the only real safety net).** `--snapshot`
+writes a LOCAL file — `legacy-claim-snapshot-<UTC>.json`, mode 0600, gitignored
+— containing the complete original row for every card the migration could
+touch, plus `generated_at`, `row_count` and a SHA-256 of the canonical contents.
+
+It is deliberately NOT a table in `public`. A copy of user card rows in a
+PostgREST-exposed schema is one forgotten RLS policy away from being readable;
+a file on the operator's machine has no such surface. `review_logs` are not
+copied at all — they are the evidence the replay derives from, they are never
+mutated, and duplicating them would be another copy of user data for no
+restorative benefit.
+
+Restoration uses those exact rows. Nothing reconstructs state heuristically.
+
+<details><summary>Superseded: the in-database variant</summary>
 
 ```sql
 create table if not exists public.cards_prekb_backup_20260822 as
@@ -209,8 +276,11 @@ select * from public.cards
 select count(*) from public.cards_prekb_backup_20260822;   -- expect 647
 ```
 
-That table is a plain copy inside the same database — cheap, and enough to
-reconstruct any single card. Drop it once the migration has been accepted.
+This was the earlier design and is kept only to explain why it was rejected: it
+places user data in a PostgREST-reachable schema. If an in-database snapshot is
+ever genuinely needed, it must live in a private (non-exposed) schema with
+access explicitly revoked, and that reasoning must be written down.
+</details>
 
 **Resumable after partial failure.** The script updates one row at a time and
 re-classifies from a fresh read at the end. A run that dies halfway leaves some
@@ -219,7 +289,7 @@ because a converted row no longer matches either fingerprint. This is asserted b
 a unit test (`legacyClaimMigration.test.js` — "re-running over already-converted
 rows plans nothing").
 
-**Rolling one row back** (from the snapshot):
+**Rolling one row back** (from the snapshot file, using its exact stored row):
 
 ```sql
 update public.cards c

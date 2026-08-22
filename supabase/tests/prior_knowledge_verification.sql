@@ -17,6 +17,14 @@
 -- proves it stays fixed. A JS fake cannot prove it, because the constraint
 -- lives in the database.
 --
+-- It also covers the two failure modes found in review:
+--   * CLOCK SKEW — verified_at must be SERVER time. Deriving it from the
+--     client's last_review let the client choose it, and a device whose clock
+--     ran behind produced last_review < prior_known_at, which
+--     cards_verified_after_claim rejects — killing a legitimate grade.
+--   * COMPARE-AND-SWAP — the legacy migration's UPDATE must carry its own
+--     precondition, so a concurrent genuine grade can never be overwritten.
+--
 -- What it asserts, for BOTH calibration outcomes:
 --   * the graded write succeeds atomically through the production RPC
 --   * reps = 1                       (exactly one genuine observation)
@@ -130,6 +138,117 @@ begin
   insert into pk_test_results values (15, 'after failure: verified_at still NULL', coalesce(c.verified_at::text,'NULL'), c.verified_at is null);
   insert into pk_test_results values (16, 'after failure: state still new', c.state, c.state = 'new');
 end $$;
+
+-- ── 5. Clock skew: verified_at is SERVER-derived ────────────────────────────
+do $$
+declare
+  v_user uuid; v_v uuid; v_card uuid; c record;
+begin
+  select id into v_user from public.profiles limit 1;
+  if v_user is null then return; end if;
+  perform set_config('request.jwt.claims', json_build_object('sub', v_user::text)::text, true);
+  select v.id into v_v from public.vocabulary v
+    where not exists (select 1 from public.cards c2 where c2.user_id = v_user and c2.vocab_id = v.id) limit 1;
+
+  insert into public.cards (user_id, vocab_id, state, learned, is_easy, stability, difficulty,
+                            reps, lapses, last_review, due_at, prior_known_at, prior_source, verified_at)
+  values (v_user, v_v, 'new', false, false, null, null, 0, 0, null, now(), now(), 'placement', null)
+  returning id into v_card;
+
+  -- The client's clock is two hours BEHIND the server. Its last_review is
+  -- therefore earlier than the claim it is verifying.
+  begin
+    perform public.grade_card(
+      v_v,
+      jsonb_build_object('state','review','interval_days',8,'due_at',(now()+interval '8 days')::text,
+        'is_easy',true,'learned',true,'stability',8.2956,'difficulty',1,'reps',1,'lapses',0,
+        'last_review',(now() - interval '2 hours')::text,
+        'scheduled_days',8,'elapsed_days',0,'learning_step',0),
+      v_card,
+      jsonb_build_object('grade',3,'previous_state','new','next_state','review'),
+      null, gen_random_uuid());
+    insert into pk_test_results values (17, 'skewed client clock: the grade still succeeds', 'OK', true);
+  exception when others then
+    insert into pk_test_results values (17, 'skewed client clock: the grade still succeeds', substr(SQLERRM,1,60), false);
+  end;
+
+  select * into c from public.cards where id = v_card;
+  insert into pk_test_results values (18, 'skew: verified_at >= prior_known_at',
+    coalesce(c.verified_at::text,'NULL'), c.verified_at is not null and c.verified_at >= c.prior_known_at);
+  insert into pk_test_results values (19, 'skew: last_review keeps the scheduler''s (earlier) value',
+    coalesce(c.last_review::text,'NULL'), c.last_review < c.prior_known_at);
+  insert into pk_test_results values (20, 'skew: verified_at is not the client timestamp',
+    case when c.verified_at <> c.last_review then 'server-derived' else 'CLIENT STEERED IT' end,
+    c.verified_at <> c.last_review);
+end $$;
+
+-- ── 6. Compare-and-swap protects a concurrent genuine grade ─────────────────
+do $$
+declare
+  v_user uuid; v_v uuid; v_card uuid; c record; n int;
+begin
+  select id into v_user from public.profiles limit 1;
+  if v_user is null then return; end if;
+  select v.id into v_v from public.vocabulary v
+    where not exists (select 1 from public.cards c2 where c2.user_id = v_user and c2.vocab_id = v.id) limit 1;
+
+  -- A legacy seed row, exactly as production holds it.
+  insert into public.cards (user_id, vocab_id, state, learned, is_easy, stability, difficulty,
+                            reps, lapses, last_review, due_at, elapsed_days)
+  values (v_user, v_v, 'review', true, false, 21, 5, 0, 0, now(), now(), 0)
+  returning id into v_card;
+
+  -- The learner grades it AFTER the migration read the world.
+  update public.cards set state='review', reps=1, stability=22.4, difficulty=6.6, last_review=now()
+   where id = v_card;
+
+  -- The migration's CONDITIONAL update. One statement; the precondition rides
+  -- in the WHERE, so there is no window between inspection and write.
+  with cas as (
+    update public.cards set
+      state='new', learned=false, is_easy=false, stability=null, difficulty=null,
+      last_review=null, reps=0, lapses=0, prior_known_at=now(), prior_source='legacy_claim'
+    where id = v_card
+      and state='review' and reps=0 and lapses=0 and elapsed_days=0
+      and learned=true and is_easy=false
+      and prior_known_at is null and verified_at is null
+    returning id
+  ) select count(*) into n from cas;
+  insert into pk_test_results values (21, 'CAS refuses to overwrite a concurrent grade', n || ' rows', n = 0);
+
+  select * into c from public.cards where id = v_card;
+  insert into pk_test_results values (22, 'CAS: the learner''s grade survives intact',
+    'reps=' || c.reps || ' state=' || c.state, c.reps = 1 and c.state = 'review');
+
+  -- Put the row back to the seed shape; now the same CAS must fire.
+  update public.cards set state='review', reps=0, stability=21, difficulty=5, learned=true,
+    is_easy=false, lapses=0, elapsed_days=0, last_review=now() where id = v_card;
+  with cas2 as (
+    update public.cards set
+      state='new', learned=false, is_easy=false, stability=null, difficulty=null,
+      last_review=null, reps=0, lapses=0, prior_known_at=now(), prior_source='legacy_claim'
+    where id = v_card
+      and state='review' and reps=0 and lapses=0 and elapsed_days=0
+      and learned=true and is_easy=false
+      and prior_known_at is null and verified_at is null
+    returning id
+  ) select count(*) into n from cas2;
+  insert into pk_test_results values (23, 'CAS applies when the row is unchanged', n || ' row', n = 1);
+end $$;
+
+-- ── 7. Why floats are excluded from the CAS predicate ───────────────────────
+-- Read-only, against whatever legacy rows still exist. extra_float_digits = 0,
+-- so a `real` column's text/JSON rendering does NOT round-trip: PostgREST
+-- reports 6.666 while the stored value is 6.66599559783936. Putting difficulty
+-- in a CAS WHERE would therefore match nothing and skip every replay as stale.
+insert into pk_test_results
+select 24,
+       'float equality would match ' || count(*) filter (where difficulty = (difficulty::text)::real)
+         || ' of ' || count(*) || ' legacy rows (so floats are excluded)',
+       coalesce(string_agg(distinct difficulty::text || ' stored as ' || difficulty::float8::text, '; '), 'no legacy rows left'),
+       true
+  from public.cards
+ where stability = 21 and coalesce(reps,0) >= 1;
 
 select n, assertion, result, case when ok then 'PASS' else 'FAIL' end as status
 from pk_test_results order by n;

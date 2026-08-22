@@ -11,7 +11,8 @@
 //       Applies THAT manifest. Never re-derives what to do.
 //
 //   node --env-file=.env.script migrate-legacy-claims.mjs --snapshot
-//       Creates the pre-apply backup table. Do this before --apply.
+//       Writes a local pre-apply backup FILE (never a public table).
+//       Do this before --apply.
 //
 // WHY A MANIFEST. A dry run is a photograph, and rows move between taking it and
 // acting on it: a learner grades a claimed word, and a row classified as an
@@ -26,10 +27,11 @@
 // them even in principle.
 
 import { createClient } from '@supabase/supabase-js'
-import { buildMigrationPlan } from './src/legacyClaimMigration.js'
-import { replayCard, describeReplay } from './src/legacyClaimReplay.js'
-import { buildManifest, checkEntry, ACTION, ENTRY_STATUS, MANIFEST_VERSION } from './src/legacyClaimManifest.js'
+import { buildMigrationPlan } from './src/migration/legacyClaimMigration.js'
+import { replayCard, describeReplay } from './src/migration/legacyClaimReplay.js'
+import { buildManifest, checkEntry, casPredicate, ACTION, ENTRY_STATUS, MANIFEST_VERSION } from './src/migration/legacyClaimManifest.js'
 import fs from 'node:fs'
+import { createHash } from 'node:crypto'
 
 const argv = process.argv.slice(2)
 const APPLY = argv.includes('--apply')
@@ -39,7 +41,7 @@ const MANIFEST_PATH = (() => {
   return i >= 0 && argv[i + 1] ? argv[i + 1] : null
 })()
 const PAGE = 1000
-const SNAPSHOT_TABLE = 'cards_prekb_backup'
+
 
 const url = process.env.VITE_SUPABASE_URL || process.env.SUPABASE_URL
 const key = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -83,25 +85,70 @@ const line = (n = 70) => '='.repeat(n)
 const pad = (v, n) => String(v).padStart(n)
 
 // ── Snapshot ────────────────────────────────────────────────────────────────
-// The only real safety net: this repo has no down migrations and no pg_dump.
-// A plain copy of every candidate row, inside the same database, is enough to
-// restore any single card by hand. Review logs are NEVER copied or mutated —
-// they are the evidence the replay is derived from and must stay pristine.
+// A LOCAL file, deliberately not a table in `public`.
+//
+// An earlier draft printed DDL for `create table public.cards_prekb_backup_… as
+// select * from public.cards …`. That would put a full copy of user card rows
+// in a PostgREST-exposed schema, where its access depends entirely on nobody
+// forgetting to add RLS — a copy of user data is exactly the thing that should
+// not be one missing policy away from being readable. A file on the operator's
+// machine has no such surface.
+//
+// review_logs are NOT copied. They are the evidence the replay derives from,
+// they are never mutated by this migration, and duplicating them would be
+// another copy of user data for no restorative benefit.
 async function makeSnapshot() {
-  const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, '')
-  const table = SNAPSHOT_TABLE + '_' + stamp
-  console.log('\nPre-apply snapshot → public.' + table)
-  console.log('Run this in the Supabase SQL editor (the JS client cannot run DDL):\n')
-  console.log('  create table if not exists public.' + table + ' as')
-  console.log('  select * from public.cards')
-  console.log("   where (state='review' and coalesce(reps,0)=0)")
-  console.log('      or (stability = 21 and coalesce(reps,0) >= 1);')
-  console.log('  select count(*) from public.' + table + ';\n')
   const { cards } = await loadWorld()
-  const candidates = cards.filter(c =>
-    (c.state === 'review' && (c.reps || 0) === 0) || (c.stability === 21 && (c.reps || 0) >= 1))
-  console.log('Expected row count right now: ' + candidates.length)
-  console.log('(Verify the table matches before applying.)\n')
+  const rows = cards.filter(isCandidate)
+  const generated_at = new Date().toISOString()
+
+  // Canonical form: rows sorted by id, keys sorted, so the digest is
+  // reproducible and any later tampering is detectable.
+  const canonicalRows = rows
+    .slice()
+    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
+    .map(sortKeys)
+  const body = JSON.stringify(canonicalRows)
+  const sha256 = createHash('sha256').update(body, 'utf8').digest('hex')
+
+  const snapshot = {
+    kind: 'hanzi-dojo/legacy-claim-presnapshot',
+    version: 1,
+    generated_at,
+    row_count: rows.length,
+    sha256,
+    note: 'Complete original card rows that the legacy-claim migration could modify. '
+      + 'Restoration must use these exact rows — never a reconstruction. '
+      + 'review_logs are deliberately not included and are never mutated.',
+    rows: canonicalRows,
+  }
+
+  const stamp = generated_at.replace(/[-:]/g, '').replace(/\..+$/, 'Z')
+  const file = 'legacy-claim-snapshot-' + stamp + '.json'
+  fs.writeFileSync(file, JSON.stringify(snapshot, null, 2), { mode: 0o600 })
+
+  console.log('\n' + line())
+  console.log('PRE-APPLY SNAPSHOT')
+  console.log(line())
+  console.log('\n  file       ' + file)
+  console.log('  rows       ' + rows.length)
+  console.log('  sha256     ' + sha256)
+  console.log('  generated  ' + generated_at)
+  console.log('  mode       0600 (owner read/write only)')
+  console.log('\nThis file contains complete original rows and is the ONLY sanctioned')
+  console.log('restore source. Keep it off the repo — .gitignore covers it — and delete')
+  console.log('it once the migration has been accepted.\n')
+}
+
+function isCandidate(c) {
+  return (c.state === 'review' && (c.reps || 0) === 0)
+    || (c.stability === 21 && (c.reps || 0) >= 1)
+}
+
+function sortKeys(o) {
+  const out = {}
+  for (const k of Object.keys(o).sort()) out[k] = o[k]
+  return out
 }
 
 // ── Dry run ─────────────────────────────────────────────────────────────────
@@ -190,13 +237,13 @@ async function apply() {
   }
 
   for (const entry of manifest.entries) {
-    // Re-read from the fresh snapshot of the world, then gate.
+    // A cheap pre-check first, purely so the REPORT can name what drifted.
+    // It is not what makes the write safe — the conditional UPDATE below is.
     const live = byId.get(entry.card_id) || null
-    const check = checkEntry(entry, live, logsByCardId[entry.card_id] || [])
-
-    if (check.status === ENTRY_STATUS.ALREADY_APPLIED) { report.already += 1; continue }
-    if (check.status !== ENTRY_STATUS.OK) {
-      report.stale.push({ id: entry.card_id, action: entry.action, status: check.status, reason: check.reason })
+    const pre = checkEntry(entry, live, logsByCardId[entry.card_id] || [])
+    if (pre.status === ENTRY_STATUS.ALREADY_APPLIED) { report.already += 1; continue }
+    if (pre.status !== ENTRY_STATUS.OK) {
+      report.stale.push({ id: entry.card_id, action: entry.action, status: pre.status, reason: pre.reason })
       continue
     }
 
@@ -204,9 +251,28 @@ async function apply() {
       ? convertPatchFromEntry(entry)
       : replayPatchFromEntry(entry)
 
-    const { error } = await supabase.from('cards').update(patch).eq('id', entry.card_id)
+    // COMPARE-AND-SWAP. The precondition rides in the UPDATE's own WHERE, so
+    // inspection and write are ONE statement and nothing can change in between.
+    // A separate SELECT-then-UPDATE would still leave a window in which a
+    // learner's grade lands and is then overwritten.
+    const cas = casPredicate(entry)
+    let q = supabase.from('cards').update(patch).eq('id', entry.card_id)
+    for (const [col, val] of Object.entries(cas.eq)) q = q.eq(col, val)
+    for (const col of cas.isNull) q = q.is(col, null)
+    for (const col of cas.notNull) q = q.not(col, 'is', null)
+
+    const { data, error } = await q.select('id')
     if (error) {
       report.failed.push({ id: entry.card_id, action: entry.action, error: error.message })
+      continue
+    }
+    if (!data || data.length === 0) {
+      // The row moved between the read and this statement. Not a failure, and
+      // certainly not an application — the learner's change stands untouched.
+      report.stale.push({
+        id: entry.card_id, action: entry.action, status: ENTRY_STATUS.STALE_ROW,
+        reason: 'conditional UPDATE matched 0 rows — the row changed between read and write',
+      })
       continue
     }
     report.applied += 1
@@ -222,7 +288,10 @@ function convertPatchFromEntry(entry) {
     state: 'new', learned: false, is_easy: false,
     stability: null, difficulty: null, last_review: null,
     reps: 0, lapses: 0, scheduled_days: 0, elapsed_days: 0, interval_days: 0, learning_step: 0,
-    prior_known_at: p.prior_known_at, prior_source: p.prior_source, verified_at: null,
+    // The UNTRUNCATED original, so the claim keeps its microsecond precision.
+    prior_known_at: entry.created_at_raw || p.prior_known_at,
+    prior_source: p.prior_source,
+    verified_at: null,
   }
 }
 
@@ -233,7 +302,7 @@ function replayPatchFromEntry(entry) {
   if (!result) throw new Error('replay produced nothing for ' + entry.card_id)
   return {
     ...result.updates,
-    prior_known_at: entry.expected_post.prior_known_at,
+    prior_known_at: entry.created_at_raw || entry.expected_post.prior_known_at,
     prior_source: entry.expected_post.prior_source,
   }
 }
