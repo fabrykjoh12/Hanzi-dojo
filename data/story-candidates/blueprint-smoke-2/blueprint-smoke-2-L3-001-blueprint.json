@@ -1,0 +1,467 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "blueprint-smoke-2",
+  "generatedAt": "2026-08-22T16:11:25.014Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "blueprint-smoke-2-L3-001",
+    "batchId": "blueprint-smoke-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "关系",
+      "女人",
+      "男人",
+      "帮助",
+      "需要"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "blueprints": [
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Heavy Box and the New Neighbor",
+          "chineseTitle": "邻居的帮助",
+          "setting": "An apartment building hallway, late afternoon.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming wants to help his struggling new neighbor, but doesn't know if he should or how.",
+          "incitingEvent": "Li Ming hears a woman struggle with a heavy box in the hallway.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Late afternoon",
+              "where": "Li Ming's apartment hallway",
+              "what": "Li Ming comes home from work and hears a thud.",
+              "because": "the story opens",
+              "arrivedHow": "returned from work",
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "回来",
+                "听到",
+                "声音",
+                "旁边"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "Immediately after",
+              "where": "The hallway",
+              "what": "Li Ming opens his door and sees a woman on the floor with a box.",
+              "because": "he heard the sound and wants to see what happened",
+              "arrivedHow": "opened door",
+              "targets": [
+                "女人"
+              ],
+              "chineseLexicalAnchors": [
+                "打开",
+                "看到",
+                "地板",
+                "害怕"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Moments later",
+              "where": "The hallway",
+              "what": "Li Ming asks if she is okay; she says she is tired and needs aid.",
+              "because": "he saw she was struggling",
+              "arrivedHow": "N/A",
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "chineseLexicalAnchors": [
+                "你好",
+                "怎么",
+                "累",
+                "还是"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "Shortly after",
+              "where": "The hallway",
+              "what": "Li Ming picks up the box. He realizes they don't know each other well.",
+              "because": "she asked for assistance",
+              "arrivedHow": "N/A",
+              "targets": [
+                "关系"
+              ],
+              "chineseLexicalAnchors": [
+                "拿",
+                "重",
+                "认识",
+                "朋友"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "After moving the box",
+              "where": "Outside her apartment door",
+              "what": "He asks if there is a man in the house to help, showing concern.",
+              "because": "the box is heavy and he wants to ensure she has long-term support",
+              "arrivedHow": "walked two steps",
+              "targets": [
+                "男人"
+              ],
+              "chineseLexicalAnchors": [
+                "里面",
+                "有",
+                "谁",
+                "家"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "End",
+              "where": "Outside her apartment door",
+              "what": "She smiles and thanks him. He feels good about helping a neighbor.",
+              "because": "the task is complete and the social interaction is resolved",
+              "arrivedHow": "N/A",
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "谢谢",
+                "开心",
+                "邻居",
+                "不客气"
+              ],
+              "lines": 3
+            }
+          ],
+          "resolution": "Li Ming helps the woman move the box, confirming their relationship as helpful neighbors.",
+          "targetPlan": [
+            {
+              "word": "女人",
+              "beat": 2,
+              "why": "Li Ming sees the person on the floor. He needs to identify her gender to understand the situation (e.g., a female neighbor struggling).",
+              "speaker": "李明",
+              "refersTo": "the person on the floor",
+              "intent": "to identify who he is seeing",
+              "usageSketch": "我看到一个女人坐在地上。"
+            },
+            {
+              "word": "需要",
+              "beat": 3,
+              "why": "The woman explains why she fell. She requires support because she is tired.",
+              "speaker": "小红",
+              "refersTo": "assistance",
+              "intent": "to explain her vulnerability",
+              "usageSketch": "我太累了，需要休息。"
+            },
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "Li Ming interprets her statement as a request for aid.",
+              "speaker": "李明",
+              "refersTo": "the act of lifting the box",
+              "intent": "to offer support",
+              "usageSketch": "我可以帮你拿这个箱子吗？"
+            },
+            {
+              "word": "关系",
+              "beat": 4,
+              "why": "Li Ming reflects on their social connection. Even though they are not close friends, he helps because of their neighborly relationship.",
+              "speaker": "李明",
+              "refersTo": "the connection between Li Ming and Xiao Hong",
+              "intent": "to contextualize his action",
+              "usageSketch": "我们虽然关系不深，但你可以叫我。"
+            },
+            {
+              "word": "男人",
+              "beat": 5,
+              "why": "Li Ming wants to know if there is another adult male in the household who could help with heavy items in the future.",
+              "speaker": "李明",
+              "refersTo": "a hypothetical male resident",
+              "intent": "to check for other sources of help",
+              "usageSketch": "家里有其他男人吗？"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"地板\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"重\": 重 is HSK 4, above the story level"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "帮助 usage sketch \"我可以帮你拿这个箱子吗？\": does not actually use 帮助"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "关系 usage sketch \"我们虽然关系不深，但你可以叫我。\": non-vocabulary text: 深"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "女人": 2,
+            "需要": 3,
+            "帮助": 3,
+            "关系": 4,
+            "男人": 5
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": null,
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "provider_error",
+              "message": "groq/qwen/qwen3.6-27b HTTP 429: waited 56s, provider asks for 1575s more (cap 240s)"
+            }
+          ]
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": null,
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "provider_error",
+              "message": "groq/qwen/qwen3.6-27b HTTP 429: waited 0s, provider asks for 2332s more (cap 240s)"
+            }
+          ]
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": null,
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "provider_error",
+              "message": "groq/qwen/qwen3.6-27b HTTP 429: waited 0s, provider asks for 2357s more (cap 240s)"
+            }
+          ]
+        }
+      }
+    ],
+    "judgeRaw": null,
+    "selection": {
+      "code": "NO_VALID_BLUEPRINT"
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "blueprint-smoke-2-L3-001",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
