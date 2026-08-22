@@ -146,7 +146,7 @@ describe('getTestStatus — level-scoped mastery math excludes NULL-level (dicti
     // the in-level card `a` (mastered); a null-level card `z` (also mastered)
     // is never in this result — its vocab_id is not in the level's vocab-id
     // set, so it is never counted.
-    trackCardsMock.mockResolvedValue([{ vocab_id: 'a', stability: 999 }])
+    trackCardsMock.mockResolvedValue([{ vocab_id: 'a', reps: 4, stability: 999 }])
     const status = await getTestStatus('user1', track)
     expect(status.totalWords).toBe(2) // vocab a, b only
     expect(status.masteredCount).toBe(1) // only a; z (null-level) never entered the set
@@ -168,7 +168,7 @@ describe('getTestStatus — complete denominator past the 1000-row cap', () => {
     vocabDb.current = fakeSupabase({ vocabulary })
     // Every level-6 word genuinely mastered; the gate must read exactly 100%.
     trackCardsMock.mockResolvedValue(
-      vocabulary.filter(v => v.level === 6).map(v => ({ vocab_id: v.id, stability: 30 }))
+      vocabulary.filter(v => v.level === 6).map(v => ({ vocab_id: v.id, reps: 6, stability: 30 }))
     )
     const status = await getTestStatus('user1', track)
     expect(status.totalWords).toBe(1621)
@@ -203,7 +203,7 @@ describe('resolveTestStatus — error vs empty vs locked', () => {
   })
 
   it('computes the real mastery math when every query succeeds', () => {
-    const status = resolveTestStatus(okVocab, [{ vocab_id: 'a', stability: 999 }], noUnlock)
+    const status = resolveTestStatus(okVocab, [{ vocab_id: 'a', reps: 4, stability: 999 }], noUnlock)
     expect(status.error).toBe(false)
     expect(status.totalWords).toBe(2)
     expect(status.masteredCount).toBe(1)

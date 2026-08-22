@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest'
 import { knownWordMap, wordStatus, readableSummary, rowA11yLabel, MAP_BUCKETS } from './knownWordMap'
 
 // Card shapes mirror the real columns wordStatus reads (learned + stability).
-const mastered = { learned: true, stability: 30 }   // >= 21
-const known = { learned: true, stability: 10 }       // learned, not mastered
-const learning = { learned: false, stability: 3, state: 'learning' }
+const mastered = { reps: 7, learned: true, stability: 30 }   // >= 21, genuinely reviewed
+const known = { reps: 3, learned: true, stability: 10 }      // learned, not mastered
+const learning = { reps: 1, learned: false, stability: 3, state: 'learning' }
 
 describe('wordStatus', () => {
   it('classifies each bucket', () => {
