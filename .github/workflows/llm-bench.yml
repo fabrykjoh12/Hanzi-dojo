@@ -69,7 +69,7 @@ on:
         type: string
         default: 'self-condense'
       manifest_path:
-        description: "writer-test / duo: repo path of a stored manifest to reuse verbatim (duo: blank = compose fresh)"
+        description: "writer-test / duo / patch-test / repair-test: repo path of a stored candidate to reuse verbatim. quality-gate: 'none' composes fresh manifests (an empty value falls back to this default)"
         type: string
         default: 'data/story-candidates/duo-2/duo-2-L3-002.json'
       batch_prefix:
@@ -414,6 +414,11 @@ jobs:
             W_FLAGS="$W_FLAGS --fallback $MODEL_B"
             [ -n "$EFFORT_B" ] && W_FLAGS="$W_FLAGS --fallback-effort $EFFORT_B"
           fi
+          # An input dispatched as "" is replaced by the input's DEFAULT, which
+          # for manifest_path is a stored candidate file — that is how this run
+          # silently became a stored-draft run against the wrong file. "none"
+          # is the explicit way to ask for freshly composed manifests.
+          case "$MANIFEST" in (none|fresh|-) MANIFEST="";; esac
           SRC="--count $COUNT --level $LEVEL"
           if [ -n "$MANIFEST" ]; then
             case "$MANIFEST" in (*[!A-Za-z0-9._/-]*|/*|*..*) echo "bad manifest_path"; exit 1;; esac

@@ -121,7 +121,7 @@ for (const job of jobs) {
       draft = parseChapter(text)
     } catch (err) { console.error('draft failed: ' + (err.message || err)) }
     if (!draft) {
-      results.push({ manifest, draft: null, error: 'no parseable draft' })
+      results.push({ manifestId: manifest.id, manifest, source: job.source, draft: null, error: 'no parseable draft', validation: null, decision: null })
       console.log('NO DRAFT — the writer produced nothing usable.')
       continue
     }
