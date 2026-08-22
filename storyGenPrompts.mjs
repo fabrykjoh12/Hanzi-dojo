@@ -311,6 +311,73 @@ export function structuralPatchPrompt({ manifest, candidate, failures, meanings 
     'INSERT AFTER <n>: <full new line>'
 }
 
+// ── One line, nothing to plan (fab9-repair-plan@1) ──────────────────────────
+// The tiny task the deterministic planner hands out. Everything the earlier
+// whole-story patcher had to work out for itself — which line, why, what the
+// budget is, what it must not disturb — is already decided; what is left is
+// writing one Chinese sentence to an explicit contract. The per-line gate
+// (storyRepairPlanner.validateReplacementLine) checks the result before it can
+// touch the story, and its failures come back as `feedback` on a retry.
+export function lineRewritePrompt({ manifest, task, meanings = {}, context = {}, feedback = null }) {
+  const name = levelName(manifest)
+  const lines = []
+  lines.push('Rewrite LINE ' + task.line + ' of a ' + name + ' Chinese graded-reader story. Return exactly ONE line.')
+  lines.push('')
+  if (context.before && context.before.length) {
+    lines.push('The lines before it (context — do NOT rewrite these):')
+    lines.push(context.before.join('\n'))
+    lines.push('')
+  }
+  lines.push('LINE ' + task.line + ' as it stands — this is the only line you rewrite:')
+  lines.push(task.text)
+  lines.push('')
+  if (context.after && context.after.length) {
+    lines.push('The lines after it (context — do NOT rewrite these):')
+    lines.push(context.after.join('\n'))
+    lines.push('')
+  }
+  if (feedback && feedback.length) {
+    lines.push('YOUR PREVIOUS LINE WAS REJECTED:')
+    lines.push(feedback.map(f => '- ' + f).join('\n'))
+    lines.push('')
+  }
+  lines.push('Requirements:')
+  lines.push('- Keep this line\'s job in the scene: same meaning, same moment, same information.')
+  lines.push(task.speaker
+    ? '- It is dialogue spoken by ' + task.speaker + '. Write it exactly as "' + task.speaker + '：<text>".'
+    : '- It is narration. No speaker label, no colon-prefixed name.')
+  for (const word of (task.addTargets || [])) {
+    lines.push('- The line MUST contain ' + word + (meanings[word] ? ' (' + meanings[word] + ')' : '') + ', used naturally — not bolted on.')
+  }
+  for (const word of (task.removeTargets || [])) {
+    lines.push('- Use ' + word + ' LESS often than the current line does — say it another way.')
+  }
+  for (const run of (task.removeRuns || [])) {
+    lines.push('- The word ' + run + ' must NOT appear. Say the same thing with plainer, more common words.')
+  }
+  lines.push('- Use ONLY vocabulary at or below ' + name + '. Do not reach for a rarer or more literary word'
+    + ((task.addTargets || []).length ? ' — the only exception is the required word above.' : '.'))
+  lines.push('- Do NOT introduce a new character, place or plot event. Do not explain, foreshadow or summarize.')
+  lines.push('- Keep it about ' + task.cjkChars + ' Chinese characters, like the original.')
+  lines.push('')
+  lines.push('Output: exactly ONE line of Chinese, nothing else — no numbering, no quotes, no English, no explanation.')
+  return lines.join('\n')
+}
+
+// The response is one line. Tolerate a model that numbers it, quotes it, or
+// says something first; refuse anything with no Chinese in it.
+export function parseSingleLine(text) {
+  for (const raw of String(text || '').split('\n')) {
+    let t = raw.trim()
+    if (!t) continue
+    t = t.replace(/^(?:LINE\s*)?\d+\s*[:：.、]\s*/i, '').trim()
+    t = t.replace(/^["'“”「『]+/, '').replace(/["'“”」』]+$/, '').trim()
+    if (!/[一-鿿]/.test(t)) continue
+    return t
+  }
+  return null
+}
+
 // IMPOSSIBLE is a VALID terminal patcher answer — the prompt offers it as the
 // alternative to exceeding the budget. Callers must check this BEFORE
 // parseStructuralPatch and treat a hit as final: no retry, no reprompt (the

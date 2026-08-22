@@ -22,7 +22,7 @@ on:
       mode:
         description: "smoke = probe; bench = benchmark; select = K-draft selection (production flow); duo = retired edit flow (diagnostic); writer-test = one draft"
         type: choice
-        options: [smoke, bench, duo, select, writer-test, patch-test]
+        options: [smoke, bench, duo, select, writer-test, patch-test, repair-test]
         default: smoke
       max_tests:
         description: "smoke only: how many models to probe (capped at 16)"
@@ -332,6 +332,50 @@ jobs:
             --input reports/story-corpus-dump.json \
             --candidate "$MANIFEST" --stage "$STAGE" \
             --patcher "$MODEL_A" $A_EFF $B_FLAGS \
+            --out "data/story-candidates/$PREFIX"
+
+      - name: Fresh corpus dump for repair-test (read-only)
+        if: inputs.mode == 'repair-test'
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node dump-story-corpus.mjs --out reports/story-corpus-dump.json
+
+      - name: "Repair test — deterministic plan, then one line at a time"
+        if: inputs.mode == 'repair-test'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MODEL_A: ${{ inputs.model_a }}      # line writer 1
+          EFFORT_A: ${{ inputs.effort_a }}
+          MODEL_B: ${{ inputs.model_b }}      # line writer 2 (compliance is compared, not assumed)
+          EFFORT_B: ${{ inputs.effort_b }}
+          CRITIC: ${{ inputs.probe_models }}  # critic spec, e.g. groq:qwen/qwen3.6-27b
+          MANIFEST: ${{ inputs.manifest_path }}   # the stored CANDIDATE file
+          PREFIX: ${{ inputs.batch_prefix }}
+          STAGE: ${{ inputs.stage_name }}
+        run: |
+          set -e
+          case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
+          case "$MODEL_A" in (""|*[!A-Za-z0-9._/:-]*) echo "bad or missing model_a"; exit 1;; esac
+          case "$MANIFEST" in (*[!A-Za-z0-9._/-]*|""|/*|*..*) echo "bad manifest_path"; exit 1;; esac
+          [ -f "$MANIFEST" ] || { echo "candidate not found: $MANIFEST"; exit 1; }
+          case "$STAGE" in (*[!A-Za-z0-9-]*|"") STAGE=draft-1;; esac
+          case "$EFFORT_A" in (""|none|low|medium|high|default) ;; (*) echo "bad effort_a"; exit 1;; esac
+          WRITERS="$MODEL_A"; [ -n "$EFFORT_A" ] && WRITERS="$MODEL_A:$EFFORT_A"
+          if [ -n "$MODEL_B" ]; then
+            case "$MODEL_B" in (*[!A-Za-z0-9._/:-]*) echo "bad model_b"; exit 1;; esac
+            case "$EFFORT_B" in (""|none|low|medium|high|default) ;; (*) echo "bad effort_b"; exit 1;; esac
+            if [ -n "$EFFORT_B" ]; then WRITERS="$WRITERS,$MODEL_B:$EFFORT_B"; else WRITERS="$WRITERS,$MODEL_B"; fi
+          fi
+          CRITIC_FLAGS=""
+          if [ -n "$CRITIC" ]; then
+            case "$CRITIC" in (*[!A-Za-z0-9._/:-]*) echo "bad critic"; exit 1;; esac
+            CRITIC_FLAGS="--critic $CRITIC --critic-effort none"
+          fi
+          node repair-candidate-test.mjs \
+            --input reports/story-corpus-dump.json \
+            --candidate "$MANIFEST" --stage "$STAGE" \
+            --writers "$WRITERS" $CRITIC_FLAGS \
             --out "data/story-candidates/$PREFIX"
 
       - name: Show reports
