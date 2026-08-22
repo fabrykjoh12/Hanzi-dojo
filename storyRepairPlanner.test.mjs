@@ -5,9 +5,19 @@ import {
   executeRepairPlan,
   lineFacts,
   shareCeilingOf,
+  anonymise,
+  acceptableLine,
+  LINE_QUALITY,
   REPAIR_PLANNER_VERSION,
 } from './storyRepairPlanner.mjs'
-import { lineRewritePrompt, parseSingleLine } from './storyGenPrompts.mjs'
+import {
+  lineRewritePrompt,
+  parseSingleLine,
+  hostRankPrompt,
+  parseHostRanking,
+  lineJudgePrompt,
+  parseLineJudgment,
+} from './storyGenPrompts.mjs'
 import { validateCandidate } from './storyCandidateValidation.mjs'
 import { buildManifest } from './storyManifestPlanner.mjs'
 
@@ -96,13 +106,21 @@ describe('planRepair — the plan is code, not a model', () => {
     expect(speakersLeft.has('妈妈')).toBe(true)
   })
 
-  it('assigns a replacement line to each missing target and projects the deletions exactly', () => {
+  it('offers a CANDIDATE SET for each missing target — the choice among them is semantic, not the planner\'s', () => {
     const { plan } = planFor()
-    const hosts = plan.replaces.filter(t => t.addTargets.includes('铅笔'))
-    expect(hosts.length).toBe(1)
-    expect(hosts[0].line).not.toBe(1)
-    expect(plan.deletes.map(d => d.line)).not.toContain(hosts[0].line)
-    expect(plan.projected.ops).toBe(plan.deletes.length + plan.replaces.length)
+    const host = plan.targetHosts.find(h => h.word === '铅笔')
+    expect(host).toBeTruthy()
+    expect(host.candidates.length).toBeGreaterThan(1)
+    expect(host.candidates.length).toBeLessThanOrEqual(5)
+    expect(host.deterministicPick).toBe(host.candidates[0].line)
+    // every candidate is mechanically able to host it
+    for (const c of host.candidates) {
+      expect(c.line).not.toBe(1)
+      expect(c.line).not.toBe(LINES.length)
+      expect(plan.deletes.map(d => d.line)).not.toContain(c.line)
+      expect(LINES[c.line - 1]).not.toContain('铅笔')
+    }
+    expect(plan.projected.ops).toBeGreaterThanOrEqual(plan.deletes.length + plan.replaces.length)
     expect(plan.projected.lines).toBe(LINES.length - plan.deletes.length)
     // deleting only above-average lines cannot raise the share
     expect(plan.projected.share).toBeLessThanOrEqual(plan.metrics.share)
@@ -112,7 +130,7 @@ describe('planRepair — the plan is code, not a model', () => {
   it('returns deterministic IMPOSSIBLE — with the arithmetic — when the plan will not fit the budget', () => {
     const { plan } = planFor({}, 2)
     expect(plan.feasible).toBe(false)
-    expect(plan.impossible).toContain('budget is 2')
+    expect(plan.impossible).toContain('budget of 2')
   })
 
   it('is deterministic: the same story plans identically every time', () => {
@@ -214,7 +232,7 @@ describe('executeRepairPlan — one tiny task per line, compliance measured not 
     const a = gen('A', ['小红也想一起去森林买铅笔。', '小红买铅笔。'])
     const r = await run([a])
     expect(r.ops).toEqual([{ op: 'delete', line: 8 }])
-    expect(r.unresolved).toEqual([{ line: 5, reasons: task.reasons }])
+    expect(r.unresolved).toEqual([{ line: 5, reasons: task.reasons, code: 'LINE_REPAIR_FAILED', detail: 'no candidate passed the deterministic gate' }])
     expect(r.compliance.A.passed).toBe(0)
   })
 
@@ -250,3 +268,158 @@ describe('parseSingleLine', () => {
     expect(parseSingleLine('')).toBeNull()
   })
 })
+
+// ── The two semantic decision points (fab9-repair-plan@2) ────────────────────
+// repair-1 was deterministically clean and read badly: the host line for 结束
+// was picked by above-level-character count, and the adopted replacement was
+// the first mechanically valid one. Both choices are semantic; both are now
+// asked as CLOSED questions, and neither can overrule the deterministic gate.
+describe('semantic host selection', () => {
+  const m = manifest()
+  const plan = {
+    deletes: [{ line: 8 }],
+    replaces: [],
+    budget: 6,
+    targetHosts: [{
+      word: '铅笔',
+      candidates: [
+        { line: 3, text: '李明去问邻居。', speaker: null, cjkChars: 6, outChars: 0, free: false },
+        { line: 6, text: '他们打算明天买东西。', speaker: null, cjkChars: 9, outChars: 0, free: false },
+        { line: 7, text: '邻居给他们看地图。', speaker: null, cjkChars: 8, outChars: 0, free: false },
+      ],
+      deterministicPick: 3,
+    }],
+  }
+  const gen = (name, replies) => { const seen = []; return { name, seen, send: async ({ prompt }) => { seen.push(prompt); return replies.shift() } } }
+  const run = (over) => executeRepairPlan({
+    plan, manifest: m, vocabMap,
+    buildPrompt: lineRewritePrompt, parseLine: parseSingleLine,
+    buildHostPrompt: hostRankPrompt, parseHostRanking,
+    ...over,
+  })
+
+  it('the ranker reorders the planner\'s candidates and the winner becomes the host', async () => {
+    const ranker = gen('Q', ['LINE 6 — buying things is where a pencil belongs\nLINE 7 — possible\nLINE 3 — unrelated'])
+    const writer = gen('W', ['他们打算明天买铅笔。'])
+    const r = await run({ hostRanker: ranker, generators: [writer], candidatesPerGenerator: 1, attemptsPerGenerator: 1 })
+    expect(r.hostSelections[0].chosen).toBe(6)                  // NOT the deterministic pick (3)
+    expect(r.hostSelections[0].source).toContain('semantic ranking by Q')
+    expect(r.hostSelections[0].ranking[0].reason).toContain('pencil')
+    expect(r.ops.find(o => o.op === 'replace').line).toBe(6)
+    // the ranker was given a closed question: candidates only, no writing
+    expect(ranker.seen[0]).toContain('LINE 3')
+    expect(ranker.seen[0]).toContain('Do not propose a new line')
+  })
+
+  it('a line the planner never offered cannot be chosen, and a broken answer falls back', async () => {
+    const rogue = gen('Q', ['LINE 99 — a line I invented\nLINE 7 — second choice'])
+    const writer = gen('W', ['邻居给他们看铅笔。'])
+    const r = await run({ hostRanker: rogue, generators: [writer], candidatesPerGenerator: 1, attemptsPerGenerator: 1 })
+    expect(r.hostSelections[0].chosen).toBe(7)                  // 99 dropped, 7 survives
+
+    const junk = gen('Q', ['I think none of them work, sorry.'])
+    const w2 = gen('W', ['李明去问邻居要铅笔。'])
+    const back = await run({ hostRanker: junk, generators: [w2], candidatesPerGenerator: 1, attemptsPerGenerator: 1 })
+    expect(back.hostSelections[0].chosen).toBe(3)               // deterministic pick
+    expect(back.hostSelections[0].source).toContain('unusable')
+  })
+
+  it('two targets never land on the same line, and the budget survives the ranking', async () => {
+    const twoTargets = {
+      deletes: [{ line: 8 }],
+      replaces: [],
+      budget: 6,
+      targetHosts: [
+        { word: '铅笔', candidates: plan.targetHosts[0].candidates, deterministicPick: 3 },
+        { word: '地图', candidates: plan.targetHosts[0].candidates, deterministicPick: 3 },
+      ],
+    }
+    const ranker = gen('Q', ['LINE 6 — best\nLINE 3 — ok\nLINE 7 — ok', 'LINE 6 — taken\nLINE 7 — free\nLINE 3 — ok'])
+    const writer = gen('W', ['他们打算明天买铅笔。', '邻居给他们看地图。'])
+    const r = await executeRepairPlan({
+      plan: twoTargets, manifest: m, vocabMap,
+      buildPrompt: lineRewritePrompt, parseLine: parseSingleLine,
+      buildHostPrompt: hostRankPrompt, parseHostRanking,
+      hostRanker: ranker, generators: [writer], candidatesPerGenerator: 1, attemptsPerGenerator: 1,
+    })
+    const chosen = r.hostSelections.map(h => h.chosen)
+    expect(new Set(chosen).size).toBe(2)                       // 6 for the first, 7 for the second
+    expect(chosen[0]).toBe(6)
+    expect(r.hostSelections[1].candidates.map(c => c.line)).not.toContain(6)
+  })
+
+  it('a ranker that throws never blocks the repair', async () => {
+    const boom = { name: 'Q', send: async () => { throw new Error('HTTP 500') } }
+    const writer = gen('W', ['李明去问邻居要铅笔。'])
+    const r = await run({ hostRanker: boom, generators: [writer], candidatesPerGenerator: 1, attemptsPerGenerator: 1 })
+    expect(r.hostSelections[0].chosen).toBe(3)
+    expect(r.hostSelections[0].source).toContain('ranker failed')
+  })
+})
+
+describe('contextual naturalness ranking', () => {
+  const m = manifest()
+  const task = { line: 5, text: '小红也想一起去看墨镜。', speaker: null, cjkChars: 10, addTargets: ['铅笔'], removeTargets: [], removeRuns: ['墨镜'], reasons: ['add target 铅笔'] }
+  const plan = { deletes: [], replaces: [task], targetHosts: [], budget: 6 }
+  const gen = (name, replies) => { const seen = []; return { name, seen, send: async ({ prompt }) => { seen.push(prompt); return replies.shift() } } }
+  const run = (over) => executeRepairPlan({
+    plan, manifest: m, vocabMap,
+    buildPrompt: lineRewritePrompt, parseLine: parseSingleLine,
+    buildJudgePrompt: lineJudgePrompt, parseLineJudgment,
+    candidatesPerGenerator: 2,
+    contextFor: () => ({ before: ['4: 邻居说，护照要放好。'], after: ['6: 他们打算明天买东西。'] }),
+    ...over,
+  })
+
+  it('judges every gate survivor in context, anonymised, and adopts the best', async () => {
+    const a = gen('A-model', ['小红也想一起去买铅笔。', '小红也想去商店买铅笔。'])
+    const b = gen('B-model', ['小红也想一起去买铅笔和东西。', '小红买铅笔。'])   // second is too short → gate rejects
+    const judge = gen('J', ['A: GRAMMAR 8 CONTINUITY 8 ROLE 8 INTEGRATION 8 VOICE 7 MECHANICAL no OVERALL 8 — natural\nB: GRAMMAR 6 CONTINUITY 6 ROLE 6 INTEGRATION 5 VOICE 6 MECHANICAL no OVERALL 6 — flat\nC: GRAMMAR 5 CONTINUITY 4 ROLE 5 INTEGRATION 4 VOICE 5 MECHANICAL yes OVERALL 4 — wedged'])
+    const r = await run({ generators: [a, b], judge })
+    const j = r.judgments[0]
+    expect(j.candidates.length).toBe(3)                       // one of B's four was gate-rejected
+    expect(j.candidates.map(c => c.label)).toEqual(['A', 'B', 'C'])
+    // the judge never learns who wrote what
+    expect(judge.seen[0]).not.toContain('A-model')
+    expect(judge.seen[0]).not.toContain('B-model')
+    expect(judge.seen[0]).toContain('邻居说，护照要放好。')     // context, not an isolated sentence
+    expect(judge.seen[0]).toContain('THE LINE BEING REPLACED')
+    const winner = j.candidates.find(c => c.score.overall === 8)
+    expect(r.ops.find(o => o.op === 'replace').text).toBe(winner.text)
+    expect(r.unresolved).toEqual([])
+  })
+
+  it('LINE_REPAIR_FAILED when nothing clears the threshold — no bad Chinese is inserted', async () => {
+    const a = gen('A-model', ['小红也想一起去买铅笔。', '小红也想去商店买铅笔。'])
+    const judge = gen('J', ['A: GRAMMAR 4 CONTINUITY 4 ROLE 4 INTEGRATION 3 VOICE 4 MECHANICAL yes OVERALL 4 — clumsy\nB: GRAMMAR 5 CONTINUITY 5 ROLE 5 INTEGRATION 4 VOICE 5 MECHANICAL no OVERALL 5 — flat'])
+    const r = await run({ generators: [a], judge })
+    expect(r.ops.find(o => o.op === 'replace')).toBeUndefined()
+    expect(r.unresolved[0].code).toBe('LINE_REPAIR_FAILED')
+    expect(r.unresolved[0].detail).toContain('threshold')
+  })
+
+  it('a mechanically-constructed line is refused even with a high overall score', () => {
+    expect(acceptableLine({ overall: 9, grammar: 9, mechanical: true })).toBe(false)
+    expect(acceptableLine({ overall: 9, grammar: 5, mechanical: false })).toBe(false)
+    expect(acceptableLine({ overall: 5, grammar: 9, mechanical: false })).toBe(false)
+    expect(acceptableLine({ overall: 6, grammar: 6, mechanical: false })).toBe(true)
+    expect(acceptableLine(null)).toBe(false)
+    expect(LINE_QUALITY.overall).toBe(6)
+  })
+
+  it('the judge can never rescue a line the deterministic gate rejected', async () => {
+    const a = gen('A-model', ['小红也想一起去森林买铅笔。', '小红也想一起去森林买铅笔。'])   // above-level 森林
+    const judge = gen('J', ['A: GRAMMAR 10 CONTINUITY 10 ROLE 10 INTEGRATION 10 VOICE 10 MECHANICAL no OVERALL 10 — perfect'])
+    const r = await run({ generators: [a], judge })
+    expect(r.ops.length).toBe(0)
+    expect(r.unresolved[0].detail).toContain('deterministic gate')
+    expect(judge.seen.length).toBe(0)                          // nothing to judge
+  })
+
+  it('anonymise is deterministic and source-independent', () => {
+    const one = anonymise([{ generator: 'x', text: '第一句。' }, { generator: 'y', text: '第二句。' }])
+    const two = anonymise([{ generator: 'y', text: '第二句。' }, { generator: 'x', text: '第一句。' }])
+    expect(one.map(c => c.label + c.text)).toEqual(two.map(c => c.label + c.text))
+  })
+})
+

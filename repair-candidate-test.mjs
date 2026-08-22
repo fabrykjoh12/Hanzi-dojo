@@ -19,10 +19,18 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { publishedChineseStories } from './storyCoverage.mjs'
 import { validateCandidate, validateEdit, formatValidation, serializableValidation } from './storyCandidateValidation.mjs'
-import { lineRewritePrompt, parseSingleLine, PROMPT_VERSION } from './storyGenPrompts.mjs'
+import {
+  lineRewritePrompt,
+  parseSingleLine,
+  hostRankPrompt,
+  parseHostRanking,
+  lineJudgePrompt,
+  parseLineJudgment,
+  PROMPT_VERSION,
+} from './storyGenPrompts.mjs'
 import { MANIFEST_DEFAULTS } from './storyManifestPlanner.mjs'
 import { applyStructuralPatch, patchRegressions } from './storySelectPipeline.mjs'
-import { planRepair, executeRepairPlan, REPAIR_PLANNER_VERSION } from './storyRepairPlanner.mjs'
+import { planRepair, executeRepairPlan, LINE_QUALITY, REPAIR_PLANNER_VERSION } from './storyRepairPlanner.mjs'
 import { judgePrompt, parseJudgment, JUDGE_VERSION } from './storyJudge.mjs'
 import { directProvider } from './llmDirect.mjs'
 import { CANDIDATE_FILE_SCHEMA } from './storyStaging.mjs'
@@ -36,6 +44,8 @@ const candidatePath = arg('candidate', null)
 const stageName = arg('stage', 'draft-1')
 const writerSpecs = String(arg('writers', '')).split(',').map(s => s.trim()).filter(Boolean)
 const criticSpec = arg('critic', null)
+const rankerSpec = arg('ranker', null)          // host selection + line judging (Qwen first)
+const rankerEffort = arg('ranker-effort', 'none')
 const criticEffort = arg('critic-effort', null)
 const outDir = arg('out', null)
 const budget = parseInt(arg('budget', '6'), 10)
@@ -83,6 +93,11 @@ for (const d of plan.deletes) {
   console.log('  line ' + d.line + ' — ' + d.reason)
   console.log('    ' + d.text)
 }
+console.log('\nHOST CANDIDATES (mechanically valid — the choice among them is semantic):')
+for (const h of (plan.targetHosts || [])) {
+  console.log('  ' + h.word + (meanings[h.word] ? ' (' + meanings[h.word] + ')' : '') + ' → candidate lines ' + h.candidates.map(c => c.line + (c.free ? '*' : '')).join(', ') + '   [* = already being rewritten, costs no operation; deterministic pick would be ' + h.deterministicPick + ']')
+  for (const c of h.candidates) console.log('     ' + c.line + ': ' + c.text)
+}
 console.log('\nREPLACE (' + plan.replaces.length + '):')
 for (const t of plan.replaces) {
   console.log('  line ' + t.line + ' — ' + t.reasons.join('; ') + (t.speaker ? ' [speaker ' + t.speaker + ']' : ' [narration]'))
@@ -110,7 +125,20 @@ if (!plan.feasible) {
     const p = directProvider(provider, model, process.env, { reasoningEffort: effort })
     return { name: provider + ':' + model + (effort ? '/' + effort : ''), send: p.send, usage: p.usage }
   })
-  console.log('\n=== LINE GENERATION (' + plan.replaces.length + ' task(s) × ' + generators.length + ' model(s)) ===')
+  const semantic = rankerSpec
+    ? (() => {
+        const p = directProvider(rankerSpec.slice(0, rankerSpec.indexOf(':')), rankerSpec.slice(rankerSpec.indexOf(':') + 1), process.env, { reasoningEffort: rankerEffort })
+        return { name: rankerSpec, send: p.send, usage: p.usage }
+      })()
+    : null
+  const surviving = (line) => originalLines
+    .map((l, i) => ({ n: i + 1, l }))
+    .filter(x => !plan.deletes.some(d => d.line === x.n) && x.n !== line)
+  const contextFor = (line) => ({
+    before: surviving(line).filter(x => x.n < line).slice(-2).map(x => x.n + ': ' + x.l),
+    after: surviving(line).filter(x => x.n > line).slice(0, 2).map(x => x.n + ': ' + x.l),
+  })
+  console.log('\n=== SEMANTIC HOST SELECTION' + (semantic ? ' (' + semantic.name + ')' : ' (skipped — no ranker)') + ' ===')
 
   executed = await executeRepairPlan({
     plan,
@@ -118,31 +146,47 @@ if (!plan.feasible) {
     vocabMap,
     meanings,
     generators,
-    buildPrompt: ({ manifest: m, task, meanings: mn, feedback }) => lineRewritePrompt({
-      manifest: m,
-      task,
-      meanings: mn,
-      feedback,
-      context: {
-        before: originalLines.slice(Math.max(0, task.line - 3), task.line - 1).map((l, i) => (task.line - Math.min(2, task.line - 1) + i) + ': ' + l),
-        after: originalLines.slice(task.line, task.line + 2).map((l, i) => (task.line + 1 + i) + ': ' + l),
-      },
-    }),
+    buildPrompt: lineRewritePrompt,
     parseLine: parseSingleLine,
+    hostRanker: semantic,
+    buildHostPrompt: hostRankPrompt,
+    parseHostRanking,
+    judge: semantic,
+    buildJudgePrompt: lineJudgePrompt,
+    parseLineJudgment,
+    contextFor,
+    candidatesPerGenerator: 2,
     attemptsPerGenerator: 2,
     maxTokens: 2500,
   })
 
+  for (const h of executed.hostSelections) {
+    console.log('  target ' + h.target + ' — candidates ' + h.candidates.map(c => c.line).join(', '))
+    if (h.ranking) for (const r of h.ranking) console.log('    ranked: line ' + r.line + (r.reason ? ' — ' + r.reason : ''))
+    console.log('    → chose line ' + h.chosen + ' [' + h.source + ']')
+  }
+  console.log('\n=== LINE GENERATION (' + generators.length + ' model(s) × 2 candidates per line) ===')
   for (const a of executed.attempts) {
-    console.log('  line ' + a.line + ' · ' + a.generator + ' · try ' + a.attempt + ' → ' + (a.ok ? 'PASS' : 'REJECT'))
+    console.log('  line ' + a.line + ' · ' + a.generator + ' · candidate ' + a.attempt + ' → ' + (a.ok ? 'gate PASS' : 'gate REJECT'))
     console.log('    ' + (a.output || '(nothing usable)'))
     if (!a.ok) for (const f of a.failures) console.log('      ✗ ' + f.code + ': ' + f.message)
+  }
+  console.log('\n=== ANONYMISED NATURALNESS RANKING (threshold: overall ≥ ' + LINE_QUALITY.overall + ', grammar ≥ ' + LINE_QUALITY.grammar + ', not mechanical) ===')
+  for (const j of executed.judgments) {
+    console.log('  line ' + j.line + ' — judged by ' + j.judge)
+    for (const c of j.candidates) {
+      const sc = c.score
+      console.log('    ' + c.label + ' [' + c.generator + '] ' + c.text)
+      console.log('      ' + (sc
+        ? 'grammar ' + sc.grammar + ' continuity ' + sc.continuity + ' role ' + sc.role + ' integration ' + sc.integration + ' voice ' + sc.voice + ' mechanical ' + sc.mechanical + ' → OVERALL ' + sc.overall + (sc.reason ? ' — ' + sc.reason : '')
+        : '(not scored)'))
+    }
   }
   console.log('  compliance: ' + Object.entries(executed.compliance).map(([n, c]) => n + ' ' + c.passed + '/' + c.attempts + ' passed, ' + c.adopted + ' adopted').join(' | '))
 
   // ── 3. Apply the whole plan, then the complete validator ──────────────────
-  if (executed.unresolved.length) {
-    console.log('\nUNRESOLVED line(s): ' + executed.unresolved.map(u => u.line).join(', ') + ' — the plan cannot be applied in full')
+  for (const u of executed.unresolved) {
+    console.log('\n' + u.code + ' on line ' + u.line + ': ' + u.detail + ' — the plan cannot be applied in full')
   }
   patched = { title: original.title, content: applyStructuralPatch(original.content, executed.ops) }
   editCheck = validateEdit(original, patched, { allowNewSpeakers: false })
@@ -197,7 +241,15 @@ const file = {
     source: { candidate: candidatePath, stage: stageName },
     numberedOriginal: originalLines.map((l, i) => (i + 1) + ': ' + l),
     plan,
-    execution: executed ? { ops: executed.ops, attempts: executed.attempts, unresolved: executed.unresolved, compliance: executed.compliance } : null,
+    execution: executed ? {
+      ops: executed.ops,
+      attempts: executed.attempts,
+      hostSelections: executed.hostSelections,
+      judgments: executed.judgments,
+      unresolved: executed.unresolved,
+      compliance: executed.compliance,
+      thresholds: LINE_QUALITY,
+    } : null,
     regressions,
     before: serializableValidation(before),
     after: after ? serializableValidation(after) : null,
@@ -212,7 +264,7 @@ const file = {
     critique,
     attempts: executed ? executed.attempts.length : 0,
     calls: (executed ? executed.attempts.length : 0) + (critique ? 1 : 0),
-    generatorVersion: 'fab9-deterministic-repair@1',
+    generatorVersion: 'fab9-deterministic-repair@2',
     promptVersion: PROMPT_VERSION,
     plannerVersion: REPAIR_PLANNER_VERSION,
     usage: { critic: criticUsage, wallMs: null },

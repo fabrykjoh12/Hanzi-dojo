@@ -349,7 +349,7 @@ jobs:
           EFFORT_A: ${{ inputs.effort_a }}
           MODEL_B: ${{ inputs.model_b }}      # line writer 2 (compliance is compared, not assumed)
           EFFORT_B: ${{ inputs.effort_b }}
-          CRITIC: ${{ inputs.probe_models }}  # critic spec, e.g. groq:qwen/qwen3.6-27b
+          CRITIC: ${{ inputs.probe_models }}  # critic + semantic ranker/judge, e.g. groq:qwen/qwen3.6-27b
           MANIFEST: ${{ inputs.manifest_path }}   # the stored CANDIDATE file
           PREFIX: ${{ inputs.batch_prefix }}
           STAGE: ${{ inputs.stage_name }}
@@ -370,7 +370,7 @@ jobs:
           CRITIC_FLAGS=""
           if [ -n "$CRITIC" ]; then
             case "$CRITIC" in (*[!A-Za-z0-9._/:-]*) echo "bad critic"; exit 1;; esac
-            CRITIC_FLAGS="--critic $CRITIC --critic-effort none"
+            CRITIC_FLAGS="--critic $CRITIC --critic-effort none --ranker $CRITIC --ranker-effort none"
           fi
           node repair-candidate-test.mjs \
             --input reports/story-corpus-dump.json \

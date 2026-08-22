@@ -378,6 +378,110 @@ export function parseSingleLine(text) {
   return null
 }
 
+// ── Closed semantic questions (fab9-repair-plan@2) ──────────────────────────
+// Two narrow places where the deterministic planner needs a judgement it
+// cannot compute, and in both the model may only choose among options it is
+// handed. It cannot propose a line, an operation, or a plot.
+
+// 1. WHICH line should carry a missing target. repair-1 put 结束 ("to end")
+// on a line about a secret photograph because that line held the most
+// above-level characters; the critique called the result mechanical, and it
+// was right. The planner still decides which lines are mechanically eligible.
+export function hostRankPrompt({ manifest, target, meaning, candidates }) {
+  const name = levelName(manifest)
+  const blocks = candidates.map(c => [
+    'LINE ' + c.line + (c.speaker ? ' (' + c.speaker + ' speaking)' : ' (narration)') + ':',
+    ...(c.before || []).map(l => '  … ' + l),
+    '  → ' + c.text,
+    ...(c.after || []).map(l => '  … ' + l),
+  ].join('\n')).join('\n\n')
+  return 'A ' + name + ' Chinese graded-reader story must use the word ' + target
+    + (meaning ? ' (' + meaning + ')' : '') + ' one more time.\n\n'
+    + 'Exactly one of the lines below will be rewritten to include it. The rewrite must keep that line\'s meaning and its place in the story — the events of the story do not change.\n\n'
+    + 'Which of these lines can most naturally be rewritten to include ' + target + '?\n\n'
+    + blocks + '\n\n'
+    + 'Rank ALL of the line numbers above, best first. Judge only how naturally ' + target
+    + ' could belong in that line\'s own sentence and moment — not how good the line is.\n\n'
+    + 'Output format — one per line, nothing else:\n'
+    + 'LINE <number> — <short reason>\n'
+    + 'Do not propose a new line, a new sentence, or any change to the story.'
+}
+
+// Ranked line numbers, restricted to the numbers actually offered — a model
+// that invents a line number simply has that entry dropped.
+export function parseHostRanking(text, allowed) {
+  const allow = new Set(allowed)
+  const seen = new Set()
+  const out = []
+  for (const raw of String(text || '').split('\n')) {
+    const m = raw.trim().match(/^(?:\d+\s*[.)]\s*)?LINE\s+(\d+)\s*(?:[—–\-:：]\s*(.*))?$/i)
+    if (!m) continue
+    const line = parseInt(m[1], 10)
+    if (!allow.has(line) || seen.has(line)) continue
+    seen.add(line)
+    out.push({ line, reason: (m[2] || '').trim() })
+  }
+  return out.length ? out : null
+}
+
+// 2. WHICH of several mechanically valid replacement lines is actually good
+// Chinese. Judged inside its own context — the neighbouring lines are what
+// make a sentence continuous or jarring — and with the sources anonymised, so
+// the ranking cannot be a preference for one model's style.
+export function lineJudgePrompt({ manifest, original, targets = [], context = {}, candidates }) {
+  const name = levelName(manifest)
+  const window = [
+    ...(context.before || []).map(l => '  ' + l),
+    '  >>> THE LINE BEING REPLACED: ' + original,
+    ...(context.after || []).map(l => '  ' + l),
+  ].join('\n')
+  return 'Judge replacement lines for one line of a ' + name + ' Chinese graded-reader story.\n\n'
+    + 'The passage as it stands:\n' + window + '\n\n'
+    + (targets.length ? 'Each replacement had to include the word ' + targets.join('、') + '.\n\n' : '')
+    + 'Candidate replacements:\n'
+    + candidates.map(c => c.label + ': ' + c.text).join('\n') + '\n\n'
+    + 'Score EVERY candidate as it would read in that passage, 1-10 on each:\n'
+    + '- GRAMMAR: is it natural, correct, idiomatic Chinese?\n'
+    + '- CONTINUITY: does it follow the line before and lead into the line after?\n'
+    + '- ROLE: does it still do the original line\'s job in the scene?\n'
+    + '- INTEGRATION: does the required word belong there, or is it wedged in?\n'
+    + '- VOICE: does it sound like the same character or narrator?\n'
+    + 'and answer MECHANICAL yes/no: does the sentence read as if it were built around the required word?\n'
+    + 'Then OVERALL 1-10. Be strict: 8+ means a native writer would have written it, 5 means passable but flat, below 5 means clumsy or wrong.\n\n'
+    + 'Output format — one line per candidate, nothing else:\n'
+    + '<LABEL>: GRAMMAR <n> CONTINUITY <n> ROLE <n> INTEGRATION <n> VOICE <n> MECHANICAL <yes|no> OVERALL <n> — <short reason>'
+}
+
+export function parseLineJudgment(text, labels) {
+  const want = new Set(labels)
+  const out = []
+  const num = (body, key) => {
+    const m = body.match(new RegExp(key + '\\s*[:：]?\\s*(\\d{1,2})', 'i'))
+    return m ? Math.min(10, parseInt(m[1], 10)) : null
+  }
+  for (const raw of String(text || '').split('\n')) {
+    const t = raw.trim()
+    const m = t.match(/^\**([A-H])\**\s*[:：.)]\s*(.+)$/)
+    if (!m || !want.has(m[1])) continue
+    const label = m[1]
+    const body = m[2]
+    if (out.some(x => x.label === label)) continue
+    const mech = body.match(/MECHANICAL\s*[:：]?\s*(yes|no|true|false)/i)
+    out.push({
+      label,
+      grammar: num(body, 'GRAMMAR'),
+      continuity: num(body, 'CONTINUITY'),
+      role: num(body, 'ROLE'),
+      integration: num(body, 'INTEGRATION'),
+      voice: num(body, 'VOICE'),
+      mechanical: mech ? /^(yes|true)$/i.test(mech[1]) : null,
+      overall: num(body, 'OVERALL'),
+      reason: (body.split(/[—–]/)[1] || '').trim(),
+    })
+  }
+  return out.length ? out : null
+}
+
 // IMPOSSIBLE is a VALID terminal patcher answer — the prompt offers it as the
 // alternative to exceeding the budget. Callers must check this BEFORE
 // parseStructuralPatch and treat a hit as final: no retry, no reprompt (the
