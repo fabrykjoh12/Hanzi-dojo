@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
+import { fetchPagedSafe } from './supabasePaging'
 import { getTrackCards } from './data'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
@@ -64,15 +65,17 @@ export default function Words({ session, profile, track, onBack }) {
     let cancelled = false
     async function load() {
       setLoading(true)
-      const [{ data: vocabData }, cards] = await Promise.all([
-        supabase
+      // Paged: HSK 5/6 levels are past the 1000-row cap.
+      const [vocabData, cards] = await Promise.all([
+        fetchPagedSafe(() => supabase
           .from('vocabulary')
           .select('id, word, reading, meaning, sort_order')
           .eq('language', track.language)
           .eq('system', track.system)
           .eq('level', track.current_level)
           .eq('is_active', true)
-          .order('sort_order', { ascending: true }),
+          .order('sort_order', { ascending: true })
+          .order('id', { ascending: true })),
         getTrackCards(session.user.id, track, {
           level: track.current_level,
           columns: 'vocab_id, state, learned, stability, lapses',

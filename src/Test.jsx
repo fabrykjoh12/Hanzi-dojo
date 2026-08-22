@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
 import { getTestStatus, getAttemptsToday, canStartTest } from './testLogic'
+import { fetchPagedResult } from './supabasePaging'
 import { getLevelLabel, getNextLevel, shuffle } from './utils'
 import { languageTheme, langAttr } from './languageTheme'
 import { schedule } from './srs'
@@ -238,13 +239,16 @@ export default function Test({ session, profile, track, onBack }) {
     const [s, a, vocabResult] = await Promise.all([
       getTestStatus(session.user.id, track),
       getAttemptsToday(session.user.id, track),
-      supabase
+      // Paged: HSK 5/6 levels are past the 1000-row cap, and a truncated
+      // pool would quietly test only a prefix of the level's words.
+      fetchPagedResult(() => supabase
         .from('vocabulary')
         .select('*')
         .eq('language', track.language)
         .eq('system', track.system)
         .eq('level', track.current_level)
-        .eq('is_active', true),
+        .eq('is_active', true)
+        .order('id', { ascending: true })),
     ])
     // A failed fetch must not render as a fabricated "0 / 0 words mastered"
     // locked state — surface it and let the learner retry.

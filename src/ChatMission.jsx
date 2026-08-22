@@ -1,5 +1,6 @@
 import { useState, useMemo, useRef, useEffect } from 'react'
 import { supabase } from './supabase'
+import { fetchPagedSafe } from './supabasePaging'
 import { getAudioUrl, playAudioEl } from './utils'
 import { languageTheme } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
@@ -79,8 +80,11 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
   const [known, setKnown] = useState({})
   useEffect(() => {
     let active = true
-    supabase.from('cards').select('vocab_id').eq('user_id', session.user.id)
-      .then(({ data }) => { if (active) { const m = {}; (data || []).forEach(c => { m[c.vocab_id] = true }); setKnown(m) } })
+    // Paged: a lifetime deck passes the 1000-row cap, and a truncated set here
+    // would re-insert (and error on) words the learner already has.
+    fetchPagedSafe(() => supabase.from('cards').select('vocab_id').eq('user_id', session.user.id)
+      .order('vocab_id', { ascending: true }))
+      .then((data) => { if (active) { const m = {}; (data || []).forEach(c => { m[c.vocab_id] = true }); setKnown(m) } })
     return () => { active = false }
   }, [session])
 

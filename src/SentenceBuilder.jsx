@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
+import { fetchPagedSafe } from './supabasePaging'
 import { getLevelLabel, getSystemLabel, shuffle } from './utils'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme, langAttr, UI_LANG } from './languageTheme'
@@ -109,13 +110,15 @@ export default function SentenceBuilder({ session, profile, track, onBack }) {
 
   async function load() {
     setLoading(true)
-    const { data: vocab } = await supabase
+    // Paged: HSK 5/6 levels are past the 1000-row cap.
+    const vocab = await fetchPagedSafe(() => supabase
       .from('vocabulary')
       .select('id, word, reading, example_sentence, example_translation, sort_order')
       .eq('language', track.language)
       .eq('system', track.system)
       .eq('level', track.current_level)
       .eq('is_active', true)
+      .order('id', { ascending: true }))
     const curated = getSentenceBank(track.language, track.system, track.current_level)
     setQuestions(buildQuestions(vocab || [], segmenter, curated))
     setIdx(0); setPlaced([]); setResult(null); setCorrectCount(0); setDone(false)

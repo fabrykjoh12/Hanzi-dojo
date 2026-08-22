@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
+import { fetchPagedSafe } from './supabasePaging'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme, availableLanguages } from './languageTheme'
 import { PageHeader } from './panels'
@@ -117,30 +118,36 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
 
   async function loadStats() {
-    const { data: vocab } = await supabase
+    // Every read here is paged: an HSK 5/6 level, the whole track, a lifetime
+    // deck and all-time review logs each pass PostgREST's 1000-row cap.
+    // Display-only stats, so a failure degrades to empty (fetchPagedSafe).
+    const vocab = await fetchPagedSafe(() => supabase
       .from('vocabulary')
       .select('id')
       .eq('language', track.language)
       .eq('system', track.system)
       .eq('level', track.current_level)
       .eq('is_active', true)
+      .order('id', { ascending: true }))
 
-    const { data: cards } = await supabase
+    const cards = await fetchPagedSafe(() => supabase
       .from('cards')
       .select('vocab_id, learned, stability')
       .eq('user_id', session.user.id)
+      .order('vocab_id', { ascending: true }))
 
     const vocabIds = new Set((vocab || []).map(v => v.id))
     const levelCards = (cards || []).filter(c => vocabIds.has(c.vocab_id))
 
     // Known-Word Map: bucket every active word in the language (all levels) by
     // how well the learner knows it, so reading reach is visible as it grows.
-    const { data: allVocab } = await supabase
+    const allVocab = await fetchPagedSafe(() => supabase
       .from('vocabulary')
       .select('id, level')
       .eq('language', track.language)
       .eq('system', track.system)
       .eq('is_active', true)
+      .order('id', { ascending: true }))
     const cardById = {}
     for (const c of (cards || [])) cardById[c.vocab_id] = c
     setWordMap(knownWordMap(allVocab || [], cardById))
@@ -171,12 +178,13 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     setActivity(actMap)
 
     // Leeches: the words that keep lapsing, scoped to the current track.
-    const { data: leechData } = await supabase
+    const leechData = await fetchPagedSafe(() => supabase
       .from('cards')
       .select('lapses, vocabulary(id, word, reading, meaning, language, system, level, audio_path, example_sentence, example_reading, example_translation)')
       .eq('user_id', session.user.id)
       .gte('lapses', STUCK_LAPSES)
       .order('lapses', { ascending: false })
+      .order('id', { ascending: true }))
     const leechList = (leechData || [])
       .filter(l => l.vocabulary
         && l.vocabulary.language === track.language
@@ -190,12 +198,13 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     // everything else on this page. review_logs only started being written
     // recently, so early accounts may simply have nothing yet — that's fine,
     // the panel shows an honest empty state rather than a misleading 0%.
-    const { data: reviewLogs } = await supabase
+    const reviewLogs = await fetchPagedSafe(() => supabase
       .from('review_logs')
       .select('grade, reviewed_at, vocabulary!inner(language, system)')
       .eq('user_id', session.user.id)
       .eq('vocabulary.language', track.language)
       .eq('vocabulary.system', track.system)
+      .order('id', { ascending: true }))
     const days = {}
     let correct = 0
     ;(reviewLogs || []).forEach(r => {

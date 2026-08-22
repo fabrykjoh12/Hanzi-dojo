@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { supabase } from './supabase'
+import { fetchPagedResult } from './supabasePaging'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { isWritingMatch, normalizeRomaji, hasKanji } from './writingMatch'
@@ -293,23 +294,29 @@ export default function Writing({ session, track, onBack }) {
     async function loadPractice() {
       setLoading(true)
       setLoadError(false)
+      // All three are paged: an HSK 5/6 level, a lifetime deck, and long-run
+      // writing stats each pass PostgREST's 1000-row cap. fetchPagedResult
+      // keeps the { data, error } shape the loadError check below reads.
       const [vocabResult, cardsResult, statsResult] = await Promise.all([
-        supabase
+        fetchPagedResult(() => supabase
           .from('vocabulary')
           .select('*')
           .eq('language', track.language)
           .eq('system', track.system)
           .eq('level', track.current_level)
           .eq('is_active', true)
-          .order('sort_order', { ascending: true }),
-        supabase
+          .order('sort_order', { ascending: true })
+          .order('id', { ascending: true })),
+        fetchPagedResult(() => supabase
           .from('cards')
           .select('vocab_id, is_easy, state, review_count')
-          .eq('user_id', session.user.id),
-        supabase
+          .eq('user_id', session.user.id)
+          .order('vocab_id', { ascending: true })),
+        fetchPagedResult(() => supabase
           .from('writing_stats')
           .select('vocab_id, xp, attempts, correct_count, missed_count, correct_streak, last_practiced_at')
-          .eq('user_id', session.user.id),
+          .eq('user_id', session.user.id)
+          .order('vocab_id', { ascending: true })),
       ])
 
       // A failed fetch must not read as "no studied words". Stats staying empty

@@ -1,23 +1,29 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { fakeSupabase, hskVocabRows } from './fakePostgrest'
 
 // Mutable test state the mocks read from.
 const state = {
   cards: [],
   vocab: [], vocabError: null,
   acts: [], actsError: null,
+  // When set, vocabulary queries run against this capped-PostgREST fake
+  // (fakePostgrest.js) instead of the filter-blind thenable below — for the
+  // specs that prove completeness past the 1000-row cap.
+  vocabDb: null,
 }
 
 // Chainable PostgREST-ish builder: every filter returns the builder, awaiting
 // it resolves to { data, error } (same trick as grammarReview.test.js).
 function thenable(getResult) {
   const b = {}
-  for (const m of ['select', 'eq', 'gte', 'lte']) b[m] = vi.fn(() => b)
+  for (const m of ['select', 'eq', 'gte', 'lte', 'lt', 'in', 'not', 'order', 'range']) b[m] = vi.fn(() => b)
   b.then = (res, rej) => Promise.resolve(getResult()).then(res, rej)
   return b
 }
 
 const from = vi.fn((table) => {
   if (table === 'vocabulary') {
+    if (state.vocabDb) return state.vocabDb.from('vocabulary')
     return thenable(() => ({ data: state.vocabError ? null : state.vocab, error: state.vocabError }))
   }
   // daily_activity (the study-rhythm query)
@@ -47,6 +53,7 @@ beforeEach(() => {
   state.cards = []
   state.vocab = []; state.vocabError = null
   state.acts = []; state.actsError = null
+  state.vocabDb = null
   from.mockClear()
 })
 
@@ -130,5 +137,27 @@ describe('getHomeCounts — the deck, not just the level window', () => {
     ]
     const counts = await getHomeCounts('u1', TRACK, 5)
     expect(counts.weakCount).toBe(1)
+  })
+})
+
+// The 1000-row PostgREST cap: an HSK 1-4 cumulative window is 1,879 words, so
+// an unpaged vocabulary fetch silently loses 879 of them and every count
+// downstream (totalWords, newCount, level progress) is wrong.
+describe('getHomeCounts — complete vocabulary past the 1000-row cap', () => {
+  const started = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const TRACK4 = { language: 'chinese', system: 'hsk_3', current_level: 4 }
+
+  it('totalWords covers the full HSK 1-4 window (1,879 words)', async () => {
+    const vocabulary = hskVocabRows([1, 2, 3, 4, 5, 6])
+    state.vocabDb = fakeSupabase({ vocabulary })
+    // One level-1 card sets the study floor to 1 → window 1..4.
+    state.cards = [
+      { vocab_id: 'v1-0000', state: 'review', due_at: started, created_at: started, learned: true, stability: 5, lapses: 0, vocabulary: { id: 'v1-0000', level: 1 } },
+    ]
+    const counts = await getHomeCounts('u1', TRACK4, 5)
+    expect(counts.failed).toBe(false)
+    expect(counts.totalWords).toBe(1879)
+    // 1,878 unstarted words exist; the daily allotment caps what Home offers.
+    expect(counts.newCount).toBe(5)
   })
 })

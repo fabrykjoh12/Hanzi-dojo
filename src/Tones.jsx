@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
+import { fetchPagedSafe } from './supabasePaging'
 import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
 import { useIsMobile } from './useIsMobile'
@@ -94,13 +95,15 @@ export default function Tones({ session, profile, track, onBack }) {
 
   async function load() {
     setLoading(true)
-    const { data: vocab } = await supabase
+    // Paged: HSK 5/6 levels are past the 1000-row cap.
+    const vocab = await fetchPagedSafe(() => supabase
       .from('vocabulary')
       .select('id, word, reading, meaning, audio_path')
       .eq('language', 'chinese')
       .eq('system', track.system)
       .eq('level', track.current_level)
       .eq('is_active', true)
+      .order('id', { ascending: true }))
     const single = (vocab || [])
       .filter(v => isSingleHanzi(v.word) && v.reading)
       .map(v => ({ ...v, kind: 'single', answer: String(toneOf(v.reading)) }))

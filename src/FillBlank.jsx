@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
+import { fetchPagedSafe } from './supabasePaging'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { Centered, PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme, langAttr, UI_LANG } from './languageTheme'
@@ -35,13 +36,15 @@ export default function FillBlank({ session, profile, track, onBack, pool = null
       setLoading(false)
       return
     }
-    const { data: vocab } = await supabase
+    // Paged: HSK 5/6 levels are past the 1000-row cap.
+    const vocab = await fetchPagedSafe(() => supabase
       .from('vocabulary')
       .select('id, word, reading, meaning, example_sentence, example_reading, example_translation')
       .eq('language', track.language)
       .eq('system', track.system)
       .eq('level', track.current_level)
       .eq('is_active', true)
+      .order('id', { ascending: true }))
     setQuestions(buildFillBlankQuestions(vocab || [], QUESTION_COUNT))
     setLoading(false)
   }

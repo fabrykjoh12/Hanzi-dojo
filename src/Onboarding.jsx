@@ -6,6 +6,8 @@ import { availableLanguages, languageTheme } from './languageTheme'
 import { resolveTiers, TIER_META } from './tiers'
 import { PACING } from './priorKnowledge'
 import { seedClaim } from './priorKnowledgeSeed'
+import { fetchEarlierVocabIds } from './priorKnowledgeVocab'
+import { fetchPaged } from './supabasePaging'
 import { readPreloginPrefs, clearPreloginPrefs, encouragementFor } from './prelogin'
 import { daysToWords } from './onboardingGoal'
 import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
@@ -85,18 +87,29 @@ export default function Onboarding({ session, onComplete }) {
   useEffect(() => {
     if (!language) return
     let cancelled = false
-    supabase
+    // Paged: a whole track's vocabulary is past the 1000-row cap, and a level
+    // whose rows all sat beyond the first page would wrongly show as unseeded
+    // (LanguageSwitcher pages this same probe for the same reason).
+    fetchPaged(() => supabase
       .from('vocabulary')
       .select('level')
       .eq('language', language)
       .eq('system', languageTheme(language).system)
       .eq('is_active', true)
-      .then(({ data }) => {
-        if (cancelled) return
-        // On a fetch failure, record levels: null (unknown) so the UI fails open
-        // to the full level range instead of getting stuck on a spinner.
-        setSeededData({ lang: language, levels: data ? new Set(data.map(r => r.level)) : null })
-      })
+      .order('level', { ascending: true })
+      .order('id', { ascending: true }))
+      .then(
+        (rows) => {
+          if (cancelled) return
+          setSeededData({ lang: language, levels: new Set(rows.map(r => r.level)) })
+        },
+        () => {
+          if (cancelled) return
+          // On a fetch failure, record levels: null (unknown) so the UI fails
+          // open to the full level range instead of getting stuck on a spinner.
+          setSeededData({ lang: language, levels: null })
+        }
+      )
     return () => { cancelled = true }
   }, [language])
   const seededResolved = Boolean(seededData && seededData.lang === language)
@@ -134,20 +147,13 @@ export default function Onboarding({ session, onComplete }) {
       if (trackError) throw trackError
 
       // Claim the levels below the placed level so prior knowledge stays sharp.
-      // Best-effort: never block onboarding if the seed write fails.
+      // Best-effort: never block onboarding if the seed write fails. The fetch
+      // is paged (priorKnowledgeVocab.js) — an HSK 6 placement covers 3,374
+      // earlier words, far past PostgREST's 1000-row cap.
       if (claimEarlier && level > 1) {
         try {
           const perDay = (PACING.find(p => p.key === claimPacing) || PACING[1]).perDay
-          const { data: earlier } = await supabase
-            .from('vocabulary')
-            .select('id')
-            .eq('language', language)
-            .eq('system', system)
-            .eq('is_active', true)
-            .lt('level', level)
-            .not('level', 'is', null)
-            .order('level').order('sort_order')
-          const ids = (earlier || []).map(v => v.id)
+          const ids = await fetchEarlierVocabIds(supabase, { language, system, level })
           if (ids.length) {
             await seedClaim({ userId: session.user.id, vocabIds: ids, perDay, source: 'placement' })
           }

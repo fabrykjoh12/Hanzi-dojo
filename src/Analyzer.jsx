@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
+import { fetchPagedSafe } from './supabasePaging'
 import { languageTheme, langAttr } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { PageHeader } from './panels'
@@ -50,10 +51,14 @@ export default function Analyzer({ session, track, onBack }) {
     let cancelled = false
     async function load() {
       try {
-        const { data: vocab } = await supabase.from('vocabulary').select('*')
+        // Paged: the whole track and a lifetime deck pass the 1000-row cap —
+        // an unpaged read left most words unmatchable in the analyzer.
+        const vocab = await fetchPagedSafe(() => supabase.from('vocabulary').select('*')
           .eq('language', track.language).eq('system', track.system).eq('is_active', true)
-        const { data: cardRows } = await supabase.from('cards')
+          .order('id', { ascending: true }))
+        const cardRows = await fetchPagedSafe(() => supabase.from('cards')
           .select('vocab_id, is_easy, state').eq('user_id', session.user.id)
+          .order('vocab_id', { ascending: true }))
         if (cancelled) return
         const vm = {}
         ;(vocab || []).forEach(v => { vm[v.word] = v })

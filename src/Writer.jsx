@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import HanziWriter from 'hanzi-writer'
 import { makeCharDataLoader } from './strokeData'
 import { supabase } from './supabase'
+import { fetchPagedSafe } from './supabasePaging'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
@@ -37,7 +38,8 @@ export default function Writer({ profile, track, onBack }) {
 
   useEffect(() => {
     let active = true
-    supabase
+    // Paged: HSK 5/6 levels are past the 1000-row cap.
+    fetchPagedSafe(() => supabase
       .from('vocabulary')
       .select('word, reading, meaning, sort_order')
       .eq('language', track.language)
@@ -45,7 +47,8 @@ export default function Writer({ profile, track, onBack }) {
       .eq('level', track.current_level)
       .eq('is_active', true)
       .order('sort_order', { ascending: true })
-      .then(({ data }) => {
+      .order('id', { ascending: true }))
+      .then((data) => {
         if (!active) return
         const seen = new Set()
         const list = []

@@ -12,6 +12,7 @@ import {
   buildReviewGroups, selectAll, toggleSelection, setSelected,
   groupState, idsOf, claimIdsFor, initialOpenLevels, toggleLevelOpen,
 } from './knownWordsReview'
+import { loadAllVocab, fetchCardedVocabIds } from './knownWordsData'
 import { ArrowLeft, Check, ChevronDown, ChevronRight, Minus } from 'lucide-react'
 
 // "Words you already know" — bring prior knowledge into review.
@@ -28,26 +29,6 @@ import { ArrowLeft, Check, ChevronDown, ChevronRight, Minus } from 'lucide-react
 // The selection, grouping and "what will be seeded" derivation are pure and live
 // in knownWordsReview.js; this file only draws them.
 
-const PAGE = 1000   // PostgREST hard cap — page until a short page comes back
-
-async function loadAllVocab(track) {
-  const rows = []
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
-      .from('vocabulary')
-      .select('id, word, reading, meaning, level, sort_order')
-      .eq('language', track.language)
-      .eq('system', track.system)
-      .eq('is_active', true)
-      .not('level', 'is', null)
-      .order('level').order('sort_order')
-      .range(from, from + PAGE - 1)
-    if (error) throw new Error(error.message)
-    rows.push(...(data || []))
-    if (!data || data.length < PAGE) break
-  }
-  return rows
-}
 
 export default function KnownWords({ session, profile, track, onBack }) {
   const isMobile = useIsMobile()
@@ -74,13 +55,16 @@ export default function KnownWords({ session, profile, track, onBack }) {
     let cancelled = false
     ;(async () => {
       try {
-        const [vrows, crows] = await Promise.all([
-          loadAllVocab(track),
-          supabase.from('cards').select('vocab_id'),
+        // Both loads are paged (knownWordsData.js): the full track and a big
+        // deck each pass PostgREST's 1000-row cap, and a truncated carded set
+        // would re-offer words the learner already studies.
+        const [vrows, cardedIds] = await Promise.all([
+          loadAllVocab(supabase, track),
+          fetchCardedVocabIds(supabase),
         ])
         if (cancelled) return
         setVocab(vrows)
-        setCarded(new Set((crows.data || []).map(c => c.vocab_id)))
+        setCarded(cardedIds)
       } catch (e) {
         if (!cancelled) setLoadError(e.message || 'Could not load your words.')
       } finally {

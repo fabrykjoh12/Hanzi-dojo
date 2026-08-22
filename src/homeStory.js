@@ -10,6 +10,7 @@
 // are existing, tested, pure functions. This module only feeds them.
 
 import { supabase } from './supabase'
+import { fetchPaged } from './supabasePaging'
 import { getTrackCards } from './data'
 import { pickDailyStory } from './dailyStory'
 import { tiersFor } from './storyTiers'
@@ -58,17 +59,21 @@ export async function getDailyStoryCard(userId, track, learnedCount, dateStr = t
   if (!userId || !track) return null
 
   try {
-    const [storiesRes, readsRes, vocabRes] = await Promise.all([
+    // vocabulary is paged — the cumulative window passes the 1000-row cap at
+    // HSK 4, and a truncated read skews the story pick's known-%. stories and
+    // story_reads stay unpaged: both are bounded by the published-story count.
+    const [storiesRes, readsRes, vocabRows] = await Promise.all([
       supabase
         .from('stories').select('id, title, content, level, tier, story_number, cover_url')
         .eq('language', track.language).eq('system', track.system)
         .lte('level', track.current_level).eq('is_published', true),
       supabase
         .from('story_reads').select('story_id,read_at').eq('user_id', userId),
-      supabase
+      fetchPaged(() => supabase
         .from('vocabulary').select('id, word, reading, meaning, level')
         .eq('language', track.language).eq('system', track.system)
-        .lte('level', track.current_level).eq('is_active', true),
+        .lte('level', track.current_level).eq('is_active', true)
+        .order('id', { ascending: true })),
     ])
 
     const stories = storiesRes.data || []
@@ -91,7 +96,7 @@ export async function getDailyStoryCard(userId, track, learnedCount, dateStr = t
     const cardsMap = {}
     ;(cards || []).forEach(c => { cardsMap[c.vocab_id] = c })
     const vocabMap = {}
-    ;(vocabRes.data || []).forEach(v => { vocabMap[v.word] = v })
+    ;(vocabRows || []).forEach(v => { vocabMap[v.word] = v })
 
     const readability = calculateStoryReadability({
       content: story.content, vocabMap, cards: cardsMap, language: track.language,

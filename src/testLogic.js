@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { getTrackCards } from './data'
+import { fetchPagedResult } from './supabasePaging'
 import { isMastered, TEST_UNLOCK_MASTERY_PCT } from './mastery'
 
 // Normalize for tone-insensitive comparison.
@@ -99,13 +100,16 @@ export function canStartTest(vocabPool) {
 export async function getTestStatus(userId, track) {
   try {
     const [vocabResult, levelCards, unlockResult] = await Promise.all([
-      supabase
+      // Paged: HSK 5 and 6 are 1,495 / 1,621 words — past PostgREST's
+      // 1000-row cap — and a truncated denominator corrupts the 90% gate.
+      fetchPagedResult(() => supabase
         .from('vocabulary')
         .select('id')
         .eq('language', track.language)
         .eq('system', track.system)
         .eq('level', track.current_level)
-        .eq('is_active', true),
+        .eq('is_active', true)
+        .order('id', { ascending: true })),
       getTrackCards(userId, track, {
         level: track.current_level,
         columns: 'vocab_id, stability',

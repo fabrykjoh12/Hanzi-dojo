@@ -1,4 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { fakeSupabase, hskVocabRows } from './fakePostgrest'
 
 // testLogic.js imports the Supabase client at module load; stub it so the pure
 // helpers can be tested in isolation.
@@ -10,11 +11,14 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // the chain), and getTrackCards is mocked directly so its own DB-level
 // level-scoping (already covered by data.test.js / the level-scope audit)
 // doesn't need to be re-simulated here.
-const { vocabResult, unlockResult, attemptsResult, trackCardsMock } = vi.hoisted(() => ({
+const { vocabResult, unlockResult, attemptsResult, trackCardsMock, vocabDb } = vi.hoisted(() => ({
   vocabResult: { data: [{ id: 'a' }, { id: 'b' }], error: null },
   unlockResult: { data: null, error: null },
   attemptsResult: { data: [], error: null },
   trackCardsMock: vi.fn(),
+  // When .current is set, vocabulary queries run against a capped-PostgREST
+  // fake (fakePostgrest.js) — for the past-the-1000-row-cap specs.
+  vocabDb: { current: null },
 }))
 
 function makeChain(result) {
@@ -22,6 +26,7 @@ function makeChain(result) {
     select: () => chain,
     eq: () => chain,
     order: () => chain,
+    range: () => chain,
     maybeSingle: () => Promise.resolve(result),
     then: (resolve, reject) => Promise.resolve(result).then(resolve, reject),
   }
@@ -31,7 +36,9 @@ function makeChain(result) {
 vi.mock('./supabase', () => ({
   supabase: {
     from: (table) => {
-      if (table === 'vocabulary') return makeChain(vocabResult)
+      if (table === 'vocabulary') {
+        return vocabDb.current ? vocabDb.current.from('vocabulary') : makeChain(vocabResult)
+      }
       if (table === 'level_unlocks') return makeChain(unlockResult)
       if (table === 'test_attempts') return makeChain(attemptsResult)
       throw new Error('unexpected table in test: ' + table)
@@ -143,6 +150,31 @@ describe('getTestStatus — level-scoped mastery math excludes NULL-level (dicti
     const status = await getTestStatus('user1', track)
     expect(status.totalWords).toBe(2) // vocab a, b only
     expect(status.masteredCount).toBe(1) // only a; z (null-level) never entered the set
+  })
+})
+
+describe('getTestStatus — complete denominator past the 1000-row cap', () => {
+  const track = { language: 'chinese', system: 'hsk_3', current_level: 6 }
+
+  beforeEach(() => {
+    trackCardsMock.mockReset()
+  })
+  // afterEach, not the test body: a failing assertion must not leave the fake
+  // routed in for the specs that follow.
+  afterEach(() => { vocabDb.current = null })
+
+  it('HSK 6 (1,621 words) gets the real totalWords, not a 1000-row prefix', async () => {
+    const vocabulary = hskVocabRows([5, 6])
+    vocabDb.current = fakeSupabase({ vocabulary })
+    // Every level-6 word genuinely mastered; the gate must read exactly 100%.
+    trackCardsMock.mockResolvedValue(
+      vocabulary.filter(v => v.level === 6).map(v => ({ vocab_id: v.id, stability: 30 }))
+    )
+    const status = await getTestStatus('user1', track)
+    expect(status.totalWords).toBe(1621)
+    expect(status.masteredCount).toBe(1621)
+    expect(status.masteredPct).toBe(1)
+    expect(status.testUnlocked).toBe(true)
   })
 })
 

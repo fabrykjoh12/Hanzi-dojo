@@ -1,6 +1,17 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { fakeSupabase, hskVocabRows } from './fakePostgrest'
+import { todayStr } from './streak'
+
+// The end-to-end paging specs below run buildStudySession for real — through
+// the REAL data.js getTrackCards — against a capped-PostgREST fake, so Home
+// counts and the Study queue are proven to read the same complete dataset.
+const db = vi.hoisted(() => ({ current: null }))
+vi.mock('./supabase', () => ({ supabase: { from: (...a) => db.current.from(...a) } }))
+vi.mock('./offline', () => ({ cacheGet: vi.fn(async () => null), cacheSet: vi.fn() }))
+vi.mock('./ttsAudio', () => ({ loadTtsAudio: vi.fn(async () => {}) }))
+
 import {
-  PREP_MAX_AGE_MS, clearPreparedSession, peekPreparedSession, prepKey,
+  PREP_MAX_AGE_MS, buildStudySession, clearPreparedSession, peekPreparedSession, prepKey,
   prepareStudySession, takePreparedSession,
 } from './sessionPrep'
 
@@ -71,5 +82,47 @@ describe('prepare → peek → take', () => {
   it('a failed build resolves to null so callers fall back quietly', async () => {
     await prepareStudySession(args, () => Promise.reject(new Error('offline')))
     expect(takePreparedSession(args)).toBe(null)
+  })
+})
+
+// An HSK 1-4 cumulative deck is 1,879 words — past the 1000-row PostgREST cap.
+// The session build must see every card and every word of the window, or due
+// reviews silently vanish and the "cumulative deck" promise breaks at HSK 4+.
+describe('buildStudySession — complete deck past the 1000-row cap', () => {
+  const DAY = 24 * 60 * 60 * 1000
+  const yesterday = new Date(Date.now() - DAY).toISOString()
+  const nextMonth = new Date(Date.now() + 30 * DAY).toISOString()
+  const weekAgo = new Date(Date.now() - 7 * DAY).toISOString()
+
+  it('serves all 1,879 words and every one of 1,200 due reviews', async () => {
+    const vocabulary = hskVocabRows([1, 2, 3, 4, 5, 6])
+    const window = vocabulary.filter(v => v.level <= 4)
+    // Every window word started; the first 1,200 are due, the rest are not.
+    const cards = window.map((v, i) => ({
+      id: 'c' + String(i).padStart(4, '0'),
+      user_id: 'u1',
+      vocab_id: v.id,
+      state: 'review',
+      due_at: i < 1200 ? yesterday : nextMonth,
+      created_at: weekAgo,
+      stability: 5,
+      lapses: 0,
+    }))
+    db.current = fakeSupabase({ vocabulary, cards })
+
+    const data = await buildStudySession({
+      userId: 'u1',
+      // last_studied_on today, so the gentle-return cap stays out of the way.
+      profile: { daily_new_cards: 10, last_studied_on: todayStr() },
+      track: { language: 'chinese', system: 'hsk_3', current_level: 4 },
+    })
+
+    expect(data.vocabList).toHaveLength(1879)
+    expect(data.levelCards).toHaveLength(1879)
+    expect(data.knownWords).toHaveLength(1879)
+    // Every due review is in the session — none lost to the cap — and no
+    // card appears twice.
+    expect(data.queue).toHaveLength(1200)
+    expect(new Set(data.queue.map(c => c.vocab_id)).size).toBe(1200)
   })
 })

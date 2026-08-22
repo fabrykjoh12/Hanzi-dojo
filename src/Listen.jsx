@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
+import { fetchPagedSafe } from './supabasePaging'
 import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme, langAttr, UI_LANG } from './languageTheme'
@@ -42,13 +43,15 @@ export default function Listen({ session, profile, track, onBack }) {
 
   async function load() {
     setLoading(true)
-    const { data: vocab } = await supabase
+    // Paged: HSK 5/6 levels are past the 1000-row cap.
+    const vocab = await fetchPagedSafe(() => supabase
       .from('vocabulary')
       .select('id, word, reading, meaning, audio_path')
       .eq('language', track.language)
       .eq('system', track.system)
       .eq('level', track.current_level)
       .eq('is_active', true)
+      .order('id', { ascending: true }))
     setQuestions(buildQuestions(vocab || []))
     setLoading(false)
   }

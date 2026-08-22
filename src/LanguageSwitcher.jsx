@@ -249,7 +249,10 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
       .eq('language', lang.code)
       .eq('system', lang.system)
       .eq('is_active', true)
-      .order('level', { ascending: true }))
+      // `id` breaks the (heavy) level ties — offset pages over a non-unique
+      // sort have no stable order and can overlap or skip rows.
+      .order('level', { ascending: true })
+      .order('id', { ascending: true }))
       .then((data) => {
         if (cancelled || !data) return
         setSeededData({ lang: lang.code, levels: new Set(data.map(r => r.level).filter(l => l != null)) })
@@ -289,10 +292,12 @@ export default function LanguageSwitcher({ session, profile, onSwitch, onBack })
 
     setTracks(tracksData || [])
 
-    const { data: allCards } = await supabase
+    // Paged: a lifetime deck passes the 1000-row cap.
+    const allCards = await fetchPagedSafe(() => supabase
       .from('cards')
       .select('vocab_id, stability')
       .eq('user_id', session.user.id)
+      .order('vocab_id', { ascending: true }))
 
     const { data: unlocks } = await supabase
       .from('level_unlocks')

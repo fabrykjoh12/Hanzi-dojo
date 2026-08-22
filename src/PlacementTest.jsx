@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './supabase'
+import { fetchPagedSafe } from './supabasePaging'
 import { PLACEMENT_QUESTION_COUNT, PLACEMENT_PASS_RATIO } from './tiers'
 import { buildMcqQuestions } from './mcq'
 import { Check, X, ShieldCheck } from 'lucide-react'
@@ -25,14 +26,17 @@ export default function PlacementTest({
 
   useEffect(() => {
     let cancelled = false
-    supabase
+    // Paged: HSK 5/6 levels are past the 1000-row cap, and the placement quiz
+    // should sample the whole level, not a truncated prefix.
+    fetchPagedSafe(() => supabase
       .from('vocabulary')
       .select('id, word, reading, meaning')
       .eq('language', language)
       .eq('system', system)
       .eq('level', level)
       .eq('is_active', true)
-      .then(({ data }) => {
+      .order('id', { ascending: true }))
+      .then((data) => {
         if (cancelled) return
         const qs = buildQuestions(data || [], language, PLACEMENT_QUESTION_COUNT)
         if (qs.length < 4) { setPhase('unavailable'); setLoading(false); return }
