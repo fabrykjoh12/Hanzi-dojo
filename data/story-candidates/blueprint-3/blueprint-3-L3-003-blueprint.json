@@ -1,0 +1,1904 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "blueprint-3",
+  "generatedAt": "2026-08-22T15:29:46.417Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "blueprint-3-L3-003",
+    "batchId": "blueprint-3",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "得到",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "了解",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "参加",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "安全",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "选择",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "只要",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "关于",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "特别",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": null,
+    "seasonSeed": "a bigger outing or adventure away from home with a genuine surprise in the middle",
+    "series": null,
+    "composition": {
+      "bucket": "general",
+      "reason": "top-priority hard targets are general-purpose vocabulary that fits any theme",
+      "hard": [
+        {
+          "word": "得到",
+          "meaning": "to get; to obtain"
+        },
+        {
+          "word": "了解",
+          "meaning": "to understand; to realize"
+        },
+        {
+          "word": "参加",
+          "meaning": "to participate; to take part"
+        },
+        {
+          "word": "安全",
+          "meaning": "safe; secure; safety; security"
+        },
+        {
+          "word": "选择",
+          "meaning": "to select; to pick"
+        }
+      ],
+      "soft": [
+        {
+          "word": "只要",
+          "meaning": "if only; so long as"
+        },
+        {
+          "word": "关于",
+          "meaning": "pertaining to; concerning"
+        },
+        {
+          "word": "特别",
+          "meaning": "unusual; special; very; especially; particularly"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸",
+        "卡",
+        "辆"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "得到",
+      "了解",
+      "参加",
+      "安全",
+      "选择"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "blueprints": [
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Safe Choice",
+          "chineseTitle": "参加合唱比赛",
+          "setting": "A warm Saturday afternoon in spring, starting at home and moving to the community center.",
+          "cast": [
+            "李明",
+            "妈妈"
+          ],
+          "problem": "Li Ming is anxious about joining the choir competition because he is afraid he will make mistakes in front of others and wants to ensure he isn't unprepared or embarrassed.",
+          "incitingEvent": "Li Ming's mother hands him the registration form for the school choir competition, urging him to join.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday afternoon",
+              "where": "Li Ming's bedroom",
+              "what": "Li Ming receives the invitation to join the choir but feels hesitant and worried.",
+              "because": "the story opens",
+              "arrivedHow": "None (start location)",
+              "targets": [
+                "参加",
+                "得到"
+              ],
+              "chineseLexicalAnchors": [
+                "下午",
+                "妈妈",
+                "唱歌",
+                "比赛",
+                "犹豫",
+                "害怕"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Ten minutes later",
+              "where": "The living room",
+              "what": "Mom sits down with Li Ming to discuss his worries. She helps him understand that the most important thing is safety in his preparation, not perfection.",
+              "because": "Li Ming expressed his hesitation in the bedroom, prompting Mom to intervene.",
+              "arrivedHow": "Walked to the living room.",
+              "targets": [
+                "了解",
+                "安全"
+              ],
+              "chineseLexicalAnchors": [
+                "坐下",
+                "担心",
+                "准备",
+                "复习",
+                "仔细",
+                "错误"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 3,
+              "when": "An hour later",
+              "where": "The local library",
+              "what": "They browse the music section to find simpler sheet music or reliable practice tips, realizing that picking the right material makes practice easier.",
+              "because": "To feel 'safe' and prepared as advised by Mom, they need better resources.",
+              "arrivedHow": "Walked to the library.",
+              "targets": [
+                "选择"
+              ],
+              "chineseLexicalAnchors": [
+                "图书馆",
+                "书",
+                "音乐",
+                "简单",
+                "容易",
+                "看"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "Late afternoon",
+              "where": "The living room",
+              "what": "Li Ming practices with the new material. He realizes that as long as he practices carefully, he doesn't need to be perfect, just consistent.",
+              "because": "Having selected the right material at the library, they return to practice.",
+              "arrivedHow": "Walked home.",
+              "targets": [
+                "只要"
+              ],
+              "chineseLexicalAnchors": [
+                "练习",
+                "努力",
+                "进步",
+                "开心",
+                "认真"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "The next morning",
+              "where": "School hallway",
+              "what": "Li Ming goes to class and decides to talk to his teacher about his plan to join, feeling confident about his choice.",
+              "because": "The successful practice session gave him the confidence needed to commit.",
+              "arrivedHow": "Went to school.",
+              "targets": [
+                "特别"
+              ],
+              "chineseLexicalAnchors": [
+                "老师",
+                "决定",
+                "告诉",
+                "同意",
+                "高兴"
+              ],
+              "lines": 6
+            }
+          ],
+          "resolution": "Li Ming decides to participate in the choir competition, no longer afraid because he has prepared carefully and chosen a manageable approach.",
+          "targetPlan": [
+            {
+              "word": "参加",
+              "beat": 1,
+              "why": "Li Ming needs to name the specific activity he is being asked to join. Without this verb, he cannot define the problem.",
+              "speaker": "Narrator",
+              "refersTo": "the choir competition",
+              "intent": "To state the event Li Ming is considering.",
+              "usageSketch": "妈妈希望李明参加合唱比赛。"
+            },
+            {
+              "word": "得到",
+              "beat": 1,
+              "why": "Li Ming needs to acknowledge the physical receipt of the invitation/form, establishing the concrete trigger for his anxiety.",
+              "speaker": "Narrator",
+              "refersTo": "the registration form",
+              "intent": "To show he received the document.",
+              "usageSketch": "李明得到了报名表。"
+            },
+            {
+              "word": "了解",
+              "beat": 2,
+              "why": "Mom needs to verify that Li Ming truly grasps her advice about preparation, shifting from emotional fear to logical understanding.",
+              "speaker": "妈妈",
+              "refersTo": "the importance of careful preparation",
+              "intent": "To check comprehension.",
+              "usageSketch": "你现在了解我的意思了吗？"
+            },
+            {
+              "word": "安全",
+              "beat": 2,
+              "why": "Mom uses 'safe' metaphorically to describe a low-risk practice strategy, contrasting it with the 'danger' of being unprepared.",
+              "speaker": "妈妈",
+              "refersTo": "a careful practice plan",
+              "intent": "To promise reduced risk of failure.",
+              "usageSketch": "这样的练习方法是安全的。"
+            },
+            {
+              "word": "选择",
+              "beat": 3,
+              "why": "They are physically looking at options. They need a verb to describe the act of picking one specific book over others.",
+              "speaker": "Narrator",
+              "refersTo": "the sheet music book",
+              "intent": "To describe the act of selection.",
+              "usageSketch": "李明选择了一本简单的书。"
+            },
+            {
+              "word": "只要",
+              "beat": 4,
+              "why": "Li Ming is realizing the conditional nature of his success: effort leads to results. He needs a conjunction to express this sufficient condition.",
+              "speaker": "李明",
+              "refersTo": "practicing carefully",
+              "intent": "To express a sufficient condition for success.",
+              "usageSketch": "只要我认真练习，就可以唱好。"
+            },
+            {
+              "word": "特别",
+              "beat": 5,
+              "why": "Li Ming wants to emphasize his changed attitude to his teacher. He needs an adverb to intensify 'happy' or 'confident'.",
+              "speaker": "李明",
+              "refersTo": "his feeling of confidence",
+              "intent": "To emphasize the degree of his emotion.",
+              "usageSketch": "我特别想参加这次比赛。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "chinese_title_lexis",
+              "message": "title uses above-level vocabulary: 合"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"唱歌\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"犹豫\": HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"坐下\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"仔细\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"错误\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"进步\": HSK 5, above the story level"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "参加 usage sketch \"妈妈希望李明参加合唱比赛。\": above-level vocabulary: 合"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "得到 usage sketch \"李明得到了报名表。\": above-level vocabulary: 报名、表"
+            }
+          ],
+          "cast": [
+            "李明",
+            "妈妈"
+          ],
+          "beats": 5,
+          "placed": {
+            "参加": 1,
+            "得到": 1,
+            "了解": 2,
+            "安全": 2,
+            "选择": 3,
+            "只要": 4,
+            "特别": 5
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "Li Ming's School Competition Choice",
+          "chineseTitle": "李明的比赛",
+          "setting": "Li Ming's bedroom and the school classroom, during an afternoon after school.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming needs to decide which school activity to join.",
+          "incitingEvent": "Xiao Hong tells Li Ming about two upcoming school activities.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "After school, 4:00 PM",
+              "where": "Li Ming's bedroom",
+              "what": "Xiao Hong calls Li Ming and tells him about two activities: a sports game and a drawing contest.",
+              "because": "the story opens with the introduction of the options",
+              "arrivedHow": "N/A",
+              "targets": [
+                "参加"
+              ],
+              "chineseLexicalAnchors": [
+                "电话",
+                "比赛",
+                "画画",
+                "参加",
+                "学校"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "5 minutes later",
+              "where": "Li Ming's bedroom",
+              "what": "Li Ming is confused because he likes both, but can only choose one.",
+              "because": "Xiao Hong just presented conflicting attractive options",
+              "arrivedHow": "N/A",
+              "targets": [
+                "选择",
+                "特别"
+              ],
+              "chineseLexicalAnchors": [
+                "开心",
+                "但是",
+                "选择",
+                "问题",
+                "特别"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "10 minutes later",
+              "where": "Li Ming's bedroom",
+              "what": "Li Ming asks Xiao Hong for details to help him understand the requirements.",
+              "because": "He cannot choose without more information",
+              "arrivedHow": "N/A",
+              "targets": [
+                "了解"
+              ],
+              "chineseLexicalAnchors": [
+                "什么",
+                "要求",
+                "了解",
+                "告诉",
+                "我"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "After the call, 4:15 PM",
+              "where": "Li Ming's bedroom",
+              "what": "Xiao Hong explains the sports game involves running, which has some safety risks, while drawing is safe.",
+              "because": "Li Ming asked for details on requirements/conditions",
+              "arrivedHow": "N/A",
+              "targets": [
+                "安全"
+              ],
+              "chineseLexicalAnchors": [
+                "跑步",
+                "危险",
+                "安全",
+                "小心",
+                "但是"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Immediately after",
+              "where": "Li Ming's bedroom",
+              "what": "Li Ming decides he wants to join the drawing contest because he is worried about getting hurt.",
+              "because": "He understood the safety difference",
+              "arrivedHow": "N/A",
+              "targets": [
+                "只要"
+              ],
+              "chineseLexicalAnchors": [
+                "决定",
+                "只要",
+                "不",
+                "受伤",
+                "就"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 6,
+              "when": "Next morning, 8:00 AM",
+              "where": "School classroom",
+              "what": "Li Ming successfully signs up and gets his participation certificate/confirmation.",
+              "because": "He made a decision the night before",
+              "arrivedHow": "Walked to school",
+              "targets": [
+                "得到"
+              ],
+              "chineseLexicalAnchors": [
+                "老师",
+                "报名",
+                "得到",
+                "高兴",
+                "证书"
+              ],
+              "lines": 4
+            }
+          ],
+          "resolution": "Li Ming chooses the drawing contest for safety, successfully registers, and feels happy about his clear decision.",
+          "targetPlan": [
+            {
+              "word": "参加",
+              "beat": 1,
+              "why": "Xiao Hong needs to tell Li Ming that there are events to take part in.",
+              "speaker": "小红",
+              "refersTo": "The sports game and drawing contest",
+              "intent": "Inform Li Ming about the opportunity to join activities.",
+              "usageSketch": "学校有比赛，你想参加吗？"
+            },
+            {
+              "word": "选择",
+              "beat": 2,
+              "why": "Li Ming states he has difficulty deciding between two likes.",
+              "speaker": "李明",
+              "refersTo": "The act of picking one activity over the other",
+              "intent": "Express his dilemma.",
+              "usageSketch": "这两个我都喜欢，很难选择。"
+            },
+            {
+              "word": "了解",
+              "beat": 3,
+              "why": "Li Ming needs to ask for more specific information to make a decision.",
+              "speaker": "李明",
+              "refersTo": "The details/requirements of the events",
+              "intent": "Request clarification.",
+              "usageSketch": "请你告诉我，我想了解更多。"
+            },
+            {
+              "word": "安全",
+              "beat": 4,
+              "why": "Xiao Hong explains that running has risks, contrasting with the safe nature of drawing.",
+              "speaker": "小红",
+              "refersTo": "The physical safety aspect of the sports event",
+              "intent": "Highlight the risk factor.",
+              "usageSketch": "跑步有可能不安全，画画很安全。"
+            },
+            {
+              "word": "只要",
+              "beat": 5,
+              "why": "Li Ming conditions his preference on the outcome of not getting hurt.",
+              "speaker": "李明",
+              "refersTo": "The condition for his happiness/decision",
+              "intent": "State his priority (safety over sports).",
+              "usageSketch": "只要我不受伤，我就很开心。"
+            },
+            {
+              "word": "得到",
+              "beat": 6,
+              "why": "Li Ming confirms he received the physical proof of his registration.",
+              "speaker": "Narrator (or Li Ming internal thought)",
+              "refersTo": "The participation certificate/ticket",
+              "intent": "Confirm successful completion of registration.",
+              "usageSketch": "李明得到了比赛的通知单。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"画画\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"危险\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"受伤\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 6 anchor \"报名\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 6 anchor \"证书\": HSK 5, above the story level"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "安全 usage sketch \"跑步有可能不安全，画画很安全。\": non-vocabulary text: 全; above-level vocabulary: 不安"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "只要 usage sketch \"只要我不受伤，我就很开心。\": above-level vocabulary: 受伤"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "得到 is given to \"Narrator (or Li Ming internal thought)\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "得到 usage sketch \"李明得到了比赛的通知单。\": non-vocabulary text: 单; above-level vocabulary: 通知"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "参加": 1,
+            "选择": 2,
+            "了解": 3,
+            "安全": 4,
+            "只要": 5,
+            "得到": 6
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "Li Ming's School Competition Choice",
+          "chineseTitle": "李明的比赛",
+          "setting": "Li Ming's bedroom and the school classroom, during an afternoon after school.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming needs to decide which school activity to join.",
+          "incitingEvent": "Xiao Hong tells Li Ming about two upcoming school activities.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "After school, 4:00 PM",
+              "where": "Li Ming's bedroom",
+              "what": "Xiao Hong calls Li Ming and tells him about two activities: a sports game and a drawing contest.",
+              "because": "the story opens with the introduction of the options",
+              "arrivedHow": "N/A",
+              "targets": [
+                "参加"
+              ],
+              "chineseLexicalAnchors": [
+                "电话",
+                "比赛",
+                "画画",
+                "参加",
+                "学校"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "5 minutes later",
+              "where": "Li Ming's bedroom",
+              "what": "Li Ming is confused because he likes both, but can only choose one.",
+              "because": "Xiao Hong just presented conflicting attractive options",
+              "arrivedHow": "N/A",
+              "targets": [
+                "选择",
+                "特别"
+              ],
+              "chineseLexicalAnchors": [
+                "开心",
+                "但是",
+                "选择",
+                "问题",
+                "特别"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "10 minutes later",
+              "where": "Li Ming's bedroom",
+              "what": "Li Ming asks Xiao Hong for details to help him understand the requirements.",
+              "because": "He cannot choose without more information",
+              "arrivedHow": "N/A",
+              "targets": [
+                "了解"
+              ],
+              "chineseLexicalAnchors": [
+                "什么",
+                "要求",
+                "了解",
+                "告诉",
+                "我"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "After the call, 4:15 PM",
+              "where": "Li Ming's bedroom",
+              "what": "Xiao Hong explains the sports game involves running, which has some safety risks, while drawing is safe.",
+              "because": "Li Ming asked for details on requirements/conditions",
+              "arrivedHow": "N/A",
+              "targets": [
+                "安全"
+              ],
+              "chineseLexicalAnchors": [
+                "跑步",
+                "危险",
+                "安全",
+                "小心",
+                "但是"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Immediately after",
+              "where": "Li Ming's bedroom",
+              "what": "Li Ming decides he wants to join the drawing contest because he is worried about getting hurt.",
+              "because": "He understood the safety difference",
+              "arrivedHow": "N/A",
+              "targets": [
+                "只要"
+              ],
+              "chineseLexicalAnchors": [
+                "决定",
+                "只要",
+                "不",
+                "受伤",
+                "就"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 6,
+              "when": "Next morning, 8:00 AM",
+              "where": "School classroom",
+              "what": "Li Ming successfully signs up and gets his participation certificate/confirmation.",
+              "because": "He made a decision the night before",
+              "arrivedHow": "Walked to school",
+              "targets": [
+                "得到"
+              ],
+              "chineseLexicalAnchors": [
+                "老师",
+                "报名",
+                "得到",
+                "高兴",
+                "证书"
+              ],
+              "lines": 4
+            }
+          ],
+          "resolution": "Li Ming chooses the drawing contest for safety, successfully registers, and feels happy about his clear decision.",
+          "targetPlan": [
+            {
+              "word": "参加",
+              "beat": 1,
+              "why": "Xiao Hong needs to tell Li Ming that there are events to take part in.",
+              "speaker": "小红",
+              "refersTo": "The sports game and drawing contest",
+              "intent": "Inform Li Ming about the opportunity to join activities.",
+              "usageSketch": "学校有比赛，你想参加吗？"
+            },
+            {
+              "word": "选择",
+              "beat": 2,
+              "why": "Li Ming states he has difficulty deciding between two likes.",
+              "speaker": "李明",
+              "refersTo": "The act of picking one activity over the other",
+              "intent": "Express his dilemma.",
+              "usageSketch": "这两个我都喜欢，很难选择。"
+            },
+            {
+              "word": "了解",
+              "beat": 3,
+              "why": "Li Ming needs to ask for more specific information to make a decision.",
+              "speaker": "李明",
+              "refersTo": "The details/requirements of the events",
+              "intent": "Request clarification.",
+              "usageSketch": "请你告诉我，我想了解更多。"
+            },
+            {
+              "word": "安全",
+              "beat": 4,
+              "why": "Xiao Hong explains that running has risks, contrasting with the safe nature of drawing.",
+              "speaker": "小红",
+              "refersTo": "The physical safety aspect of the sports event",
+              "intent": "Highlight the risk factor.",
+              "usageSketch": "跑步有可能不安全，画画很安全。"
+            },
+            {
+              "word": "只要",
+              "beat": 5,
+              "why": "Li Ming conditions his preference on the outcome of not getting hurt.",
+              "speaker": "李明",
+              "refersTo": "The condition for his happiness/decision",
+              "intent": "State his priority (safety over sports).",
+              "usageSketch": "只要我不受伤，我就很开心。"
+            },
+            {
+              "word": "得到",
+              "beat": 6,
+              "why": "Li Ming confirms he received the physical proof of his registration.",
+              "speaker": "Narrator (or Li Ming internal thought)",
+              "refersTo": "The participation certificate/ticket",
+              "intent": "Confirm successful completion of registration.",
+              "usageSketch": "李明得到了比赛的通知单。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"画画\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"危险\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"受伤\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 6 anchor \"报名\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 6 anchor \"证书\": HSK 5, above the story level"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "安全 usage sketch \"跑步有可能不安全，画画很安全。\": non-vocabulary text: 全; above-level vocabulary: 不安"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "只要 usage sketch \"只要我不受伤，我就很开心。\": above-level vocabulary: 受伤"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "得到 is given to \"Narrator (or Li Ming internal thought)\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "得到 usage sketch \"李明得到了比赛的通知单。\": non-vocabulary text: 单; above-level vocabulary: 通知"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "参加": 1,
+            "选择": 2,
+            "了解": 3,
+            "安全": 4,
+            "只要": 5,
+            "得到": 6
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Safe Club Choice",
+          "chineseTitle": "选择安全",
+          "setting": "A Saturday afternoon in the city, moving from home to a school activity center.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming wants to join a new club but is worried about safety and cost, while Xiao Hong wants to join an expensive one.",
+          "incitingEvent": "Li Ming finds a flyer for a Hiking Club and shows it to Xiao Hong.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday afternoon, 2:00 PM",
+              "where": "Li Ming's home",
+              "what": "Li Ming sees a notice about clubs and decides to look for information.",
+              "because": "the story opens",
+              "arrivedHow": "N/A",
+              "targets": [
+                "了解"
+              ],
+              "chineseLexicalAnchors": [
+                "看到",
+                "通知",
+                "俱乐部",
+                "想要",
+                "了解",
+                "事情"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "Saturday afternoon, 2:15 PM",
+              "where": "Li Ming's home",
+              "what": "Xiao Hong calls Li Ming and tells him about an expensive Photography Club she wants to join.",
+              "because": "Li Ming needed to know what clubs were available, so he asked his friend.",
+              "arrivedHow": "Phone call",
+              "targets": [
+                "参加",
+                "特别"
+              ],
+              "chineseLexicalAnchors": [
+                "电话",
+                "告诉",
+                "喜欢",
+                "参加",
+                "摄影",
+                "特别",
+                "贵"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Saturday afternoon, 2:30 PM",
+              "where": "Li Ming's home",
+              "what": "Li Ming worries that the Photography Club is too expensive and might not be safe for beginners, so he wants to check the Hiking Club instead.",
+              "because": "Xiao Hong mentioned a very expensive club, making Li Ming consider cheaper and perhaps safer options.",
+              "arrivedHow": "N/A",
+              "targets": [
+                "安全",
+                "特别"
+              ],
+              "chineseLexicalAnchors": [
+                "担心",
+                "价格",
+                "安全",
+                "爬山",
+                "便宜",
+                "适合"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "Saturday afternoon, 3:00 PM",
+              "where": "School Activity Center",
+              "what": "They walk to the center to talk to the teacher and compare the two clubs directly.",
+              "because": "Li Ming could not decide based on the phone call alone; he needed face-to-face facts.",
+              "arrivedHow": "Walked to school",
+              "targets": [
+                "关于"
+              ],
+              "chineseLexicalAnchors": [
+                "走",
+                "学校",
+                "问",
+                "老师",
+                "关于",
+                "计划",
+                "费用"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Saturday afternoon, 3:15 PM",
+              "where": "School Activity Center",
+              "what": "The teacher explains that the Hiking Club is free and has safety training, while the other club is risky without a teacher.",
+              "because": "They arrived at the center to ask the teacher for specific details about safety and cost.",
+              "arrivedHow": "N/A",
+              "targets": [
+                "只要",
+                "安全"
+              ],
+              "chineseLexicalAnchors": [
+                "老师",
+                "说",
+                "只要",
+                "遵守",
+                "规定",
+                "就",
+                "安全"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "Saturday afternoon, 3:30 PM",
+              "where": "School Activity Center",
+              "what": "Li Ming chooses the Hiking Club because he finally obtained the correct information and feels secure.",
+              "because": "The teacher's explanation resolved the uncertainty about safety and cost.",
+              "arrivedHow": "N/A",
+              "targets": [
+                "选择",
+                "得到"
+              ],
+              "chineseLexicalAnchors": [
+                "决定",
+                "选择",
+                "加入",
+                "得到",
+                "知道",
+                "高兴"
+              ],
+              "lines": 4
+            }
+          ],
+          "resolution": "Li Ming joins the Hiking Club, realizing that getting accurate information (了解/得到) allows him to make a safe choice (选择/安全).",
+          "targetPlan": [
+            {
+              "word": "了解",
+              "beat": 1,
+              "why": "Li Ming needs to gather information before making a decision; he doesn't know the details yet.",
+              "speaker": "Narrator describing Li Ming's thought",
+              "refersTo": "the details of the clubs",
+              "intent": "To express the need for understanding/knowing more facts.",
+              "usageSketch": "李明想要了解更多关于俱乐部的信息。"
+            },
+            {
+              "word": "参加",
+              "beat": 2,
+              "why": "Xiao Hong is talking about the act of joining/being part of a group activity.",
+              "speaker": "Xiao Hong",
+              "refersTo": "the Photography Club",
+              "intent": "To state her intention to be a member of the club.",
+              "usageSketch": "我想参加那个摄影俱乐部。"
+            },
+            {
+              "word": "特别",
+              "beat": 2,
+              "why": "Xiao Hong needs to emphasize that this specific club is notably different (expensive/nice).",
+              "speaker": "Xiao Hong",
+              "refersTo": "the price or quality of the club",
+              "intent": "To highlight that this club is especially expensive or special.",
+              "usageSketch": "但是那个俱乐部特别贵。"
+            },
+            {
+              "word": "安全",
+              "beat": 3,
+              "why": "Li Ming is evaluating risks. He needs the concept of 'safety' to compare the two options.",
+              "speaker": "Li Ming",
+              "refersTo": "the hiking activity vs photography",
+              "intent": "To question if the activity is safe for a beginner.",
+              "usageSketch": "爬山安全吗？"
+            },
+            {
+              "word": "关于",
+              "beat": 4,
+              "why": "They are asking the teacher for information pertaining to specific topics.",
+              "speaker": "Li Ming",
+              "refersTo": "the club rules and costs",
+              "intent": "To specify the topic of their inquiry to the teacher.",
+              "usageSketch": "老师，请问关于安全的情况怎么样？"
+            },
+            {
+              "word": "只要",
+              "beat": 5,
+              "why": "The teacher explains a conditional rule: if you do X, then Y happens. This is a classic use case for 'only if/so long as'.",
+              "speaker": "Teacher",
+              "refersTo": "following the rules",
+              "intent": "To explain that safety is guaranteed provided conditions are met.",
+              "usageSketch": "只要你听老师的话，就是安全的。"
+            },
+            {
+              "word": "选择",
+              "beat": 6,
+              "why": "After gathering all info, Li Ming must make a final selection between the options.",
+              "speaker": "Narrator",
+              "refersTo": "the Hiking Club",
+              "intent": "To describe the final decision-making action.",
+              "usageSketch": "李明最后选择了爬山俱乐部。"
+            },
+            {
+              "word": "得到",
+              "beat": 6,
+              "why": "Li Ming reflects that he has obtained the correct answer/information he sought at the beginning.",
+              "speaker": "Narrator",
+              "refersTo": "the correct information",
+              "intent": "To show the result of his investigation: he got what he needed.",
+              "usageSketch": "他得到了正确的答案。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"看到\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"通知\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"俱乐部\": HSK 6, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"想要\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"摄影\": HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"价格\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"爬山\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"适合\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"计划\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"费用\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"遵守\": HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"规定\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 6 anchor \"加入\": HSK 4, above the story level"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "了解 is given to \"Narrator describing Li Ming's thought\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "了解 usage sketch \"李明想要了解更多关于俱乐部的信息。\": above-level vocabulary: 俱乐部、信息"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "参加 is given to \"Xiao Hong\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "参加 usage sketch \"我想参加那个摄影俱乐部。\": above-level vocabulary: 摄影、俱乐部"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "特别 is given to \"Xiao Hong\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "特别 usage sketch \"但是那个俱乐部特别贵。\": above-level vocabulary: 俱乐部"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "安全 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "安全 usage sketch \"爬山安全吗？\": non-vocabulary text: 爬山"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "关于 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "关于 usage sketch \"老师，请问关于安全的情况怎么样？\": above-level vocabulary: 情况"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "只要 is given to \"Teacher\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "只要 usage sketch \"只要你听老师的话，就是安全的。\": above-level vocabulary: 就是"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "选择 usage sketch \"李明最后选择了爬山俱乐部。\": non-vocabulary text: 爬山; above-level vocabulary: 俱乐部"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "得到 usage sketch \"他得到了正确的答案。\": above-level vocabulary: 正确、答案"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "了解": 1,
+            "参加": 2,
+            "特别": 2,
+            "安全": 3,
+            "关于": 4,
+            "只要": 5,
+            "选择": 6,
+            "得到": 6
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Homework Problem",
+          "chineseTitle": "李明的作业问题",
+          "setting": "Li Ming and Xiao Ming are classmates. It is a Saturday afternoon.",
+          "cast": [
+            "Li Ming",
+            "Xiao Ming"
+          ],
+          "problem": "Li Ming cannot finish his homework because he has a question he does not understand.",
+          "incitingEvent": "Li Ming realizes he does not understand an important part of his homework.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday afternoon, 2:00 PM",
+              "where": "Li Ming's room",
+              "what": "Li Ming is doing his homework but stops because he finds a difficult question.",
+              "because": "the story opens",
+              "targets": [
+                "了解"
+              ],
+              "chineseLexicalAnchors": [
+                "放学",
+                "家",
+                "作业",
+                "不懂",
+                "工作"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Saturday afternoon, 2:15 PM",
+              "where": "Li Ming's room",
+              "what": "Li Ming calls Xiao Ming to ask for help with the homework.",
+              "because": "Li Ming needs help because he does not understand the question.",
+              "arrivedHow": "Phone call",
+              "targets": [
+                "关于"
+              ],
+              "chineseLexicalAnchors": [
+                "打电话",
+                "问",
+                "问题",
+                "怎么样",
+                "请"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 3,
+              "when": "Saturday afternoon, 2:30 PM",
+              "where": "Phone conversation",
+              "what": "Xiao Ming explains the answer, but Li Ming is confused because Xiao Ming is speaking fast.",
+              "because": "Li Ming called Xiao Ming to get help.",
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "说",
+                "快",
+                "慢",
+                "明白",
+                "听"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "Saturday afternoon, 3:00 PM",
+              "where": "Xiao Ming's house",
+              "what": "They meet at Xiao Ming's house to discuss the homework face-to-face.",
+              "because": "The phone explanation failed, so they need to meet in person to clarify.",
+              "arrivedHow": "Walked to Xiao Ming's house",
+              "targets": [
+                "参加",
+                "特别"
+              ],
+              "chineseLexicalAnchors": [
+                "见面",
+                "来",
+                "去",
+                "一起",
+                "学习"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Saturday afternoon, 3:15 PM",
+              "where": "Xiao Ming's house",
+              "what": "Xiao Ming writes the answer on paper. Li Ming finally understands.",
+              "because": "Meeting in person allows Xiao Ming to show the answer visually.",
+              "targets": [
+                "得到",
+                "了解",
+                "只要"
+              ],
+              "chineseLexicalAnchors": [
+                "看",
+                "写",
+                "对",
+                "错",
+                "问题"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "Saturday afternoon, 4:00 PM",
+              "where": "Xiao Ming's house",
+              "what": "Li Ming finishes his homework and goes home happy. He chooses to study with friends next time.",
+              "because": "The problem is solved, so he reflects on the best method.",
+              "targets": [
+                "选择",
+                "安全"
+              ],
+              "chineseLexicalAnchors": [
+                "高兴",
+                "回家",
+                "方法",
+                "好",
+                "决定"
+              ],
+              "lines": 4
+            }
+          ],
+          "resolution": "Li Ming finishes his homework by meeting Xiao Ming. He decides that studying together is a safe and effective method.",
+          "targetPlan": [
+            {
+              "word": "了解",
+              "beat": 1,
+              "why": "Li Ming needs to admit that he lacks understanding of the homework question to explain why he stopped working.",
+              "speaker": "Li Ming",
+              "refersTo": "The difficult homework question",
+              "intent": "To express confusion and the need for help",
+              "usageSketch": "我不了解这个作业是什么意思。"
+            },
+            {
+              "word": "关于",
+              "beat": 2,
+              "why": "Li Ming needs to specify the topic of his question when calling Xiao Ming.",
+              "speaker": "Li Ming",
+              "refersTo": "The specific homework problem",
+              "intent": "To clarify the subject of the phone call",
+              "usageSketch": "我想问你关于数学作业的问题。"
+            },
+            {
+              "word": "参加",
+              "beat": 4,
+              "why": "Li Ming invites Xiao Ming to join his study effort, framing it as an activity they do together.",
+              "speaker": "Li Ming",
+              "refersTo": "The act of studying together",
+              "intent": "To propose doing the homework together",
+              "usageSketch": "请你来参加我的学习活动吧。"
+            },
+            {
+              "word": "特别",
+              "beat": 4,
+              "why": "Li Ming emphasizes the importance of the homework to motivate Xiao Ming to come over.",
+              "speaker": "Li Ming",
+              "refersTo": "The difficulty or importance of the homework",
+              "intent": "To stress urgency or significance",
+              "usageSketch": "今天的作业特别难。"
+            },
+            {
+              "word": "得到",
+              "beat": 5,
+              "why": "Li Ming expresses that he has now acquired the correct answer/information he was missing.",
+              "speaker": "Li Ming",
+              "refersTo": "The correct answer to the homework",
+              "intent": "To confirm success in getting the solution",
+              "usageSketch": "我得到了正确的答案。"
+            },
+            {
+              "word": "了解",
+              "beat": 5,
+              "why": "Li Ming confirms his new state of knowledge after seeing the written answer.",
+              "speaker": "Li Ming",
+              "refersTo": "The homework question",
+              "intent": "To confirm understanding",
+              "usageSketch": "我现在完全了解这个问题了。"
+            },
+            {
+              "word": "只要",
+              "beat": 5,
+              "why": "Xiao Ming explains the condition for solving the problem easily.",
+              "speaker": "Xiao Ming",
+              "refersTo": "The method of looking carefully/studying together",
+              "intent": "To give a simple condition for success",
+              "usageSketch": "只要你仔细看，就能明白。"
+            },
+            {
+              "word": "选择",
+              "beat": 6,
+              "why": "Li Ming makes a decision about his future study habits based on the positive experience.",
+              "speaker": "Li Ming",
+              "refersTo": "The method of studying with friends",
+              "intent": "To state his new preference/decision",
+              "usageSketch": "我选择和朋友一起学习。"
+            },
+            {
+              "word": "安全",
+              "beat": 6,
+              "why": "Li Ming describes the method of studying with a friend at a friend's house as 'safe' (reliable/secure), contrasting with being stuck alone.",
+              "speaker": "Li Ming",
+              "refersTo": "The situation of studying together",
+              "intent": "To describe the stability/reliability of the method",
+              "usageSketch": "这样学习很安全，我不担心做错了。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "cast_unknown",
+              "message": "characters outside the cast: Li Ming、Xiao Ming"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"不懂\": not standard vocabulary"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 3 moves to \"Phone conversation\" without saying how"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 6 anchor \"回家\": not standard vocabulary"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "了解 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "关于 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "参加 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "参加 usage sketch \"请你来参加我的学习活动吧。\": above-level vocabulary: 活动"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "特别 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "得到 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "得到 usage sketch \"我得到了正确的答案。\": above-level vocabulary: 正确、答案"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "了解 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "了解 usage sketch \"我现在完全了解这个问题了。\": above-level vocabulary: 完全"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "只要 is given to \"Xiao Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "只要 usage sketch \"只要你仔细看，就能明白。\": above-level vocabulary: 仔细"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "选择 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "安全 is given to \"Li Ming\", who is not in the cast"
+            }
+          ],
+          "cast": [
+            "Li Ming",
+            "Xiao Ming"
+          ],
+          "beats": 6,
+          "placed": {
+            "了解": 5,
+            "关于": 2,
+            "参加": 4,
+            "特别": 4,
+            "得到": 5,
+            "只要": 5,
+            "选择": 6,
+            "安全": 6
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Homework Problem",
+          "chineseTitle": "李明的作业问题",
+          "setting": "Li Ming and Xiao Ming are classmates. It is a Saturday afternoon.",
+          "cast": [
+            "Li Ming",
+            "Xiao Ming"
+          ],
+          "problem": "Li Ming cannot finish his homework because he has a question he does not understand.",
+          "incitingEvent": "Li Ming realizes he does not understand an important part of his homework.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday afternoon, 2:00 PM",
+              "where": "Li Ming's room",
+              "what": "Li Ming is doing his homework but stops because he finds a difficult question.",
+              "because": "the story opens",
+              "targets": [
+                "了解"
+              ],
+              "chineseLexicalAnchors": [
+                "放学",
+                "家",
+                "作业",
+                "不懂",
+                "工作"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Saturday afternoon, 2:15 PM",
+              "where": "Li Ming's room",
+              "what": "Li Ming calls Xiao Ming to ask for help with the homework.",
+              "because": "Li Ming needs help because he does not understand the question.",
+              "arrivedHow": "Phone call",
+              "targets": [
+                "关于"
+              ],
+              "chineseLexicalAnchors": [
+                "打电话",
+                "问",
+                "问题",
+                "怎么样",
+                "请"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 3,
+              "when": "Saturday afternoon, 2:30 PM",
+              "where": "Phone conversation",
+              "what": "Xiao Ming explains the answer, but Li Ming is confused because Xiao Ming is speaking fast.",
+              "because": "Li Ming called Xiao Ming to get help.",
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "说",
+                "快",
+                "慢",
+                "明白",
+                "听"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "Saturday afternoon, 3:00 PM",
+              "where": "Xiao Ming's house",
+              "what": "They meet at Xiao Ming's house to discuss the homework face-to-face.",
+              "because": "The phone explanation failed, so they need to meet in person to clarify.",
+              "arrivedHow": "Walked to Xiao Ming's house",
+              "targets": [
+                "参加",
+                "特别"
+              ],
+              "chineseLexicalAnchors": [
+                "见面",
+                "来",
+                "去",
+                "一起",
+                "学习"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Saturday afternoon, 3:15 PM",
+              "where": "Xiao Ming's house",
+              "what": "Xiao Ming writes the answer on paper. Li Ming finally understands.",
+              "because": "Meeting in person allows Xiao Ming to show the answer visually.",
+              "targets": [
+                "得到",
+                "了解",
+                "只要"
+              ],
+              "chineseLexicalAnchors": [
+                "看",
+                "写",
+                "对",
+                "错",
+                "问题"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "Saturday afternoon, 4:00 PM",
+              "where": "Xiao Ming's house",
+              "what": "Li Ming finishes his homework and goes home happy. He chooses to study with friends next time.",
+              "because": "The problem is solved, so he reflects on the best method.",
+              "targets": [
+                "选择",
+                "安全"
+              ],
+              "chineseLexicalAnchors": [
+                "高兴",
+                "回家",
+                "方法",
+                "好",
+                "决定"
+              ],
+              "lines": 4
+            }
+          ],
+          "resolution": "Li Ming finishes his homework by meeting Xiao Ming. He decides that studying together is a safe and effective method.",
+          "targetPlan": [
+            {
+              "word": "了解",
+              "beat": 1,
+              "why": "Li Ming needs to admit that he lacks understanding of the homework question to explain why he stopped working.",
+              "speaker": "Li Ming",
+              "refersTo": "The difficult homework question",
+              "intent": "To express confusion and the need for help",
+              "usageSketch": "我不了解这个作业是什么意思。"
+            },
+            {
+              "word": "关于",
+              "beat": 2,
+              "why": "Li Ming needs to specify the topic of his question when calling Xiao Ming.",
+              "speaker": "Li Ming",
+              "refersTo": "The specific homework problem",
+              "intent": "To clarify the subject of the phone call",
+              "usageSketch": "我想问你关于数学作业的问题。"
+            },
+            {
+              "word": "参加",
+              "beat": 4,
+              "why": "Li Ming invites Xiao Ming to join his study effort, framing it as an activity they do together.",
+              "speaker": "Li Ming",
+              "refersTo": "The act of studying together",
+              "intent": "To propose doing the homework together",
+              "usageSketch": "请你来参加我的学习活动吧。"
+            },
+            {
+              "word": "特别",
+              "beat": 4,
+              "why": "Li Ming emphasizes the importance of the homework to motivate Xiao Ming to come over.",
+              "speaker": "Li Ming",
+              "refersTo": "The difficulty or importance of the homework",
+              "intent": "To stress urgency or significance",
+              "usageSketch": "今天的作业特别难。"
+            },
+            {
+              "word": "得到",
+              "beat": 5,
+              "why": "Li Ming expresses that he has now acquired the correct answer/information he was missing.",
+              "speaker": "Li Ming",
+              "refersTo": "The correct answer to the homework",
+              "intent": "To confirm success in getting the solution",
+              "usageSketch": "我得到了正确的答案。"
+            },
+            {
+              "word": "了解",
+              "beat": 5,
+              "why": "Li Ming confirms his new state of knowledge after seeing the written answer.",
+              "speaker": "Li Ming",
+              "refersTo": "The homework question",
+              "intent": "To confirm understanding",
+              "usageSketch": "我现在完全了解这个问题了。"
+            },
+            {
+              "word": "只要",
+              "beat": 5,
+              "why": "Xiao Ming explains the condition for solving the problem easily.",
+              "speaker": "Xiao Ming",
+              "refersTo": "The method of looking carefully/studying together",
+              "intent": "To give a simple condition for success",
+              "usageSketch": "只要你仔细看，就能明白。"
+            },
+            {
+              "word": "选择",
+              "beat": 6,
+              "why": "Li Ming makes a decision about his future study habits based on the positive experience.",
+              "speaker": "Li Ming",
+              "refersTo": "The method of studying with friends",
+              "intent": "To state his new preference/decision",
+              "usageSketch": "我选择和朋友一起学习。"
+            },
+            {
+              "word": "安全",
+              "beat": 6,
+              "why": "Li Ming describes the method of studying with a friend at a friend's house as 'safe' (reliable/secure), contrasting with being stuck alone.",
+              "speaker": "Li Ming",
+              "refersTo": "The situation of studying together",
+              "intent": "To describe the stability/reliability of the method",
+              "usageSketch": "这样学习很安全，我不担心做错了。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "cast_unknown",
+              "message": "characters outside the cast: Li Ming、Xiao Ming"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"不懂\": not standard vocabulary"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 3 moves to \"Phone conversation\" without saying how"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 6 anchor \"回家\": not standard vocabulary"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "了解 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "关于 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "参加 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "参加 usage sketch \"请你来参加我的学习活动吧。\": above-level vocabulary: 活动"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "特别 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "得到 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "得到 usage sketch \"我得到了正确的答案。\": above-level vocabulary: 正确、答案"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "了解 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "了解 usage sketch \"我现在完全了解这个问题了。\": above-level vocabulary: 完全"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "只要 is given to \"Xiao Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "只要 usage sketch \"只要你仔细看，就能明白。\": above-level vocabulary: 仔细"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "选择 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "安全 is given to \"Li Ming\", who is not in the cast"
+            }
+          ],
+          "cast": [
+            "Li Ming",
+            "Xiao Ming"
+          ],
+          "beats": 6,
+          "placed": {
+            "了解": 5,
+            "关于": 2,
+            "参加": 4,
+            "特别": 4,
+            "得到": 5,
+            "只要": 5,
+            "选择": 6,
+            "安全": 6
+          }
+        }
+      }
+    ],
+    "judgeRaw": null,
+    "selection": {
+      "code": "NO_VALID_BLUEPRINT"
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "blueprint-3-L3-003",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}

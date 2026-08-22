@@ -1,0 +1,1449 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "blueprint-3",
+  "generatedAt": "2026-08-22T15:29:46.416Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "blueprint-3-L3-002",
+    "batchId": "blueprint-3",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "结束",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "来自",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "out in the city: places, errands, and a small discovery",
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "composition": {
+      "bucket": "places",
+      "reason": "4 pending hard targets share the \"places\" theme",
+      "hard": [
+        {
+          "word": "发生",
+          "meaning": "to happen; to occur; to take place; to break out"
+        },
+        {
+          "word": "国家",
+          "meaning": "country; nation; state"
+        },
+        {
+          "word": "结束",
+          "meaning": "termination; to finish"
+        },
+        {
+          "word": "来自",
+          "meaning": "to come from (a place); From: (in email header)"
+        },
+        {
+          "word": "生活",
+          "meaning": "to live; life"
+        }
+      ],
+      "soft": [
+        {
+          "word": "其他",
+          "meaning": "other; (sth or sb) else"
+        },
+        {
+          "word": "或者",
+          "meaning": "or; possibly; maybe; perhaps"
+        },
+        {
+          "word": "当然",
+          "meaning": "only natural; as it should be"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "发生",
+      "国家",
+      "结束",
+      "来自",
+      "生活"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "blueprints": [
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": null,
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unparseable",
+              "message": "no JSON plan in the response"
+            }
+          ]
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Lost Wallet at the Bookstore",
+          "chineseTitle": "书店里的钱包",
+          "setting": "A sunny afternoon in a busy city neighborhood.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming loses his wallet while running errands and cannot pay for a book he urgently needs.",
+          "incitingEvent": "Li Ming realizes his wallet is missing right before he pays at the bookstore.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Tuesday afternoon, 2:00 PM",
+              "where": "A quiet park bench",
+              "what": "Li Ming meets Xiao Hong. They are talking about their weekend plans.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "公园",
+                "朋友",
+                "聊天",
+                "天气",
+                "好"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "2:15 PM",
+              "where": "The street near the park",
+              "what": "They decide to go to the bookstore together to buy gifts.",
+              "because": "Xiao Hong mentions she wants to see what new books are out, so they walk there.",
+              "arrivedHow": "Walked together down the street.",
+              "targets": [
+                "来自"
+              ],
+              "chineseLexicalAnchors": [
+                "书",
+                "买",
+                "礼物",
+                "来自",
+                "美国"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "2:30 PM",
+              "where": "Inside the bookstore",
+              "what": "They look for books. Li Ming finds a perfect gift but forgets to check his pockets.",
+              "because": "They entered the store to look for items.",
+              "arrivedHow": null,
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "找",
+                "有趣",
+                "喜欢",
+                "帮助",
+                "选择"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "2:45 PM",
+              "where": "The bookstore checkout counter",
+              "what": "Li Ming tries to pay but realizes his wallet is gone. He is worried.",
+              "because": "They finished selecting books and went to pay.",
+              "arrivedHow": null,
+              "targets": [
+                "结束",
+                "发生"
+              ],
+              "chineseLexicalAnchors": [
+                "付钱",
+                "钱包",
+                "不在",
+                "着急",
+                "发生",
+                "事情"
+              ],
+              "lines": 7
+            },
+            {
+              "id": 5,
+              "when": "3:00 PM",
+              "where": "The bookstore checkout counter (same spot)",
+              "what": "A stranger returns Li Ming's wallet, which he dropped in the park.",
+              "because": "Li Ming felt panic, prompting Xiao Hong to suggest checking with staff or friends.",
+              "arrivedHow": null,
+              "targets": [
+                "生活",
+                "国家",
+                "其他",
+                "或者",
+                "当然"
+              ],
+              "chineseLexicalAnchors": [
+                "谢谢",
+                "捡",
+                "钱包",
+                "朋友",
+                "好",
+                "生活",
+                "国家"
+              ],
+              "lines": 6
+            }
+          ],
+          "resolution": "Li Ming gets his wallet back, pays for the book, and buys dinner for Xiao Hong to say thank you.",
+          "targetPlan": [
+            {
+              "word": "来自",
+              "beat": 2,
+              "why": "Xiao Hong is recommending a book by an author from another country. She needs to specify the origin to tell Li Ming which book it is.",
+              "speaker": "小红",
+              "refersTo": "The author's origin",
+              "intent": "To specify that the book is translated or from a different culture.",
+              "usageSketch": "这本书的作者来自美国。"
+            },
+            {
+              "word": "发生",
+              "beat": 4,
+              "why": "Li Ming is panicking because the event of losing his wallet just happened. He needs a word to describe the sudden accident.",
+              "speaker": "李明",
+              "refersTo": "The loss of the wallet",
+              "intent": "To explain what went wrong suddenly.",
+              "usageSketch": "刚才发生了一件不好的事情。"
+            },
+            {
+              "word": "结束",
+              "beat": 4,
+              "why": "Li Ming is stressed, but Xiao Hong tries to calm him down by saying the 'worst part' (looking for it) can end once they call for help.",
+              "speaker": "小红",
+              "refersTo": "The period of panic/searching",
+              "intent": "To suggest that the difficult part will be over soon.",
+              "usageSketch": "别担心，这个问题很快就结束。"
+            },
+            {
+              "word": "其他",
+              "beat": 5,
+              "why": "The stranger asks if Li Ming has lost any other items (like ID or cards) to ensure everything is returned.",
+              "speaker": "陌生人",
+              "refersTo": "Other items inside the wallet",
+              "intent": "To check completeness of the returned item.",
+              "usageSketch": "你的卡和其他证件都在吗？"
+            },
+            {
+              "word": "或者",
+              "beat": 5,
+              "why": "Xiao Hong suggests options: call the police OR ask the staff. She uses 'or' to give choices.",
+              "speaker": "小红",
+              "refersTo": "Alternative actions",
+              "intent": "To present two possible solutions.",
+              "usageSketch": "我们问店员或者报警。"
+            },
+            {
+              "word": "当然",
+              "beat": 5,
+              "why": "Li Ming agrees immediately that Xiao Hong's idea is good. He uses 'of course' to show strong agreement.",
+              "speaker": "李明",
+              "refersTo": "Xiao Hong's suggestion",
+              "intent": "To agree enthusiastically.",
+              "usageSketch": "当然，这是个好主意。"
+            },
+            {
+              "word": "生活",
+              "beat": 5,
+              "why": "After the stress, Xiao Hong comments on how small surprises can happen in daily life.",
+              "speaker": "小红",
+              "refersTo": "Daily life",
+              "intent": "To reflect on the experience.",
+              "usageSketch": "生活里总有意外。"
+            },
+            {
+              "word": "国家",
+              "beat": 2,
+              "why": "Used in conjunction with '来自' to emphasize the international origin of the book/author.",
+              "speaker": "小红",
+              "refersTo": "The source country",
+              "intent": "To specify the geographical origin.",
+              "usageSketch": "那是另一个国家的语言。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"聊天\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"美国\": not standard vocabulary"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 3 moves to \"Inside the bookstore\" without saying how"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"有趣\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"付钱\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"钱包\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"不在\": not standard vocabulary"
+            },
+            {
+              "code": "beat_target_dump",
+              "message": "beat 5 carries 5 target words"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"捡\": HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"钱包\": not standard vocabulary"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "来自 usage sketch \"这本书的作者来自美国。\": above-level vocabulary: 作者、美"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "其他 is given to \"陌生人\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "其他 usage sketch \"你的卡和其他证件都在吗？\": above-level vocabulary: 证件"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "或者 usage sketch \"我们问店员或者报警。\": above-level vocabulary: 报警"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "当然 usage sketch \"当然，这是个好主意。\": above-level vocabulary: 主意"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "生活 usage sketch \"生活里总有意外。\": above-level vocabulary: 意外"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "国家 usage sketch \"那是另一个国家的语言。\": above-level vocabulary: 另"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 5,
+          "placed": {
+            "来自": 2,
+            "发生": 4,
+            "结束": 4,
+            "其他": 5,
+            "或者": 5,
+            "当然": 5,
+            "生活": 5,
+            "国家": 2
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Lost Wallet at the Bookstore",
+          "chineseTitle": "书店里的钱包",
+          "setting": "A sunny afternoon in a busy city neighborhood.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming loses his wallet while running errands and cannot pay for a book he urgently needs.",
+          "incitingEvent": "Li Ming realizes his wallet is missing right before he pays at the bookstore.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Tuesday afternoon, 2:00 PM",
+              "where": "A quiet park bench",
+              "what": "Li Ming meets Xiao Hong. They are talking about their weekend plans.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "公园",
+                "朋友",
+                "聊天",
+                "天气",
+                "好"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "2:15 PM",
+              "where": "The street near the park",
+              "what": "They decide to go to the bookstore together to buy gifts.",
+              "because": "Xiao Hong mentions she wants to see what new books are out, so they walk there.",
+              "arrivedHow": "Walked together down the street.",
+              "targets": [
+                "来自"
+              ],
+              "chineseLexicalAnchors": [
+                "书",
+                "买",
+                "礼物",
+                "来自",
+                "美国"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "2:30 PM",
+              "where": "Inside the bookstore",
+              "what": "They look for books. Li Ming finds a perfect gift but forgets to check his pockets.",
+              "because": "They entered the store to look for items.",
+              "arrivedHow": null,
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "找",
+                "有趣",
+                "喜欢",
+                "帮助",
+                "选择"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "2:45 PM",
+              "where": "The bookstore checkout counter",
+              "what": "Li Ming tries to pay but realizes his wallet is gone. He is worried.",
+              "because": "They finished selecting books and went to pay.",
+              "arrivedHow": null,
+              "targets": [
+                "结束",
+                "发生"
+              ],
+              "chineseLexicalAnchors": [
+                "付钱",
+                "钱包",
+                "不在",
+                "着急",
+                "发生",
+                "事情"
+              ],
+              "lines": 7
+            },
+            {
+              "id": 5,
+              "when": "3:00 PM",
+              "where": "The bookstore checkout counter (same spot)",
+              "what": "A stranger returns Li Ming's wallet, which he dropped in the park.",
+              "because": "Li Ming felt panic, prompting Xiao Hong to suggest checking with staff or friends.",
+              "arrivedHow": null,
+              "targets": [
+                "生活",
+                "国家",
+                "其他",
+                "或者",
+                "当然"
+              ],
+              "chineseLexicalAnchors": [
+                "谢谢",
+                "捡",
+                "钱包",
+                "朋友",
+                "好",
+                "生活",
+                "国家"
+              ],
+              "lines": 6
+            }
+          ],
+          "resolution": "Li Ming gets his wallet back, pays for the book, and buys dinner for Xiao Hong to say thank you.",
+          "targetPlan": [
+            {
+              "word": "来自",
+              "beat": 2,
+              "why": "Xiao Hong is recommending a book by an author from another country. She needs to specify the origin to tell Li Ming which book it is.",
+              "speaker": "小红",
+              "refersTo": "The author's origin",
+              "intent": "To specify that the book is translated or from a different culture.",
+              "usageSketch": "这本书的作者来自美国。"
+            },
+            {
+              "word": "发生",
+              "beat": 4,
+              "why": "Li Ming is panicking because the event of losing his wallet just happened. He needs a word to describe the sudden accident.",
+              "speaker": "李明",
+              "refersTo": "The loss of the wallet",
+              "intent": "To explain what went wrong suddenly.",
+              "usageSketch": "刚才发生了一件不好的事情。"
+            },
+            {
+              "word": "结束",
+              "beat": 4,
+              "why": "Li Ming is stressed, but Xiao Hong tries to calm him down by saying the 'worst part' (looking for it) can end once they call for help.",
+              "speaker": "小红",
+              "refersTo": "The period of panic/searching",
+              "intent": "To suggest that the difficult part will be over soon.",
+              "usageSketch": "别担心，这个问题很快就结束。"
+            },
+            {
+              "word": "其他",
+              "beat": 5,
+              "why": "The stranger asks if Li Ming has lost any other items (like ID or cards) to ensure everything is returned.",
+              "speaker": "陌生人",
+              "refersTo": "Other items inside the wallet",
+              "intent": "To check completeness of the returned item.",
+              "usageSketch": "你的卡和其他证件都在吗？"
+            },
+            {
+              "word": "或者",
+              "beat": 5,
+              "why": "Xiao Hong suggests options: call the police OR ask the staff. She uses 'or' to give choices.",
+              "speaker": "小红",
+              "refersTo": "Alternative actions",
+              "intent": "To present two possible solutions.",
+              "usageSketch": "我们问店员或者报警。"
+            },
+            {
+              "word": "当然",
+              "beat": 5,
+              "why": "Li Ming agrees immediately that Xiao Hong's idea is good. He uses 'of course' to show strong agreement.",
+              "speaker": "李明",
+              "refersTo": "Xiao Hong's suggestion",
+              "intent": "To agree enthusiastically.",
+              "usageSketch": "当然，这是个好主意。"
+            },
+            {
+              "word": "生活",
+              "beat": 5,
+              "why": "After the stress, Xiao Hong comments on how small surprises can happen in daily life.",
+              "speaker": "小红",
+              "refersTo": "Daily life",
+              "intent": "To reflect on the experience.",
+              "usageSketch": "生活里总有意外。"
+            },
+            {
+              "word": "国家",
+              "beat": 2,
+              "why": "Used in conjunction with '来自' to emphasize the international origin of the book/author.",
+              "speaker": "小红",
+              "refersTo": "The source country",
+              "intent": "To specify the geographical origin.",
+              "usageSketch": "那是另一个国家的语言。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"聊天\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"美国\": not standard vocabulary"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 3 moves to \"Inside the bookstore\" without saying how"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"有趣\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"付钱\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"钱包\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"不在\": not standard vocabulary"
+            },
+            {
+              "code": "beat_target_dump",
+              "message": "beat 5 carries 5 target words"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"捡\": HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"钱包\": not standard vocabulary"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "来自 usage sketch \"这本书的作者来自美国。\": above-level vocabulary: 作者、美"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "其他 is given to \"陌生人\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "其他 usage sketch \"你的卡和其他证件都在吗？\": above-level vocabulary: 证件"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "或者 usage sketch \"我们问店员或者报警。\": above-level vocabulary: 报警"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "当然 usage sketch \"当然，这是个好主意。\": above-level vocabulary: 主意"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "生活 usage sketch \"生活里总有意外。\": above-level vocabulary: 意外"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "国家 usage sketch \"那是另一个国家的语言。\": above-level vocabulary: 另"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 5,
+          "placed": {
+            "来自": 2,
+            "发生": 4,
+            "结束": 4,
+            "其他": 5,
+            "或者": 5,
+            "当然": 5,
+            "生活": 5,
+            "国家": 2
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": null,
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unparseable",
+              "message": "no JSON plan in the response"
+            }
+          ]
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Lost Friend from Another Country",
+          "chineseTitle": "寻找外国朋友",
+          "setting": "A sunny Saturday afternoon in a busy city center with parks and train stations.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming cannot find his foreign friend to meet him for lunch because he lost the friend's contact info and doesn't remember which country he is from.",
+          "incitingEvent": "Li Ming realizes he is late for lunch with his friend and has forgotten the meeting place and the friend's name/country.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday 11:30 AM",
+              "where": "Li Ming's apartment",
+              "what": "Li Ming looks for his phone to confirm the meeting details but realizes he deleted the friend's contact number yesterday by mistake.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [
+                "生活"
+              ],
+              "chineseLexicalAnchors": [
+                "手机",
+                "昨天",
+                "删除",
+                "生活",
+                "忙",
+                "错误"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "Saturday 11:45 AM",
+              "where": "Li Ming's apartment",
+              "what": "Li Ming calls Xiao Hong, a friend who lives nearby, to ask if she knows where his foreign friend is. He asks if the friend came from the US or Japan, but he is not sure.",
+              "because": "Li Ming needs help and knows Xiao Hong saw the friend earlier that week.",
+              "arrivedHow": null,
+              "targets": [
+                "来自",
+                "或者"
+              ],
+              "chineseLexicalAnchors": [
+                "打电话",
+                "知道",
+                "来自",
+                "或者",
+                "美国",
+                "日本",
+                "谁"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Saturday 12:00 PM",
+              "where": "The City Central Park",
+              "what": "Xiao Hong tells Li Ming that the friend said he was waiting at the park bench near the lake, not the restaurant. Li Ming runs to the park.",
+              "because": "Xiao Hong provides the correct location, prompting Li Ming to move there.",
+              "arrivedHow": "runs through the street",
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "公园",
+                "湖",
+                "长椅",
+                "跑步",
+                "去",
+                "那里"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 4,
+              "when": "Saturday 12:15 PM",
+              "where": "The City Central Park bench",
+              "what": "Li Ming arrives but the bench is empty. He sees a blue backpack left there. He thinks the friend might have left or something happened, so he waits nervously.",
+              "because": "Li Ming went to the location Xiao Hong specified, but the friend is not there.",
+              "arrivedHow": null,
+              "targets": [
+                "发生"
+              ],
+              "chineseLexicalAnchors": [
+                "背包",
+                "蓝色",
+                "空",
+                "发生",
+                "担心",
+                "等"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Saturday 12:20 PM",
+              "where": "The City Central Park bench",
+              "what": "The friend runs up, out of breath. He explains he was buying water and got lost. Li Ming is relieved. They decide to eat now because the lunch time is almost over.",
+              "because": "The friend returns just as Li Ming starts to worry seriously.",
+              "arrivedHow": null,
+              "targets": [
+                "结束"
+              ],
+              "chineseLexicalAnchors": [
+                "跑",
+                "累",
+                "水",
+                "迷路",
+                "结束",
+                "吃饭"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "Saturday 12:25 PM",
+              "where": "A restaurant near the park",
+              "what": "They sit down. Li Ming introduces the friend to Xiao Hong on the phone again to clarify he is from Canada (not US or Japan). The misunderstanding is resolved.",
+              "because": "Li Ming wants to confirm the friend's identity and country to avoid future mistakes.",
+              "arrivedHow": "walks to the restaurant",
+              "targets": [
+                "国家",
+                "其他"
+              ],
+              "chineseLexicalAnchors": [
+                "加拿大",
+                "国家",
+                "当然",
+                "其他",
+                "明白"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "Li Ming finds his friend, confirms he is from Canada, and they have lunch together, resolving the confusion about the meeting place and identity.",
+          "targetPlan": [
+            {
+              "word": "生活",
+              "beat": 1,
+              "why": "Li Ming explains why he deleted the number: his daily life is too busy and chaotic, causing the mistake. It contextualizes the error as part of his routine.",
+              "speaker": "Li Ming (to himself/narrator)",
+              "refersTo": "Li Ming's daily routine/busy schedule",
+              "intent": "To explain the reason for losing the contact info.",
+              "usageSketch": "最近我的生活太忙了，所以不小心删除了电话。"
+            },
+            {
+              "word": "来自",
+              "beat": 2,
+              "why": "Li Ming is trying to recall the friend's background. He uses 'from' to specify the country of origin as a distinguishing feature.",
+              "speaker": "Li Ming",
+              "refersTo": "The friend's country of origin",
+              "intent": "To narrow down who he is looking for.",
+              "usageSketch": "他是来自美国吗？"
+            },
+            {
+              "word": "或者",
+              "beat": 2,
+              "why": "Li Ming is uncertain. He uses 'or' to present an alternative possibility for the friend's country.",
+              "speaker": "Li Ming",
+              "refersTo": "Japan (as an alternative country)",
+              "intent": "To express uncertainty between two options.",
+              "usageSketch": "还是来自日本？或者其他？"
+            },
+            {
+              "word": "发生",
+              "beat": 4,
+              "why": "Li Ming sees an empty backpack and wonders if an accident or theft occurred. He needs a word for 'happen' to describe a potential negative event.",
+              "speaker": "Li Ming (thinking)",
+              "refersTo": "The disappearance of the friend",
+              "intent": "To worry about a possible accident.",
+              "usageSketch": "他不在，难道发生了什么？"
+            },
+            {
+              "word": "结束",
+              "beat": 5,
+              "why": "The lunch time is passing. They need to leave to get food before the opportunity or the specific time slot is over.",
+              "speaker": "The friend",
+              "refersTo": "The waiting time / the specific meal period",
+              "intent": "To urge action because time is running out.",
+              "usageSketch": "午饭时间快结束了，我们快走吧。"
+            },
+            {
+              "word": "国家",
+              "beat": 6,
+              "why": "Li Ming finally learns the specific country. He asks what country the friend is from to update his memory/file.",
+              "speaker": "Li Ming",
+              "refersTo": "Canada",
+              "intent": "To identify the friend's nationality clearly.",
+              "usageSketch": "你来自哪个国家？"
+            },
+            {
+              "word": "其他",
+              "beat": 6,
+              "why": "Li Ming mentions 'other' countries when listing possibilities to Xiao Hong, or accepts that it is not the first two options.",
+              "speaker": "Li Ming",
+              "refersTo": "Any other country besides US or Japan",
+              "intent": "To include remaining possibilities.",
+              "usageSketch": "也许来自其他国家。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "chinese_title_lexis",
+              "message": "title uses above-level vocabulary: 寻找"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"删除\": HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"错误\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"美国\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"日本\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"湖\": HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"长椅\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"背包\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"蓝色\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"空\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"迷路\": HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"吃饭\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 6 anchor \"加拿大\": not standard vocabulary"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "生活 is given to \"Li Ming (to himself/narrator)\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "生活 usage sketch \"最近我的生活太忙了，所以不小心删除了电话。\": above-level vocabulary: 删除"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "来自 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "来自 usage sketch \"他是来自美国吗？\": above-level vocabulary: 美"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "或者 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "发生 is given to \"Li Ming (thinking)\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "发生 usage sketch \"他不在，难道发生了什么？\": above-level vocabulary: 难道"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "结束 is given to \"The friend\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "国家 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "其他 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "其他 usage sketch \"也许来自其他国家。\": above-level vocabulary: 也许"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "生活": 1,
+            "来自": 2,
+            "或者": 2,
+            "发生": 4,
+            "结束": 5,
+            "国家": 6,
+            "其他": 6
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Lost Friend from Another Country",
+          "chineseTitle": "寻找外国朋友",
+          "setting": "A sunny Saturday afternoon in a busy city center with parks and train stations.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming cannot find his foreign friend to meet him for lunch because he lost the friend's contact info and doesn't remember which country he is from.",
+          "incitingEvent": "Li Ming realizes he is late for lunch with his friend and has forgotten the meeting place and the friend's name/country.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday 11:30 AM",
+              "where": "Li Ming's apartment",
+              "what": "Li Ming looks for his phone to confirm the meeting details but realizes he deleted the friend's contact number yesterday by mistake.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [
+                "生活"
+              ],
+              "chineseLexicalAnchors": [
+                "手机",
+                "昨天",
+                "删除",
+                "生活",
+                "忙",
+                "错误"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "Saturday 11:45 AM",
+              "where": "Li Ming's apartment",
+              "what": "Li Ming calls Xiao Hong, a friend who lives nearby, to ask if she knows where his foreign friend is. He asks if the friend came from the US or Japan, but he is not sure.",
+              "because": "Li Ming needs help and knows Xiao Hong saw the friend earlier that week.",
+              "arrivedHow": null,
+              "targets": [
+                "来自",
+                "或者"
+              ],
+              "chineseLexicalAnchors": [
+                "打电话",
+                "知道",
+                "来自",
+                "或者",
+                "美国",
+                "日本",
+                "谁"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Saturday 12:00 PM",
+              "where": "The City Central Park",
+              "what": "Xiao Hong tells Li Ming that the friend said he was waiting at the park bench near the lake, not the restaurant. Li Ming runs to the park.",
+              "because": "Xiao Hong provides the correct location, prompting Li Ming to move there.",
+              "arrivedHow": "runs through the street",
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "公园",
+                "湖",
+                "长椅",
+                "跑步",
+                "去",
+                "那里"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 4,
+              "when": "Saturday 12:15 PM",
+              "where": "The City Central Park bench",
+              "what": "Li Ming arrives but the bench is empty. He sees a blue backpack left there. He thinks the friend might have left or something happened, so he waits nervously.",
+              "because": "Li Ming went to the location Xiao Hong specified, but the friend is not there.",
+              "arrivedHow": null,
+              "targets": [
+                "发生"
+              ],
+              "chineseLexicalAnchors": [
+                "背包",
+                "蓝色",
+                "空",
+                "发生",
+                "担心",
+                "等"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Saturday 12:20 PM",
+              "where": "The City Central Park bench",
+              "what": "The friend runs up, out of breath. He explains he was buying water and got lost. Li Ming is relieved. They decide to eat now because the lunch time is almost over.",
+              "because": "The friend returns just as Li Ming starts to worry seriously.",
+              "arrivedHow": null,
+              "targets": [
+                "结束"
+              ],
+              "chineseLexicalAnchors": [
+                "跑",
+                "累",
+                "水",
+                "迷路",
+                "结束",
+                "吃饭"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "Saturday 12:25 PM",
+              "where": "A restaurant near the park",
+              "what": "They sit down. Li Ming introduces the friend to Xiao Hong on the phone again to clarify he is from Canada (not US or Japan). The misunderstanding is resolved.",
+              "because": "Li Ming wants to confirm the friend's identity and country to avoid future mistakes.",
+              "arrivedHow": "walks to the restaurant",
+              "targets": [
+                "国家",
+                "其他"
+              ],
+              "chineseLexicalAnchors": [
+                "加拿大",
+                "国家",
+                "当然",
+                "其他",
+                "明白"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "Li Ming finds his friend, confirms he is from Canada, and they have lunch together, resolving the confusion about the meeting place and identity.",
+          "targetPlan": [
+            {
+              "word": "生活",
+              "beat": 1,
+              "why": "Li Ming explains why he deleted the number: his daily life is too busy and chaotic, causing the mistake. It contextualizes the error as part of his routine.",
+              "speaker": "Li Ming (to himself/narrator)",
+              "refersTo": "Li Ming's daily routine/busy schedule",
+              "intent": "To explain the reason for losing the contact info.",
+              "usageSketch": "最近我的生活太忙了，所以不小心删除了电话。"
+            },
+            {
+              "word": "来自",
+              "beat": 2,
+              "why": "Li Ming is trying to recall the friend's background. He uses 'from' to specify the country of origin as a distinguishing feature.",
+              "speaker": "Li Ming",
+              "refersTo": "The friend's country of origin",
+              "intent": "To narrow down who he is looking for.",
+              "usageSketch": "他是来自美国吗？"
+            },
+            {
+              "word": "或者",
+              "beat": 2,
+              "why": "Li Ming is uncertain. He uses 'or' to present an alternative possibility for the friend's country.",
+              "speaker": "Li Ming",
+              "refersTo": "Japan (as an alternative country)",
+              "intent": "To express uncertainty between two options.",
+              "usageSketch": "还是来自日本？或者其他？"
+            },
+            {
+              "word": "发生",
+              "beat": 4,
+              "why": "Li Ming sees an empty backpack and wonders if an accident or theft occurred. He needs a word for 'happen' to describe a potential negative event.",
+              "speaker": "Li Ming (thinking)",
+              "refersTo": "The disappearance of the friend",
+              "intent": "To worry about a possible accident.",
+              "usageSketch": "他不在，难道发生了什么？"
+            },
+            {
+              "word": "结束",
+              "beat": 5,
+              "why": "The lunch time is passing. They need to leave to get food before the opportunity or the specific time slot is over.",
+              "speaker": "The friend",
+              "refersTo": "The waiting time / the specific meal period",
+              "intent": "To urge action because time is running out.",
+              "usageSketch": "午饭时间快结束了，我们快走吧。"
+            },
+            {
+              "word": "国家",
+              "beat": 6,
+              "why": "Li Ming finally learns the specific country. He asks what country the friend is from to update his memory/file.",
+              "speaker": "Li Ming",
+              "refersTo": "Canada",
+              "intent": "To identify the friend's nationality clearly.",
+              "usageSketch": "你来自哪个国家？"
+            },
+            {
+              "word": "其他",
+              "beat": 6,
+              "why": "Li Ming mentions 'other' countries when listing possibilities to Xiao Hong, or accepts that it is not the first two options.",
+              "speaker": "Li Ming",
+              "refersTo": "Any other country besides US or Japan",
+              "intent": "To include remaining possibilities.",
+              "usageSketch": "也许来自其他国家。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "chinese_title_lexis",
+              "message": "title uses above-level vocabulary: 寻找"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"删除\": HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"错误\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"美国\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"日本\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"湖\": HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"长椅\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"背包\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"蓝色\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"空\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"迷路\": HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"吃饭\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 6 anchor \"加拿大\": not standard vocabulary"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "生活 is given to \"Li Ming (to himself/narrator)\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "生活 usage sketch \"最近我的生活太忙了，所以不小心删除了电话。\": above-level vocabulary: 删除"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "来自 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "来自 usage sketch \"他是来自美国吗？\": above-level vocabulary: 美"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "或者 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "发生 is given to \"Li Ming (thinking)\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "发生 usage sketch \"他不在，难道发生了什么？\": above-level vocabulary: 难道"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "结束 is given to \"The friend\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "国家 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "其他 is given to \"Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "其他 usage sketch \"也许来自其他国家。\": above-level vocabulary: 也许"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "生活": 1,
+            "来自": 2,
+            "或者": 2,
+            "发生": 4,
+            "结束": 5,
+            "国家": 6,
+            "其他": 6
+          }
+        }
+      }
+    ],
+    "judgeRaw": null,
+    "selection": {
+      "code": "NO_VALID_BLUEPRINT"
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "blueprint-3-L3-002",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}

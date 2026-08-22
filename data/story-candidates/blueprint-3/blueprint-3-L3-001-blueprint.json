@@ -1,0 +1,1481 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "blueprint-3",
+  "generatedAt": "2026-08-22T15:29:46.415Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "blueprint-3-L3-001",
+    "batchId": "blueprint-3",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "关系",
+      "女人",
+      "男人",
+      "帮助",
+      "需要"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "blueprints": [
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": null,
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unparseable",
+              "message": "no JSON plan in the response"
+            }
+          ]
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "Neighbors Helping Neighbors",
+          "chineseTitle": "好邻居",
+          "setting": "A modern apartment building in Beijing, one rainy afternoon.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Xiao Hong needs to move a heavy box to her new apartment but cannot do it alone.",
+          "incitingEvent": "Xiao Hong tries to lift the box but it is too heavy.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Monday afternoon",
+              "where": "The hallway of the apartment building",
+              "what": "Xiao Hong is trying to move a large box by herself.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "电梯",
+                "箱子",
+                "重",
+                "累"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "Shortly after",
+              "where": "The same hallway",
+              "what": "Li Ming sees Xiao Hong struggling and stops to observe.",
+              "because": "Li Ming hears Xiao Hong sighing heavily while trying to lift the box.",
+              "arrivedHow": null,
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "邻居",
+                "看见",
+                "想",
+                "什么"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Immediately after observing",
+              "where": "The hallway",
+              "what": "Li Ming asks Xiao Hong what is wrong.",
+              "because": "He wants to understand why she is having trouble.",
+              "arrivedHow": null,
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "你好",
+                "怎么",
+                "了",
+                "说话"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 4,
+              "when": "After the greeting",
+              "where": "The hallway",
+              "what": "Xiao Hong explains that the box is heavy and she needs assistance.",
+              "because": "Li Ming asked what was wrong.",
+              "arrivedHow": null,
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "chineseLexicalAnchors": [
+                "我",
+                "这个",
+                "太",
+                "男/女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "After the explanation",
+              "where": "The hallway",
+              "what": "Li Ming agrees to help, mentioning that they are good neighbors.",
+              "because": "He hears her request for help.",
+              "arrivedHow": null,
+              "targets": [
+                "关系"
+              ],
+              "chineseLexicalAnchors": [
+                "我们",
+                "朋友",
+                "好",
+                "一起"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "Ten minutes later",
+              "where": "Xiao Hong's apartment",
+              "what": "They put the box down safely inside.",
+              "because": "They walked up the stairs together carrying the box.",
+              "arrivedHow": "They walked up one flight of stairs.",
+              "targets": [
+                "男人",
+                "女人"
+              ],
+              "chineseLexicalAnchors": [
+                "谢谢",
+                "高兴",
+                "家",
+                "里"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "The box is safely inside Xiao Hong's apartment, and the two neighbors feel happy to have helped each other.",
+          "targetPlan": [
+            {
+              "word": "需要",
+              "beat": 4,
+              "why": "Xiao Hong must express her lack of ability to do the task alone.",
+              "speaker": "小红",
+              "refersTo": "The physical act of lifting and moving the box.",
+              "intent": "To admit that she cannot do it by herself.",
+              "usageSketch": "这个箱子太重了，我需要帮助。"
+            },
+            {
+              "word": "帮助",
+              "beat": 4,
+              "why": "She is making a specific request for physical aid.",
+              "speaker": "小红",
+              "refersTo": "The assistance Li Ming can provide.",
+              "intent": "To ask Li Ming to lift the other end of the box.",
+              "usageSketch": "你能帮助我吗？"
+            },
+            {
+              "word": "关系",
+              "beat": 5,
+              "why": "Li Ming wants to justify why he is helping her freely.",
+              "speaker": "李明",
+              "refersTo": "The social bond between them as neighbors.",
+              "intent": "To explain that neighbors should help each other because of their connection.",
+              "usageSketch": "我们是邻居，我们的关系很好。"
+            },
+            {
+              "word": "女人",
+              "beat": 6,
+              "why": "Narrative description of the characters to reinforce gender nouns.",
+              "speaker": "Narrator",
+              "refersTo": "Xiao Hong.",
+              "intent": "To identify one of the helpers.",
+              "usageSketch": "这个女人把箱子放在地上。"
+            },
+            {
+              "word": "男人",
+              "beat": 6,
+              "why": "Narrative description to contrast with the previous mention.",
+              "speaker": "Narrator",
+              "refersTo": "Li Ming.",
+              "intent": "To identify the other helper.",
+              "usageSketch": "那个男人笑了。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"重\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"男/女人\": not standard vocabulary"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "需要 usage sketch \"这个箱子太重了，我需要帮助。\": above-level vocabulary: 重"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "需要": 4,
+            "帮助": 4,
+            "关系": 5,
+            "女人": 6,
+            "男人": 6
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "Neighbors Helping Neighbors",
+          "chineseTitle": "好邻居",
+          "setting": "A modern apartment building in Beijing, one rainy afternoon.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Xiao Hong needs to move a heavy box to her new apartment but cannot do it alone.",
+          "incitingEvent": "Xiao Hong tries to lift the box but it is too heavy.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Monday afternoon",
+              "where": "The hallway of the apartment building",
+              "what": "Xiao Hong is trying to move a large box by herself.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "电梯",
+                "箱子",
+                "重",
+                "累"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "Shortly after",
+              "where": "The same hallway",
+              "what": "Li Ming sees Xiao Hong struggling and stops to observe.",
+              "because": "Li Ming hears Xiao Hong sighing heavily while trying to lift the box.",
+              "arrivedHow": null,
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "邻居",
+                "看见",
+                "想",
+                "什么"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Immediately after observing",
+              "where": "The hallway",
+              "what": "Li Ming asks Xiao Hong what is wrong.",
+              "because": "He wants to understand why she is having trouble.",
+              "arrivedHow": null,
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "你好",
+                "怎么",
+                "了",
+                "说话"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 4,
+              "when": "After the greeting",
+              "where": "The hallway",
+              "what": "Xiao Hong explains that the box is heavy and she needs assistance.",
+              "because": "Li Ming asked what was wrong.",
+              "arrivedHow": null,
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "chineseLexicalAnchors": [
+                "我",
+                "这个",
+                "太",
+                "男/女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "After the explanation",
+              "where": "The hallway",
+              "what": "Li Ming agrees to help, mentioning that they are good neighbors.",
+              "because": "He hears her request for help.",
+              "arrivedHow": null,
+              "targets": [
+                "关系"
+              ],
+              "chineseLexicalAnchors": [
+                "我们",
+                "朋友",
+                "好",
+                "一起"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "Ten minutes later",
+              "where": "Xiao Hong's apartment",
+              "what": "They put the box down safely inside.",
+              "because": "They walked up the stairs together carrying the box.",
+              "arrivedHow": "They walked up one flight of stairs.",
+              "targets": [
+                "男人",
+                "女人"
+              ],
+              "chineseLexicalAnchors": [
+                "谢谢",
+                "高兴",
+                "家",
+                "里"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "The box is safely inside Xiao Hong's apartment, and the two neighbors feel happy to have helped each other.",
+          "targetPlan": [
+            {
+              "word": "需要",
+              "beat": 4,
+              "why": "Xiao Hong must express her lack of ability to do the task alone.",
+              "speaker": "小红",
+              "refersTo": "The physical act of lifting and moving the box.",
+              "intent": "To admit that she cannot do it by herself.",
+              "usageSketch": "这个箱子太重了，我需要帮助。"
+            },
+            {
+              "word": "帮助",
+              "beat": 4,
+              "why": "She is making a specific request for physical aid.",
+              "speaker": "小红",
+              "refersTo": "The assistance Li Ming can provide.",
+              "intent": "To ask Li Ming to lift the other end of the box.",
+              "usageSketch": "你能帮助我吗？"
+            },
+            {
+              "word": "关系",
+              "beat": 5,
+              "why": "Li Ming wants to justify why he is helping her freely.",
+              "speaker": "李明",
+              "refersTo": "The social bond between them as neighbors.",
+              "intent": "To explain that neighbors should help each other because of their connection.",
+              "usageSketch": "我们是邻居，我们的关系很好。"
+            },
+            {
+              "word": "女人",
+              "beat": 6,
+              "why": "Narrative description of the characters to reinforce gender nouns.",
+              "speaker": "Narrator",
+              "refersTo": "Xiao Hong.",
+              "intent": "To identify one of the helpers.",
+              "usageSketch": "这个女人把箱子放在地上。"
+            },
+            {
+              "word": "男人",
+              "beat": 6,
+              "why": "Narrative description to contrast with the previous mention.",
+              "speaker": "Narrator",
+              "refersTo": "Li Ming.",
+              "intent": "To identify the other helper.",
+              "usageSketch": "那个男人笑了。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"重\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"男/女人\": not standard vocabulary"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "需要 usage sketch \"这个箱子太重了，我需要帮助。\": above-level vocabulary: 重"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "需要": 4,
+            "帮助": 4,
+            "关系": 5,
+            "女人": 6,
+            "男人": 6
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Neighbor's Dilemma",
+          "chineseTitle": "邻居的问题",
+          "setting": "An afternoon in a residential apartment building hallway and the stairwell.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "李明 needs to carry heavy groceries up six flights of stairs to his apartment, but he is too weak to do it alone.",
+          "incitingEvent": "李明 struggles to open the building door and enters, clearly burdened.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "3:00 PM",
+              "where": "Building Entrance Lobby",
+              "what": "李明 enters carrying too many bags. He looks tired.",
+              "because": "the story opens",
+              "arrivedHow": "null",
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "李明",
+                "进来",
+                "很多",
+                "东西",
+                "累",
+                "笑"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "3:01 PM",
+              "where": "Building Entrance Lobby",
+              "what": "小红 sees 李明 struggling. She greets him and notices his difficulty.",
+              "because": "Because 李明 is visible and struggling, 小红, who lives there, observes him.",
+              "arrivedHow": "null",
+              "targets": [
+                "女人"
+              ],
+              "chineseLexicalAnchors": [
+                "小红",
+                "看见",
+                "女人",
+                "是",
+                "邻居",
+                "好"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 3,
+              "when": "3:02 PM",
+              "where": "Building Entrance Lobby",
+              "what": "小红 asks if he needs help. 李明 admits he needs assistance because the bags are heavy.",
+              "because": "Because 小红 saw his struggle, she offers; because he is tired, he admits the need for aid.",
+              "arrivedHow": "null",
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "chineseLexicalAnchors": [
+                "需要",
+                "帮助",
+                "重",
+                "不",
+                "容易",
+                "谢谢"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "3:05 PM",
+              "where": "Stairwell",
+              "what": "They start climbing. 李明 looks at a stranger helping on the stairs, noting that men usually do this work, but it doesn't matter.",
+              "because": "Because they agreed to go together, they are now moving to the destination (the apartment). He reflects on social roles during the exertion.",
+              "arrivedHow": "Walked up the stairs together",
+              "targets": [
+                "男人"
+              ],
+              "chineseLexicalAnchors": [
+                "上",
+                "楼梯",
+                "男人",
+                "也",
+                "可以",
+                "一起"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "3:10 PM",
+              "where": "6th Floor Hallway",
+              "what": "They arrive. 李明 admits he can't carry the last bag. He suggests he must rest, and if he rests, the bags won't get up.",
+              "because": "Because they have been climbing for several minutes, exhaustion sets in, creating a final obstacle to the resolution.",
+              "arrivedHow": "Continued walking up stairs",
+              "targets": [
+                "如果",
+                "必须"
+              ],
+              "chineseLexicalAnchors": [
+                "六楼",
+                "不行",
+                "如果",
+                "休息",
+                "必须",
+                "放",
+                "下"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 6,
+              "when": "3:11 PM",
+              "where": "Outside 李明's Door",
+              "what": "小红 refuses to stop. She explains they are good neighbors (relationship), so she will finish carrying them. Problem resolved.",
+              "because": "Because 李明 expressed inability to continue, 小红 resolves the conflict by invoking their social bond.",
+              "arrivedHow": "Null",
+              "targets": [
+                "关系"
+              ],
+              "chineseLexicalAnchors": [
+                "关系",
+                "好",
+                "朋友",
+                "不用",
+                "担心",
+                "做到"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "小红 carries the remaining bags into 李明's apartment. The physical burden is gone, and the social bond is strengthened.",
+          "targetPlan": [
+            {
+              "word": "女人",
+              "beat": 2,
+              "why": "To establish 小红's identity in third person or via narrative description, distinguishing gender roles implicitly or explicitly as she approaches.",
+              "speaker": "Narrator",
+              "refersTo": "小红",
+              "intent": "To identify the character approaching 李明.",
+              "usageSketch": "那个女人是小红。"
+            },
+            {
+              "word": "需要",
+              "beat": 3,
+              "why": "To articulate the gap between current ability and the task required.",
+              "speaker": "李明",
+              "refersTo": "His situation with the heavy bags",
+              "intent": "To admit inability to do it alone.",
+              "usageSketch": "我太累了，我需要人帮我。"
+            },
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "To propose a solution to the stated need.",
+              "speaker": "小红",
+              "refersTo": "The action of carrying the bags",
+              "intent": "To offer support.",
+              "usageSketch": "我可以帮你拿这些袋子吗？"
+            },
+            {
+              "word": "男人",
+              "beat": 4,
+              "why": "To create a contrast during the physical activity, perhaps comparing general expectations (men do heavy lifting) with the current reality.",
+              "speaker": "李明",
+              "refersTo": "Gender norms or other neighbors",
+              "intent": "To make small talk or explain why he feels embarrassed asking a woman.",
+              "usageSketch": "通常男人搬重东西，但你力气真大。"
+            },
+            {
+              "word": "如果",
+              "beat": 5,
+              "why": "To set up a conditional constraint based on his physical limits.",
+              "speaker": "李明",
+              "refersTo": "The act of resting",
+              "intent": "To explain why he cannot continue alone.",
+              "usageSketch": "如果我休息，我就搬不上去了。"
+            },
+            {
+              "word": "必须",
+              "beat": 5,
+              "why": "To express obligation or necessity driven by circumstance.",
+              "speaker": "李明",
+              "refersTo": "The necessity of getting the bags upstairs",
+              "intent": "To state the unavoidable requirement of the task.",
+              "usageSketch": "我必须把这些拿到六楼。"
+            },
+            {
+              "word": "关系",
+              "beat": 6,
+              "why": "To justify the extra effort beyond mere politeness, grounding it in social obligation.",
+              "speaker": "小红",
+              "refersTo": "Their neighborly bond",
+              "intent": "To reassure him that helping is the right thing to do between friends/neighbors.",
+              "usageSketch": "我们关系很好，这不算什么。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"很多\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"重\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"六楼\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 6 anchor \"做到\": not standard vocabulary"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "帮助 usage sketch \"我可以帮你拿这些袋子吗？\": does not actually use 帮助; non-vocabulary text: 袋子"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "男人 usage sketch \"通常男人搬重东西，但你力气真大。\": above-level vocabulary: 通常、重、力气"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "关系 usage sketch \"我们关系很好，这不算什么。\": above-level vocabulary: 算"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "女人": 2,
+            "需要": 3,
+            "帮助": 3,
+            "男人": 4,
+            "如果": 5,
+            "必须": 5,
+            "关系": 6
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Neighbor's Request",
+          "chineseTitle": "邻居的请求",
+          "setting": "A residential apartment building, on a weekend afternoon.",
+          "cast": [
+            "李明",
+            "王阿姨"
+          ],
+          "problem": "李明 wants to maintain a good relationship with his neighbor, but he does not know how to properly respond to her request for help.",
+          "incitingEvent": "Wang 'a-yi asks Li Ming to help her carry groceries from the first floor to her apartment on the third floor.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday afternoon",
+              "where": "Li Ming's apartment (3rd floor)",
+              "what": "Li Ming is at home. He hears a knock on the door.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "下午",
+                "家",
+                "听",
+                "门"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Immediately after",
+              "where": "Li Ming's apartment door",
+              "what": "Li Ming opens the door and sees Wang 'a-yi. She is a neighbor, a woman who lives next door.",
+              "because": "Li Ming heard the knock, so he opens the door to see who it is.",
+              "arrivedHow": null,
+              "targets": [
+                "女人"
+              ],
+              "chineseLexicalAnchors": [
+                "开",
+                "看",
+                "邻居",
+                "女人"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 3,
+              "when": "While talking at the door",
+              "where": "Li Ming's apartment door",
+              "what": "Wang 'a-yi explains she needs to go to the market, but she has heavy things. She asks if Li Ming can help her carry the bags.",
+              "because": "Wang 'a-yi is at the door having been introduced, and she has a problem (heavy bags) she needs to solve.",
+              "arrivedHow": null,
+              "targets": [
+                "帮助",
+                "需要"
+              ],
+              "chineseLexicalAnchors": [
+                "市场",
+                "东西",
+                "重",
+                "说",
+                "帮助",
+                "需要"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "After agreeing",
+              "where": "The building lobby (1st floor)",
+              "what": "They walk downstairs together. Wang 'a-yi talks about how men are often stronger than women, but she thinks Li Ming is very kind.",
+              "because": "Li Ming agreed to help, so they move from the apartment to the location of the bags.",
+              "arrivedHow": "walked downstairs",
+              "targets": [
+                "男人",
+                "而且"
+              ],
+              "chineseLexicalAnchors": [
+                "下",
+                "楼",
+                "男人",
+                "女人",
+                "厉害",
+                "而且"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "In the lobby",
+              "where": "The building lobby (1st floor)",
+              "what": "Wang 'a-yi says that if Li Ming helps her, she will give him fruit in the future. She values their relationship.",
+              "because": "They are in the lobby preparing to lift the bags, and Wang 'a-yi wants to express gratitude and motivate Li Ming.",
+              "arrivedHow": null,
+              "targets": [
+                "关系",
+                "如果",
+                "必须"
+              ],
+              "chineseLexicalAnchors": [
+                "水果",
+                "给",
+                "关系",
+                "好",
+                "如果"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 6,
+              "when": "After the help",
+              "where": "Wang 'a-yi's apartment (3rd floor)",
+              "what": "Li Ming helps her carry the bags up. He feels happy. The problem of the heavy bags is solved, and the relationship is better.",
+              "because": "They lifted the bags at the lobby, so they now carry them to the final destination.",
+              "arrivedHow": "walked up the stairs",
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "拿",
+                "上",
+                "高兴",
+                "谢谢"
+              ],
+              "lines": 4
+            }
+          ],
+          "resolution": "Li Ming successfully helps Wang 'a-yi, and they both feel good about their neighborly relationship.",
+          "targetPlan": [
+            {
+              "word": "女人",
+              "beat": 2,
+              "why": "Li Ming introduces Wang 'a-yi to himself or acknowledges her identity as a neighbor who is female.",
+              "speaker": "Narrator or Li Ming",
+              "refersTo": "Wang 'a-yi",
+              "intent": "To identify who is at the door.",
+              "usageSketch": "王阿姨是一位邻居，她是一位女人。"
+            },
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "Wang 'a-yi explicitly asks for assistance with her physical task.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "The act of carrying bags",
+              "intent": "To request Li Ming's aid.",
+              "usageSketch": "你能帮助我吗？"
+            },
+            {
+              "word": "需要",
+              "beat": 3,
+              "why": "Wang 'a-yi explains the necessity of help due to the weight of the items.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "The heavy bags",
+              "intent": "To justify her request.",
+              "usageSketch": "这些东西很重，我需要帮助。"
+            },
+            {
+              "word": "男人",
+              "beat": 4,
+              "why": "Wang 'a-yi makes a general comment about gender differences in strength to compliment Li Ming.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "Li Ming",
+              "intent": "To explain why she asked him specifically.",
+              "usageSketch": "这个男人很厉害。"
+            },
+            {
+              "word": "而且",
+              "beat": 4,
+              "why": "Wang 'a-yi adds another positive trait to her description of Li Ming.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "Li Ming's kindness",
+              "intent": "To elaborate on her compliment.",
+              "usageSketch": "他很强壮，而且他很友好。"
+            },
+            {
+              "word": "关系",
+              "beat": 5,
+              "why": "Wang 'a-yi discusses the social connection between neighbors.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "The bond between Li Ming and herself",
+              "intent": "To express the value of being good neighbors.",
+              "usageSketch": "我们的关系很好。"
+            },
+            {
+              "word": "如果",
+              "beat": 5,
+              "why": "Wang 'a-yi sets a condition for her future reward.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "Li Ming's continued help",
+              "intent": "To make a conditional promise.",
+              "usageSketch": "如果你帮助我，我给你水果。"
+            },
+            {
+              "word": "必须",
+              "beat": 5,
+              "why": "Wang 'a-yi emphasizes the obligation or importance of mutual help in their community.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "Helping neighbors",
+              "intent": "To state a moral rule or strong belief.",
+              "usageSketch": "邻居必须互相帮助。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "chinese_title_lexis",
+              "message": "title uses above-level vocabulary: 请求"
+            },
+            {
+              "code": "cast_unknown",
+              "message": "characters outside the cast: 王阿姨"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"市场\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"重\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"厉害\": HSK 4, above the story level"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "女人 is given to \"Narrator or Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "女人 usage sketch \"王阿姨是一位邻居，她是一位女人。\": non-vocabulary text: 王"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "帮助 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "需要 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "需要 usage sketch \"这些东西很重，我需要帮助。\": above-level vocabulary: 重"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "男人 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "男人 usage sketch \"这个男人很厉害。\": above-level vocabulary: 厉害"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "而且 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "而且 usage sketch \"他很强壮，而且他很友好。\": above-level vocabulary: 强壮、友好"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "关系 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "如果 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "必须 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "必须 usage sketch \"邻居必须互相帮助。\": above-level vocabulary: 互相"
+            }
+          ],
+          "cast": [
+            "李明",
+            "王阿姨"
+          ],
+          "beats": 6,
+          "placed": {
+            "女人": 2,
+            "帮助": 3,
+            "需要": 3,
+            "男人": 4,
+            "而且": 4,
+            "关系": 5,
+            "如果": 5,
+            "必须": 5
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Neighbor's Request",
+          "chineseTitle": "邻居的请求",
+          "setting": "A residential apartment building, on a weekend afternoon.",
+          "cast": [
+            "李明",
+            "王阿姨"
+          ],
+          "problem": "李明 wants to maintain a good relationship with his neighbor, but he does not know how to properly respond to her request for help.",
+          "incitingEvent": "Wang 'a-yi asks Li Ming to help her carry groceries from the first floor to her apartment on the third floor.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday afternoon",
+              "where": "Li Ming's apartment (3rd floor)",
+              "what": "Li Ming is at home. He hears a knock on the door.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "下午",
+                "家",
+                "听",
+                "门"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Immediately after",
+              "where": "Li Ming's apartment door",
+              "what": "Li Ming opens the door and sees Wang 'a-yi. She is a neighbor, a woman who lives next door.",
+              "because": "Li Ming heard the knock, so he opens the door to see who it is.",
+              "arrivedHow": null,
+              "targets": [
+                "女人"
+              ],
+              "chineseLexicalAnchors": [
+                "开",
+                "看",
+                "邻居",
+                "女人"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 3,
+              "when": "While talking at the door",
+              "where": "Li Ming's apartment door",
+              "what": "Wang 'a-yi explains she needs to go to the market, but she has heavy things. She asks if Li Ming can help her carry the bags.",
+              "because": "Wang 'a-yi is at the door having been introduced, and she has a problem (heavy bags) she needs to solve.",
+              "arrivedHow": null,
+              "targets": [
+                "帮助",
+                "需要"
+              ],
+              "chineseLexicalAnchors": [
+                "市场",
+                "东西",
+                "重",
+                "说",
+                "帮助",
+                "需要"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "After agreeing",
+              "where": "The building lobby (1st floor)",
+              "what": "They walk downstairs together. Wang 'a-yi talks about how men are often stronger than women, but she thinks Li Ming is very kind.",
+              "because": "Li Ming agreed to help, so they move from the apartment to the location of the bags.",
+              "arrivedHow": "walked downstairs",
+              "targets": [
+                "男人",
+                "而且"
+              ],
+              "chineseLexicalAnchors": [
+                "下",
+                "楼",
+                "男人",
+                "女人",
+                "厉害",
+                "而且"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "In the lobby",
+              "where": "The building lobby (1st floor)",
+              "what": "Wang 'a-yi says that if Li Ming helps her, she will give him fruit in the future. She values their relationship.",
+              "because": "They are in the lobby preparing to lift the bags, and Wang 'a-yi wants to express gratitude and motivate Li Ming.",
+              "arrivedHow": null,
+              "targets": [
+                "关系",
+                "如果",
+                "必须"
+              ],
+              "chineseLexicalAnchors": [
+                "水果",
+                "给",
+                "关系",
+                "好",
+                "如果"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 6,
+              "when": "After the help",
+              "where": "Wang 'a-yi's apartment (3rd floor)",
+              "what": "Li Ming helps her carry the bags up. He feels happy. The problem of the heavy bags is solved, and the relationship is better.",
+              "because": "They lifted the bags at the lobby, so they now carry them to the final destination.",
+              "arrivedHow": "walked up the stairs",
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "拿",
+                "上",
+                "高兴",
+                "谢谢"
+              ],
+              "lines": 4
+            }
+          ],
+          "resolution": "Li Ming successfully helps Wang 'a-yi, and they both feel good about their neighborly relationship.",
+          "targetPlan": [
+            {
+              "word": "女人",
+              "beat": 2,
+              "why": "Li Ming introduces Wang 'a-yi to himself or acknowledges her identity as a neighbor who is female.",
+              "speaker": "Narrator or Li Ming",
+              "refersTo": "Wang 'a-yi",
+              "intent": "To identify who is at the door.",
+              "usageSketch": "王阿姨是一位邻居，她是一位女人。"
+            },
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "Wang 'a-yi explicitly asks for assistance with her physical task.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "The act of carrying bags",
+              "intent": "To request Li Ming's aid.",
+              "usageSketch": "你能帮助我吗？"
+            },
+            {
+              "word": "需要",
+              "beat": 3,
+              "why": "Wang 'a-yi explains the necessity of help due to the weight of the items.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "The heavy bags",
+              "intent": "To justify her request.",
+              "usageSketch": "这些东西很重，我需要帮助。"
+            },
+            {
+              "word": "男人",
+              "beat": 4,
+              "why": "Wang 'a-yi makes a general comment about gender differences in strength to compliment Li Ming.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "Li Ming",
+              "intent": "To explain why she asked him specifically.",
+              "usageSketch": "这个男人很厉害。"
+            },
+            {
+              "word": "而且",
+              "beat": 4,
+              "why": "Wang 'a-yi adds another positive trait to her description of Li Ming.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "Li Ming's kindness",
+              "intent": "To elaborate on her compliment.",
+              "usageSketch": "他很强壮，而且他很友好。"
+            },
+            {
+              "word": "关系",
+              "beat": 5,
+              "why": "Wang 'a-yi discusses the social connection between neighbors.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "The bond between Li Ming and herself",
+              "intent": "To express the value of being good neighbors.",
+              "usageSketch": "我们的关系很好。"
+            },
+            {
+              "word": "如果",
+              "beat": 5,
+              "why": "Wang 'a-yi sets a condition for her future reward.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "Li Ming's continued help",
+              "intent": "To make a conditional promise.",
+              "usageSketch": "如果你帮助我，我给你水果。"
+            },
+            {
+              "word": "必须",
+              "beat": 5,
+              "why": "Wang 'a-yi emphasizes the obligation or importance of mutual help in their community.",
+              "speaker": "Wang 'a-yi",
+              "refersTo": "Helping neighbors",
+              "intent": "To state a moral rule or strong belief.",
+              "usageSketch": "邻居必须互相帮助。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "chinese_title_lexis",
+              "message": "title uses above-level vocabulary: 请求"
+            },
+            {
+              "code": "cast_unknown",
+              "message": "characters outside the cast: 王阿姨"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"市场\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"重\": HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"厉害\": HSK 4, above the story level"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "女人 is given to \"Narrator or Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "女人 usage sketch \"王阿姨是一位邻居，她是一位女人。\": non-vocabulary text: 王"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "帮助 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "需要 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "需要 usage sketch \"这些东西很重，我需要帮助。\": above-level vocabulary: 重"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "男人 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "男人 usage sketch \"这个男人很厉害。\": above-level vocabulary: 厉害"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "而且 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "而且 usage sketch \"他很强壮，而且他很友好。\": above-level vocabulary: 强壮、友好"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "关系 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "如果 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "必须 is given to \"Wang 'a-yi\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "必须 usage sketch \"邻居必须互相帮助。\": above-level vocabulary: 互相"
+            }
+          ],
+          "cast": [
+            "李明",
+            "王阿姨"
+          ],
+          "beats": 6,
+          "placed": {
+            "女人": 2,
+            "帮助": 3,
+            "需要": 3,
+            "男人": 4,
+            "而且": 4,
+            "关系": 5,
+            "如果": 5,
+            "必须": 5
+          }
+        }
+      }
+    ],
+    "judgeRaw": null,
+    "selection": {
+      "code": "NO_VALID_BLUEPRINT"
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "blueprint-3-L3-001",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
