@@ -96,7 +96,7 @@ export function parseJudgment(text) {
     else if (key === 'mechanical') out.mechanical = /^y/i.test(value)
     else if (key === 'contradiction') {
       out.contradiction = /^y/i.test(value)
-      out.contradictionDetail = out.contradiction ? value.replace(/^yes[\s,:；;—–-]*/i, '').trim() : ''
+      out.contradictionDetail = out.contradiction ? value.replace(/^yes[\s.,:：；;—–-]*/i, '').trim() : ''
     }
   }
   if (out.overall == null) {
