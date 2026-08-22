@@ -117,19 +117,67 @@ Vercel builds from `main` within minutes. Nothing else is required.
   select count(*) from cards where verified_at < prior_known_at;
   ```
 
-### 5. Legacy data migration — only after step 4 looks right
+### 5. Legacy data migration — manifest-based, and only after step 4 looks right
+
+Apply never re-derives what to do. It acts on an approved manifest and re-reads
+every row first, because a dry run is a photograph: between taking it and acting
+on it a learner can grade one of the very rows it describes, and the photographed
+action would then erase a real review.
 
 ```
-node --env-file=.env.script migrate-legacy-claims.mjs            # dry run, writes nothing
-node --env-file=.env.script migrate-legacy-claims.mjs --apply    # writes
+# a. snapshot first — this is the only safety net (see below)
+node --env-file=.env.script migrate-legacy-claims.mjs --snapshot
+
+# b. FRESH dry run, emitting the manifest. Never reuse an old one.
+node --env-file=.env.script migrate-legacy-claims.mjs --manifest /tmp/kb-manifest.json
+
+# c. read it, then apply THAT manifest
+node --env-file=.env.script migrate-legacy-claims.mjs --apply --manifest /tmp/kb-manifest.json
 ```
 
-See "Backup, resume, rollback" below. Re-read the dry run first: the counts must
-match what was reviewed (594 conversions / 51 replays / 2 ambiguous), because the
-fingerprint decays — every claim graded between now and then moves a row from the
-conversion class into the replay class.
+The counts recorded in any earlier review are **not** an apply plan. The
+fingerprint decays continuously: every calibration answered moves a row out of
+the convert class. Regenerate immediately before applying and minimise the gap
+between step 3 (frontend live) and this step.
+
+**The staleness gate.** Before touching each row the script re-reads it and
+compares against the manifest's recorded precondition — every field the
+classifier read, plus `created_at`. Outcomes:
+
+| status | meaning | action |
+|---|---|---|
+| `ok` | unchanged since the manifest | apply |
+| `ALREADY_APPLIED` | already in its expected post state | no-op (this is what makes it resumable) |
+| `STALE_ROW` | a recorded field moved | **skip and report**, with the exact drift |
+| `STALE_REPLAY_INPUT` | the review history behind a replay changed | **skip and report** |
+| `MISSING_ROW` | the card is gone | skip and report |
+
+For replays the gate also compares a deterministic digest of the exact
+`(grade, reviewed_at)` sequence the replay consumes, so an added, re-graded or
+re-timestamped review is caught.
+
+Stale rows are never folded into the success count and never re-classified on the
+fly. A later fresh dry run reclassifies them correctly.
+
+**Ambiguous rows never enter the manifest at all** — only their count is carried,
+so post-apply verification can confirm the same number is still sitting there
+untouched. The apply path cannot reach them even in principle.
 
 ### 6. Post-migration verification
+
+The script prints its own report and will not hide a skip inside a success:
+
+```
+planned / applied / already applied (no-op) / stale-skipped / failed / ambiguous untouched
+```
+
+followed by five invariant checks against a fresh read — no actionable legacy
+rows unexpectedly remain (stale skips are subtracted and named), no inert claim
+carries fabricated scheduler state, no verified card violates the knowledge
+invariants, no card sits in review state with zero reps, and the ambiguous count
+is unchanged.
+
+Then confirm by hand:
 
 ```sql
 -- No fabricated shape survives.
