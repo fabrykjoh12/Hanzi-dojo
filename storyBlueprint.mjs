@@ -29,7 +29,18 @@
 //
 // Pure: no network, no fs, no clock.
 
+import { analyzeStory } from './storyCorpusCalibration.mjs'
+import { splitSpeaker } from './src/storyReading.js'
+
 export const BLUEPRINT_VERSION = 'fab9-blueprint@1'
+
+// A Chinese graded reader contains no Latin text. blueprint-2 shipped
+// 李明不想和 reckless 的人打球 — an English word the writer took straight from
+// an English plan. Nothing in this pipeline has a legitimate reason to emit
+// Latin letters in a story line, so the whitelist is empty by design.
+export function hasLatin(v) {
+  return /[A-Za-z]/.test(String(v == null ? '' : v))
+}
 
 export const BEAT_BOUNDS = { min: 5, max: 6 }
 export const CAST_BOUNDS = { min: 2, max: 3 }
@@ -82,7 +93,48 @@ export function samePlace(a, b) {
 
 // ── Deterministic structure check ───────────────────────────────────────────
 // Everything here is a fact about the plan, not an opinion about it.
-export function validateBlueprint(bp, { manifest, requiredTargets = null } = {}) {
+// ── Lexical feasibility ─────────────────────────────────────────────────────
+// A plan can be perfectly coherent in English and impossible in HSK 3 Chinese.
+// blueprint-2's winning plans implied 扳手 (wrench), 冰淇淋 (ice cream) and a
+// basketball vocabulary none of which a level-3 learner has, and the writer
+// dutifully used them: out-of-level 12.1% and 16.8%, 6-8 unknown runs. So each
+// beat now carries the small Chinese toolkit it expects to be written with,
+// and every word in it is checked against the canonical vocabulary BEFORE any
+// prose is written. An anchor that is above level, unknown or Latin is a
+// rejection, never something to quietly drop.
+export function checkAnchor(anchor, { manifest, vocabMap, cast = [] }) {
+  const word = text(anchor)
+  if (!word) return { ok: false, reason: 'empty' }
+  if (hasLatin(word)) return { ok: false, reason: 'Latin text' }
+  if (manifest.targets.some(t => t.word === word)) return { ok: true, why: 'target word' }
+  if (cast.includes(word) || (manifest.speakers || []).includes(word)) return { ok: true, why: 'character name' }
+  const v = vocabMap && vocabMap[word]
+  if (!v) return { ok: false, reason: 'not standard vocabulary' }
+  if (Number.isFinite(v.level) && v.level > manifest.level) return { ok: false, reason: 'HSK ' + v.level + ', above the story level' }
+  return { ok: true, why: 'HSK ' + v.level }
+}
+
+// The usage sketch is what turns "结束 — Li Ming comments that the day has
+// ended" (which became 这是今天忙碌生活的结束) into a concrete sentence a person
+// would say. It is an anchor, not the final line, but it must itself be
+// realizable: the target present, nothing unknown, nothing above level.
+export function checkUsageSketch(sketch, { word, manifest, vocabMap }) {
+  const t = text(sketch)
+  const problems = []
+  if (!t) return { ok: false, problems: ['no usage sketch'] }
+  if (hasLatin(t)) problems.push('contains Latin text')
+  const a = analyzeStory({ title: '', level: manifest.level, content: t }, vocabMap)
+  if ((a.counts.get(word) || 0) < 1) problems.push('does not actually use ' + word)
+  if (a.unknownRuns.length) problems.push('non-vocabulary text: ' + a.unknownRuns.join('、'))
+  const targets = new Set(manifest.targets.map(x => x.word))
+  const above = [...a.counts.keys()].filter(w => !targets.has(w) && vocabMap[w] && vocabMap[w].level > manifest.level)
+  if (above.length) problems.push('above-level vocabulary: ' + above.join('、'))
+  if (a.cjkChars < 3) problems.push('too short to be a real utterance')
+  if (a.cjkChars > 24) problems.push('too long for an anchor')
+  return { ok: problems.length === 0, problems }
+}
+
+export function validateBlueprint(bp, { manifest, vocabMap = null, requiredTargets = null } = {}) {
   const failures = []
   const fail = (code, message) => failures.push({ code, message })
   if (!bp || typeof bp !== 'object') {
@@ -95,6 +147,22 @@ export function validateBlueprint(bp, { manifest, requiredTargets = null } = {})
 
   const allowed = new Set([...(manifest.speakers || []), ...(manifest.extraNames || [])])
   const cast = Array.isArray(bp.cast) ? bp.cast.map(text).filter(Boolean) : []
+
+  // The story needs a Chinese title, and it is subject to the same vocabulary
+  // rules as the story: blueprint-2's titles came from the English plan.
+  if (vocabMap) {
+    const zh = text(bp.chineseTitle)
+    if (!zh) fail('missing_chineseTitle', 'no Chinese title')
+    else if (hasLatin(zh)) fail('chinese_title_latin', 'the Chinese title contains Latin text: ' + zh)
+    else {
+      const a = analyzeStory({ title: '', level: manifest.level, content: zh }, vocabMap)
+      const targets = new Set(manifest.targets.map(t => t.word))
+      const above = [...a.counts.keys()].filter(w => !targets.has(w) && vocabMap[w] && vocabMap[w].level > manifest.level)
+      if (a.cjkChars < 2 || a.cjkChars > 12) fail('chinese_title_length', 'the Chinese title is ' + a.cjkChars + ' characters')
+      if (a.unknownRuns.length) fail('chinese_title_lexis', 'title uses non-vocabulary text: ' + a.unknownRuns.join('、'))
+      if (above.length) fail('chinese_title_lexis', 'title uses above-level vocabulary: ' + above.join('、'))
+    }
+  }
   if (cast.length < CAST_BOUNDS.min || cast.length > CAST_BOUNDS.max) {
     fail('cast_size', cast.length + ' characters (need ' + CAST_BOUNDS.min + '-' + CAST_BOUNDS.max + ')')
   }
@@ -127,6 +195,14 @@ export function validateBlueprint(bp, { manifest, requiredTargets = null } = {})
     }
     const t = Array.isArray(b && b.targets) ? b.targets : []
     if (t.length > MAX_TARGETS_PER_BEAT) fail('beat_target_dump', 'beat ' + n + ' carries ' + t.length + ' target words')
+    if (vocabMap) {
+      const anchors = Array.isArray(b && b.chineseLexicalAnchors) ? b.chineseLexicalAnchors : []
+      if (anchors.length < 3) fail('beat_anchors_missing', 'beat ' + n + ' has no Chinese toolkit to be written with')
+      for (const anchor of anchors) {
+        const c = checkAnchor(anchor, { manifest, vocabMap, cast })
+        if (!c.ok) fail('anchor_unusable', 'beat ' + n + ' anchor "' + text(anchor) + '": ' + c.reason)
+      }
+    }
   })
 
   // Every target that MUST appear needs a home and a reason for being there.
@@ -145,6 +221,17 @@ export function validateBlueprint(bp, { manifest, requiredTargets = null } = {})
     if (!has(entry && entry.why, 15)) {
       fail('target_unjustified', word + ' has no reason for belonging in beat ' + beat)
       continue
+    }
+    if (vocabMap) {
+      // Who says it, about what, to what end, and how it actually sounds.
+      if (!has(entry && entry.speaker, 1)) fail('target_no_speaker', word + ' has nobody to say it')
+      else if (!allowed.has(text(entry.speaker)) && text(entry.speaker).toLowerCase() !== 'narrator') {
+        fail('target_no_speaker', word + ' is given to "' + text(entry.speaker) + '", who is not in the cast')
+      }
+      if (!has(entry && entry.refersTo, 1)) fail('target_no_referent', word + ' does not say what it refers to')
+      if (!has(entry && entry.intent, 8)) fail('target_no_intent', word + ' has no communicative purpose')
+      const sketch = checkUsageSketch(entry && entry.usageSketch, { word, manifest, vocabMap })
+      if (!sketch.ok) fail('target_sketch_unusable', word + ' usage sketch "' + text(entry && entry.usageSketch) + '": ' + sketch.problems.join('; '))
     }
     placed.set(word, beat)
   }

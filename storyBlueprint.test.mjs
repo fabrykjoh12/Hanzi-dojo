@@ -31,6 +31,7 @@ const beat = (id, over = {}) => ({
 
 const blueprint = (over = {}) => ({
   title: 'The lost passport',
+  chineseTitle: '找护照',
   setting: 'A flat in the city, one afternoon',
   cast: ['李明', '小红'],
   problem: 'The passport is missing the day before a trip',
@@ -141,6 +142,20 @@ describe('validateBlueprint — what code can check about a plan', () => {
     stuffed.beats[0] = { ...stuffed.beats[0], targets: ['a', 'b', 'c', 'd', 'e'] }
     expect(validateBlueprint(stuffed, { manifest: manifest() }).failures.map(f => f.code)).toContain('beat_target_dump')
     expect(BEAT_BOUNDS).toEqual({ min: 5, max: 6 })
+  })
+
+  it('the Chinese title obeys the story\'s own vocabulary rules', () => {
+    const vm = { 找: { word: '找', level: 1 }, 护照: { word: '护照', level: 3 }, 森林: { word: '森林', level: 4 } }
+    const m = manifest()
+    expect(validateBlueprint(blueprint(), { manifest: m, vocabMap: vm }).failures.map(f => f.code)).not.toContain('chinese_title_lexis')
+    expect(validateBlueprint(blueprint({ chineseTitle: 'The Passport' }), { manifest: m, vocabMap: vm })
+      .failures.map(f => f.code)).toContain('chinese_title_latin')
+    expect(validateBlueprint(blueprint({ chineseTitle: '森林' }), { manifest: m, vocabMap: vm })
+      .failures.map(f => f.code)).toContain('chinese_title_lexis')
+    expect(validateBlueprint(blueprint({ chineseTitle: '' }), { manifest: m, vocabMap: vm })
+      .failures.map(f => f.code)).toContain('missing_chineseTitle')
+    // without a vocabulary the rule does not apply (planning-only validation)
+    expect(validateBlueprint(blueprint({ chineseTitle: '' }), { manifest: m }).failures.map(f => f.code)).not.toContain('missing_chineseTitle')
   })
 
   it('refuses prose masquerading as a plan', () => {

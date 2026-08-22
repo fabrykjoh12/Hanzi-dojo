@@ -506,19 +506,25 @@ export function blueprintPrompt({ manifest, meanings = {}, totalLines, targets =
     + '- The ending must resolve the problem the story started with.\n'
     + '- Keep it ordinary and concrete — a story a ' + name + ' learner can follow: everyday places, small stakes, real motives.\n'
     + '- The whole story is exactly ' + totalLines + ' lines of Chinese. Give each beat a share of that (2-8 lines each), adding up to about ' + totalLines + '.\n'
-    + '- If a REQUIRED word has no place where it would naturally be needed, say so in "impossibleTargets" instead of forcing it.\n\n'
+    + '- If a REQUIRED word has no place where it would naturally be needed, say so in "impossibleTargets" instead of forcing it.\n'
+    // Lexical feasibility: a plan that is coherent in English but needs 扳手 or
+    // 冰淇淋 to tell is not a level-3 plan. The toolkit is checked word by word
+    // against the real vocabulary before any prose is written.
+    + '- Every beat lists "chineseLexicalAnchors": 4-8 Chinese WORDS (not sentences) the beat can be written with. Every one must be a word a ' + name + ' learner already knows, or one of the target words. If a beat needs a word outside that — a tool, a dish, a piece of equipment — change the beat until it does not.\n'
+    + '- For each target word, do not just say where it goes: say who says it, what it refers to, what they are trying to communicate, and give a short Chinese sentence showing it — the sketch must itself use only ' + name + ' words plus the targets.\n\n'
     + 'Output JSON only, no commentary, exactly this shape:\n'
     + '{\n'
     + '  "title": "<what the story is about, in English>",\n'
+    + '  "chineseTitle": "<the story title in Chinese, 2-8 characters, only words the reader knows>",\n'
     + '  "setting": "<where and when, one line>",\n'
     + '  "cast": ["<2-3 names from the list above>"],\n'
     + '  "problem": "<the ONE thing the story is about>",\n'
     + '  "incitingEvent": "<what starts it>",\n'
     + '  "beats": [\n'
-    + '    { "id": 1, "when": "<time>", "where": "<place>", "what": "<what changes here>", "because": "<why this follows — beat 1: \\"the story opens\\">", "arrivedHow": "<only if the place changed>", "targets": ["<target words used here>"], "lines": <2-8> }\n'
+    + '    { "id": 1, "when": "<time>", "where": "<place>", "what": "<what changes here>", "because": "<why this follows — beat 1: \\"the story opens\\">", "arrivedHow": "<only if the place changed>", "targets": ["<target words used here>"], "chineseLexicalAnchors": ["<4-8 simple Chinese words this beat is written with>"], "lines": <2-8> }\n'
     + '  ],\n'
     + '  "resolution": "<how the central problem ends>",\n'
-    + '  "targetPlan": [ { "word": "<target>", "beat": <n>, "why": "<why a person would need this word right here — at least a sentence>" } ],\n'
+    + '  "targetPlan": [ { "word": "<target>", "beat": <n>, "why": "<why a person would need this word right here — at least a sentence>", "speaker": "<which character says it, or narrator>", "refersTo": "<the thing in the story it is about>", "intent": "<what they are trying to communicate>", "usageSketch": "<a short Chinese sentence using it, e.g. 比赛快结束了>" } ],\n'
     + '  "impossibleTargets": ["<any required word with no natural home>"]\n'
     + '}'
 }
@@ -588,6 +594,99 @@ export function parseBlueprintJudgment(text, labels, dimensions) {
     out.push(entry)
   }
   return out.length ? out : null
+}
+
+// ── One beat at a time ──────────────────────────────────────────────────────
+// The whole-story call produced integration 2/10 three times out of three: a
+// writer holding 28 lines states the plan instead of performing it. A beat is
+// a closed task — this place, these people, this event, exactly these lines —
+// small enough that the model has nothing to do but write good sentences.
+export function beatPrompt({ manifest, blueprint, beat, alloc, meanings = {}, cast = [], sketches = [], tail = [], next = null, feedback = null }) {
+  const name = levelName(manifest)
+  const lines = []
+  lines.push('Write beat ' + beat.id + ' of a ' + name + ' Chinese graded-reader story: EXACTLY ' + alloc.lines + ' lines, and nothing beyond this beat.')
+  lines.push('')
+  if (feedback && feedback.length) {
+    lines.push('YOUR PREVIOUS ATTEMPT AT THIS BEAT WAS REJECTED:')
+    lines.push(feedback.map(f => '- ' + f).join('\n'))
+    lines.push('')
+  }
+  lines.push('The story so far — this is already written, do not repeat or rewrite it:')
+  lines.push(tail.length ? tail.map(l => '  ' + l).join('\n') : '  (this is the opening beat)')
+  lines.push('')
+  lines.push('THIS BEAT:')
+  lines.push('  Where: ' + beat.where + '   When: ' + beat.when)
+  lines.push('  Who is here: ' + (cast.join('、') || manifest.speakers.join('、')))
+  lines.push('  What happens: ' + beat.what)
+  if (beat.because) lines.push('  Why it follows: ' + beat.because)
+  if (next) lines.push('  What comes after (do NOT write it — just leave the story able to continue there): ' + next.what)
+  lines.push('')
+  if (Array.isArray(beat.chineseLexicalAnchors) && beat.chineseLexicalAnchors.length) {
+    lines.push('Write it with words like these — they are all words the reader knows:')
+    lines.push('  ' + beat.chineseLexicalAnchors.join('、'))
+    lines.push('')
+  }
+  if (sketches.length) {
+    lines.push('This beat must use:')
+    for (const s of sketches) {
+      lines.push('  ' + s.word + (meanings[s.word] ? ' (' + meanings[s.word] + ')' : '')
+        + ' — ' + (s.speaker || 'someone') + ' says it about ' + (s.refersTo || 'this moment') + ', to ' + (s.intent || 'communicate something')
+        + (s.usageSketch ? '. Something like: ' + s.usageSketch : ''))
+    }
+    lines.push('  Use it because the person genuinely means it here. Do NOT bend a sentence around the word.')
+    lines.push('')
+  }
+  lines.push('Rules:')
+  lines.push('- EXACTLY ' + alloc.lines + ' lines. Not ' + (alloc.lines - 1) + ', not ' + (alloc.lines + 1) + '.')
+  lines.push('- This beat only. Do not start the next one, do not summarise, do not end the story.')
+  lines.push('- No new characters, no new places, no objects that need a word the reader would not know.')
+  lines.push('- Only ' + name + '-or-below vocabulary, plus the words named above. No Latin letters anywhere.')
+  lines.push('- Dialogue is a bare name from ' + (cast.join('、') || manifest.speakers.join('、')) + ' then ：then what they say. Never 小明说：… — the name alone.')
+  lines.push('- Make the dialogue sound like a person talking, not like a textbook example.')
+  lines.push('')
+  lines.push('Output JSON only: {"lines": [' + Array.from({ length: Math.min(alloc.lines, 3) }, () => '"<line>"').join(', ') + (alloc.lines > 3 ? ', … exactly ' + alloc.lines + ' strings' : '') + ']}')
+  return lines.join('\n')
+}
+
+export function parseBeat(text, expectedLines) {
+  const obj = parseJsonObject(text)
+  const arr = obj && Array.isArray(obj.lines) ? obj.lines : null
+  if (!arr) return null
+  const lines = arr.map(l => String(l == null ? '' : l).trim()).filter(Boolean)
+  if (lines.length !== expectedLines) return null
+  if (lines.some(l => !/[一-鿿]/.test(l))) return null
+  return lines
+}
+
+// The local judge sees only what it needs: where the story was, what this
+// beat had to do, and the lines that came back.
+export function beatJudgePrompt({ manifest, beat, lines, tail = [], sketches = [], dimensions }) {
+  const name = levelName(manifest)
+  return 'Judge a few lines of a ' + name + ' Chinese graded reader.\n\n'
+    + 'The lines just before these (already accepted):\n' + (tail.length ? tail.map(l => '  ' + l).join('\n') : '  (this is the opening)') + '\n\n'
+    + 'What this passage was supposed to do: ' + beat.what + '\n'
+    + (sketches.length ? 'It had to use: ' + sketches.map(s => s.word + ' (' + (s.intent || 'to communicate something') + ')').join('; ') + '\n' : '')
+    + '\nThe passage:\n' + lines.map(l => '  ' + l).join('\n') + '\n\n'
+    + 'Score 1-10 on each:\n'
+    + dimensions.map(([key, desc]) => '- ' + key.toUpperCase() + ': ' + desc).join('\n') + '\n'
+    + 'and answer STUFFED yes/no: was any required word wedged into a sentence built around it, rather than used because the speaker meant it?\n'
+    + 'Then OVERALL 1-10. Be strict: 8+ means a good graded reader would print this as it stands, 5 means understandable but flat, below 5 means clumsy, unnatural or off-task.\n\n'
+    + 'Output one line, nothing else:\n'
+    + dimensions.map(([k]) => k.toUpperCase() + ' <n>').join(' ') + ' STUFFED <yes|no> OVERALL <n> — <short reason>'
+}
+
+export function parseBeatJudgment(text, dimensions) {
+  const body = String(text || '').replace(/\n/g, ' ')
+  const num = (key) => {
+    const m = body.match(new RegExp(key + '\\s*[:：]?\\s*(\\d{1,2})', 'i'))
+    return m ? Math.min(10, parseInt(m[1], 10)) : null
+  }
+  const overall = num('OVERALL')
+  if (overall == null) return null
+  const stuffed = body.match(/STUFFED\s*[:：]?\s*(yes|no|true|false)/i)
+  const out = { overall, stuffed: stuffed ? /^(yes|true)$/i.test(stuffed[1]) : null, reason: (body.split(/[—–]/)[1] || '').trim() }
+  for (const [key] of dimensions) out[key] = num(key.toUpperCase())
+  return out
 }
 
 // ── Realization: the writer stops inventing ─────────────────────────────────

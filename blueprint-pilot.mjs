@@ -21,7 +21,7 @@ import { validateCandidate, validateEdit, formatValidation, serializableValidati
 import {
   blueprintPrompt, parseBlueprint,
   blueprintJudgePrompt, parseBlueprintJudgment,
-  realizePrompt, parseStructuredStory,
+  beatPrompt, parseBeat, beatJudgePrompt, parseBeatJudgment,
   lineRewritePrompt, parseSingleLine,
   hostRankPrompt, parseHostRanking,
   lineJudgePrompt, parseLineJudgment,
@@ -29,8 +29,9 @@ import {
 } from './storyGenPrompts.mjs'
 import {
   validateBlueprint, allocateLines, anonymiseBlueprints, renderBlueprint,
-  acceptableBlueprint, BLUEPRINT_DIMENSIONS, BLUEPRINT_QUALITY, BLUEPRINT_VERSION,
+  acceptableBlueprint, hasLatin, BLUEPRINT_DIMENSIONS, BLUEPRINT_QUALITY, BLUEPRINT_VERSION,
 } from './storyBlueprint.mjs'
+import { realizeByBeat, BEAT_LIMITS, BEAT_QUALITY, BEAT_VERSION } from './storyBeats.mjs'
 import { judgePrompt, parseJudgment, JUDGE_VERSION } from './storyJudge.mjs'
 import { preRepairDecision, DRAFT_QUALITY } from './storyDraftQuality.mjs'
 import { planRepair, executeRepairPlan, LINE_QUALITY, REPAIR_PLANNER_VERSION } from './storyRepairPlanner.mjs'
@@ -50,7 +51,7 @@ const batchId = arg('batch', 'blueprint-1')
 const outDir = arg('out', null)
 const writerSpec = arg('writer', null)            // Chinese realization + judging (Qwen)
 const writerEffort = arg('writer-effort', 'none')
-const plannerBSpec = arg('planner-b', null)       // second planner (gpt-oss)
+const plannerBSpec = arg('planner-b', null)       // line-repair fallback only (gpt-oss)
 const plannerBEffort = arg('planner-b-effort', 'low')
 const perPlanner = parseInt(arg('plans-per-planner', '2'), 10)
 const budget = parseInt(arg('budget', '6'), 10)
@@ -89,8 +90,8 @@ console.log('Composed ' + composed.manifests.length + ' manifest(s) at HSK ' + l
 const results = []
 
 for (const manifest of composed.manifests) {
-  // The exact length is enforced by parseStructuredStory, which accepts N
-  // lines or nothing — NOT by narrowing the manifest. blueprint-2 set
+  // The exact length is enforced beat by beat (each beat returns exactly its
+  // allocated lines or is rejected) — NOT by narrowing the manifest. blueprint-2 set
   // minLines = maxLines = 28 and every draft came back "invalid_manifest",
   // because validateManifest requires a real range: the deterministic
   // validator then refused to look at any of the three stories.
@@ -108,25 +109,34 @@ for (const manifest of composed.manifests) {
   const record = { manifestId: manifest.id, manifest, required, blueprints: [], selection: null, draft: null, validation: null, preRepairCritique: null, decision: null, repair: null, after: null, finalCritique: null, final: null }
 
   // ── 1. Blueprints: planning only ──────────────────────────────────────────
-  const planners = [{ p: writer, tag: 'planner-A' }, ...(plannerB ? [{ p: plannerB, tag: 'planner-B' }] : [])]
+  // Qwen plans. gpt-oss was benchmarked over two pilots (4/6 valid vs 1/6, and
+  // Qwen won all three selections) and keeps its narrow fallback roles; there
+  // is nothing left to learn by paying for it to plan again.
   const raws = []
-  for (const { p } of planners) {
-    for (let k = 1; k <= perPlanner; k += 1) {
-      let bp = null
-      let error = null
-      let rawText = null
+  for (let k = 1; k <= perPlanner; k += 1) {
+    let bp = null
+    let error = null
+    let rawText = null
+    let feedback = null
+    let check = null
+    // One bounded lexical repair: a plan whose only problem is that it needs
+    // words the reader does not have gets told exactly which ones, once.
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
       try {
-        rawText = await p.send({ prompt: blueprintPrompt({ manifest, meanings, totalLines, targets: required }), maxTokens: 2500 })
+        rawText = await writer.send({ prompt: blueprintPrompt({ manifest, meanings, totalLines, targets: required, feedback }), maxTokens: 3000 })
         bp = parseBlueprint(rawText)
-      } catch (err) { error = String(err.message || err).slice(0, 160) }
-      const check = bp ? validateBlueprint(bp, { manifest, requiredTargets: required }) : { ok: false, failures: [{ code: error ? 'provider_error' : 'unparseable', message: error || 'no JSON plan in the response' }] }
-      // Keep the raw text when nothing parsed: blueprint-1 could not be
-      // diagnosed from its own artifacts because only parsed values were kept.
-      raws.push({ planner: p.name, attempt: k, blueprint: bp, check, raw: bp ? null : String(rawText || '').slice(0, 1500) })
+      } catch (err) { error = String(err.message || err).slice(0, 160); bp = null }
+      check = bp
+        ? validateBlueprint(bp, { manifest, vocabMap, requiredTargets: required })
+        : { ok: false, failures: [{ code: error ? 'provider_error' : 'unparseable', message: error || 'no JSON plan in the response' }] }
+      if (check.ok) break
+      feedback = check.failures.map(f => f.message)
+      raws.push({ planner: writer.name, attempt: k, repairAttempt: attempt, blueprint: bp, check, raw: bp ? null : String(rawText || '').slice(0, 1200), superseded: true })
     }
+    raws.push({ planner: writer.name, attempt: k, repairAttempt: check.ok ? 'accepted' : 'final', blueprint: bp, check, raw: bp ? null : String(rawText || '').slice(0, 1200) })
   }
   const valid = raws.filter(r => r.check.ok)
-  console.log('\nBLUEPRINTS: ' + raws.length + ' generated, ' + valid.length + ' structurally valid')
+  console.log('\nBLUEPRINTS: ' + raws.length + ' attempt(s), ' + valid.length + ' structurally + lexically valid')
   for (const r of raws) {
     if (r.check.ok) continue
     console.log('  rejected [' + r.planner + ' #' + r.attempt + ']: ' + r.check.failures.map(f => f.code + ' — ' + f.message).join('; '))
@@ -195,37 +205,57 @@ for (const manifest of composed.manifests) {
   record.judgeRaw = String(judgeRaw || '').slice(0, 2000)
   record.selection = { code: null, label: chosen.label, planner: chosen.planner, attempt: chosen.attempt, allocation, targetPlan: chosen.blueprint.targetPlan }
 
-  // ── 3. Realization: exactly N lines, one bounded retry ────────────────────
-  const rendered = renderBlueprint(chosen.blueprint, allocation)
-  let draft = null
-  let feedback = null
-  const realizeAttempts = []
-  for (let a = 1; a <= 2 && !draft; a += 1) {
-    let out = null
-    let error = null
-    try {
-      const text = await writer.send({
-        prompt: realizePrompt({ manifest, blueprint: chosen.blueprint, rendered, allocation, meanings, totalLines, pool, feedback }),
-        maxTokens: 3000,
-      })
-      out = parseStructuredStory(text, totalLines)
-      if (!out) error = 'wrong shape or not exactly ' + totalLines + ' lines'
-    } catch (err) { error = String(err.message || err).slice(0, 160) }
-    realizeAttempts.push({ attempt: a, ok: Boolean(out), error })
-    if (out) draft = out
-    else feedback = ['The output must be JSON with a "title" and exactly ' + totalLines + ' strings in "lines". ' + error]
+  // ── 3. Realization: beat by beat, each gated before the next ─────────────
+  console.log('\nBEAT REALIZATION (' + BEAT_VERSION + ') — local limits ' + JSON.stringify(BEAT_LIMITS) + ', thresholds ' + JSON.stringify(BEAT_QUALITY))
+  const realized = await realizeByBeat({
+    blueprint: chosen.blueprint,
+    allocation,
+    manifest,
+    vocabMap,
+    meanings,
+    writer,
+    judge: writer,
+    buildBeatPrompt: beatPrompt,
+    parseBeat,
+    buildBeatJudgePrompt: beatJudgePrompt,
+    parseBeatJudgment,
+    maxTokens: 1800,
+  })
+  for (const a of realized.attempts) {
+    console.log('  beat ' + a.beat + ' attempt ' + a.attempt + ' — ' + a.requested + ' lines requested → '
+      + (a.accepted ? 'ACCEPTED' : 'rejected'))
+    for (const l of (a.lines || ['(nothing usable)'])) console.log('      ' + l)
+    if (!a.deterministic.ok) for (const f of a.deterministic.failures) console.log('      ✗ ' + f.code + ': ' + f.message)
+    else console.log('      deterministic ok — ' + JSON.stringify(a.deterministic.metrics))
+    if (a.score) console.log('      judged: natural ' + a.score.natural + ' continuity ' + a.score.continuity + ' event ' + a.score.event
+      + ' integration ' + a.score.integration + ' stuffed ' + a.score.stuffed + ' → OVERALL ' + a.score.overall
+      + (a.score.reason ? ' — ' + a.score.reason : ''))
   }
-  console.log('\nREALIZATION: ' + realizeAttempts.map(a => '#' + a.attempt + ' ' + (a.ok ? 'exactly ' + totalLines + ' lines' : 'rejected (' + a.error + ')')).join(', '))
-  if (!draft) {
-    record.draft = null
+  record.beats = { version: BEAT_VERSION, limits: BEAT_LIMITS, thresholds: BEAT_QUALITY, attempts: realized.attempts, accepted: realized.accepted, ok: realized.ok, code: realized.code, failedBeat: realized.failedBeat || null }
+
+  if (!realized.ok) {
+    console.log('\n' + realized.code + ': ' + realized.detail)
     results.push(record)
-    console.log('NO DRAFT — the fixed-length contract was not met.')
     continue
   }
-  const lines = draft.content.split('\n')
+  const lines = realized.lines
+  if (lines.length !== totalLines) {
+    console.log('\nASSEMBLY MISMATCH: ' + lines.length + ' lines, expected ' + totalLines)
+    record.beats.code = 'ASSEMBLY_MISMATCH'
+    results.push(record)
+    continue
+  }
+  const latin = lines.filter(hasLatin)
+  if (latin.length) {
+    console.log('\nLATIN_IN_STORY: ' + latin.join(' | '))
+    record.beats.code = 'LATIN_IN_STORY'
+    results.push(record)
+    continue
+  }
+  const draft = { title: String(chosen.blueprint.chineseTitle || '').trim(), content: lines.join('\n') }
   console.log('\nDRAFT — TITLE: ' + draft.title)
   lines.forEach((l, i) => console.log(String(i + 1).padStart(2) + ': ' + l))
-  record.draft = { title: draft.title, content: draft.content, lines: lines.length, attempts: realizeAttempts }
+  record.draft = { title: draft.title, content: draft.content, lines: lines.length, attempts: realized.attempts.length }
 
   // ── 4. Deterministic validation ───────────────────────────────────────────
   const before = validateCandidate(draft, { manifest, vocabMap, corpus: stories })
