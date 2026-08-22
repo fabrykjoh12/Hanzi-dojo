@@ -16,7 +16,7 @@
 // Kept apart from legacyClaimMigration.js because this half needs the scheduler,
 // while classification is pure bookkeeping.
 
-import { schedule } from './srs'
+import { schedule } from './srs.js'
 
 // replayCard(history) → { updates, steps } | null
 //

@@ -9,7 +9,7 @@
 // script builds a plan from these functions, prints it, and only then — after a
 // human has read the dry run — applies it.
 
-import { MASTERY_STABILITY_DAYS } from './knowledgeState'
+import { MASTERY_STABILITY_DAYS } from './knowledgeState.js'
 
 export const CLASS = {
   // A claim that was never reviewed. Convert in place to an inert claim.
