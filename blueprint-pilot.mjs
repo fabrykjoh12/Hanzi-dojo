@@ -55,6 +55,14 @@ const plannerBSpec = arg('planner-b', null)       // line-repair fallback only (
 const plannerBEffort = arg('planner-b-effort', 'low')
 const perPlanner = parseInt(arg('plans-per-planner', '2'), 10)
 const budget = parseInt(arg('budget', '6'), 10)
+// Harness-only resume: pick a stored artifact's first-attempt plan up at the
+// LEXICAL REPAIR step, instead of spending a planning call on a fresh plan.
+// blueprint-smoke-2 produced a structurally valid plan and then lost its
+// repair call to provider quota, so the one thing the smoke exists to test —
+// can the planner fix named lexical violations without disturbing the story —
+// has never been asked. Nothing else changes: same prompt, same validator,
+// same thresholds, same single repair attempt.
+const resumePlanPath = arg('resume-plan', null)
 
 if (!inputPath || !outDir || !writerSpec) {
   console.error('Required: --input <dump> --out <dir> --writer <p:m>  [--planner-b <p:m>] [--count 3] [--lines 28]')
@@ -78,6 +86,20 @@ const provider = (spec, effort) => {
 const writer = provider(writerSpec, writerEffort)
 const plannerB = plannerBSpec ? provider(plannerBSpec, plannerBEffort) : null
 
+// Either resume one stored plan, or compose fresh manifests.
+const jobs = []
+if (resumePlanPath) {
+  const stored = JSON.parse(readFileSync(resumePlanPath, 'utf8'))
+  const entry = (stored.blueprintRun.blueprints || []).find(x => x.blueprint)
+  if (!entry) { console.error('no stored blueprint in ' + resumePlanPath); process.exit(1) }
+  jobs.push({
+    manifest: stored.manifest,
+    required: stored.blueprintRun.required,
+    resume: { blueprint: entry.blueprint, failures: entry.check.failures, source: resumePlanPath },
+  })
+  console.log('Resuming ' + stored.manifest.id + ' from its stored plan at the lexical repair step\n')
+}
+
 // Fresh manifests
 const report = buildCoverageReport({ stories, vocab })
 let plan0 = buildCoveragePlan({ words: report.words, level, goal: 2, batchCap: 2 })
@@ -85,11 +107,15 @@ const composed = composeSemanticManifests({
   batchId, level, plan: plan0, pending: pendingTargets, use: useTargets, meanings, count,
   defaults: manifestDefaults(level),
 })
-console.log('Composed ' + composed.manifests.length + ' manifest(s) at HSK ' + level + ', fixed length ' + totalLines + ' lines\n')
+if (!jobs.length) {
+  for (const m of composed.manifests) jobs.push({ manifest: m, required: null, resume: null })
+  console.log('Composed ' + composed.manifests.length + ' manifest(s) at HSK ' + level + ', fixed length ' + totalLines + ' lines\n')
+}
 
 const results = []
 
-for (const manifest of composed.manifests) {
+for (const job of jobs) {
+  const manifest = job.manifest
   // The exact length is enforced beat by beat (each beat returns exactly its
   // allocated lines or is rejected) — NOT by narrowing the manifest. blueprint-2 set
   // minLines = maxLines = 28 and every draft came back "invalid_manifest",
@@ -97,7 +123,7 @@ for (const manifest of composed.manifests) {
   // validator then refused to look at any of the three stories.
   const mCheck = validateManifest(manifest)
   if (!mCheck.ok) { console.error('manifest ' + manifest.id + ' is invalid: ' + mCheck.problems.join('; ')); continue }
-  const required = ((manifest.composition && manifest.composition.hard) || manifest.targets.filter(t => t.min >= 2))
+  const required = job.required || ((manifest.composition && manifest.composition.hard) || manifest.targets.filter(t => t.min >= 2))
     .map(t => t.word)
 
   console.log('\n' + '='.repeat(72))
@@ -106,14 +132,46 @@ for (const manifest of composed.manifests) {
   console.log('  cast: ' + manifest.speakers.join('、') + ' | exactly ' + totalLines + ' lines')
   console.log('='.repeat(72))
 
-  const record = { manifestId: manifest.id, manifest, required, blueprints: [], selection: null, draft: null, validation: null, preRepairCritique: null, decision: null, repair: null, after: null, finalCritique: null, final: null }
+  const record = { manifestId: manifest.id, manifest, required, resume: null, blueprints: [], selection: null, draft: null, validation: null, preRepairCritique: null, decision: null, repair: null, after: null, finalCritique: null, final: null }
 
   // ── 1. Blueprints: planning only ──────────────────────────────────────────
   // Qwen plans. gpt-oss was benchmarked over two pilots (4/6 valid vs 1/6, and
   // Qwen won all three selections) and keeps its narrow fallback roles; there
   // is nothing left to learn by paying for it to plan again.
   const raws = []
-  for (let k = 1; k <= perPlanner; k += 1) {
+  if (job.resume) {
+    const before = job.resume.blueprint
+    const violations = job.resume.failures.map(f => f.message)
+    console.log('STORED PLAN (from ' + job.resume.source + '):')
+    console.log(renderBlueprint(before).split('\n').map(l => '  ' + l).join('\n'))
+    console.log('\nLEXICAL VIOLATIONS TO REPAIR:')
+    for (const v of violations) console.log('  - ' + v)
+
+    // The plan travels through the EXISTING feedback input — the prompt
+    // template is untouched. Without the plan in front of it a "repair" is
+    // just another fresh plan, which is not what this run is testing.
+    const feedback = [
+      ...violations,
+      'Repair the plan below. Keep its problem, cast, places, times, causal chain, number of beats and each target\'s beat exactly as they are — change ONLY the words that break the rules above.',
+      renderBlueprint(before),
+    ]
+    let bp = null
+    let rawText = null
+    let error = null
+    try {
+      rawText = await writer.send({ prompt: blueprintPrompt({ manifest, meanings, totalLines, targets: required, pool, feedback }), maxTokens: 3200 })
+      bp = parseBlueprint(rawText)
+    } catch (err) { error = String(err.message || err).slice(0, 200) }
+    const check = bp
+      ? validateBlueprint(bp, { manifest, vocabMap, requiredTargets: required })
+      : { ok: false, failures: [{ code: error ? 'provider_error' : 'unparseable', message: error || 'no JSON plan in the response' }] }
+    console.log('\nREPAIRED PLAN: ' + (check.ok ? 'lexically valid' : 'still failing'))
+    if (bp) console.log(renderBlueprint(bp).split('\n').map(l => '  ' + l).join('\n'))
+    if (!check.ok) for (const f of check.failures) console.log('  x ' + f.code + ': ' + f.message)
+    raws.push({ planner: writer.name, attempt: 1, repairAttempt: 'resume-repair', blueprint: bp, check, raw: bp ? null : String(rawText || '').slice(0, 1500), accepted: check.ok })
+    record.resume = { source: job.resume.source, before, violations, after: bp, check }
+  }
+  for (let k = 1; !job.resume && k <= perPlanner; k += 1) {
     let bp = null
     let error = null
     let rawText = null
@@ -382,6 +440,7 @@ for (const r of results) {
       totalLines,
       required: r.required,
       thresholds: { blueprint: BLUEPRINT_QUALITY, draft: DRAFT_QUALITY, line: LINE_QUALITY },
+      resume: r.resume || null,
       blueprints: r.blueprints,
       judgeRaw: r.judgeRaw || null,
       selection: r.selection,
