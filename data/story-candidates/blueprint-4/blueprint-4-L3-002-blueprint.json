@@ -1,0 +1,994 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "blueprint-4",
+  "generatedAt": "2026-08-22T15:41:15.158Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "blueprint-4-L3-002",
+    "batchId": "blueprint-4",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "发生",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "国家",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "结束",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "来自",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "生活",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "其他",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "或者",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "当然",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "out in the city: places, errands, and a small discovery",
+    "seasonSeed": "preparing for something over several days (a trip, a festival, a small competition) with setbacks",
+    "series": null,
+    "composition": {
+      "bucket": "places",
+      "reason": "4 pending hard targets share the \"places\" theme",
+      "hard": [
+        {
+          "word": "发生",
+          "meaning": "to happen; to occur; to take place; to break out"
+        },
+        {
+          "word": "国家",
+          "meaning": "country; nation; state"
+        },
+        {
+          "word": "结束",
+          "meaning": "termination; to finish"
+        },
+        {
+          "word": "来自",
+          "meaning": "to come from (a place); From: (in email header)"
+        },
+        {
+          "word": "生活",
+          "meaning": "to live; life"
+        }
+      ],
+      "soft": [
+        {
+          "word": "其他",
+          "meaning": "other; (sth or sb) else"
+        },
+        {
+          "word": "或者",
+          "meaning": "or; possibly; maybe; perhaps"
+        },
+        {
+          "word": "当然",
+          "meaning": "only natural; as it should be"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选",
+        "换",
+        "脸"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "发生",
+      "国家",
+      "结束",
+      "来自",
+      "生活"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "blueprints": [
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Exchange Student's Surprise",
+          "chineseTitle": "新朋友的礼物",
+          "setting": "A sunny afternoon in a Chinese city; specifically a school hallway and a local park.",
+          "cast": [
+            "李明",
+            "小明"
+          ],
+          "problem": "Li Ming needs to find a cultural gift for his new friend from abroad before the school day ends.",
+          "incitingEvent": "小明 tells Li Ming he has a new classmate from another country who wants to understand China better.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "3:00 PM",
+              "where": "School hallway",
+              "what": "Xiao Ming introduces the new student to Li Ming and mentions his origin.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [
+                "来自"
+              ],
+              "chineseLexicalAnchors": [
+                "同学",
+                "新",
+                "介绍",
+                "认识",
+                "高兴"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "3:15 PM",
+              "where": "School library",
+              "what": "Li Ming looks for books about China to give as a gift, but only finds textbooks.",
+              "because": "Li Ming wants to give something educational about his country.",
+              "arrivedHow": "Walked down the hall.",
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "图书馆",
+                "书",
+                "找",
+                "没有",
+                "只有"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "3:30 PM",
+              "where": "Near the school gate",
+              "what": "They discuss what kind of gift is suitable for someone from a different background.",
+              "because": "The library books were too boring and not special enough.",
+              "arrivedHow": "Walked out of the library.",
+              "targets": [
+                "国家",
+                "其他"
+              ],
+              "chineseLexicalAnchors": [
+                "礼物",
+                "合适",
+                "特别",
+                "怎么样",
+                "想要"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "3:45 PM",
+              "where": "Small park near school",
+              "what": "They see a nice apple tree and decide to pick fresh apples as a simple, natural gift.",
+              "because": "They need a gift that is fresh, simple, and shared (unlike bought items).",
+              "arrivedHow": "Walked through the gate.",
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "公园",
+                "树",
+                "苹果",
+                "红",
+                "好吃"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "4:00 PM",
+              "where": "School gate",
+              "what": "They meet the new student and give him the apples.",
+              "because": "The school day is ending and the new student is waiting.",
+              "arrivedHow": "Walked back to the gate.",
+              "targets": [
+                "结束",
+                "当然"
+              ],
+              "chineseLexicalAnchors": [
+                "放学",
+                "给",
+                "谢谢",
+                "喜欢",
+                "好"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 6,
+              "when": "4:05 PM",
+              "where": "School gate",
+              "what": "The new student is happy and explains that this gesture helps him feel at home in his new life.",
+              "because": "He received a kind gesture that connects him to the local community.",
+              "arrivedHow": null,
+              "targets": [
+                "生活",
+                "发生"
+              ],
+              "chineseLexicalAnchors": [
+                "开心",
+                "朋友",
+                "温暖",
+                "开始",
+                "好"
+              ],
+              "lines": 3
+            }
+          ],
+          "resolution": "Li Ming and Xiao Ming realize that a simple, fresh apple is a perfect first gift, making their new friend feel welcome in his new environment.",
+          "targetPlan": [
+            {
+              "word": "来自",
+              "beat": 1,
+              "why": "Xiao Ming needs to introduce where the new student is from to establish context.",
+              "speaker": "小明",
+              "refersTo": "The new classmate's hometown.",
+              "intent": "To explain the student's origin.",
+              "usageSketch": "他是来自美国的。"
+            },
+            {
+              "word": "国家",
+              "beat": 3,
+              "why": "They discuss that the culture of the new student's country is different, so the gift should be simple.",
+              "speaker": "李明",
+              "refersTo": "The new student's home nation.",
+              "intent": "To contrast customs to find an appropriate gift.",
+              "usageSketch": "每个国家的文化不一样。"
+            },
+            {
+              "word": "其他",
+              "beat": 3,
+              "why": "Li Ming suggests checking if there are other options besides books.",
+              "speaker": "李明",
+              "refersTo": "Alternative gift ideas.",
+              "intent": "To broaden the search for a gift.",
+              "usageSketch": "我们把其他的东西看一看。"
+            },
+            {
+              "word": "结束",
+              "beat": 5,
+              "why": "Xiao Ming notes that the school day is finishing, urging them to hurry.",
+              "speaker": "小明",
+              "refersTo": "The school day.",
+              "intent": "To indicate time pressure.",
+              "usageSketch": "下课快结束了。"
+            },
+            {
+              "word": "当然",
+              "beat": 5,
+              "why": "The new student accepts the apple and says he is naturally happy to receive it.",
+              "speaker": "New Student",
+              "refersTo": "His feelings about the gift.",
+              "intent": "To express eager acceptance.",
+              "usageSketch": "当然，我很想要。"
+            },
+            {
+              "word": "生活",
+              "beat": 6,
+              "why": "The new student explains that this interaction makes his new daily existence feel easy.",
+              "speaker": "New Student",
+              "refersTo": "His experience of living in China.",
+              "intent": "To express comfort and belonging.",
+              "usageSketch": "这里的生活很温暖。"
+            },
+            {
+              "word": "发生",
+              "beat": 6,
+              "why": "The new student reflects that something good happened today, marking a positive start.",
+              "speaker": "New Student",
+              "refersTo": "The meeting and gift exchange.",
+              "intent": "To identify the event as positive.",
+              "usageSketch": "今天发生了什么好事？"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"红\": not standard vocabulary"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 6 anchor \"温暖\": 温暖 is HSK 5, above the story level"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "来自 usage sketch \"他是来自美国的。\": above-level vocabulary: 美"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "当然 is given to \"New Student\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "生活 is given to \"New Student\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "生活 usage sketch \"这里的生活很温暖。\": above-level vocabulary: 温暖"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "发生 is given to \"New Student\", who is not in the cast"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小明"
+          ],
+          "beats": 6,
+          "placed": {
+            "来自": 1,
+            "国家": 3,
+            "其他": 3,
+            "结束": 5,
+            "当然": 5,
+            "生活": 6,
+            "发生": 6
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The New Classmate's Home",
+          "chineseTitle": "新同学的家",
+          "setting": "Afternoon in a residential neighborhood in a Chinese city",
+          "cast": [
+            "小明",
+            "小红",
+            "妈妈"
+          ],
+          "problem": "Xiao Ming is looking for his new friend's house but cannot find it because the address is confusing.",
+          "incitingEvent": "Xiao Ming walks to the apartment building Xiao Red lives in, but he gets lost near the entrance.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Friday afternoon",
+              "where": "In front of a large apartment building",
+              "what": "Xiao Ming arrives at Xiao Red's building but sees many doors and doesn't know which one is hers.",
+              "because": "the story opens",
+              "arrivedHow": "by walking/buses",
+              "targets": [
+                "来自"
+              ],
+              "chineseLexicalAnchors": [
+                "这",
+                "是",
+                "谁",
+                "住",
+                "这里",
+                "来自",
+                "哪里",
+                "问"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "A moment later",
+              "where": "Same building lobby",
+              "what": "Xiao Hong's mother sees Xiao Ming looking confused and asks if he needs help.",
+              "because": "Xiao Ming is standing still and looking confused, drawing attention",
+              "arrivedHow": "she walked out from inside",
+              "targets": [],
+              "chineseLexicalAnchors": [
+                "谁",
+                "你",
+                "找",
+                "找",
+                "吗",
+                "帮助",
+                "需要"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 3,
+              "when": "Immediately after",
+              "where": "Same building lobby",
+              "what": "Xiao Ming explains he is looking for Xiao Red and mentions she is a new student.",
+              "because": "Mom asked if he needs help",
+              "arrivedHow": "N/A",
+              "targets": [
+                "发生"
+              ],
+              "chineseLexicalAnchors": [
+                "我",
+                "找",
+                "小红",
+                "她",
+                "出",
+                "事",
+                "发生"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "Shortly after",
+              "where": "Same building lobby",
+              "what": "Mom asks Xiao Ming about his background to chat while thinking.",
+              "because": "Small talk while processing the request",
+              "arrivedHow": "N/A",
+              "targets": [
+                "国家"
+              ],
+              "chineseLexicalAnchors": [
+                "你",
+                "来自",
+                "那个",
+                "国家",
+                "这",
+                "是",
+                "好",
+                "国家"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 5,
+              "when": "While talking",
+              "where": "Same building lobby",
+              "what": "Xiao Ming makes a comment about daily life to fill the silence.",
+              "because": "He wants to be polite and keep the conversation going",
+              "arrivedHow": "N/A",
+              "targets": [
+                "生活"
+              ],
+              "chineseLexicalAnchors": [
+                "这里",
+                "生活",
+                "很",
+                "好",
+                "慢",
+                "或者",
+                "快"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "Mom responds",
+              "where": "Same building lobby",
+              "what": "Mom clarifies that no accident happened and offers to lead him to the door, concluding the interaction.",
+              "because": "Xiao Ming used 'happen' and Mom needs to correct/confirm and finish the help-offering",
+              "arrivedHow": "N/A",
+              "targets": [
+                "结束",
+                "当然"
+              ],
+              "chineseLexicalAnchors": [
+                "不",
+                "发生",
+                "事",
+                "当然",
+                "我",
+                "带",
+                "路",
+                "结束"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "Mom corrects Xiao Ming's assumption that something 'happened' (badly), confirms she will take him to Xiao Red's door, and the problem of not finding the door is resolved by her guidance.",
+          "targetPlan": [
+            {
+              "word": "来自",
+              "beat": 1,
+              "why": "Xiao Ming is confused by the address labels or signs which might list origins, or he is thinking about where people come from in this building.",
+              "speaker": "Xiao Ming (internal thought/dialogue with himself)",
+              "refersTo": "The people in the building or the address origin",
+              "intent": "To express confusion about who lives here or where the directory comes from.",
+              "usageSketch": "这房子的人来自哪里？"
+            },
+            {
+              "word": "发生",
+              "beat": 3,
+              "why": "Xiao Ming thinks something went wrong (e.g., 'Did an accident happen?' or 'Is something happening?') because he can't find the friend.",
+              "speaker": "Xiao Ming",
+              "refersTo": "The situation of being lost/missing friend",
+              "intent": "To ask if there is a problem.",
+              "usageSketch": "是不是出事了？发生了什么？"
+            },
+            {
+              "word": "国家",
+              "beat": 4,
+              "why": "Mom starts small talk, asking where he is from.",
+              "speaker": "Mom",
+              "refersTo": "Xiao Ming's origin country",
+              "intent": "To ask about his nationality.",
+              "usageSketch": "你来自哪个国家？"
+            },
+            {
+              "word": "生活",
+              "beat": 5,
+              "why": "Xiao Ming responds to the origin question or general chat by commenting on life in China.",
+              "speaker": "Xiao Ming",
+              "refersTo": "Living in the city/building",
+              "intent": "To share an opinion about daily life.",
+              "usageSketch": "这里的生活很好。"
+            },
+            {
+              "word": "结束",
+              "beat": 6,
+              "why": "Mom indicates the confusion/mistake is over and she will now take action.",
+              "speaker": "Mom",
+              "refersTo": "The period of confusion/searching",
+              "intent": "To signal the end of the problem.",
+              "usageSketch": "没关系，这个问题结束了。"
+            },
+            {
+              "word": "当然",
+              "beat": 6,
+              "why": "Mom agrees to help him find the door.",
+              "speaker": "Mom",
+              "refersTo": "Her offer to help",
+              "intent": "To agree politely and quickly.",
+              "usageSketch": "当然，我去帮你。"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "target_no_speaker",
+              "message": "来自 is given to \"Xiao Ming (internal thought/dialogue with himself)\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "发生 is given to \"Xiao Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "国家 is given to \"Mom\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "生活 is given to \"Xiao Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "结束 is given to \"Mom\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "当然 is given to \"Mom\", who is not in the cast"
+            }
+          ],
+          "cast": [
+            "小明",
+            "小红",
+            "妈妈"
+          ],
+          "beats": 6,
+          "placed": {
+            "来自": 1,
+            "发生": 3,
+            "国家": 4,
+            "生活": 5,
+            "结束": 6,
+            "当然": 6
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "A Letter from Home",
+          "chineseTitle": "来自家乡的信",
+          "setting": "A Saturday afternoon in a modern Chinese city; inside a busy neighborhood post office.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming is anxious because he has not received any news from his hometown for months and fears something bad has happened.",
+          "incitingEvent": "Li Ming notices a letter with a familiar stamp at the post office counter while waiting in line.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday morning, 10:00 AM",
+              "where": "The entrance of the Community Post Office",
+              "what": "Li Ming arrives at the post office, feeling anxious. He sees Xiao Hong, a classmate, waiting in line. He asks her why she is there.",
+              "because": "the story opens",
+              "targets": [
+                "来自"
+              ],
+              "chineseLexicalAnchors": [
+                "邮局",
+                "排队",
+                "焦虑",
+                "看见",
+                "来自",
+                "家乡"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Saturday morning, 10:05 AM",
+              "where": "Inside the post office lobby",
+              "what": "Xiao Hong explains she is picking up a package. She reveals the sender is from the same county as Li Ming. Li Ming realizes the letter he saw earlier might be for him or related to his village.",
+              "because": "Li Ming needed to know the context of the stamps he saw",
+              "targets": [
+                "来自"
+              ],
+              "chineseLexicalAnchors": [
+                "包裹",
+                "寄",
+                "同一个",
+                "县",
+                "邮票",
+                "发现"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Saturday morning, 10:10 AM",
+              "where": "The post office counter",
+              "what": "Li Ming asks the clerk about local mail. The clerk says, 'A problem happened yesterday,' but doesn't specify. Li Ming gets worried. He asks Xiao Hong if she knows what happened.",
+              "because": "The visual clue (stamp) led him to inquire about recent local news",
+              "targets": [
+                "发生"
+              ],
+              "chineseLexicalAnchors": [
+                "昨天",
+                "发生",
+                "问题",
+                "担心",
+                "问",
+                "工作人员"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "Saturday morning, 10:15 AM",
+              "where": "The post office counter",
+              "what": "Xiao Hong checks her phone. She shows Li Ming a news alert: a small fire happened in his village, but no one was hurt. It was over this morning. Li Ming is relieved but still misses home.",
+              "because": "Li Ming needed confirmation of the rumors or events hinted at by the clerk",
+              "targets": [
+                "发生",
+                "结束"
+              ],
+              "chineseLexicalAnchors": [
+                "手机",
+                "新闻",
+                "火灾",
+                "结束",
+                "没有",
+                "受伤"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "Saturday morning, 10:20 AM",
+              "where": "The post office exit",
+              "what": "Li Ming thanks Xiao Hong. He reflects that while life in the city is busy, knowing his family is safe makes his life feel complete. He decides to call his mother.",
+              "because": "The tension was resolved, allowing for emotional reflection",
+              "targets": [
+                "生活"
+              ],
+              "chineseLexicalAnchors": [
+                "感谢",
+                "城市",
+                "生活",
+                "完整",
+                "打电话",
+                "妈妈"
+              ],
+              "lines": 6
+            }
+          ],
+          "resolution": "Li Ming learns his family is safe after a minor incident, resolving his anxiety and allowing him to make peace with his daily life in the city by calling his mother.",
+          "targetPlan": [
+            {
+              "word": "来自",
+              "beat": 1,
+              "why": "Li Ming needs to identify the origin of the mysterious letter stamp to see if it connects to his hometown.",
+              "speaker": "Xiao Hong (answering Li Ming's observation)",
+              "refersTo": "The place where the stamp/mail originates",
+              "intent": "To confirm the geographic origin of the item",
+              "usageSketch": "这个邮票是来自你的家乡吗？"
+            },
+            {
+              "word": "发生",
+              "beat": 3,
+              "why": "The clerk needs to report an event that took place, and Li Ming needs to know what event it was.",
+              "speaker": "Clerk / Li Ming",
+              "refersTo": "An incident (the fire)",
+              "intent": "To query or state the occurrence of a specific event",
+              "usageSketch": "我的家乡昨天发生了什么？"
+            },
+            {
+              "word": "结束",
+              "beat": 4,
+              "why": "Xiao Hong needs to convey that the dangerous situation is over and safe, so Li Ming can relax.",
+              "speaker": "Xiao Hong",
+              "refersTo": "The fire/incident",
+              "intent": "To confirm the termination of a negative state",
+              "usageSketch": "这件事已经结束了。"
+            },
+            {
+              "word": "生活",
+              "beat": 5,
+              "why": "Li Ming reflects on his current state of being and compares it to home.",
+              "speaker": "Li Ming (internal monologue/dialogue)",
+              "refersTo": "His daily existence in the city",
+              "intent": "To express satisfaction or continuity despite distance",
+              "usageSketch": "我想念家乡的生活。"
+            }
+          ],
+          "impossibleTargets": [
+            "国家 (It is too large in scope for a personal story about a village letter; the characters stay within their country, so 'country' is rarely used as a direct distinguisher in casual conversation unless contrasting with foreign lands, which is not the theme.)",
+            "其他 (Not strictly required if the narrative focuses on a single thread.)",
+            "或者 (Not strictly required if the dialogue is declarative rather than offer-based.)",
+            "当然 (Not strictly required if the dialogue is informational rather than persuasive or agreeing with a suggestion.)"
+          ]
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "chinese_title_lexis",
+              "message": "title uses above-level vocabulary: 家乡"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"邮局\": 邮局 is HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"排队\": 排队 is HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"焦虑\": 焦虑 is HSK 6, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 1 anchor \"家乡\": 家乡 is HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"包裹\": 包裹 is HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"寄\": 寄 is HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"同一个\": 同一 is HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"县\": 县 is HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 2 anchor \"邮票\": 邮票 is HSK 5, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 3 anchor \"工作人员\": 人员 is HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"火灾\": 火灾 is HSK 6, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 4 anchor \"受伤\": 受伤 is HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"感谢\": 感谢 is HSK 4, above the story level"
+            },
+            {
+              "code": "anchor_unusable",
+              "message": "beat 5 anchor \"完整\": 完整 is HSK 5, above the story level"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "来自 is given to \"Xiao Hong (answering Li Ming's observation)\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "来自 usage sketch \"这个邮票是来自你的家乡吗？\": above-level vocabulary: 邮票、家乡"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "发生 is given to \"Clerk / Li Ming\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "发生 usage sketch \"我的家乡昨天发生了什么？\": above-level vocabulary: 家乡"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "结束 is given to \"Xiao Hong\", who is not in the cast"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "生活 is given to \"Li Ming (internal monologue/dialogue)\", who is not in the cast"
+            },
+            {
+              "code": "target_sketch_unusable",
+              "message": "生活 usage sketch \"我想念家乡的生活。\": above-level vocabulary: 想念、家乡"
+            },
+            {
+              "code": "target_unplaced",
+              "message": "国家 has no beat where it naturally belongs"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 5,
+          "placed": {
+            "来自": 1,
+            "发生": 3,
+            "结束": 4,
+            "生活": 5
+          }
+        }
+      },
+      {
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": null,
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unparseable",
+              "message": "no JSON plan in the response"
+            }
+          ]
+        }
+      }
+    ],
+    "judgeRaw": null,
+    "selection": {
+      "code": "NO_VALID_BLUEPRINT"
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "blueprint-4-L3-002",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
