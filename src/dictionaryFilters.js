@@ -4,7 +4,7 @@
 // (via its own statusOf) and calls filterVocab. Additive: a set of filter chips
 // above the existing list, no change to search or lookup behavior.
 
-import { isMastered } from './mastery'
+import { isMastered, isPriorKnown } from './knowledgeState'
 
 // The status a card gets in the dictionary list: 'not_started' | 'learning' |
 // 'mastered' | 'review'. ("review" = a graduated card that isn't mastered yet.)
@@ -18,6 +18,9 @@ import { isMastered } from './mastery'
 // threshold ever moved. It now defers to mastery.js like the rest of the app.
 export function cardStatus(card) {
   if (!card) return 'not_started'
+  // A claim is in the deck — the learner told us they know it — but it is not
+  // learning, and it is certainly not mastered.
+  if (isPriorKnown(card)) return 'prior_known'
   if (card.state === 'learning' || card.state === 'relearning') return 'learning'
   if (isMastered(card)) return 'mastered'
   if (card.state === 'review') return 'review'
@@ -28,6 +31,7 @@ export const DICT_FILTERS = [
   { key: 'all', label: 'All' },
   { key: 'in_deck', label: 'In deck' },
   { key: 'learning', label: 'Learning' },
+  { key: 'prior_known', label: 'Previously known' },
   { key: 'mastered', label: 'Mastered' },
   { key: 'not_started', label: 'Not started' },
 ]
@@ -37,6 +41,7 @@ export function matchesDictFilter(status, filterKey) {
     case 'all': return true
     case 'in_deck': return status !== 'not_started'
     case 'learning': return status === 'learning'
+    case 'prior_known': return status === 'prior_known'
     case 'mastered': return status === 'mastered'
     case 'not_started': return status === 'not_started'
     default: return true
@@ -56,6 +61,7 @@ export function filterVocab(vocab, statusFor, filterKey) {
 const EMPTY_COPY = {
   in_deck: 'Nothing in your deck here yet — open any word and add it to start.',
   learning: 'No words in learning right now. Ones you’re actively studying show up here.',
+  prior_known: 'Nothing here you’ve told us you already knew. Words you import or tick off show up here until a review confirms them.',
   mastered: 'No mastered words yet — they’ll appear here as your reviews prove they’ve stuck.',
   not_started: 'You’ve started every word here — nice work.',
 }

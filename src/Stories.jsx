@@ -7,7 +7,7 @@ import { toast } from './toast'
 import { languageTheme } from './languageTheme'
 import { HeroPanel, HeroAction, Eyebrow } from './panels'
 import { tiersFor, learnedByLevel, readingGateCount, nextLockedTier } from './storyTiers'
-import { isLearned } from './mastery'
+import { countsForReading } from './knowledgeState'
 import { useIsMobile } from './useIsMobile'
 import { todayStr } from './streak'
 import { pickDailyStory } from './dailyStory'
@@ -360,7 +360,7 @@ export default function Stories({
         .eq('language', track.language).eq('system', track.system).eq('is_active', true)
         .order('id', { ascending: true }))
       cardsData = await fetchPagedSafe(() => supabase
-        .from('cards').select('vocab_id, is_easy, state, learned, due_at')
+        .from('cards').select('vocab_id, is_easy, state, learned, due_at, reps, stability, prior_known_at')
         .eq('user_id', session.user.id)
         .order('vocab_id', { ascending: true }))
       // Reading is CUMULATIVE: every level the learner has reached.
@@ -439,7 +439,9 @@ export default function Stories({
     const currentLevelIds = new Set(
       (vocabData || []).filter(v => v.level === track.current_level).map(v => v.id)
     )
-    const learned = (cardsData || []).filter(c => currentLevelIds.has(c.vocab_id) && isLearned(c)).length
+    // countsForReading, not isLearned: story tiers are the comprehension gate,
+    // so an unverified claim counts here even though it never counts as taught.
+    const learned = (cardsData || []).filter(c => currentLevelIds.has(c.vocab_id) && countsForReading(c)).length
     setLearnedCount(learned)
 
     setStories(storiesData || [])

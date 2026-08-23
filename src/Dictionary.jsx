@@ -124,7 +124,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
             .order('level', { ascending: true })
             .order('sort_order', { ascending: true })
             .order('id', { ascending: true })),
-          getTrackCards(session.user.id, track, { columns: 'vocab_id, state, stability' }),
+          getTrackCards(session.user.id, track, { columns: 'vocab_id, state, stability, reps, learned, prior_known_at' }),
         ])
         if (cancelled) return
         setVocab(vocabData || [])

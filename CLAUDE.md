@@ -226,7 +226,8 @@ should arrive as a tested module, not another branch inside the component.
 | `src/languageTheme.js` | Per-language identity — **single source of truth** |
 | `src/navConfig.js` | Nav arrays — single source consumed by `Sidebar` + `MobileNav`. `ADMIN_NAV` is gated in `App.jsx` |
 | `src/srs.js` | FSRS scheduling — `schedule(card, grade)`, `previewLabels(card)` |
-| `src/mastery.js` | `MASTERY_STABILITY_DAYS = 21`, `TEST_UNLOCK_MASTERY_PCT = 0.9` |
+| `src/knowledgeState.js` | **The one answer to "does the learner know this word?"** — unknown / prior_known / verified / mastered, and every predicate over them |
+| `src/mastery.js` | Thin re-export of the above, kept for its historical import path |
 | `src/storyReading.js` | Story segmentation + vocab matching (CJK greedy, Russian whole-token + inflection) |
 | `src/storyShelfFlat.js` | The Stories page's one-page shelf: level sections, series units, % known sorting, inline locks |
 | `src/TrustPages.jsx` | Public `/privacy` `/terms` `/support` `/methodology`. **Legal texts are owner-reviewed drafts — never present them as final** |
@@ -350,6 +351,13 @@ skill and this file disagree, **this file wins** — see `.claude/skills/VENDORE
 1. **Never delete vocabulary rows** — set `is_active = false`.
 2. **Never delete cards** without an explicit user request. Reset goes through the `reset_current_language_progress` RPC only.
 3. **Never set `is_easy = true`** outside the SRS grading flow (`srs.js` + `Study.jsx`). Other features may set it `false`, never `true`.
+3b. **Never write `reps` outside `srs.schedule()`.** `reps >= 1` is the one fact
+   that means "a human graded this word inside Hanzi Dojo" — ts-fsrs increments
+   it on every `repeat()` and there is no route into review state without one.
+   `isLearned`, `isMastered` and the level-test gate all depend on it, so a path
+   that writes `reps` by hand can fabricate mastery. Prior knowledge is stored
+   as an **inert** row instead (`knowledgeState.priorKnownCardRow`), and the DB
+   enforces that shape through `cards_unverified_claim_is_inert`.
 4. **RLS is enabled** — frontend queries run as the authenticated user. **Never put the service key in frontend code or any `VITE_` var**; it belongs only in `.env.script` and GitHub secrets.
 5. **`level_unlocks` is append-only**, except during a full reset via the RPC.
 6. **The `audio` bucket is public** — never store user data there.

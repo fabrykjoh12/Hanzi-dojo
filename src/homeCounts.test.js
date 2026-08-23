@@ -104,10 +104,10 @@ describe('getHomeCounts — the deck, not just the level window', () => {
   it('counts a due card whose word sits outside the level window', async () => {
     state.vocab = [{ id: 'in-level' }]
     state.cards = [
-      { vocab_id: 'in-level', state: 'review', due_at: dueYesterday, created_at: started, learned: true, stability: 5, lapses: 0 },
+      { vocab_id: 'in-level', state: 'review', reps: 3, due_at: dueYesterday, created_at: started, learned: true, stability: 5, lapses: 0 },
       // Saved from a story above the level, and from the dictionary (no level).
-      { vocab_id: 'above-level', state: 'review', due_at: dueYesterday, created_at: started, learned: true, stability: 5, lapses: 0 },
-      { vocab_id: 'no-level', state: 'learning', due_at: dueYesterday, created_at: started, learned: false, stability: 0, lapses: 0 },
+      { vocab_id: 'above-level', state: 'review', reps: 3, due_at: dueYesterday, created_at: started, learned: true, stability: 5, lapses: 0 },
+      { vocab_id: 'no-level', state: 'learning', reps: 1, due_at: dueYesterday, created_at: started, learned: false, stability: 0, lapses: 0 },
     ]
     const counts = await getHomeCounts('u1', TRACK, 5)
     expect(counts.dueCount).toBe(2)   // both reviews, not just the in-level one
@@ -117,8 +117,8 @@ describe('getHomeCounts — the deck, not just the level window', () => {
   it('keeps level progress scoped to the level window', async () => {
     state.vocab = [{ id: 'in-level' }]
     state.cards = [
-      { vocab_id: 'in-level', state: 'review', due_at: dueYesterday, created_at: started, learned: true, stability: 30, lapses: 0 },
-      { vocab_id: 'above-level', state: 'review', due_at: dueYesterday, created_at: started, learned: true, stability: 30, lapses: 0 },
+      { vocab_id: 'in-level', state: 'review', reps: 8, due_at: dueYesterday, created_at: started, learned: true, stability: 30, lapses: 0 },
+      { vocab_id: 'above-level', state: 'review', reps: 8, due_at: dueYesterday, created_at: started, learned: true, stability: 30, lapses: 0 },
     ]
     const counts = await getHomeCounts('u1', TRACK, 5)
     // One active word at this level, one of them mastered — the off-level card
@@ -133,7 +133,7 @@ describe('getHomeCounts — the deck, not just the level window', () => {
   it('counts weak words over the whole deck, matching the weak drill', async () => {
     state.vocab = [{ id: 'in-level' }]
     state.cards = [
-      { vocab_id: 'above-level', state: 'review', due_at: dueYesterday, created_at: started, learned: true, stability: 2, lapses: 3 },
+      { vocab_id: 'above-level', state: 'review', reps: 5, due_at: dueYesterday, created_at: started, learned: true, stability: 2, lapses: 3 },
     ]
     const counts = await getHomeCounts('u1', TRACK, 5)
     expect(counts.weakCount).toBe(1)
@@ -152,7 +152,7 @@ describe('getHomeCounts — complete vocabulary past the 1000-row cap', () => {
     state.vocabDb = fakeSupabase({ vocabulary })
     // One level-1 card sets the study floor to 1 → window 1..4.
     state.cards = [
-      { vocab_id: 'v1-0000', state: 'review', due_at: started, created_at: started, learned: true, stability: 5, lapses: 0, vocabulary: { id: 'v1-0000', level: 1 } },
+      { vocab_id: 'v1-0000', state: 'review', reps: 3, due_at: started, created_at: started, learned: true, stability: 5, lapses: 0, vocabulary: { id: 'v1-0000', level: 1 } },
     ]
     const counts = await getHomeCounts('u1', TRACK4, 5)
     expect(counts.failed).toBe(false)

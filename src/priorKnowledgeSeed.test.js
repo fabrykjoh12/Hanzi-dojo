@@ -18,7 +18,7 @@ const NOW = new Date('2026-07-23T09:00:00.000Z').getTime()
 describe('seedClaim', () => {
   beforeEach(() => { upsert.mockClear(); supabase.from.mockClear(); track.mockClear() })
 
-  it('writes review cards and reports how many', async () => {
+  it('writes inert claim rows and reports how many', async () => {
     const out = await seedClaim({
       userId: 'u1', vocabIds: ['a', 'b'], perDay: 15, source: 'paste', now: NOW,
     })
@@ -27,7 +27,13 @@ describe('seedClaim', () => {
 
     const [rows, options] = upsert.mock.calls[0]
     expect(rows).toHaveLength(2)
-    expect(rows[0].state).toBe('review')
+    // Inert: no scheduler state, and the provenance the claim came from.
+    expect(rows[0].state).toBe('new')
+    expect(rows[0].stability).toBeNull()
+    expect(rows[0].reps).toBe(0)
+    expect(rows[0].prior_source).toBe('paste')
+    expect(rows[0].prior_known_at).toBeTruthy()
+    expect(rows[0].verified_at).toBeNull()
     expect(options).toEqual({ onConflict: 'user_id,vocab_id', ignoreDuplicates: true })
   })
 

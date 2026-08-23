@@ -23,6 +23,8 @@ import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { cacheGet, cacheSet } from './offline'
 import { fetchPaged, fetchChunkedIn } from './supabasePaging'
+import { hasGenuineObservation, isPriorKnown } from './knowledgeState'
+import { pickCalibrationChecks, pendingCalibrationCount } from './calibration'
 import { studyFloorLevel } from './levelScope'
 import { missingVocabIds, mergeVocab } from './deckVocab'
 import { dueLearningCards, dueReviewCards } from './studyAvailability'
@@ -48,6 +50,7 @@ export function prepKey({ userId, track, day = todayStr() }) {
 //   vocabList  — the cumulative vocabulary incl. off-level merged rows
 //   knownWords — words the learner has any card for
 //   firstRun   — brand-new-learner detection (gentle first session)
+//   calibrationPending — how many prior-knowledge claims are still unchecked
 export async function buildStudySession({ userId, profile, track, mode = 'review' }) {
   // Cumulative deck: the user's cards first (they set the study floor), then
   // every level's vocabulary from that floor up. A card exists because the
@@ -101,8 +104,11 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
 
   const startOfToday = new Date()
   startOfToday.setHours(0, 0, 0, 0)
+  // Prior-knowledge claims are excluded: a placement claim writes hundreds of
+  // rows in one moment, and counting them as "words introduced today" zeroed
+  // the learner's entire daily new-card allowance on the day they signed up.
   const introducedToday = (cards || [])
-    .filter(c => new Date(c.created_at) >= startOfToday && vocabById[c.vocab_id]).length
+    .filter(c => !isPriorKnown(c) && new Date(c.created_at) >= startOfToday && vocabById[c.vocab_id]).length
   const remainingNew = Math.max(0, profile.daily_new_cards - introducedToday)
 
   const now = new Date()
@@ -131,12 +137,15 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
   // First-run detection: a brand-new learner (no cards anywhere on the
   // account) gets a gentle, capped first session. Only queried when this
   // level is empty; any failure falls back to a normal session.
+  // Genuine study only: a learner whose very first act was a placement claim
+  // has still never studied a card, and must still get the gentle first session.
   let firstRun = false
-  if ((cards || []).length === 0) {
+  if (!(cards || []).some(hasGenuineObservation)) {
     try {
       const { count } = await supabase
         .from('cards').select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
+        .gte('reps', 1)
       firstRun = isFirstRunSession({ mode, accountCardCount: count || 0 })
     } catch { /* offline / error — treat as a normal session (no cap) */ }
   }
@@ -150,6 +159,15 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
       state: 'new', ease_factor: 2.5, interval_days: 0, learning_step: 0,
     }))
 
+  // Prior-knowledge checks. A claim is inert — never due, and never offered as
+  // a new card because its row already exists — so this is the ONLY way a
+  // claimed word can ever be observed. Weak mode stays a pure drill on real
+  // lapses, so it takes no checks.
+  const calibrationChecks = mode === 'review'
+    ? pickCalibrationChecks(levelCards, { now }).map(c => ({ ...c, isCalibration: true }))
+    : []
+  const calibrationPending = pendingCalibrationCount(levelCards)
+
   // Seeded order: learning leads, reviews are the backbone, new cards woven
   // through. Stable per user/level/day.
   const seed = queueSeed({
@@ -159,7 +177,15 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
     level: track.current_level,
     day: todayStr(),
   })
-  const queue = buildStudyQueue({ dueLearning, dueReview, newItems, seed })
+  // Checks ride in the review pool: they are the same act — recall a word, say
+  // how it went — and they belong among the reviews rather than bunched at one
+  // end of the session.
+  const queue = buildStudyQueue({
+    dueLearning,
+    dueReview: [...dueReview, ...calibrationChecks],
+    newItems,
+    seed,
+  })
 
   // Prime the generated TTS clips for the session's cards before they render,
   // so the speaker buttons appear in their final state. Best-effort: offline
@@ -167,7 +193,7 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
   const ttsIds = queue.map(c => c.vocab && c.vocab.id).filter(Boolean)
   if (ttsIds.length) { try { await loadTtsAudio('vocabulary', ttsIds) } catch { /* legacy audio still plays */ } }
 
-  return { queue, levelCards, vocabList, knownWords, firstRun }
+  return { queue, levelCards, vocabList, knownWords, firstRun, calibrationPending }
 }
 
 // ── The one-shot handoff slot ───────────────────────────────────────────────

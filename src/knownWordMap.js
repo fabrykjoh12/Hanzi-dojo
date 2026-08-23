@@ -10,19 +10,22 @@
 //   new      — no card yet (unseen)
 // "Readable" = mastered + known.
 
-import { isLearned, isMastered } from './mastery'
+import { isLearned, isMastered, isPriorKnown } from './knowledgeState'
 
-export const MAP_BUCKETS = ['mastered', 'known', 'learning', 'new']
+export const MAP_BUCKETS = ['mastered', 'known', 'prior_known', 'learning', 'new']
 
 export function wordStatus(card) {
   if (!card) return 'new'
   if (isMastered(card)) return 'mastered'
   if (isLearned(card)) return 'known'
+  // Claimed but never checked. Readable, but never counted as something the
+  // app taught — this is the progress surface where that distinction belongs.
+  if (isPriorKnown(card)) return 'prior_known'
   return 'learning'
 }
 
 function emptyRow(level) {
-  return { level, total: 0, mastered: 0, known: 0, learning: 0, new: 0, readable: 0 }
+  return { level, total: 0, mastered: 0, known: 0, prior_known: 0, learning: 0, new: 0, readable: 0 }
 }
 
 // vocab: array of { id, level }. cardById: map vocab_id -> card row (or falsy).
@@ -40,14 +43,14 @@ export function knownWordMap(vocab, cardById) {
   }
 
   const levels = [...byLevel.values()].sort((a, b) => a.level - b.level)
-  for (const row of levels) row.readable = row.mastered + row.known
+  for (const row of levels) row.readable = row.mastered + row.known + row.prior_known
 
   const totals = levels.reduce((t, r) => {
     t.total += r.total; t.mastered += r.mastered; t.known += r.known
-    t.learning += r.learning; t.new += r.new
+    t.prior_known += r.prior_known; t.learning += r.learning; t.new += r.new
     return t
-  }, { total: 0, mastered: 0, known: 0, learning: 0, new: 0 })
-  totals.readable = totals.mastered + totals.known
+  }, { total: 0, mastered: 0, known: 0, prior_known: 0, learning: 0, new: 0 })
+  totals.readable = totals.mastered + totals.known + totals.prior_known
 
   return { levels, totals }
 }
