@@ -162,57 +162,12 @@ for (const job of jobs) {
   // is nothing left to learn by paying for it to plan again.
   const raws = []
   if (job.shape) {
-    // ── A3: structural validation of the reused shape ──────────────────────
     const structural = validateBlueprint(job.shape, { manifest, requiredTargets: required })
-    console.log('STORY SHAPE (Chinese discarded):')
+    console.log('STORY SHAPE (reused; its Chinese was discarded):')
     console.log(renderBlueprint(job.shape).split('\n').map(l => '  ' + l).join('\n'))
     console.log('\nSTRUCTURAL VALIDATION: ' + (structural.ok ? 'accepted' : 'REJECTED'))
     for (const f of structural.failures) console.log('  x ' + f.code + ': ' + f.message)
-    if (!structural.ok) {
-      record.selection = { code: 'SHAPE_INVALID', reason: structural.failures.map(f => f.message).join('; ') }
-      results.push(record)
-      continue
-    }
-
-    // ── A3: the lexical scaffold, one small piece at a time ────────────────
-    console.log('\nLEXICAL SCAFFOLD (' + SCAFFOLD_VERSION + ') — title, then per beat: one sentence per target, then that beat\'s words')
-    const scaffold = await buildLexicalScaffold({
-      blueprint: job.shape, manifest, vocabMap, meanings, pool, writer,
-      buildTitlePrompt: titlePrompt, parseTitle,
-      buildSketchPrompt: targetSketchPrompt, parseSketch,
-      buildAnchorsPrompt: beatAnchorsPrompt, parseAnchors,
-    })
-    for (const l of scaffold.log) {
-      console.log('  ' + l.piece + (l.beat ? ' beat ' + l.beat : '') + (l.word ? ' [' + l.word + ']' : '')
-        + ' attempt ' + l.attempt + ' → ' + (l.ok ? 'ACCEPTED' : 'rejected'))
-      console.log('      ' + (Array.isArray(l.output) ? l.output.join('、') : (l.output || '(nothing usable)')))
-      if (!l.ok) for (const p2 of l.problems) console.log('      x ' + p2)
-    }
-    record.scaffold = { version: SCAFFOLD_VERSION, ok: scaffold.ok, code: scaffold.code, detail: scaffold.detail || null, log: scaffold.log, title: scaffold.title || null, beats: scaffold.beats || null }
-    if (!scaffold.ok) {
-      console.log('\n' + scaffold.code + ': ' + scaffold.detail)
-      record.selection = { code: scaffold.code, reason: scaffold.detail }
-      results.push(record)
-      continue
-    }
-
-    const merged = applyScaffold(job.shape, scaffold)
-    const moved = shapeChanges(job.shape, merged)
-    if (moved.length) {
-      console.log('\nSHAPE MUTATED BY THE LEXICAL STAGE: ' + moved.join(', '))
-      record.selection = { code: 'SHAPE_MUTATED', reason: moved.join(', ') }
-      results.push(record)
-      continue
-    }
-    const full = validateBlueprint(merged, { manifest, vocabMap, requiredTargets: required })
-    console.log('\nCOMPLETE SCAFFOLD VALIDATION: ' + (full.ok ? 'every piece passes' : 'REJECTED'))
-    for (const f of full.failures) console.log('  x ' + f.code + ': ' + f.message)
-    if (!full.ok) {
-      record.selection = { code: 'SCAFFOLD_INVALID', reason: full.failures.map(f => f.message).join('; ') }
-      results.push(record)
-      continue
-    }
-    raws.push({ planner: writer.name, attempt: 1, repairAttempt: 'a3-scaffold', blueprint: merged, check: full, accepted: true })
+    raws.push({ planner: 'stored shape', attempt: 1, repairAttempt: 'reused', blueprint: job.shape, check: structural, accepted: structural.ok })
   }
   if (job.resume) {
     const before = job.resume.blueprint
@@ -261,11 +216,14 @@ for (const job of jobs) {
         // 4500 plus a pool-bearing prompt saturates the 8000 TPM window and
         // blueprint-4 lost a whole manifest to back-to-back 429s. 3200 is
         // enough for a 6-beat plan and leaves room to pace.
-        rawText = await writer.send({ prompt: blueprintPrompt({ manifest, meanings, totalLines, targets: required, pool, feedback }), maxTokens: 3200 })
+        // A3: the shape planner writes NO Chinese, so it is validated
+        // structurally — no vocabMap. Every piece of Chinese comes later,
+        // from the lexical scaffold stage, one small piece at a time.
+        rawText = await writer.send({ prompt: storyShapePrompt({ manifest, meanings, totalLines, targets: required, feedback }), maxTokens: 2600 })
         bp = parseBlueprint(rawText)
       } catch (err) { error = String(err.message || err).slice(0, 160); bp = null }
       check = bp
-        ? validateBlueprint(bp, { manifest, vocabMap, requiredTargets: required })
+        ? validateBlueprint(bp, { manifest, requiredTargets: required })
         : { ok: false, failures: [{ code: error ? 'provider_error' : 'unparseable', message: error || 'no JSON plan in the response' }] }
       // Feed back only what the planner can act on, and only a handful of
       // items: a wall of twenty rejections is not a repair brief.
@@ -336,6 +294,46 @@ for (const job of jobs) {
     results.push(record)
     continue
   }
+  // ── A3 lexical scaffold: the Chinese, in the smallest pieces, each gated ──
+  console.log('\nLEXICAL SCAFFOLD (' + SCAFFOLD_VERSION + ') — title, then per beat: one sentence per target, then that beat\'s words')
+  const scaffold = await buildLexicalScaffold({
+    blueprint: chosen.blueprint, manifest, vocabMap, meanings, pool, writer,
+    buildTitlePrompt: titlePrompt, parseTitle,
+    buildSketchPrompt: targetSketchPrompt, parseSketch,
+    buildAnchorsPrompt: beatAnchorsPrompt, parseAnchors,
+  })
+  for (const l of scaffold.log) {
+    console.log('  ' + l.piece + (l.beat ? ' beat ' + l.beat : '') + (l.word ? ' [' + l.word + ']' : '')
+      + ' attempt ' + l.attempt + ' → ' + (l.ok ? 'ACCEPTED' : 'rejected'))
+    console.log('      ' + (Array.isArray(l.output) ? l.output.join('、') : (l.output || '(nothing usable)')))
+    if (!l.ok) for (const p2 of l.problems) console.log('      x ' + p2)
+  }
+  record.scaffold = { version: SCAFFOLD_VERSION, ok: scaffold.ok, code: scaffold.code, detail: scaffold.detail || null, failedAt: scaffold.failedAt || null, log: scaffold.log, title: scaffold.title || null, beats: scaffold.beats || null }
+  if (!scaffold.ok) {
+    console.log('\n' + scaffold.code + ': ' + scaffold.detail)
+    record.selection = { ...record.selection, scaffoldCode: scaffold.code }
+    results.push(record)
+    continue
+  }
+  const merged = applyScaffold(chosen.blueprint, scaffold)
+  const moved = shapeChanges(chosen.blueprint, merged)
+  if (moved.length) {
+    console.log('\nSHAPE MUTATED BY THE LEXICAL STAGE: ' + moved.join(', '))
+    record.selection = { ...record.selection, scaffoldCode: 'SHAPE_MUTATED', mutated: moved }
+    results.push(record)
+    continue
+  }
+  const fullCheck = validateBlueprint(merged, { manifest, vocabMap, requiredTargets: required })
+  console.log('\nCOMPLETE SCAFFOLD VALIDATION: ' + (fullCheck.ok ? 'every piece passes' : 'REJECTED'))
+  for (const f of fullCheck.failures) console.log('  x ' + f.code + ': ' + f.message)
+  if (!fullCheck.ok) {
+    record.selection = { ...record.selection, scaffoldCode: 'SCAFFOLD_INVALID' }
+    results.push(record)
+    continue
+  }
+  chosen.blueprint = merged
+  record.scaffold.merged = merged
+
   const allocation = allocateLines(chosen.blueprint.beats, totalLines)
   if (!allocation) {
     record.selection = { code: 'ALLOCATION_IMPOSSIBLE' }
