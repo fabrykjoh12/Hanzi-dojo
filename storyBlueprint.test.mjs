@@ -44,10 +44,12 @@ const blueprint = (over = {}) => ({
     beat(5, { where: '李明家', arrivedHow: 'they come back home', lines: 6 }),
   ],
   resolution: 'The passport turns up and the trip is saved',
+  // speaker / refersTo / intent are story-shape metadata now: the shape
+  // planner owns why a word belongs there, the lexical stage owns the Chinese.
   targetPlan: [
-    { word: '打算', beat: 1, why: 'he is telling someone what he plans to do tomorrow' },
-    { word: '护照', beat: 2, why: 'the document itself is what they are looking for' },
-    { word: '邻居', beat: 3, why: 'they go to ask the neighbour who watched the flat' },
+    { word: '打算', beat: 1, why: 'he is telling someone what he plans to do tomorrow', speaker: '李明', refersTo: 'tomorrow\'s trip', intent: 'say what he means to do' },
+    { word: '护照', beat: 2, why: 'the document itself is what they are looking for', speaker: '小红', refersTo: 'the passport', intent: 'ask where it is' },
+    { word: '邻居', beat: 3, why: 'they go to ask the neighbour who watched the flat', speaker: '李明', refersTo: 'the neighbour', intent: 'suggest asking them' },
   ],
   ...over,
 })

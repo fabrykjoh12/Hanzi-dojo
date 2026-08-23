@@ -247,8 +247,10 @@ export function validateBlueprint(bp, { manifest, vocabMap = null, requiredTarge
       fail('target_unjustified', word + ' has no reason for belonging in beat ' + beat)
       continue
     }
-    if (vocabMap) {
-      // Who says it, about what, to what end, and how it actually sounds.
+    // Who says it, about what and to what end is STORY SHAPE, and is checked
+    // whether or not a vocabulary is supplied. Only the Chinese usage sketch
+    // belongs to the lexical stage (A3), which runs later and separately.
+    {
       const speaker = text(entry && entry.speaker)
       if (!speaker) fail('target_no_speaker', word + ' has nobody to say it')
       else if (!namedPerson(speaker) && !/narrator|旁白/i.test(speaker)) {
@@ -257,6 +259,8 @@ export function validateBlueprint(bp, { manifest, vocabMap = null, requiredTarge
       }
       if (!has(entry && entry.refersTo, 1)) fail('target_no_referent', word + ' does not say what it refers to')
       if (!has(entry && entry.intent, 8)) fail('target_no_intent', word + ' has no communicative purpose')
+    }
+    if (vocabMap) {
       const sketch = checkUsageSketch(entry && entry.usageSketch, { word, manifest, vocabMap })
       if (!sketch.ok) fail('target_sketch_unusable', word + ' usage sketch "' + text(entry && entry.usageSketch) + '": ' + sketch.problems.join('; '))
     }

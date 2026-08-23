@@ -598,6 +598,123 @@ export function parseBlueprintJudgment(text, labels, dimensions) {
   return out.length ? out : null
 }
 
+// ── A3: story shape and lexical scaffold are different jobs ────────────────
+// blueprint-resume-1 settled it. Handed a structurally perfect plan and four
+// named lexical violations, the planner reproduced the story exactly — same
+// problem, cast, beats, chronology, causal chain, target placement — and then
+// put 重 (HSK 4) into the title and a new sketch, and kept 深, both words it
+// had just been told about. It can plan, and it can write Chinese, but not in
+// the same breath. So the shape planner never writes Chinese at all, and every
+// piece of Chinese is asked for on its own, against the vocabulary, and
+// checked before the next piece is requested.
+
+export function storyShapePrompt({ manifest, meanings = {}, totalLines, targets = null, feedback = null }) {
+  const name = levelName(manifest)
+  const need = targets || manifest.targets.map(t => t.word)
+  const list = manifest.targets
+    .map(t => t.word + (meanings[t.word] ? ' (' + meanings[t.word] + ')' : '') + (need.includes(t.word) ? ' — REQUIRED' : ' — optional'))
+    .join('\n')
+  return 'Plan the SHAPE of a short ' + name + ' Chinese graded-reader story. Write NO Chinese sentences: this is a plan, in English, and someone else writes the story from it.\n\n'
+    + (feedback ? 'YOUR PREVIOUS PLAN WAS REJECTED:\n' + feedback.map(f => '- ' + f).join('\n') + '\nFix exactly these problems.\n\n' : '')
+    + 'Characters available (use 2-3, nobody else). Write their names in CHINESE exactly as shown, everywhere in the plan:\n' + manifest.speakers.join('、') + '\n\n'
+    + 'Words the finished story must teach. Each REQUIRED word needs a beat where a person would genuinely need it:\n' + list + '\n\n'
+    + (manifest.theme ? 'Theme: ' + manifest.theme + '\n\n' : '')
+    + 'Rules:\n'
+    + '- ONE central problem. No subplots, no side quests, nothing invented just to fit a word in.\n'
+    + '- 5 or 6 beats. Every beat after the first happens BECAUSE of the beat before it — "because → therefore", never "and then".\n'
+    + '- Every beat states when and where it happens. If a beat is somewhere new, say how they got there.\n'
+    + '- Nothing happens before the thing it depends on. Nobody appears where they could not be.\n'
+    + '- The ending resolves the problem the story started with.\n'
+    + '- Keep it ordinary and concrete, and keep it SAYABLE by a beginner: everyday places, small stakes, ordinary objects. A scene needing specialist words (tools, equipment, machinery, food names) cannot be written at this level — plan a different scene.\n'
+    + '- The whole story is exactly ' + totalLines + ' lines. Give each beat a share (2-8 lines) adding up to about ' + totalLines + '.\n'
+    + '- If a REQUIRED word has no place where it would naturally be needed, list it in "impossibleTargets" instead of forcing it.\n\n'
+    + 'Output JSON only, no commentary, exactly this shape:\n'
+    + '{\n'
+    + '  "title": "<what the story is about, in English>",\n'
+    + '  "setting": "<where and when, one line>",\n'
+    + '  "cast": ["<2-3 names from the list above>"],\n'
+    + '  "problem": "<the ONE thing the story is about>",\n'
+    + '  "incitingEvent": "<what starts it>",\n'
+    + '  "beats": [\n'
+    + '    { "id": 1, "when": "<time>", "where": "<place>", "what": "<what changes here>", "because": "<why this follows — beat 1: \\"the story opens\\">", "arrivedHow": "<only if the place changed>", "targets": ["<target words used here>"], "lines": <2-8> }\n'
+    + '  ],\n'
+    + '  "resolution": "<how the central problem ends>",\n'
+    + '  "targetPlan": [ { "word": "<target>", "beat": <n>, "why": "<why a person would need this word right here>", "speaker": "<which character says it, or narrator>", "refersTo": "<the thing in the story it is about>", "intent": "<what they are trying to communicate>" } ],\n'
+    + '  "impossibleTargets": ["<any required word with no natural home>"]\n'
+    + '}'
+}
+
+// One title. Nothing else in the call.
+export function titlePrompt({ manifest, blueprint, pool = null, feedback = null }) {
+  const name = levelName(manifest)
+  return 'Give a Chinese title for a ' + name + ' graded-reader story.\n\n'
+    + (feedback ? 'YOUR PREVIOUS TITLE WAS REJECTED:\n' + feedback.map(f => '- ' + f).join('\n') + '\n\n' : '')
+    + 'The story: ' + blueprint.problem + ' It ends: ' + blueprint.resolution + '\n\n'
+    + 'Rules:\n'
+    + '- 2 to 8 Chinese characters.\n'
+    + '- ONLY words a ' + name + ' learner knows. If you are unsure a word is simple enough, do not use it.\n'
+    + '- No Latin letters, no punctuation, no quotation marks.\n'
+    + (pool ? '- Words the reader knows (a sample):\n  ' + poolForPrompt(pool, 120) + '\n' : '')
+    + '\nOutput JSON only: {"title": "<the title>"}'
+}
+
+// One target, one sentence. The single most constrained call in the pipeline:
+// blueprint-resume-1 drifted above level while writing five sketches and a
+// title in one response, so nothing here writes more than one utterance.
+export function targetSketchPrompt({ manifest, word, meaning, beat, entry, pool = null, feedback = null }) {
+  const name = levelName(manifest)
+  return 'Write ONE short Chinese sentence for a ' + name + ' graded reader.\n\n'
+    + (feedback ? 'YOUR PREVIOUS SENTENCE WAS REJECTED:\n' + feedback.map(f => '- ' + f).join('\n') + '\n\n' : '')
+    + 'It must use the word ' + word + (meaning ? ' (' + meaning + ')' : '') + '.\n\n'
+    + 'The moment: ' + beat.what + '\n'
+    + 'Who is speaking: ' + (entry.speaker || 'the narrator') + '\n'
+    + 'What the word is about here: ' + (entry.refersTo || 'this moment') + '\n'
+    + 'What they are trying to say: ' + (entry.intent || 'communicate something') + '\n\n'
+    + 'Rules:\n'
+    + '- The sentence must contain ' + word + ' exactly as written.\n'
+    + '- Every OTHER word must be one a ' + name + ' learner already knows. This is what gets sentences rejected — if you are unsure, use a simpler word.\n'
+    + '- 4 to 20 Chinese characters. No Latin letters. No speaker label, just the sentence.\n'
+    + '- It should sound like something a person would actually say in that moment.\n'
+    + (pool ? '- Words the reader knows (a sample):\n  ' + poolForPrompt(pool, 140) + '\n' : '')
+    + '\nOutput JSON only: {"sentence": "<the sentence>"}'
+}
+
+// One beat's toolkit. Words, not sentences.
+export function beatAnchorsPrompt({ manifest, beat, sketches = [], pool = null, feedback = null }) {
+  const name = levelName(manifest)
+  return 'List the Chinese words needed to write ONE short passage of a ' + name + ' graded reader.\n\n'
+    + (feedback ? 'YOUR PREVIOUS LIST WAS REJECTED:\n' + feedback.map(f => '- ' + f).join('\n') + '\n\n' : '')
+    + 'The passage: ' + beat.what + '\n'
+    + 'Where and when: ' + beat.where + ', ' + beat.when + '\n'
+    + (sketches.length ? 'It already has these sentences in it:\n' + sketches.map(s => '  ' + s.usageSketch).join('\n') + '\n' : '')
+    + '\nRules:\n'
+    + '- 3 to 6 words or short phrases. WORDS, not sentences.\n'
+    + '- Every one must be a word a ' + name + ' learner already knows. A word the reader does not know cannot be in the list, however much the scene seems to need it — pick a simpler way to say it.\n'
+    + '- No Latin letters. No names.\n'
+    + (pool ? '- Words the reader knows (a sample):\n  ' + poolForPrompt(pool, 140) + '\n' : '')
+    + '\nOutput JSON only: {"anchors": ["<word>", "<word>", …]}'
+}
+
+export function parseTitle(text) {
+  const obj = parseJsonObject(text)
+  const t = obj && typeof obj.title === 'string' ? obj.title.trim() : ''
+  return t && !t.includes('\n') ? t : null
+}
+
+export function parseSketch(text) {
+  const obj = parseJsonObject(text)
+  const t = obj && typeof obj.sentence === 'string' ? obj.sentence.trim() : ''
+  return t && !t.includes('\n') && /[一-鿿]/.test(t) ? t : null
+}
+
+export function parseAnchors(text) {
+  const obj = parseJsonObject(text)
+  const arr = obj && Array.isArray(obj.anchors) ? obj.anchors : null
+  if (!arr) return null
+  const out = arr.map(a => String(a == null ? '' : a).trim()).filter(Boolean)
+  return out.length ? out : null
+}
+
 // ── One beat at a time ──────────────────────────────────────────────────────
 // The whole-story call produced integration 2/10 three times out of three: a
 // writer holding 28 lines states the plan instead of performing it. A beat is

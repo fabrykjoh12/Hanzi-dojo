@@ -20,6 +20,10 @@ import { composeSemanticManifests, manifestDefaults, validateManifest } from './
 import { validateCandidate, validateEdit, formatValidation, serializableValidation } from './storyCandidateValidation.mjs'
 import {
   blueprintPrompt, parseBlueprint,
+  storyShapePrompt,
+  titlePrompt, parseTitle,
+  targetSketchPrompt, parseSketch,
+  beatAnchorsPrompt, parseAnchors,
   blueprintJudgePrompt, parseBlueprintJudgment,
   beatPrompt, parseBeat, beatJudgePrompt, parseBeatJudgment,
   lineRewritePrompt, parseSingleLine,
@@ -32,6 +36,7 @@ import {
   acceptableBlueprint, hasLatin, BLUEPRINT_DIMENSIONS, BLUEPRINT_QUALITY, BLUEPRINT_VERSION,
 } from './storyBlueprint.mjs'
 import { realizeByBeat, BEAT_LIMITS, BEAT_QUALITY, BEAT_VERSION } from './storyBeats.mjs'
+import { buildLexicalScaffold, applyScaffold, shapeChanges, SCAFFOLD_VERSION } from './storyLexicalScaffold.mjs'
 import { judgePrompt, parseJudgment, JUDGE_VERSION } from './storyJudge.mjs'
 import { preRepairDecision, DRAFT_QUALITY } from './storyDraftQuality.mjs'
 import { planRepair, executeRepairPlan, LINE_QUALITY, REPAIR_PLANNER_VERSION } from './storyRepairPlanner.mjs'
@@ -63,6 +68,10 @@ const budget = parseInt(arg('budget', '6'), 10)
 // has never been asked. Nothing else changes: same prompt, same validator,
 // same thresholds, same single repair attempt.
 const resumePlanPath = arg('resume-plan', null)
+// A3: take the STORY SHAPE from a stored artifact (its Chinese is discarded)
+// and run the lexical scaffold stage against it. Isolates lexical generation
+// from planning variance, which is the whole point of the split.
+const shapeFromPath = arg('shape-from', null)
 
 if (!inputPath || !outDir || !writerSpec) {
   console.error('Required: --input <dump> --out <dir> --writer <p:m>  [--planner-b <p:m>] [--count 3] [--lines 28]')
@@ -86,8 +95,21 @@ const provider = (spec, effort) => {
 const writer = provider(writerSpec, writerEffort)
 const plannerB = plannerBSpec ? provider(plannerBSpec, plannerBEffort) : null
 
-// Either resume one stored plan, or compose fresh manifests.
+// Either reuse a stored SHAPE (A3), resume one stored plan (retired path), or
+// compose fresh manifests.
 const jobs = []
+if (shapeFromPath) {
+  const stored = JSON.parse(readFileSync(shapeFromPath, 'utf8'))
+  const entry = (stored.blueprintRun.blueprints || []).find(x => x.blueprint)
+  if (!entry) { console.error('no stored blueprint in ' + shapeFromPath); process.exit(1) }
+  // Keep the SHAPE, discard every piece of Chinese it carried: the lexical
+  // stage generates all of that from scratch, one small piece at a time.
+  const { chineseTitle, ...shape } = entry.blueprint
+  shape.beats = (shape.beats || []).map(b => { const { chineseLexicalAnchors, ...rest } = b; return rest })
+  shape.targetPlan = (shape.targetPlan || []).map(t => { const { usageSketch, ...rest } = t; return rest })
+  jobs.push({ manifest: stored.manifest, required: stored.blueprintRun.required, shape, resume: null })
+  console.log('A3: reusing the stored story shape from ' + shapeFromPath + ' (its Chinese is discarded)\n')
+}
 if (resumePlanPath) {
   const stored = JSON.parse(readFileSync(resumePlanPath, 'utf8'))
   const entry = (stored.blueprintRun.blueprints || []).find(x => x.blueprint)
@@ -132,13 +154,66 @@ for (const job of jobs) {
   console.log('  cast: ' + manifest.speakers.join('、') + ' | exactly ' + totalLines + ' lines')
   console.log('='.repeat(72))
 
-  const record = { manifestId: manifest.id, manifest, required, resume: null, blueprints: [], selection: null, draft: null, validation: null, preRepairCritique: null, decision: null, repair: null, after: null, finalCritique: null, final: null }
+  const record = { manifestId: manifest.id, manifest, required, resume: null, scaffold: null, blueprints: [], selection: null, draft: null, validation: null, preRepairCritique: null, decision: null, repair: null, after: null, finalCritique: null, final: null }
 
   // ── 1. Blueprints: planning only ──────────────────────────────────────────
   // Qwen plans. gpt-oss was benchmarked over two pilots (4/6 valid vs 1/6, and
   // Qwen won all three selections) and keeps its narrow fallback roles; there
   // is nothing left to learn by paying for it to plan again.
   const raws = []
+  if (job.shape) {
+    // ── A3: structural validation of the reused shape ──────────────────────
+    const structural = validateBlueprint(job.shape, { manifest, requiredTargets: required })
+    console.log('STORY SHAPE (Chinese discarded):')
+    console.log(renderBlueprint(job.shape).split('\n').map(l => '  ' + l).join('\n'))
+    console.log('\nSTRUCTURAL VALIDATION: ' + (structural.ok ? 'accepted' : 'REJECTED'))
+    for (const f of structural.failures) console.log('  x ' + f.code + ': ' + f.message)
+    if (!structural.ok) {
+      record.selection = { code: 'SHAPE_INVALID', reason: structural.failures.map(f => f.message).join('; ') }
+      results.push(record)
+      continue
+    }
+
+    // ── A3: the lexical scaffold, one small piece at a time ────────────────
+    console.log('\nLEXICAL SCAFFOLD (' + SCAFFOLD_VERSION + ') — title, then per beat: one sentence per target, then that beat\'s words')
+    const scaffold = await buildLexicalScaffold({
+      blueprint: job.shape, manifest, vocabMap, meanings, pool, writer,
+      buildTitlePrompt: titlePrompt, parseTitle,
+      buildSketchPrompt: targetSketchPrompt, parseSketch,
+      buildAnchorsPrompt: beatAnchorsPrompt, parseAnchors,
+    })
+    for (const l of scaffold.log) {
+      console.log('  ' + l.piece + (l.beat ? ' beat ' + l.beat : '') + (l.word ? ' [' + l.word + ']' : '')
+        + ' attempt ' + l.attempt + ' → ' + (l.ok ? 'ACCEPTED' : 'rejected'))
+      console.log('      ' + (Array.isArray(l.output) ? l.output.join('、') : (l.output || '(nothing usable)')))
+      if (!l.ok) for (const p2 of l.problems) console.log('      x ' + p2)
+    }
+    record.scaffold = { version: SCAFFOLD_VERSION, ok: scaffold.ok, code: scaffold.code, detail: scaffold.detail || null, log: scaffold.log, title: scaffold.title || null, beats: scaffold.beats || null }
+    if (!scaffold.ok) {
+      console.log('\n' + scaffold.code + ': ' + scaffold.detail)
+      record.selection = { code: scaffold.code, reason: scaffold.detail }
+      results.push(record)
+      continue
+    }
+
+    const merged = applyScaffold(job.shape, scaffold)
+    const moved = shapeChanges(job.shape, merged)
+    if (moved.length) {
+      console.log('\nSHAPE MUTATED BY THE LEXICAL STAGE: ' + moved.join(', '))
+      record.selection = { code: 'SHAPE_MUTATED', reason: moved.join(', ') }
+      results.push(record)
+      continue
+    }
+    const full = validateBlueprint(merged, { manifest, vocabMap, requiredTargets: required })
+    console.log('\nCOMPLETE SCAFFOLD VALIDATION: ' + (full.ok ? 'every piece passes' : 'REJECTED'))
+    for (const f of full.failures) console.log('  x ' + f.code + ': ' + f.message)
+    if (!full.ok) {
+      record.selection = { code: 'SCAFFOLD_INVALID', reason: full.failures.map(f => f.message).join('; ') }
+      results.push(record)
+      continue
+    }
+    raws.push({ planner: writer.name, attempt: 1, repairAttempt: 'a3-scaffold', blueprint: merged, check: full, accepted: true })
+  }
   if (job.resume) {
     const before = job.resume.blueprint
     const violations = job.resume.failures.map(f => f.message)
@@ -171,7 +246,7 @@ for (const job of jobs) {
     raws.push({ planner: writer.name, attempt: 1, repairAttempt: 'resume-repair', blueprint: bp, check, raw: bp ? null : String(rawText || '').slice(0, 1500), accepted: check.ok })
     record.resume = { source: job.resume.source, before, violations, after: bp, check }
   }
-  for (let k = 1; !job.resume && k <= perPlanner; k += 1) {
+  for (let k = 1; !job.resume && !job.shape && k <= perPlanner; k += 1) {
     let bp = null
     let error = null
     let rawText = null
@@ -441,6 +516,7 @@ for (const r of results) {
       required: r.required,
       thresholds: { blueprint: BLUEPRINT_QUALITY, draft: DRAFT_QUALITY, line: LINE_QUALITY },
       resume: r.resume || null,
+      scaffold: r.scaffold || null,
       blueprints: r.blueprints,
       judgeRaw: r.judgeRaw || null,
       selection: r.selection,

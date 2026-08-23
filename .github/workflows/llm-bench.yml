@@ -468,15 +468,16 @@ jobs:
             FLAGS="$FLAGS --planner-b $MODEL_B"
             if [ -n "$EFFORT_B" ]; then FLAGS="$FLAGS --planner-b-effort $EFFORT_B"; fi
           fi
-          # manifest_path here means: resume that stored artifact's plan at the
-          # lexical repair step instead of planning fresh ("none" = plan fresh).
+          # manifest_path here means: reuse that stored artifact's STORY SHAPE
+          # and rebuild its Chinese with the A3 lexical scaffold stage
+          # ("none" = plan a fresh shape).
           SRC="--count $COUNT --level $LEVEL"
           case "$MANIFEST" in
             none|fresh|-|"") ;;
             *)
               case "$MANIFEST" in (*[!A-Za-z0-9._/-]*|/*|*..*) echo "bad manifest_path"; exit 1;; esac
               if [ ! -f "$MANIFEST" ]; then echo "artifact not found: $MANIFEST"; exit 1; fi
-              SRC="--resume-plan $MANIFEST"
+              SRC="--shape-from $MANIFEST"
             ;;
           esac
           node blueprint-pilot.mjs \
