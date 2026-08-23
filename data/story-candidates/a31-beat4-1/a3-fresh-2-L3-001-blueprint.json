@@ -1,0 +1,1115 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "a31-beat4-1",
+  "generatedAt": "2026-08-23T15:57:33.330Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "a3-fresh-2-L3-001",
+    "batchId": "a3-fresh-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "关系",
+      "女人",
+      "男人",
+      "帮助",
+      "需要"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "resume": null,
+    "scaffold": {
+      "version": "fab9-scaffold@1",
+      "ok": false,
+      "code": "BEAT_LEXICAL_SCAFFOLD_FAILED",
+      "detail": "beat 5 has no writable vocabulary after 2 attempts",
+      "failedAt": {
+        "beat": 5
+      },
+      "log": [
+        {
+          "piece": "title",
+          "attempt": 1,
+          "output": "小明的自行车",
+          "ok": true,
+          "problems": []
+        },
+        {
+          "piece": "beat",
+          "beat": 1,
+          "attempt": 0,
+          "output": [
+            "下午",
+            "回家",
+            "但是",
+            "担心",
+            "回家"
+          ],
+          "ok": true,
+          "problems": [],
+          "reused": true
+        },
+        {
+          "piece": "beat",
+          "beat": 2,
+          "attempt": 0,
+          "output": [
+            "走",
+            "邻居",
+            "看见",
+            "难过",
+            "认识"
+          ],
+          "ok": true,
+          "problems": [],
+          "reused": true
+        },
+        {
+          "piece": "beat",
+          "beat": 3,
+          "attempt": 0,
+          "output": [
+            "自行车",
+            "坏",
+            "车",
+            "会",
+            "懂"
+          ],
+          "ok": true,
+          "problems": [],
+          "reused": true
+        },
+        {
+          "piece": "sketch",
+          "beat": 4,
+          "word": "关系",
+          "attempt": 0,
+          "output": "他们的关系很好了。",
+          "ok": true,
+          "problems": [],
+          "reused": true
+        },
+        {
+          "piece": "anchors",
+          "beat": 4,
+          "attempt": 1,
+          "output": [
+            "真的",
+            "天黑",
+            "一起",
+            "帮忙",
+            "说话",
+            "关系"
+          ],
+          "ok": false,
+          "problems": [
+            "\"天黑\": 黑 is HSK 5, above the story level"
+          ],
+          "retrieval": {
+            "query": "Xiao Ming says he really needs help because it is getting dark. Li Ming says they can look together. Xiao Hong suggests checking the owner's manual. The relationship between Xiao Ming and Xiao Hong becomes better because of this talk. | Xiao Ming accepted the offer of aid. | Saturday, 4:25 PM | The street corner | To show the development of friendship. The social bond between Xiao Ming and Xiao Hong",
+            "tokens": [
+              "xiao",
+              "ming",
+              "really",
+              "needs",
+              "help",
+              "dark",
+              "li",
+              "look",
+              "together",
+              "hong",
+              "suggests",
+              "checking",
+              "owner",
+              "manual",
+              "relationship",
+              "between",
+              "becomes",
+              "better",
+              "talk",
+              "accepted",
+              "offer",
+              "aid",
+              "saturday",
+              "pm",
+              "street",
+              "corner",
+              "show",
+              "development",
+              "friendship",
+              "social",
+              "bond"
+            ],
+            "candidates": [
+              {
+                "word": "最好",
+                "level": 3,
+                "meaning": "best; (you) had better (do what we suggest)",
+                "score": 5,
+                "matched": [
+                  "better",
+                  "suggests"
+                ]
+              },
+              {
+                "word": "找",
+                "level": 1,
+                "meaning": "to look for",
+                "score": 3.5,
+                "matched": [
+                  "look"
+                ]
+              },
+              {
+                "word": "看",
+                "level": 1,
+                "meaning": "to see, to look",
+                "score": 3.5,
+                "matched": [
+                  "look"
+                ]
+              },
+              {
+                "word": "真",
+                "level": 1,
+                "meaning": "really, true",
+                "score": 3.5,
+                "matched": [
+                  "really"
+                ]
+              },
+              {
+                "word": "说话",
+                "level": 1,
+                "meaning": "to talk",
+                "score": 3.5,
+                "matched": [
+                  "talk"
+                ]
+              },
+              {
+                "word": "一起",
+                "level": 2,
+                "meaning": "together",
+                "score": 3.25,
+                "matched": [
+                  "together"
+                ]
+              },
+              {
+                "word": "帮",
+                "level": 2,
+                "meaning": "to help",
+                "score": 3.25,
+                "matched": [
+                  "help"
+                ]
+              },
+              {
+                "word": "帮忙",
+                "level": 2,
+                "meaning": "to help",
+                "score": 3.25,
+                "matched": [
+                  "help"
+                ]
+              },
+              {
+                "word": "间",
+                "level": 2,
+                "meaning": "measure word for rooms, between",
+                "score": 3.25,
+                "matched": [
+                  "between"
+                ]
+              },
+              {
+                "word": "中间",
+                "level": 3,
+                "meaning": "the middle; the inside; in the middle; within; between; among",
+                "score": 3,
+                "matched": [
+                  "between"
+                ]
+              },
+              {
+                "word": "其实",
+                "level": 3,
+                "meaning": "actually; in fact; really",
+                "score": 3,
+                "matched": [
+                  "really"
+                ]
+              },
+              {
+                "word": "发",
+                "level": 3,
+                "meaning": "to send out; to show (one's feeling)",
+                "score": 3,
+                "matched": [
+                  "show"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "piece": "anchors",
+          "beat": 4,
+          "attempt": 2,
+          "output": [
+            "一起",
+            "帮忙",
+            "看",
+            "真",
+            "说话"
+          ],
+          "ok": true,
+          "problems": [],
+          "retrieval": {
+            "query": "Xiao Ming says he really needs help because it is getting dark. Li Ming says they can look together. Xiao Hong suggests checking the owner's manual. The relationship between Xiao Ming and Xiao Hong becomes better because of this talk. | Xiao Ming accepted the offer of aid. | Saturday, 4:25 PM | The street corner | To show the development of friendship. The social bond between Xiao Ming and Xiao Hong",
+            "tokens": [
+              "xiao",
+              "ming",
+              "really",
+              "needs",
+              "help",
+              "dark",
+              "li",
+              "look",
+              "together",
+              "hong",
+              "suggests",
+              "checking",
+              "owner",
+              "manual",
+              "relationship",
+              "between",
+              "becomes",
+              "better",
+              "talk",
+              "accepted",
+              "offer",
+              "aid",
+              "saturday",
+              "pm",
+              "street",
+              "corner",
+              "show",
+              "development",
+              "friendship",
+              "social",
+              "bond"
+            ],
+            "candidates": [
+              {
+                "word": "最好",
+                "level": 3,
+                "meaning": "best; (you) had better (do what we suggest)",
+                "score": 5,
+                "matched": [
+                  "better",
+                  "suggests"
+                ]
+              },
+              {
+                "word": "找",
+                "level": 1,
+                "meaning": "to look for",
+                "score": 3.5,
+                "matched": [
+                  "look"
+                ]
+              },
+              {
+                "word": "看",
+                "level": 1,
+                "meaning": "to see, to look",
+                "score": 3.5,
+                "matched": [
+                  "look"
+                ]
+              },
+              {
+                "word": "真",
+                "level": 1,
+                "meaning": "really, true",
+                "score": 3.5,
+                "matched": [
+                  "really"
+                ]
+              },
+              {
+                "word": "说话",
+                "level": 1,
+                "meaning": "to talk",
+                "score": 3.5,
+                "matched": [
+                  "talk"
+                ]
+              },
+              {
+                "word": "一起",
+                "level": 2,
+                "meaning": "together",
+                "score": 3.25,
+                "matched": [
+                  "together"
+                ]
+              },
+              {
+                "word": "帮",
+                "level": 2,
+                "meaning": "to help",
+                "score": 3.25,
+                "matched": [
+                  "help"
+                ]
+              },
+              {
+                "word": "帮忙",
+                "level": 2,
+                "meaning": "to help",
+                "score": 3.25,
+                "matched": [
+                  "help"
+                ]
+              },
+              {
+                "word": "间",
+                "level": 2,
+                "meaning": "measure word for rooms, between",
+                "score": 3.25,
+                "matched": [
+                  "between"
+                ]
+              },
+              {
+                "word": "中间",
+                "level": 3,
+                "meaning": "the middle; the inside; in the middle; within; between; among",
+                "score": 3,
+                "matched": [
+                  "between"
+                ]
+              },
+              {
+                "word": "其实",
+                "level": 3,
+                "meaning": "actually; in fact; really",
+                "score": 3,
+                "matched": [
+                  "really"
+                ]
+              },
+              {
+                "word": "发",
+                "level": 3,
+                "meaning": "to send out; to show (one's feeling)",
+                "score": 3,
+                "matched": [
+                  "show"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "piece": "anchors",
+          "beat": 5,
+          "attempt": 1,
+          "output": [
+            "星期六",
+            "四",
+            "帮助",
+            "一起",
+            "工作",
+            "难",
+            "街角"
+          ],
+          "ok": false,
+          "problems": [
+            "\"街角\": not standard vocabulary"
+          ],
+          "retrieval": {
+            "query": "Li Ming and Xiao Hong help Xiao Ming put the chain back on. It is difficult, but they work together. Xiao Hong holds the wheel, Li Ming fixes the metal links. Xiao Ming waits patiently. | They agreed to assist him. | Saturday, 4:40 PM | The street corner",
+            "tokens": [
+              "li",
+              "ming",
+              "xiao",
+              "hong",
+              "help",
+              "put",
+              "chain",
+              "back",
+              "difficult",
+              "work",
+              "together",
+              "holds",
+              "wheel",
+              "fixes",
+              "metal",
+              "links",
+              "waits",
+              "patiently",
+              "agreed",
+              "assist",
+              "saturday",
+              "pm",
+              "street",
+              "corner"
+            ],
+            "candidates": [
+              {
+                "word": "把",
+                "level": 3,
+                "meaning": "to hold; to grasp; to hold a baby in position to help it urinate or defecate",
+                "score": 7,
+                "matched": [
+                  "holds",
+                  "help"
+                ]
+              },
+              {
+                "word": "工作",
+                "level": 1,
+                "meaning": "work, to work",
+                "score": 6.5,
+                "matched": [
+                  "work"
+                ]
+              },
+              {
+                "word": "工作日",
+                "level": 3,
+                "meaning": "workday; working day",
+                "score": 4,
+                "matched": [
+                  "work",
+                  "saturday"
+                ]
+              },
+              {
+                "word": "上班",
+                "level": 1,
+                "meaning": "to go to work",
+                "score": 3.5,
+                "matched": [
+                  "work"
+                ]
+              },
+              {
+                "word": "下班",
+                "level": 1,
+                "meaning": "to get off work",
+                "score": 3.5,
+                "matched": [
+                  "work"
+                ]
+              },
+              {
+                "word": "一起",
+                "level": 2,
+                "meaning": "together",
+                "score": 3.25,
+                "matched": [
+                  "together"
+                ]
+              },
+              {
+                "word": "后面",
+                "level": 2,
+                "meaning": "behind, back",
+                "score": 3.25,
+                "matched": [
+                  "back"
+                ]
+              },
+              {
+                "word": "回去",
+                "level": 2,
+                "meaning": "to go back",
+                "score": 3.25,
+                "matched": [
+                  "back"
+                ]
+              },
+              {
+                "word": "回来",
+                "level": 2,
+                "meaning": "to come back",
+                "score": 3.25,
+                "matched": [
+                  "back"
+                ]
+              },
+              {
+                "word": "帮",
+                "level": 2,
+                "meaning": "to help",
+                "score": 3.25,
+                "matched": [
+                  "help"
+                ]
+              },
+              {
+                "word": "帮忙",
+                "level": 2,
+                "meaning": "to help",
+                "score": 3.25,
+                "matched": [
+                  "help"
+                ]
+              },
+              {
+                "word": "丢",
+                "level": 3,
+                "meaning": "to lose; to put aside",
+                "score": 3,
+                "matched": [
+                  "put"
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "piece": "anchors",
+          "beat": 5,
+          "attempt": 2,
+          "output": [
+            "帮",
+            "一起",
+            "困难",
+            "工作",
+            "后面",
+            "等"
+          ],
+          "ok": false,
+          "problems": [
+            "\"困难\": 困难 is HSK 4, above the story level"
+          ],
+          "retrieval": {
+            "query": "Li Ming and Xiao Hong help Xiao Ming put the chain back on. It is difficult, but they work together. Xiao Hong holds the wheel, Li Ming fixes the metal links. Xiao Ming waits patiently. | They agreed to assist him. | Saturday, 4:40 PM | The street corner",
+            "tokens": [
+              "li",
+              "ming",
+              "xiao",
+              "hong",
+              "help",
+              "put",
+              "chain",
+              "back",
+              "difficult",
+              "work",
+              "together",
+              "holds",
+              "wheel",
+              "fixes",
+              "metal",
+              "links",
+              "waits",
+              "patiently",
+              "agreed",
+              "assist",
+              "saturday",
+              "pm",
+              "street",
+              "corner"
+            ],
+            "candidates": [
+              {
+                "word": "把",
+                "level": 3,
+                "meaning": "to hold; to grasp; to hold a baby in position to help it urinate or defecate",
+                "score": 7,
+                "matched": [
+                  "holds",
+                  "help"
+                ]
+              },
+              {
+                "word": "工作",
+                "level": 1,
+                "meaning": "work, to work",
+                "score": 6.5,
+                "matched": [
+                  "work"
+                ]
+              },
+              {
+                "word": "工作日",
+                "level": 3,
+                "meaning": "workday; working day",
+                "score": 4,
+                "matched": [
+                  "work",
+                  "saturday"
+                ]
+              },
+              {
+                "word": "上班",
+                "level": 1,
+                "meaning": "to go to work",
+                "score": 3.5,
+                "matched": [
+                  "work"
+                ]
+              },
+              {
+                "word": "下班",
+                "level": 1,
+                "meaning": "to get off work",
+                "score": 3.5,
+                "matched": [
+                  "work"
+                ]
+              },
+              {
+                "word": "一起",
+                "level": 2,
+                "meaning": "together",
+                "score": 3.25,
+                "matched": [
+                  "together"
+                ]
+              },
+              {
+                "word": "后面",
+                "level": 2,
+                "meaning": "behind, back",
+                "score": 3.25,
+                "matched": [
+                  "back"
+                ]
+              },
+              {
+                "word": "回去",
+                "level": 2,
+                "meaning": "to go back",
+                "score": 3.25,
+                "matched": [
+                  "back"
+                ]
+              },
+              {
+                "word": "回来",
+                "level": 2,
+                "meaning": "to come back",
+                "score": 3.25,
+                "matched": [
+                  "back"
+                ]
+              },
+              {
+                "word": "帮",
+                "level": 2,
+                "meaning": "to help",
+                "score": 3.25,
+                "matched": [
+                  "help"
+                ]
+              },
+              {
+                "word": "帮忙",
+                "level": 2,
+                "meaning": "to help",
+                "score": 3.25,
+                "matched": [
+                  "help"
+                ]
+              },
+              {
+                "word": "丢",
+                "level": 3,
+                "meaning": "to lose; to put aside",
+                "score": 3,
+                "matched": [
+                  "put"
+                ]
+              }
+            ]
+          }
+        }
+      ],
+      "title": null,
+      "beats": null
+    },
+    "blueprints": [
+      {
+        "label": "A",
+        "planner": "stored shape",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Broken Bicycle Chain",
+          "setting": "A residential neighborhood in Beijing, late afternoon on a Saturday.",
+          "cast": [
+            "李明",
+            "小红",
+            "小明"
+          ],
+          "problem": "Xiao Ming's bicycle is broken, and he cannot get home while the weather is turning bad.",
+          "incitingEvent": "Xiao Ming falls off his bike because the chain falls off, and he does not know how to fix it.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday, 4:00 PM",
+              "where": "The street outside Xiao Ming's apartment building",
+              "what": "Xiao Ming is riding his bike home from the park when the chain falls off. He tries to put it back on but fails. He feels worried because he is tired.",
+              "because": "the story opens",
+              "arrivedHow": "N/A",
+              "targets": [
+                "男人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Saturday, 4:15 PM",
+              "where": "The same street corner",
+              "what": "Li Ming and Xiao Hong walk by. They see Xiao Ming struggling. Li Ming introduces himself as the new neighbor. Xiao Hong notices that Xiao Ming looks upset.",
+              "because": "Li Ming and Xiao Hong are walking past the scene of the accident.",
+              "arrivedHow": "They were walking there.",
+              "targets": [
+                "女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Saturday, 4:20 PM",
+              "where": "The street corner",
+              "what": "Li Ming asks what is wrong. Xiao Ming explains that his bike chain is broken. Li Ming says he knows how cars work, but not bikes. He asks if Xiao Ming needs help.",
+              "because": "They saw Xiao Ming was in trouble.",
+              "arrivedHow": "N/A",
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "Saturday, 4:25 PM",
+              "where": "The street corner",
+              "what": "Xiao Ming says he really needs help because it is getting dark. Li Ming says they can look together. Xiao Hong suggests checking the owner's manual. The relationship between Xiao Ming and Xiao Hong becomes better because of this talk.",
+              "because": "Xiao Ming accepted the offer of aid.",
+              "arrivedHow": "N/A",
+              "targets": [
+                "关系"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Saturday, 4:40 PM",
+              "where": "The street corner",
+              "what": "Li Ming and Xiao Hong help Xiao Ming put the chain back on. It is difficult, but they work together. Xiao Hong holds the wheel, Li Ming fixes the metal links. Xiao Ming waits patiently.",
+              "because": "They agreed to assist him.",
+              "arrivedHow": "N/A",
+              "targets": [],
+              "lines": 4
+            },
+            {
+              "id": 6,
+              "when": "Saturday, 4:50 PM",
+              "where": "The street corner/Xiao Ming's home driveway",
+              "what": "The bike is fixed. Xiao Ming tests it; it works. He thanks them. Li Ming says if he comes back, he can borrow tools. Xiao Ming rides home happily. The three become friends.",
+              "because": "The repair was successful.",
+              "arrivedHow": "Xiao Ming rides a short distance to his house.",
+              "targets": [
+                "如果"
+              ],
+              "lines": 3
+            }
+          ],
+          "resolution": "The bicycle is fixed, Xiao Ming returns home safely, and the neighbors establish a friendly relationship through mutual assistance.",
+          "targetPlan": [
+            {
+              "word": "男人",
+              "beat": 1,
+              "why": "To describe Xiao Ming as a male figure distinct from the others, or generally describing him as a young man.",
+              "speaker": "narrator",
+              "refersTo": "Xiao Ming",
+              "intent": "To identify the protagonist's gender/role in the scene."
+            },
+            {
+              "word": "女人",
+              "beat": 2,
+              "why": "To describe Xiao Hong as a female neighbor.",
+              "speaker": "narrator",
+              "refersTo": "Xiao Hong",
+              "intent": "To identify the helper's gender/role."
+            },
+            {
+              "word": "需要",
+              "beat": 3,
+              "why": "Li Ming asks if Xiao Ming requires assistance.",
+              "speaker": "李明",
+              "refersTo": "The act of fixing the bike",
+              "intent": "To offer aid in a polite question."
+            },
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "Li Ming explicitly offers his aid.",
+              "speaker": "李明",
+              "refersTo": "Li Ming's action",
+              "intent": "To confirm he is willing to help."
+            },
+            {
+              "word": "关系",
+              "beat": 4,
+              "why": "Reflecting on how the interaction is improving their connection.",
+              "speaker": "narrator",
+              "refersTo": "The social bond between Xiao Ming and Xiao Hong",
+              "intent": "To show the development of friendship."
+            },
+            {
+              "word": "如果",
+              "beat": 6,
+              "why": "Li Ming sets a condition for future interaction.",
+              "speaker": "李明",
+              "refersTo": "Xiao Ming returning",
+              "intent": "To propose a future conditional offer."
+            }
+          ],
+          "impossibleTargets": [
+            "而且",
+            "必须"
+          ]
+        },
+        "rendered": "TITLE CONCEPT: The Broken Bicycle Chain\nSETTING: A residential neighborhood in Beijing, late afternoon on a Saturday.\nCAST: 李明、小红、小明\nCENTRAL PROBLEM: Xiao Ming's bicycle is broken, and he cannot get home while the weather is turning bad.\nINCITING EVENT: Xiao Ming falls off his bike because the chain falls off, and he does not know how to fix it.\nBEATS:\n  1. [Saturday, 4:00 PM · The street outside Xiao Ming's apartment building] · uses 男人\n     WHAT CHANGES: Xiao Ming is riding his bike home from the park when the chain falls off. He tries to put it back on but fails. He feels worried because he is tired.\n     GOT THERE BY: N/A\n  2. [Saturday, 4:15 PM · The same street corner] · uses 女人\n     WHAT CHANGES: Li Ming and Xiao Hong walk by. They see Xiao Ming struggling. Li Ming introduces himself as the new neighbor. Xiao Hong notices that Xiao Ming looks upset.\n     BECAUSE: Li Ming and Xiao Hong are walking past the scene of the accident.\n     GOT THERE BY: They were walking there.\n  3. [Saturday, 4:20 PM · The street corner] · uses 需要、帮助\n     WHAT CHANGES: Li Ming asks what is wrong. Xiao Ming explains that his bike chain is broken. Li Ming says he knows how cars work, but not bikes. He asks if Xiao Ming needs help.\n     BECAUSE: They saw Xiao Ming was in trouble.\n     GOT THERE BY: N/A\n  4. [Saturday, 4:25 PM · The street corner] · uses 关系\n     WHAT CHANGES: Xiao Ming says he really needs help because it is getting dark. Li Ming says they can look together. Xiao Hong suggests checking the owner's manual. The relationship between Xiao Ming and Xiao Hong becomes better because of this talk.\n     BECAUSE: Xiao Ming accepted the offer of aid.\n     GOT THERE BY: N/A\n  5. [Saturday, 4:40 PM · The street corner]\n     WHAT CHANGES: Li Ming and Xiao Hong help Xiao Ming put the chain back on. It is difficult, but they work together. Xiao Hong holds the wheel, Li Ming fixes the metal links. Xiao Ming waits patiently.\n     BECAUSE: They agreed to assist him.\n     GOT THERE BY: N/A\n  6. [Saturday, 4:50 PM · The street corner/Xiao Ming's home driveway] · uses 如果\n     WHAT CHANGES: The bike is fixed. Xiao Ming tests it; it works. He thanks them. Li Ming says if he comes back, he can borrow tools. Xiao Ming rides home happily. The three become friends.\n     BECAUSE: The repair was successful.\n     GOT THERE BY: Xiao Ming rides a short distance to his house.\nRESOLUTION: The bicycle is fixed, Xiao Ming returns home safely, and the neighbors establish a friendly relationship through mutual assistance.\nTARGET WORDS:\n  男人 → beat 1: To describe Xiao Ming as a male figure distinct from the others, or generally describing him as a young man.\n  女人 → beat 2: To describe Xiao Hong as a female neighbor.\n  需要 → beat 3: Li Ming asks if Xiao Ming requires assistance.\n  帮助 → beat 3: Li Ming explicitly offers his aid.\n  关系 → beat 4: Reflecting on how the interaction is improving their connection.\n  如果 → beat 6: Li Ming sets a condition for future interaction.",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小红",
+            "小明"
+          ],
+          "beats": 6,
+          "placed": {
+            "男人": 1,
+            "女人": 2,
+            "需要": 3,
+            "帮助": 3,
+            "关系": 4,
+            "如果": 6
+          }
+        },
+        "score": {
+          "label": "A",
+          "contradiction": false,
+          "overall": 9,
+          "reason": "Tight causal chain, natural keyword integration, and clear resolution suitable for HSK 3.",
+          "causal": 9,
+          "chronology": 10,
+          "plausibility": 8,
+          "simplicity": 9,
+          "targetFit": 9,
+          "suitability": 9
+        },
+        "acceptable": true
+      }
+    ],
+    "judgeRaw": null,
+    "selection": {
+      "scaffoldCode": "BEAT_LEXICAL_SCAFFOLD_FAILED"
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "a3-fresh-2-L3-001",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
