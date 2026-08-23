@@ -1,0 +1,1604 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "a32-fresh-1",
+  "generatedAt": "2026-08-23T16:44:43.947Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "a32-fresh-1-L3-001",
+    "batchId": "a32-fresh-1",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "关系",
+      "女人",
+      "男人",
+      "帮助",
+      "需要"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "resume": null,
+    "risk": {
+      "version": "fab9-risk@1",
+      "risk": "HIGH",
+      "beats": [
+        {
+          "beat": 1,
+          "risk": "MEDIUM",
+          "reason": "detail without in-level vocabulary (coughing, lying, thermometer), but the beat's own event can be told",
+          "core": [
+            {
+              "concept": "younger",
+              "support": "supported",
+              "words": [
+                "弟弟",
+                "妹妹",
+                "叔叔"
+              ]
+            },
+            {
+              "concept": "brother",
+              "support": "supported",
+              "words": [
+                "哥哥",
+                "弟弟",
+                "叔叔"
+              ]
+            }
+          ],
+          "supporting": [],
+          "incidental": [
+            {
+              "concept": "coughing",
+              "support": "none",
+              "words": [
+                "咳嗽"
+              ]
+            },
+            {
+              "concept": "lying",
+              "support": "none",
+              "words": []
+            },
+            {
+              "concept": "bed",
+              "support": "supported",
+              "words": [
+                "床"
+              ]
+            },
+            {
+              "concept": "thermometer",
+              "support": "none",
+              "words": []
+            },
+            {
+              "concept": "showing",
+              "support": "supported",
+              "words": [
+                "发",
+                "表演",
+                "照顾"
+              ]
+            },
+            {
+              "concept": "fever",
+              "support": "supported",
+              "words": [
+                "发烧"
+              ]
+            },
+            {
+              "concept": "story",
+              "support": "supported",
+              "words": [
+                "房子"
+              ]
+            },
+            {
+              "concept": "opens",
+              "support": "supported",
+              "words": [
+                "开",
+                "打开",
+                "开花"
+              ]
+            }
+          ],
+          "coreMissing": [],
+          "supportingMissing": [],
+          "incidentalMissing": [
+            "coughing",
+            "lying",
+            "thermometer"
+          ]
+        },
+        {
+          "beat": 2,
+          "risk": "HIGH",
+          "reason": "the central action (rings) and 3 more of what happens here (courier, cannot, someone) have no in-level vocabulary",
+          "core": [
+            {
+              "concept": "phone",
+              "support": "supported",
+              "words": [
+                "喂",
+                "打电话",
+                "手机",
+                "接"
+              ]
+            },
+            {
+              "concept": "rings",
+              "support": "none",
+              "words": [
+                "轮",
+                "戒指"
+              ]
+            }
+          ],
+          "supporting": [
+            {
+              "concept": "caller",
+              "support": "weak",
+              "words": [
+                "叫",
+                "打电话"
+              ]
+            },
+            {
+              "concept": "courier",
+              "support": "none",
+              "words": []
+            },
+            {
+              "concept": "downstairs",
+              "support": "weak",
+              "words": [
+                "楼梯"
+              ]
+            },
+            {
+              "concept": "cannot",
+              "support": "none",
+              "words": [
+                "不得不"
+              ]
+            },
+            {
+              "concept": "bed",
+              "support": "supported",
+              "words": [
+                "床"
+              ]
+            },
+            {
+              "concept": "someone",
+              "support": "none",
+              "words": [
+                "为难"
+              ]
+            },
+            {
+              "concept": "else",
+              "support": "supported",
+              "words": [
+                "其他",
+                "别的"
+              ]
+            },
+            {
+              "concept": "package",
+              "support": "weak",
+              "words": [
+                "包"
+              ]
+            }
+          ],
+          "incidental": [
+            {
+              "concept": "too",
+              "support": "supported",
+              "words": [
+                "也",
+                "太",
+                "不久"
+              ]
+            },
+            {
+              "concept": "sick",
+              "support": "supported",
+              "words": [
+                "生病",
+                "病人"
+              ]
+            },
+            {
+              "concept": "move",
+              "support": "supported",
+              "words": [
+                "动",
+                "运动",
+                "搬",
+                "搬家"
+              ]
+            },
+            {
+              "concept": "state",
+              "support": "supported",
+              "words": [
+                "着",
+                "国家"
+              ]
+            },
+            {
+              "concept": "requirement",
+              "support": "weak",
+              "words": [
+                "需要",
+                "要求"
+              ]
+            },
+            {
+              "concept": "constraint",
+              "support": "weak",
+              "words": [
+                "下雨",
+                "雨"
+              ]
+            }
+          ],
+          "coreMissing": [
+            "rings"
+          ],
+          "supportingMissing": [
+            "courier",
+            "cannot",
+            "someone"
+          ],
+          "incidentalMissing": []
+        },
+        {
+          "beat": 3,
+          "risk": "MEDIUM",
+          "reason": "detail without in-level vocabulary (assess, social, define, support), but the beat's own event can be told",
+          "core": [
+            {
+              "concept": "neighbor",
+              "support": "supported",
+              "words": [
+                "附近",
+                "邻居"
+              ]
+            }
+          ],
+          "supporting": [
+            {
+              "concept": "relationship",
+              "support": "supported",
+              "words": [
+                "关系"
+              ]
+            },
+            {
+              "concept": "ask",
+              "support": "supported",
+              "words": [
+                "请问",
+                "问"
+              ]
+            },
+            {
+              "concept": "assistance",
+              "support": "supported",
+              "words": [
+                "帮助"
+              ]
+            },
+            {
+              "concept": "help",
+              "support": "supported",
+              "words": [
+                "帮",
+                "帮忙",
+                "把",
+                "帮助"
+              ]
+            }
+          ],
+          "incidental": [
+            {
+              "concept": "always",
+              "support": "supported",
+              "words": [
+                "一直",
+                "总是"
+              ]
+            },
+            {
+              "concept": "friendly",
+              "support": "weak",
+              "words": [
+                "朋友",
+                "小朋友"
+              ]
+            },
+            {
+              "concept": "nearby",
+              "support": "supported",
+              "words": [
+                "附近"
+              ]
+            },
+            {
+              "concept": "assess",
+              "support": "none",
+              "words": [
+                "评价",
+                "评估"
+              ]
+            },
+            {
+              "concept": "social",
+              "support": "none",
+              "words": [
+                "成分",
+                "风俗",
+                "面子"
+              ]
+            },
+            {
+              "concept": "closeness",
+              "support": "weak",
+              "words": [
+                "近"
+              ]
+            },
+            {
+              "concept": "define",
+              "support": "none",
+              "words": [
+                "定义"
+              ]
+            },
+            {
+              "concept": "type",
+              "support": "supported",
+              "words": [
+                "才"
+              ]
+            },
+            {
+              "concept": "support",
+              "support": "none",
+              "words": [
+                "支持",
+                "架",
+                "承受"
+              ]
+            },
+            {
+              "concept": "needed",
+              "support": "supported",
+              "words": [
+                "要",
+                "需要",
+                "不用"
+              ]
+            }
+          ],
+          "coreMissing": [],
+          "supportingMissing": [],
+          "incidentalMissing": [
+            "assess",
+            "social",
+            "define",
+            "support"
+          ]
+        },
+        {
+          "beat": 4,
+          "risk": "HIGH",
+          "reason": "the central action (knocks) and 2 more of what happens here (living, alone) have no in-level vocabulary",
+          "core": [
+            {
+              "concept": "quickly",
+              "support": "supported",
+              "words": [
+                "快"
+              ]
+            },
+            {
+              "concept": "door",
+              "support": "supported",
+              "words": [
+                "门",
+                "邻居"
+              ]
+            },
+            {
+              "concept": "knocks",
+              "support": "none",
+              "words": [
+                "抢",
+                "撞"
+              ]
+            }
+          ],
+          "supporting": [
+            {
+              "concept": "opens",
+              "support": "supported",
+              "words": [
+                "开",
+                "打开",
+                "开花"
+              ]
+            },
+            {
+              "concept": "kind",
+              "support": "supported",
+              "words": [
+                "怎样"
+              ]
+            },
+            {
+              "concept": "woman",
+              "support": "supported",
+              "words": [
+                "女人",
+                "老人"
+              ]
+            },
+            {
+              "concept": "living",
+              "support": "none",
+              "words": [
+                "生命",
+                "客厅",
+                "生物"
+              ]
+            },
+            {
+              "concept": "alone",
+              "support": "none",
+              "words": [
+                "单独",
+                "独自"
+              ]
+            },
+            {
+              "concept": "nearby",
+              "support": "supported",
+              "words": [
+                "附近"
+              ]
+            }
+          ],
+          "incidental": [
+            {
+              "concept": "decided",
+              "support": "weak",
+              "words": [
+                "决定"
+              ]
+            },
+            {
+              "concept": "ask",
+              "support": "supported",
+              "words": [
+                "请问",
+                "问"
+              ]
+            },
+            {
+              "concept": "help",
+              "support": "supported",
+              "words": [
+                "帮",
+                "帮忙",
+                "把",
+                "帮助"
+              ]
+            },
+            {
+              "concept": "describe",
+              "support": "none",
+              "words": [
+                "厉害",
+                "描述",
+                "形容"
+              ]
+            },
+            {
+              "concept": "character",
+              "support": "supported",
+              "words": [
+                "字",
+                "汉字",
+                "字典"
+              ]
+            }
+          ],
+          "coreMissing": [
+            "knocks"
+          ],
+          "supportingMissing": [
+            "living",
+            "alone"
+          ],
+          "incidentalMissing": [
+            "describe"
+          ]
+        },
+        {
+          "beat": 5,
+          "risk": "MEDIUM",
+          "reason": "detail without in-level vocabulary (immediately, taking, responsibility, strong, propose, describe, nature), but the beat's own event can be told",
+          "core": [
+            {
+              "concept": "sick",
+              "support": "supported",
+              "words": [
+                "生病",
+                "病人"
+              ]
+            }
+          ],
+          "supporting": [
+            {
+              "concept": "agrees",
+              "support": "weak",
+              "words": [
+                "同意"
+              ]
+            },
+            {
+              "concept": "immediately",
+              "support": "none",
+              "words": [
+                "立即",
+                "当下",
+                "顿时"
+              ]
+            },
+            {
+              "concept": "taking",
+              "support": "none",
+              "words": []
+            },
+            {
+              "concept": "man",
+              "support": "supported",
+              "words": [
+                "男人",
+                "老人"
+              ]
+            },
+            {
+              "concept": "heavy",
+              "support": "supported",
+              "words": [
+                "搬"
+              ]
+            },
+            {
+              "concept": "box",
+              "support": "supported",
+              "words": [
+                "邮箱"
+              ]
+            },
+            {
+              "concept": "responsibility",
+              "support": "none",
+              "words": [
+                "负责",
+                "责任",
+                "承担"
+              ]
+            }
+          ],
+          "incidental": [
+            {
+              "concept": "strong",
+              "support": "none",
+              "words": [
+                "厉害",
+                "强烈",
+                "硬"
+              ]
+            },
+            {
+              "concept": "helpful",
+              "support": "weak",
+              "words": [
+                "帮",
+                "帮忙",
+                "把"
+              ]
+            },
+            {
+              "concept": "help",
+              "support": "supported",
+              "words": [
+                "帮",
+                "帮忙",
+                "把",
+                "帮助"
+              ]
+            },
+            {
+              "concept": "present",
+              "support": "supported",
+              "words": [
+                "礼物"
+              ]
+            },
+            {
+              "concept": "propose",
+              "support": "none",
+              "words": [
+                "建议",
+                "提出",
+                "求婚"
+              ]
+            },
+            {
+              "concept": "conditional",
+              "support": "supported",
+              "words": [
+                "的话"
+              ]
+            },
+            {
+              "concept": "action",
+              "support": "supported",
+              "words": [
+                "了",
+                "着"
+              ]
+            },
+            {
+              "concept": "describe",
+              "support": "none",
+              "words": [
+                "厉害",
+                "描述",
+                "形容"
+              ]
+            },
+            {
+              "concept": "object",
+              "support": "supported",
+              "words": [
+                "它们",
+                "东西",
+                "个",
+                "条"
+              ]
+            },
+            {
+              "concept": "nature",
+              "support": "none",
+              "words": [
+                "性",
+                "自然",
+                "性格"
+              ]
+            },
+            {
+              "concept": "weight",
+              "support": "supported",
+              "words": [
+                "瘦",
+                "斤"
+              ]
+            }
+          ],
+          "coreMissing": [],
+          "supportingMissing": [
+            "immediately",
+            "taking",
+            "responsibility"
+          ],
+          "incidentalMissing": [
+            "strong",
+            "propose",
+            "describe",
+            "nature"
+          ]
+        }
+      ],
+      "highBeats": [
+        2,
+        4
+      ],
+      "blocking": [
+        "rings",
+        "courier",
+        "cannot",
+        "someone",
+        "knocks",
+        "living",
+        "alone"
+      ]
+    },
+    "replanned": true,
+    "scaffold": null,
+    "blueprints": [
+      {
+        "label": "A",
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Package Delivery",
+          "setting": "A quiet apartment building neighborhood on a sunny Tuesday afternoon",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "小明 (Li Ming's younger brother) is sick in bed and cannot go outside to pick up a heavy, important book package that has been delivered to the building lobby.",
+          "incitingEvent": "Li Ming receives a phone call from the delivery service saying the courier is leaving the package in the lobby.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Tuesday afternoon",
+              "where": "Li Ming's bedroom",
+              "what": "Li Ming looks at his younger brother Xiao Ming, who is coughing and lying in bed with a thermometer showing a fever.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [],
+              "lines": 6
+            },
+            {
+              "id": 2,
+              "when": "Immediately after",
+              "where": "Li Ming's bedroom",
+              "what": "Li Ming's phone rings. The caller says a courier is downstairs. Li Ming tells Xiao Ming he cannot get out of bed, so someone else **需要 (needs)** to take the package.",
+              "because": "Xiao Ming is too sick to move",
+              "arrivedHow": null,
+              "targets": [
+                "需要"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "A moment later",
+              "where": "Li Ming's bedroom",
+              "what": "Li Ming thinks about his neighbor, Xiao Hong. He realizes their **关系 (relationship)** is good because they are always friendly. He decides to ask her for **帮助 (assistance/help).**",
+              "because": "Li Ming needs help and knows Xiao Hong is nearby",
+              "arrivedHow": null,
+              "targets": [
+                "关系",
+                "帮助"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "Five minutes later",
+              "where": "The building hallway",
+              "what": "Li Ming walks quickly to Xiao Hong’s door and knocks. Xiao Hong opens the door. She is a kind **女人 (woman)** living alone nearby.",
+              "because": "Li Ming decided to ask Xiao Hong for help",
+              "arrivedHow": "walked down the hallway from his apartment",
+              "targets": [
+                "女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Present moment",
+              "where": "The building hallway",
+              "what": "Li Ming explains Xiao Ming is sick. He says **如果 (if)** she has time, can she go down? Xiao Hong agrees immediately, taking **男人 (a man)**’s heavy box responsibility because she is strong and helpful.",
+              "because": "Li Ming asked for help and Xiao Hong is present",
+              "arrivedHow": null,
+              "targets": [
+                "如果",
+                "男人"
+              ],
+              "lines": 7
+            }
+          ],
+          "resolution": "Xiao Hong goes down to pick up the package and brings it up to Li Ming, solving the problem of who retrieves the delivery.",
+          "targetPlan": [
+            {
+              "word": "需要",
+              "beat": 2,
+              "why": "Li Ming acknowledges the necessity of an external person to perform the task since Xiao Ming is incapacitated.",
+              "speaker": "李明",
+              "refersTo": "someone to get the package",
+              "intent": "to state a requirement/constraint"
+            },
+            {
+              "word": "关系",
+              "beat": 3,
+              "why": "Li Ming evaluates his social connection with the neighbor to decide if it is appropriate to ask for a favor.",
+              "speaker": "Narrator/Li Ming's thought",
+              "refersTo": "the relationship between Li Ming and Xiao Hong",
+              "intent": "to assess social closeness"
+            },
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "Li Ming explicitly formulates his request as a need for aid.",
+              "speaker": "Narrator/Li Ming's thought",
+              "refersTo": "the act of getting the package",
+              "intent": "to define the type of support needed"
+            },
+            {
+              "word": "女人",
+              "beat": 4,
+              "why": "The narrative describes Xiao Hong upon her appearance, using the common noun for an adult female.",
+              "speaker": "Narrator",
+              "refersTo": "Xiao Hong",
+              "intent": "to describe the character"
+            },
+            {
+              "word": "如果",
+              "beat": 5,
+              "why": "Li Ming makes a polite conditional offer/request.",
+              "speaker": "李明",
+              "refersTo": "Xiao Hong having free time",
+              "intent": "to propose a conditional action"
+            },
+            {
+              "word": "男人",
+              "beat": 5,
+              "why": "Li Ming describes the weight of the package by comparing it to what a man might carry, or referring to the courier as a man who left it.",
+              "speaker": "李明",
+              "refersTo": "the courier or the weight class",
+              "intent": "to describe the object's nature/weight"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "rendered": "TITLE CONCEPT: The Package Delivery\nSETTING: A quiet apartment building neighborhood on a sunny Tuesday afternoon\nCAST: 李明、小红\nCENTRAL PROBLEM: 小明 (Li Ming's younger brother) is sick in bed and cannot go outside to pick up a heavy, important book package that has been delivered to the building lobby.\nINCITING EVENT: Li Ming receives a phone call from the delivery service saying the courier is leaving the package in the lobby.\nBEATS:\n  1. [Tuesday afternoon · Li Ming's bedroom]\n     WHAT CHANGES: Li Ming looks at his younger brother Xiao Ming, who is coughing and lying in bed with a thermometer showing a fever.\n  2. [Immediately after · Li Ming's bedroom] · uses 需要\n     WHAT CHANGES: Li Ming's phone rings. The caller says a courier is downstairs. Li Ming tells Xiao Ming he cannot get out of bed, so someone else **需要 (needs)** to take the package.\n     BECAUSE: Xiao Ming is too sick to move\n  3. [A moment later · Li Ming's bedroom] · uses 关系、帮助\n     WHAT CHANGES: Li Ming thinks about his neighbor, Xiao Hong. He realizes their **关系 (relationship)** is good because they are always friendly. He decides to ask her for **帮助 (assistance/help).**\n     BECAUSE: Li Ming needs help and knows Xiao Hong is nearby\n  4. [Five minutes later · The building hallway] · uses 女人\n     WHAT CHANGES: Li Ming walks quickly to Xiao Hong’s door and knocks. Xiao Hong opens the door. She is a kind **女人 (woman)** living alone nearby.\n     BECAUSE: Li Ming decided to ask Xiao Hong for help\n     GOT THERE BY: walked down the hallway from his apartment\n  5. [Present moment · The building hallway] · uses 如果、男人\n     WHAT CHANGES: Li Ming explains Xiao Ming is sick. He says **如果 (if)** she has time, can she go down? Xiao Hong agrees immediately, taking **男人 (a man)**’s heavy box responsibility because she is strong and helpful.\n     BECAUSE: Li Ming asked for help and Xiao Hong is present\nRESOLUTION: Xiao Hong goes down to pick up the package and brings it up to Li Ming, solving the problem of who retrieves the delivery.\nTARGET WORDS:\n  需要 → beat 2: Li Ming acknowledges the necessity of an external person to perform the task since Xiao Ming is incapacitated.\n  关系 → beat 3: Li Ming evaluates his social connection with the neighbor to decide if it is appropriate to ask for a favor.\n  帮助 → beat 3: Li Ming explicitly formulates his request as a need for aid.\n  女人 → beat 4: The narrative describes Xiao Hong upon her appearance, using the common noun for an adult female.\n  如果 → beat 5: Li Ming makes a polite conditional offer/request.\n  男人 → beat 5: Li Ming describes the weight of the package by comparing it to what a man might carry, or referring to the courier as a man who left it.",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 5,
+          "placed": {
+            "需要": 2,
+            "关系": 3,
+            "帮助": 3,
+            "女人": 4,
+            "如果": 5,
+            "男人": 5
+          }
+        },
+        "score": {
+          "label": "A",
+          "contradiction": false,
+          "overall": 9,
+          "reason": "Tight causal chain, logical use of required vocabulary, and highly appropriate scope for HSK 3.",
+          "causal": 9,
+          "chronology": 9,
+          "plausibility": 8,
+          "simplicity": 10,
+          "targetFit": 9,
+          "suitability": 9
+        },
+        "acceptable": true
+      },
+      {
+        "label": null,
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "Helping the Neighbor",
+          "setting": "A quiet apartment building on a rainy Tuesday afternoon.",
+          "cast": [
+            "李明",
+            "女人"
+          ],
+          "problem": "An elderly woman drops her heavy grocery bags and cannot pick them up alone.",
+          "incitingEvent": "李明 sees the woman drop her bags in the building hallway.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Tuesday afternoon",
+              "where": "The building hallway",
+              "what": "李明 comes home from an activity and walks through the door. He sees a woman standing there with several heavy bags on the floor.",
+              "because": "the story opens",
+              "targets": [],
+              "lines": 6
+            },
+            {
+              "id": 2,
+              "when": "Immediately after",
+              "where": "The building hallway",
+              "what": "The woman looks tired and confused. She looks at her bags and then at李明. She waves at him.",
+              "because": "Liangming sees her in the hallway",
+              "targets": [
+                "女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Moments later",
+              "where": "The building hallway",
+              "what": "李明 realizes the woman needs someone to carry the things. He understands that she is having trouble. He knows he should give assistance.",
+              "because": "The woman signaled for help",
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "After agreeing",
+              "where": "The building hallway (moving towards the door)",
+              "what": "李明 picks up the bags. He walks with the woman to her apartment door. They talk a little bit. He was worried that if he did not come, she would be sad.",
+              "because": "He decided to help",
+              "targets": [
+                "如果"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "At the door",
+              "where": "The woman's apartment entrance",
+              "what": "They put the bags down inside. The woman is very happy. She says their relationship is good now. She says that helping is important, and she is also very kind.",
+              "because": "The task is finished",
+              "targets": [
+                "关系",
+                "而且"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "The woman receives her groceries safely, and Li Ming feels good because his relationship with the neighbor improved through kindness.",
+          "targetPlan": [
+            {
+              "word": "女人",
+              "beat": 2,
+              "why": "To identify the specific person Li Ming is looking at in the hallway, distinguishing her from other people.",
+              "speaker": "Narrator",
+              "refersTo": "The elderly neighbor who dropped her bags",
+              "intent": "Introduction of the secondary character"
+            },
+            {
+              "word": "需要",
+              "beat": 3,
+              "why": "To express the immediate physical necessity of the situation; she cannot lift the bags alone.",
+              "speaker": "Narrator (internal thought of Li Ming)",
+              "refersTo": "The act of carrying the bags",
+              "intent": "Recognizing a need for aid"
+            },
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "To name the action Li Ming decides to take; it is the core theme of the story.",
+              "speaker": "Narrator (internal thought of Li Ming)",
+              "refersTo": "Li Ming's assistance",
+              "intent": "Defining the helpful action"
+            },
+            {
+              "word": "如果",
+              "beat": 4,
+              "why": "To reflect on a hypothetical past scenario; imagining what would have happened without his intervention.",
+              "speaker": "Narrator (internal thought of Li Ming)",
+              "refersTo": "The situation if he had left",
+              "intent": "Contextualizing the importance of the help"
+            },
+            {
+              "word": "关系",
+              "beat": 5,
+              "why": "To describe the improved social bond between the neighbors after the kind act.",
+              "speaker": "女人",
+              "refersTo": "The friendship/connection between them",
+              "intent": "Expressing gratitude and social closeness"
+            },
+            {
+              "word": "而且",
+              "beat": 5,
+              "why": "To add a second positive quality to the interaction, linking the assistance with the woman's polite response.",
+              "speaker": "女人",
+              "refersTo": "The combination of help and kindness",
+              "intent": "Adding an additional point of praise"
+            }
+          ],
+          "impossibleTargets": [
+            "男人",
+            "必须"
+          ]
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "cast_unknown",
+              "message": "characters outside the cast: 女人"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 5 moves to \"The woman's apartment entrance\" without saying how"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "关系 is given to \"女人\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "而且 is given to \"女人\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            },
+            {
+              "code": "target_unplaced",
+              "message": "男人 has no beat where it naturally belongs"
+            }
+          ],
+          "cast": [
+            "李明",
+            "女人"
+          ],
+          "beats": 5,
+          "placed": {
+            "女人": 2,
+            "需要": 3,
+            "帮助": 3,
+            "如果": 4,
+            "关系": 5,
+            "而且": 5
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Neighbor Who Needs Help",
+          "setting": "An apartment building in Beijing, on a rainy Tuesday afternoon.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "A strong man blocks the hallway with a heavy box, preventing Li Ming from leaving his apartment, and Li Ming must find a way to clear the path.",
+          "incitingEvent": "Li Ming tries to leave his apartment to go to work, but a man is struggling with a large box in the hallway.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "7:00 PM",
+              "where": "Li Ming's apartment hallway",
+              "what": "Li Ming opens his door to leave for the evening rush hour, but finds a man struggling with a large, heavy box blocking his way. The man cannot move it alone.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [
+                "男人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "7:05 PM",
+              "where": "Li Ming's apartment hallway",
+              "what": "Li Ming realizes he cannot pass. He watches the man fail to move the box. He decides he needs to interact with the man to solve the blocking issue.",
+              "because": "because the box is directly in Li Ming's path and he cannot move it himself without help",
+              "arrivedHow": null,
+              "targets": [
+                "需要"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "7:10 PM",
+              "where": "Li Ming's apartment hallway",
+              "what": "Li Ming speaks to the man. He asks if the man needs help. The man is surprised and asks why Li Ming is being so polite to a stranger.",
+              "because": "because Li Ming needs to clear the path and inviting cooperation is the only logical step",
+              "arrivedHow": null,
+              "targets": [
+                "帮助"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "7:15 PM",
+              "where": "Li Ming's apartment hallway",
+              "what": "The man explains that he is new to the building and doesn't know anyone. He says that usually, people just ignore problems. Li Ming says that if they work together, it will be easier.",
+              "because": "because the man is defensive and Li Ming needs to explain his motivation to earn cooperation",
+              "arrivedHow": null,
+              "targets": [
+                "如果",
+                "而且"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "7:20 PM",
+              "where": "The stairwell and the neighbor's unlit apartment",
+              "what": "Together, they push the box up one flight of stairs and into the apartment of the neighbor (a woman living upstairs). They place the box inside. The door is open, suggesting the woman asked for this delivery, though she is not present to receive it personally.",
+              "because": "because Li Ming offered help and the man accepted, leading to the physical action of moving the obstacle",
+              "arrivedHow": "walking up one flight of stairs",
+              "targets": [
+                "女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "7:30 PM",
+              "where": "The hallway near Li Ming's door",
+              "what": "The hallway is clear. The man thanks Li Ming. They shake hands and agree that good neighbors help each other. Li Ming leaves for work.",
+              "because": "because the obstacle (the box) has been moved, resolving the initial problem",
+              "arrivedHow": "returning to the starting hallway level",
+              "targets": [
+                "关系"
+              ],
+              "lines": 3
+            }
+          ],
+          "resolution": "The hallway is clear, Li Ming can leave, and he has established a positive connection with his new neighbor.",
+          "targetPlan": [
+            {
+              "word": "男人",
+              "beat": 1,
+              "why": "Li Ming sees a new person in his hallway who is not one of his known female friends or family.",
+              "speaker": "Narrator",
+              "refersTo": "The stranger blocking the way",
+              "intent": "To identify the character and gender."
+            },
+            {
+              "word": "需要",
+              "beat": 2,
+              "why": "Li Ming assesses the situation: he is stuck, and the man clearly requires assistance to move the heavy object.",
+              "speaker": "Li Ming (internal monologue)",
+              "refersTo": "The necessity of help",
+              "intent": "To recognize the demand for action."
+            },
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "Li Ming offers support. This is the core action word for the theme.",
+              "speaker": "Li Ming",
+              "refersTo": "The act of assisting with the box",
+              "intent": "To propose a collaborative solution."
+            },
+            {
+              "word": "如果",
+              "beat": 4,
+              "why": "Li Ming proposes a conditional outcome: if they work together, the result will be better.",
+              "speaker": "Li Ming",
+              "refersTo": "The hypothetical scenario of cooperation",
+              "intent": "To persuade the man by showing the benefit of working together."
+            },
+            {
+              "word": "而且",
+              "beat": 4,
+              "why": "Li Ming adds another point to his argument: it is not only faster, but also friendly.",
+              "speaker": "Li Ming",
+              "refersTo": "Additional benefit of helping",
+              "intent": "To strengthen the argument for helping."
+            },
+            {
+              "word": "女人",
+              "beat": 5,
+              "why": "They deliver the box to the neighbor's apartment. It is revealed to be a woman's apartment (perhaps via a note or context), distinguishing her from the man.",
+              "speaker": "Narrator",
+              "refersTo": "The neighbor who ordered the box",
+              "intent": "To identify the recipient of the help."
+            },
+            {
+              "word": "关系",
+              "beat": 6,
+              "why": "After the act of helping, the social dynamic changes. They discuss how helping builds good neighborly relationships.",
+              "speaker": "The Man",
+              "refersTo": "The connection between them",
+              "intent": "To reflect on the positive outcome of the interaction."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "target_no_speaker",
+              "message": "关系 is given to \"The Man\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "男人": 1,
+            "需要": 2,
+            "帮助": 3,
+            "如果": 4,
+            "而且": 4,
+            "女人": 5,
+            "关系": 6
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Old Neighbor's Light",
+          "setting": "A residential apartment building, on a weekday evening after dinner.",
+          "cast": [
+            "李明",
+            "小红",
+            "小明"
+          ],
+          "problem": "An elderly neighbor is unable to fix a broken lightbulb in her living room and feels isolated.",
+          "incitingEvent": "李明 hears his neighbor singing a sad song and realizes her lights are off while everyone else is on.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "7:00 PM",
+              "where": "李明's apartment hallway",
+              "what": "李明 notices the neighbor's door is closed and dark, unlike the other bright apartments. He sees an old 女人 through the window, sitting alone.",
+              "because": "the story opens",
+              "arrivedHow": "",
+              "targets": [
+                "女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "7:05 PM",
+              "where": "The neighbor's front door",
+              "what": "李明 knocks. She opens the door. She looks tired. She says her husband is not at home (no 男人 is present to help her).",
+              "because": "李明 sees her sitting in the dark in Beat 1",
+              "arrivedHow": "walked from hallway to door",
+              "targets": [
+                "男人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "7:10 PM",
+              "where": "Neighbor's living room",
+              "what": "The neighbor explains the light is broken. She says she 需要 help. She does not have 帮助 from her family.",
+              "because": "The door is open and she states her problem in Beat 2",
+              "arrivedHow": "invited inside",
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "7:15 PM",
+              "where": "Neighbor's living room",
+              "what": "李明 tells her that as neighbors, they 关系 is good. He calls 小红 and 小明. He says if (如果) they come, we can change the bulb together.",
+              "because": "The neighbor expresses her need in Beat 3",
+              "arrivedHow": "stays in the room",
+              "targets": [
+                "关系",
+                "如果"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "7:30 PM",
+              "where": "Neighbor's living room",
+              "what": "小红 and 小明 arrive. They bring a new bulb. They change it. The light turns on. The woman is happy. They are good friends now.",
+              "because": "李明 called friends in Beat 4",
+              "arrivedHow": "walked from their apartments",
+              "targets": [],
+              "lines": 6
+            }
+          ],
+          "resolution": "The light is fixed, the neighbor is no longer alone in the dark, and the characters establish a helpful community bond.",
+          "targetPlan": [
+            {
+              "word": "女人",
+              "beat": 1,
+              "why": "To describe the specific person seeing through the window, distinguishing her gender/role from the narrator.",
+              "speaker": "narrator",
+              "refersTo": "The elderly neighbor",
+              "intent": "To identify who is suffering in the dark."
+            },
+            {
+              "word": "男人",
+              "beat": 2,
+              "why": "To explain the absence of the husband/father figure, justifying why she needs external help.",
+              "speaker": "The neighbor",
+              "refersTo": "Her absent husband",
+              "intent": "To explain she has no male help available."
+            },
+            {
+              "word": "需要",
+              "beat": 3,
+              "why": "To express the core deficit: she lacks the ability to fix it herself.",
+              "speaker": "The neighbor",
+              "refersTo": "Help with the light",
+              "intent": "To ask for assistance."
+            },
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "To label the specific action she requires.",
+              "speaker": "The neighbor",
+              "refersTo": "Physical help changing the bulb",
+              "intent": "To specify what she needs."
+            },
+            {
+              "word": "关系",
+              "beat": 4,
+              "why": "To express the social reason why 李明 feels obligated and comfortable helping; good neighbors have good relationships.",
+              "speaker": "李明",
+              "refersTo": "The connection between neighbors",
+              "intent": "To justify his action based on social bond."
+            },
+            {
+              "word": "如果",
+              "beat": 4,
+              "why": "To propose a conditional solution: IF friends come, THEN we can fix it.",
+              "speaker": "李明",
+              "refersTo": "Friends arriving",
+              "intent": "To set up the plan to fix the problem."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "target_no_speaker",
+              "message": "男人 is given to \"The neighbor\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "需要 is given to \"The neighbor\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "帮助 is given to \"The neighbor\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红",
+            "小明"
+          ],
+          "beats": 5,
+          "placed": {
+            "女人": 1,
+            "男人": 2,
+            "需要": 3,
+            "帮助": 3,
+            "关系": 4,
+            "如果": 4
+          }
+        },
+        "score": null,
+        "acceptable": false
+      }
+    ],
+    "judgeRaw": null,
+    "selection": {
+      "riskCode": "SHAPE_PLANNER_LEXICAL_BIAS",
+      "blocking": [
+        "rings",
+        "courier",
+        "cannot",
+        "someone",
+        "knocks",
+        "living",
+        "alone"
+      ]
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "a32-fresh-1-L3-001",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
