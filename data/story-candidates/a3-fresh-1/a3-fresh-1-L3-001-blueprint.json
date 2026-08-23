@@ -1,0 +1,791 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "a3-fresh-1",
+  "generatedAt": "2026-08-23T10:15:23.649Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "a3-fresh-1-L3-001",
+    "batchId": "a3-fresh-1",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "关系",
+      "女人",
+      "男人",
+      "帮助",
+      "需要"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "resume": null,
+    "scaffold": null,
+    "blueprints": [
+      {
+        "label": "A",
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Broken Bicycle",
+          "setting": "A residential apartment complex courtyard, Saturday afternoon.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "李明 needs help fixing his broken bicycle chain so he can go to the store, but he does not know how to fix it himself.",
+          "incitingEvent": "李明 sits on the curb crying because the chain of his new bicycle has come off and he cannot push it easily up the small hill to the entrance.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday, 3:00 PM",
+              "where": "The courtyard entrance of the apartment building",
+              "what": "李明 is stuck on the curb with his bicycle. The chain is off. He feels sad because he wants to buy fruit but cannot move the bike.",
+              "because": "the story opens",
+              "arrivedHow": "N/A",
+              "targets": [],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Saturday, 3:05 PM",
+              "where": "The courtyard entrance",
+              "what": "小红 walks out of her apartment building to take out the trash. She sees 李明 sitting on the ground holding the bicycle wheel.",
+              "because": "小红 lives in this building and goes out at the same time 李明 is stuck.",
+              "arrivedHow": "Walks out of the building door",
+              "targets": [
+                "男人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Saturday, 3:07 PM",
+              "where": "The courtyard entrance",
+              "what": "小红 asks 李明 what is wrong. 李明 explains that the chain is broken and he cannot fix it. He says he really needs someone to assist him.",
+              "because": "小红 sees 李明 is distressed and asks for the cause.",
+              "arrivedHow": "N/A",
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "Saturday, 3:10 PM",
+              "where": "The courtyard entrance",
+              "what": "小红 agrees to help. She crouches down and pulls the chain back onto the gears. She tells 李明 that if he is careful, the bike will work again.",
+              "because": "李明 asked for help and 小红 is a good neighbor.",
+              "arrivedHow": "N/A",
+              "targets": [
+                "帮助",
+                "如果"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "Saturday, 3:15 PM",
+              "where": "The courtyard entrance",
+              "what": "李明 tests the bike and rides it smoothly to the gate. He thanks 小红, saying she is a kind woman.",
+              "because": "小红 fixed the chain in the previous beat.",
+              "arrivedHow": "Rides the bike to the gate",
+              "targets": [
+                "女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "Saturday, 3:17 PM",
+              "where": "The apartment building lobby",
+              "what": "Later that evening, 李明 brings an apple from the store to give to 小红. They talk and agree that neighbors should help each other, establishing a good relationship.",
+              "because": "李明 was helped and wants to show gratitude.",
+              "arrivedHow": "Walks back into the building after shopping",
+              "targets": [
+                "关系",
+                "而且"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "李明 fixes his bike with 小红's help and rewards her with fruit, solidifying their friendly neighbor relationship.",
+          "targetPlan": [
+            {
+              "word": "男人",
+              "beat": 2,
+              "why": "小红 might internally refer to 李明 as 'that man struggling with the bike' or narratively describe him to set the scene before approaching.",
+              "speaker": "Narrator",
+              "refersTo": "李明",
+              "intent": "Identify the gender and role of the person in distress."
+            },
+            {
+              "word": "需要",
+              "beat": 3,
+              "why": "李明 expresses his inability to solve the problem alone.",
+              "speaker": "李明",
+              "refersTo": "The assistance with the chain",
+              "intent": "Express a lack of capability and a desire for aid."
+            },
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "李明 explicitly requests the action that is needed.",
+              "speaker": "李明",
+              "refersTo": "Fixing the bike",
+              "intent": "Make a clear request for physical labor."
+            },
+            {
+              "word": "帮助",
+              "beat": 4,
+              "why": "小红 confirms she is performing the requested action.",
+              "speaker": "小红",
+              "refersTo": "Pulling the chain",
+              "intent": "Confirm agreement to assist."
+            },
+            {
+              "word": "如果",
+              "beat": 4,
+              "why": "小红 sets a condition for the success of the fix (if he doesn't force it).",
+              "speaker": "小红",
+              "refersTo": "The bike working properly",
+              "intent": "Give a warning or condition related to the solution."
+            },
+            {
+              "word": "女人",
+              "beat": 5,
+              "why": "李明 describes 小红 to someone else later, or narratively identifies her role as the helper who is a woman.",
+              "speaker": "Narrator",
+              "refersTo": "小红",
+              "intent": "Identify the gender of the helper."
+            },
+            {
+              "word": "而且",
+              "beat": 6,
+              "why": "李明 connects two positive statements: 'You are kind, AND you helped me.'",
+              "speaker": "李明",
+              "refersTo": "The combination of kindness and action",
+              "intent": "Add an additional reason for gratitude."
+            },
+            {
+              "word": "关系",
+              "beat": 6,
+              "why": "The narrator or 李明 reflects that helping creates a good social bond.",
+              "speaker": "Narrator",
+              "refersTo": "The bond between them",
+              "intent": "Summarize the social result of the interaction."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "rendered": "TITLE CONCEPT: The Broken Bicycle\nSETTING: A residential apartment complex courtyard, Saturday afternoon.\nCAST: 李明、小红\nCENTRAL PROBLEM: 李明 needs help fixing his broken bicycle chain so he can go to the store, but he does not know how to fix it himself.\nINCITING EVENT: 李明 sits on the curb crying because the chain of his new bicycle has come off and he cannot push it easily up the small hill to the entrance.\nBEATS:\n  1. [Saturday, 3:00 PM · The courtyard entrance of the apartment building]\n     WHAT CHANGES: 李明 is stuck on the curb with his bicycle. The chain is off. He feels sad because he wants to buy fruit but cannot move the bike.\n     GOT THERE BY: N/A\n  2. [Saturday, 3:05 PM · The courtyard entrance] · uses 男人\n     WHAT CHANGES: 小红 walks out of her apartment building to take out the trash. She sees 李明 sitting on the ground holding the bicycle wheel.\n     BECAUSE: 小红 lives in this building and goes out at the same time 李明 is stuck.\n     GOT THERE BY: Walks out of the building door\n  3. [Saturday, 3:07 PM · The courtyard entrance] · uses 需要、帮助\n     WHAT CHANGES: 小红 asks 李明 what is wrong. 李明 explains that the chain is broken and he cannot fix it. He says he really needs someone to assist him.\n     BECAUSE: 小红 sees 李明 is distressed and asks for the cause.\n     GOT THERE BY: N/A\n  4. [Saturday, 3:10 PM · The courtyard entrance] · uses 帮助、如果\n     WHAT CHANGES: 小红 agrees to help. She crouches down and pulls the chain back onto the gears. She tells 李明 that if he is careful, the bike will work again.\n     BECAUSE: 李明 asked for help and 小红 is a good neighbor.\n     GOT THERE BY: N/A\n  5. [Saturday, 3:15 PM · The courtyard entrance] · uses 女人\n     WHAT CHANGES: 李明 tests the bike and rides it smoothly to the gate. He thanks 小红, saying she is a kind woman.\n     BECAUSE: 小红 fixed the chain in the previous beat.\n     GOT THERE BY: Rides the bike to the gate\n  6. [Saturday, 3:17 PM · The apartment building lobby] · uses 关系、而且\n     WHAT CHANGES: Later that evening, 李明 brings an apple from the store to give to 小红. They talk and agree that neighbors should help each other, establishing a good relationship.\n     BECAUSE: 李明 was helped and wants to show gratitude.\n     GOT THERE BY: Walks back into the building after shopping\nRESOLUTION: 李明 fixes his bike with 小红's help and rewards her with fruit, solidifying their friendly neighbor relationship.\nTARGET WORDS:\n  男人 → beat 2: 小红 might internally refer to 李明 as 'that man struggling with the bike' or narratively describe him to set the scene before approaching.\n  需要 → beat 3: 李明 expresses his inability to solve the problem alone.\n  帮助 → beat 3: 李明 explicitly requests the action that is needed.\n  帮助 → beat 4: 小红 confirms she is performing the requested action.\n  如果 → beat 4: 小红 sets a condition for the success of the fix (if he doesn't force it).\n  女人 → beat 5: 李明 describes 小红 to someone else later, or narratively identifies her role as the helper who is a woman.\n  而且 → beat 6: 李明 connects two positive statements: 'You are kind, AND you helped me.'\n  关系 → beat 6: The narrator or 李明 reflects that helping creates a good social bond.",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "男人": 2,
+            "需要": 3,
+            "帮助": 4,
+            "如果": 4,
+            "女人": 5,
+            "而且": 6,
+            "关系": 6
+          }
+        },
+        "score": {
+          "label": "A",
+          "contradiction": true,
+          "overall": 5,
+          "reason": "Jump cut from afternoon gate to evening lobby breaks chronology flow; targeting \"man/woman\" in a 2-person neighbor story is unnatural",
+          "causal": 8,
+          "chronology": 6,
+          "plausibility": 7,
+          "simplicity": 9,
+          "targetFit": 6,
+          "suitability": 8
+        },
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Broken Ladder",
+          "setting": "A sunny Saturday afternoon in a residential apartment courtyard.",
+          "cast": [
+            "李明",
+            "小明"
+          ],
+          "problem": "李明's ladder is broken and he cannot reach his high window to clean it or retrieve an object, physically unable to proceed alone.",
+          "incitingEvent": "李明 tries to climb his broken ladder to fix a loose shutter, but the rung snaps, dropping him safely but leaving the shutter unreachable and the ladder unusable.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday afternoon, early",
+              "where": "In front of 李明's apartment building entrance",
+              "what": "李明 struggles with a broken ladder; he is stuck because he lacks the physical means to reach the second-story window/shutter.",
+              "because": "the story opens",
+              "arrivedHow": "N/A",
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "Moments later",
+              "where": "In the same courtyard",
+              "what": "小明 walks by and sees 李明's difficulty; he offers to help, establishing their neighborly relationship.",
+              "because": "小明 observes the problem 李明 is facing in the shared space",
+              "arrivedHow": "N/A",
+              "targets": [
+                "关系"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Immediately after",
+              "where": "At the base of the ladder",
+              "what": "They attempt to fix the shutter together. 李明 explains that he *needs* assistance because the object is too high and heavy for one person, reinforcing that he *requires* aid.",
+              "because": "小明 agreed to help, so they begin the task",
+              "arrivedHow": "N/A",
+              "targets": [],
+              "lines": 4
+            },
+            {
+              "id": 4,
+              "when": "While working",
+              "where": "At the ladder/window site",
+              "what": "A passerby (referring to a generic 女人 or 男人) critiques their method or watches. 李明 and 小明 discuss that if they work together (*如果*), it will be faster. This introduces the optional conditional and the observer types.",
+              "because": "They are engaged in a public task that draws attention or requires coordination",
+              "arrivedHow": "N/A",
+              "targets": [
+                "女人",
+                "男人",
+                "如果",
+                "而且"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Shortly after",
+              "where": "At the ladder/window site",
+              "what": "They successfully fix the shutter. 李明 emphasizes that they *must* work together next time (*必须*) because the ladder is still broken. The task is complete.",
+              "because": "Their coordinated effort in the previous beat succeeded",
+              "arrivedHow": "N/A",
+              "targets": [
+                "必须"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 6,
+              "when": "After finishing",
+              "where": "In the courtyard",
+              "what": "The two friends thank each other. The problem (unreachable window/broken ladder obstacle) is resolved through cooperation. They agree to call each other for help in the future.",
+              "because": "The immediate physical problem is solved, allowing for closure and reflection on their interaction",
+              "arrivedHow": "N/A",
+              "targets": [],
+              "lines": 5
+            }
+          ],
+          "resolution": "李明 and 小明 successfully fix the shutter together, realizing that while the ladder is broken, their combined effort (help) solves the immediate problem, strengthening their neighborly bond.",
+          "targetPlan": [
+            {
+              "word": "需要",
+              "beat": 1,
+              "why": "李明 is alone with a broken tool and physically cannot do the task; he explicitly states his lack of capability creates a need.",
+              "speaker": "李明",
+              "refersTo": "the situation of trying to fix the shutter alone",
+              "intent": "To express a requirement for external aid"
+            },
+            {
+              "word": "帮助",
+              "beat": 1,
+              "why": "Directly follows the statement of need; it is the specific noun representing the solution 李明 is seeking.",
+              "speaker": "李明",
+              "refersTo": "the physical assistance required",
+              "intent": "To request support"
+            },
+            {
+              "word": "关系",
+              "beat": 2,
+              "why": "小明 responds to 李明's distress. To explain why he is stopping to help a neighbor, he references their social bond.",
+              "speaker": "小明",
+              "refersTo": "the connection between neighbors/friends",
+              "intent": "To justify his offer of help based on social duty/friendship"
+            },
+            {
+              "word": "女人",
+              "beat": 4,
+              "why": "A female neighbor watches. 李明 or 小明 might comment on her looking or ask if she needs help too, or simply identify her as an observer in the scene.",
+              "speaker": "Narrator or 小明",
+              "refersTo": "a female passerby",
+              "intent": "To identify a character/type of person in the scene"
+            },
+            {
+              "word": "男人",
+              "beat": 4,
+              "why": "Alternatively or additionally, a male neighbor is mentioned or seen. This provides the vocabulary for generic observers or contrast with the two main characters.",
+              "speaker": "Narrator or 李明",
+              "refersTo": "a male passerby",
+              "intent": "To identify a character/type of person in the scene"
+            },
+            {
+              "word": "如果",
+              "beat": 4,
+              "why": "They are trying hard. 小明 proposes a conditional strategy: 'If we do it together, it will be fast.'",
+              "speaker": "小明",
+              "refersTo": "the method of working together",
+              "intent": "To propose a condition for better results"
+            },
+            {
+              "word": "而且",
+              "beat": 4,
+              "why": "Adding to the conditional argument. 'If we work together, it is fast, AND it is safe.'",
+              "speaker": "小明",
+              "refersTo": "an additional benefit of cooperation",
+              "intent": "To add another positive consequence"
+            },
+            {
+              "word": "必须",
+              "beat": 5,
+              "why": "The task is done, but the ladder is still bad. 李明 states a future rule: 'Next time, I must call you.'",
+              "speaker": "李明",
+              "refersTo": "the obligation to seek help in the future",
+              "intent": "To express a strong necessity for future actions"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 2 moves to \"In the same courtyard\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 3 moves to \"At the base of the ladder\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 6 moves to \"In the courtyard\" without saying how"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小明"
+          ],
+          "beats": 6,
+          "placed": {
+            "需要": 1,
+            "帮助": 1,
+            "关系": 2,
+            "女人": 4,
+            "男人": 4,
+            "如果": 4,
+            "而且": 4,
+            "必须": 5
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Neighbor on the Balcony",
+          "setting": "A sunny afternoon in the courtyard of an apartment building where Li Ming and Xiaohong live.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Li Ming cannot retrieve his kite because it is stuck on a neighbor's balcony, and the neighbor (a stranger) is refusing to help.",
+          "incitingEvent": "Li Ming's kite gets stuck on the balcony of the apartment above him.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Afternoon",
+              "where": "The open courtyard ground level",
+              "what": "Li Ming is flying a kite, but the wind changes and the string goes slack as the kite lands on the second-floor balcony railing.",
+              "because": "the story opens with the inciting incident establishing the central problem.",
+              "arrivedHow": "n/a",
+              "targets": [],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "Immediately after",
+              "where": "The courtyard ground level (looking up)",
+              "what": "Li Ming looks up and sees an old Woman standing on the balcony where his kite is stuck. She notices him looking up.",
+              "because": "Li Ming needs to identify who is in control of the location where his kite is stuck.",
+              "arrivedHow": "n/a",
+              "targets": [
+                "女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Moments later",
+              "where": "The courtyard ground level (outside the apartment building gate)",
+              "what": "Li Ming walks across the courtyard to the gate of the apartment building opposite his own, where the balcony is located, to ask for help.",
+              "because": "Li Ming determines he needs assistance to get his kite back and moves to the location of the obstacle.",
+              "arrivedHow": "walks across the courtyard",
+              "targets": [
+                "帮助"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "Shortly after arriving at the gate",
+              "where": "Outside the apartment gate",
+              "what": "Li Ming knocks on the door. An old Man opens the door. The Man says he cannot help because he is busy and does not know Li Ming.",
+              "because": "Li Ming arrives at the source of the problem to request aid, encountering the second character.",
+              "arrivedHow": "n/a",
+              "targets": [
+                "男人"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "Immediately after the rejection",
+              "where": "Outside the apartment gate",
+              "what": "Li Ming explains that the old Woman on the balcony is his neighbor and usually friendly. He says if he does not get his kite, he will be sad, and he lacks the height to reach it himself.",
+              "because": "The Man refuses aid, so Li Ming must provide context and reason to persuade him, using the conditional structure to show consequence.",
+              "arrivedHow": "n/a",
+              "targets": [
+                "关系",
+                "如果",
+                "需要"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 6,
+              "when": "A few minutes later",
+              "where": "Outside the apartment gate / Downstairs",
+              "what": "The Man sighs, takes the kite hook, and agrees to climb the ladder to get the kite. He hands it to Li Ming.",
+              "because": "Li Ming's explanation of his relationship with the neighbor and his necessity for the kite convinces the Man to act.",
+              "arrivedHow": "n/a",
+              "targets": [
+                "而且"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "The Man retrieves the kite, resolving the physical problem. Li Ming thanks him, moving from a stranger to a helper.",
+          "targetPlan": [
+            {
+              "word": "女人",
+              "beat": 2,
+              "why": "Li Ming identifies the person on the balcony to understand who has the kite.",
+              "speaker": "Narrator",
+              "refersTo": "The elderly person standing on the balcony",
+              "intent": "To identify the gender/role of the person blocking access."
+            },
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "Li Ming states his purpose for approaching the neighbor's building.",
+              "speaker": "Li Ming (internal monologue or dialogue)",
+              "refersTo": "The act of retrieving the kite",
+              "intent": "To request assistance."
+            },
+            {
+              "word": "男人",
+              "beat": 4,
+              "why": "The person who opens the door is identified, contrasting with the woman on the balcony.",
+              "speaker": "Narrator",
+              "refersTo": "The neighbor who answers the door",
+              "intent": "To identify the new character interacting with Li Ming."
+            },
+            {
+              "word": "关系",
+              "beat": 5,
+              "why": "Li Ming tries to explain that he has a friendly connection with the people who live there, to soften the stranger's refusal.",
+              "speaker": "Li Ming",
+              "refersTo": "His social connection with the neighbors",
+              "intent": "To establish social legitimacy for his request."
+            },
+            {
+              "word": "如果",
+              "beat": 5,
+              "why": "Li Ming explains the consequence of not getting the kite back (sadness/loss).",
+              "speaker": "Li Ming",
+              "refersTo": "The hypothetical situation of losing the kite",
+              "intent": "To persuade the neighbor by showing negative consequences."
+            },
+            {
+              "word": "需要",
+              "beat": 5,
+              "why": "Li Ming admits he physically cannot reach the kite alone.",
+              "speaker": "Li Ming",
+              "refersTo": "The requirement for external aid",
+              "intent": "To logically justify why he cannot solve the problem himself."
+            },
+            {
+              "word": "而且",
+              "beat": 6,
+              "why": "The Man agrees, adding that he also wants to be helpful to a neighbor, connecting the previous reasons.",
+              "speaker": "The Man (or narrator summarizing his thought)",
+              "refersTo": "The additional reason for helping (friendliness/neighbourliness)",
+              "intent": "To add a supporting reason for the action."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "target_no_speaker",
+              "message": "帮助 is given to \"Li Ming (internal monologue or dialogue)\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "关系 is given to \"Li Ming\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "如果 is given to \"Li Ming\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "需要 is given to \"Li Ming\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "女人": 2,
+            "帮助": 3,
+            "男人": 4,
+            "关系": 5,
+            "如果": 5,
+            "需要": 5,
+            "而且": 6
+          }
+        },
+        "score": null,
+        "acceptable": false
+      }
+    ],
+    "judgeRaw": "PLAN A: CAUSAL 8 CHRONOLOGY 6 PLAUSIBILITY 7 SIMPLICITY 9 TARGETFIT 6 SUITABILITY 8 CONTRADICTION yes OVERALL 5 — Jump cut from afternoon gate to evening lobby breaks chronology flow; targeting \"man/woman\" in a 2-person neighbor story is unnatural",
+    "selection": {
+      "code": "BLUEPRINT_QUALITY_FAILED",
+      "reason": "no plan met the plan thresholds"
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "a3-fresh-1-L3-001",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
