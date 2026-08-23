@@ -587,7 +587,10 @@ export function parseBlueprintJudgment(text, labels, dimensions) {
     // The plans are shown to the judge as "PLAN A:", so it answers "PLAN A:".
     // blueprint-1 lost two whole manifests to a parser that only accepted a
     // bare label — the judge had scored them, and nothing could read it.
-    const m = t.match(/^[-*•\s]*\**(?:PLAN|CANDIDATE|OPTION|STORY)?\s*([A-H])\**\s*[:：.)]\s*(.+)$/i)
+    // The class must span the whole alphabet, not A-H: the bakeoff pools two
+    // models' candidates, so labels run past H, and the batch holding I and J
+    // was dropped whole despite a perfectly scored answer.
+    const m = t.match(/^[-*•\s]*\**(?:PLAN|CANDIDATE|OPTION|STORY)?\s*([A-Z])\**\s*[:：.)]\s*(.+)$/i)
     if (!m || !want.has(m[1].toUpperCase()) || out.some(x => x.label === m[1].toUpperCase())) continue
     const body = m[2]
     const mech = body.match(/CONTRADICTION\s*[:：]?\s*(yes|no|true|false)/i)

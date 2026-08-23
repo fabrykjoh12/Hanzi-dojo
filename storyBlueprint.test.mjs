@@ -288,6 +288,24 @@ describe('plan ranking', () => {
   })
 })
 
+describe('parseBlueprintJudgment — labels past H', () => {
+  // Verbatim from planner-bakeoff-1s, batch IJ: the judge scored both plans
+  // and the whole batch was discarded because the label class stopped at H.
+  const raw = 'PLAN I: CAUSAL 8 CHRONOLOGY 9 PLAUSIBILITY 7 SIMPLICITY 9 TARGETFIT 6 SUITABILITY 8 CONTRADICTION no OVERALL 7 \u2014 The excluded neighbour is awkward.\n'
+    + 'PLAN J: CAUSAL 7 CHRONOLOGY 8 PLAUSIBILITY 6 SIMPLICITY 8 TARGETFIT 5 SUITABILITY 6 CONTRADICTION yes OVERALL 4 \u2014 An unrelated character confuses it.'
+
+  it('reads a batch whose labels are I and J', () => {
+    const out = parseBlueprintJudgment(raw, ['I', 'J'], BLUEPRINT_DIMENSIONS)
+    expect(out).toHaveLength(2)
+    expect(out[0]).toMatchObject({ label: 'I', overall: 7, causal: 8, chronology: 9, targetFit: 6, contradiction: false })
+    expect(out[1]).toMatchObject({ label: 'J', overall: 4, targetFit: 5, contradiction: true })
+  })
+
+  it('still ignores a label that was not in the batch', () => {
+    expect(parseBlueprintJudgment('PLAN Z: CAUSAL 8 OVERALL 8', ['I', 'J'], BLUEPRINT_DIMENSIONS)).toBeNull()
+  })
+})
+
 describe('the prompts keep planning and writing apart', () => {
   it('the planner is told to plan, in English, and to refuse a target with no home', () => {
     const p = blueprintPrompt({ manifest: manifest(), totalLines: 28, targets: ['护照'] })
