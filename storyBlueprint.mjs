@@ -48,7 +48,17 @@ const ROMANIZATION = (() => {
       const m = line.match(/^[-\s]*(\S+?)\s*\(([^)]+)\)/)
       if (!m) continue
       const roman = normalizeName(m[2])
-      if (roman) map.set(roman, m[1])
+      // One English name can belong to a character in more than one bible
+      // ("Mother" is 妈妈 and おかあさん), so every candidate is kept and the
+      // caller picks the one that is actually in this story's cast.
+      if (roman) map.set(roman, [...(map.get(roman) || []), m[1]])
+    }
+    // A character the bible does not romanize still has an English name.
+    for (const [name, aliases] of Object.entries((bible && bible.aliases) || {})) {
+      for (const alias of aliases) {
+        const key = normalizeName(alias)
+        if (key) map.set(key, [...(map.get(key) || []), name])
+      }
     }
   }
   return map
@@ -198,8 +208,10 @@ export function validateBlueprint(bp, { manifest, vocabMap = null, requiredTarge
     // "Li Ming", "Li Ming (internal monologue)", "LI MING" — the bible's own
     // romanization, however the plan dresses it up.
     const flat = normalizeName(t)
-    for (const [roman, name] of ROMANIZATION) {
-      if (allowed.has(name) && (flat === roman || flat.startsWith(roman + ' ') || flat.includes(' ' + roman + ' ') || flat.endsWith(' ' + roman))) return name
+    for (const [roman, names] of ROMANIZATION) {
+      const inCast = names.find(n => allowed.has(n))
+      if (!inCast) continue
+      if (flat === roman || flat.startsWith(roman + ' ') || flat.includes(' ' + roman + ' ') || flat.endsWith(' ' + roman)) return inCast
     }
     return null
   }

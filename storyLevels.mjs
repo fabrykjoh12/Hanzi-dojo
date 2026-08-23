@@ -15,6 +15,12 @@
 
 export const BIBLE_CHINESE = {
   speakers: ['李明', '小红', '小明', '妈妈'],
+  // What each character is called in an ENGLISH document. The names with a
+  // pinyin form are read out of the text below; 妈妈 has none, so an English
+  // plan calls her "Mom" and the validator refused her as a stranger to her
+  // own cast (a32-fresh-2 lost a shape to exactly that). This is the story
+  // bible completing its own cast list, not a vocabulary mapping.
+  aliases: { 妈妈: ['mom', 'mother', 'mama'] },
   text:
     '- 李明 (Lǐ Míng): a curious, slightly impulsive 12-year-old boy. Always hungry. Speaks in short, eager sentences and asks a lot of questions.\n' +
     '- 小红 (Xiǎo Hóng): his classmate. Sharp-eyed and quick — she notices what others miss, and teases 李明, but is kind underneath.\n' +

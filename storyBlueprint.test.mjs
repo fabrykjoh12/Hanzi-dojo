@@ -155,6 +155,21 @@ describe('validateBlueprint — what code can check about a plan', () => {
     for (const ok of ['李明', 'Li Ming', 'LI MING', 'Li Ming (internal monologue)', 'Xiao Hong', 'narrator']) {
       expect(withSpeaker(ok), ok + ' should be recognised').toBe(0)
     }
+    // 妈妈 has no pinyin in the bible, so an English plan calls her Mom —
+    // a32-fresh-2 lost a whole shape to her being read as a stranger. The
+    // name is shared with another bible's character, so every candidate is
+    // kept and the one in THIS cast wins.
+    const withMother = manifest({ speakers: ['李明', '妈妈'] })
+    const motherSpeaker = (speaker) => {
+      const bp = blueprint({ cast: ['李明', '妈妈'] })
+      bp.targetPlan[0] = { ...bp.targetPlan[0], speaker, refersTo: 'tomorrow', intent: 'say what she plans', usageSketch: '我打算去找他' }
+      return validateBlueprint(bp, { manifest: withMother, vocabMap: vm }).failures
+        .filter(f => f.code === 'target_no_speaker' && f.message.includes('打算')).length
+    }
+    for (const ok of ['妈妈', 'Mom', 'Mother', 'Mom (in the kitchen)']) {
+      expect(motherSpeaker(ok), ok + ' should be recognised').toBe(0)
+    }
+    expect(motherSpeaker('the shopkeeper')).toBe(1)
     // someone who is not in the cast is still not in the cast
     for (const bad of ['the shopkeeper', 'Wang Laoshi', 'a passing woman']) {
       expect(withSpeaker(bad), bad + ' should be refused').toBe(1)
