@@ -53,8 +53,30 @@ Verified against the live database inside a rolled-back transaction: the
 whitelist update was REJECTED by the constraint; the identical update with
 `verified_at` was accepted.
 
-Applying `…170000` on its own is harmless (the CASE is a no-op while no row has
-`prior_known_at`), so if they must go one at a time, apply `…170000` FIRST.
+**If they must go one at a time, apply `…160000` FIRST.**
+
+An earlier revision of this file said the opposite — that `…170000` could go
+first because "the CASE is a no-op while no row has `prior_known_at`". That
+reasoning is wrong, and following it would have caused an outage. The CASE is
+not a no-op against a table without the column: it is a reference to a column
+that does not exist, and plpgsql resolves column references at RUNTIME, not at
+`create function` time. So `…170000` alone installs cleanly and then fails on
+every single call:
+
+```
+column c.prior_known_at does not exist
+```
+
+`grade_card` is the one write path for every graded review, so that is not
+"calibration is broken" — it is *all grading, for every user*, until `…160000`
+lands. Proven in a rolled-back transaction against production before the real
+apply.
+
+The other order is genuinely inert: with `…160000` applied and `…170000` not,
+`cards_unverified_claim_is_inert` can only bite a row where `prior_known_at is
+not null`, and until the frontend ships there are none. That is the order
+actually used on 2026-08-23 (`…160000` at 12:08, `…170000` seconds later), and
+the DB suite passed 35/35 immediately afterwards.
 
 ### 2. Verify against `information_schema`, not the migration ledger
 
