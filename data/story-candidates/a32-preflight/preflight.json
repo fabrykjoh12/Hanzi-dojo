@@ -1,0 +1,1726 @@
+{
+  "version": "fab9-risk@1",
+  "generatedAt": "2026-08-23T16:36:02.863Z",
+  "reports": [
+    {
+      "source": "data/story-candidates/a3-fresh-2/a3-fresh-2-L3-001-blueprint.json",
+      "manifestId": "a3-fresh-2-L3-001",
+      "problem": "Xiao Ming's bicycle is broken, and he cannot get home while the weather is turning bad.",
+      "beats": [
+        {
+          "id": 1,
+          "what": "Xiao Ming is riding his bike home from the park when the chain falls off. He tries to put it back on but fails. He feels worried because he is tired."
+        },
+        {
+          "id": 2,
+          "what": "Li Ming and Xiao Hong walk by. They see Xiao Ming struggling. Li Ming introduces himself as the new neighbor. Xiao Hong notices that Xiao Ming looks upset."
+        },
+        {
+          "id": 3,
+          "what": "Li Ming asks what is wrong. Xiao Ming explains that his bike chain is broken. Li Ming says he knows how cars work, but not bikes. He asks if Xiao Ming needs help."
+        },
+        {
+          "id": 4,
+          "what": "Xiao Ming says he really needs help because it is getting dark. Li Ming says they can look together. Xiao Hong suggests checking the owner's manual. The relationship between Xiao Ming and Xiao Hong becomes better because of this talk."
+        },
+        {
+          "id": 5,
+          "what": "Li Ming and Xiao Hong help Xiao Ming put the chain back on. It is difficult, but they work together. Xiao Hong holds the wheel, Li Ming fixes the metal links. Xiao Ming waits patiently."
+        },
+        {
+          "id": 6,
+          "what": "The bike is fixed. Xiao Ming tests it; it works. He thanks them. Li Ming says if he comes back, he can borrow tools. Xiao Ming rides home happily. The three become friends."
+        }
+      ],
+      "report": {
+        "version": "fab9-risk@1",
+        "risk": "HIGH",
+        "beats": [
+          {
+            "beat": 1,
+            "risk": "MEDIUM",
+            "reason": "the central concept \"riding\" has no in-level vocabulary, but the rest of the beat does",
+            "core": [
+              {
+                "concept": "xiao",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "ming",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "riding",
+                "support": "none",
+                "words": [
+                  "除"
+                ]
+              },
+              {
+                "concept": "bike",
+                "support": "supported",
+                "words": [
+                  "自行车"
+                ]
+              },
+              {
+                "concept": "park",
+                "support": "supported",
+                "words": [
+                  "公园"
+                ]
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "put",
+                "support": "supported",
+                "words": [
+                  "放",
+                  "丢"
+                ]
+              },
+              {
+                "concept": "back",
+                "support": "supported",
+                "words": [
+                  "后面",
+                  "回来",
+                  "回去"
+                ]
+              },
+              {
+                "concept": "fails",
+                "support": "none",
+                "words": [
+                  "倒",
+                  "弱点"
+                ]
+              },
+              {
+                "concept": "worried",
+                "support": "supported",
+                "words": [
+                  "担心"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "chain",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "falls",
+                "support": "none",
+                "words": [
+                  "傍晚"
+                ]
+              },
+              {
+                "concept": "off",
+                "support": "supported",
+                "words": [
+                  "下班",
+                  "送",
+                  "出发",
+                  "起飞"
+                ]
+              },
+              {
+                "concept": "tired",
+                "support": "supported",
+                "words": [
+                  "累"
+                ]
+              },
+              {
+                "concept": "story",
+                "support": "supported",
+                "words": [
+                  "房子"
+                ]
+              },
+              {
+                "concept": "opens",
+                "support": "supported",
+                "words": [
+                  "开",
+                  "打开",
+                  "开花"
+                ]
+              },
+              {
+                "concept": "identify",
+                "support": "none",
+                "words": [
+                  "鉴定",
+                  "识别"
+                ]
+              },
+              {
+                "concept": "protagonist",
+                "support": "none",
+                "words": [
+                  "主角"
+                ]
+              },
+              {
+                "concept": "gender",
+                "support": "none",
+                "words": [
+                  "性别"
+                ]
+              },
+              {
+                "concept": "role",
+                "support": "none",
+                "words": [
+                  "任务",
+                  "起到",
+                  "角色"
+                ]
+              },
+              {
+                "concept": "scene",
+                "support": "none",
+                "words": [
+                  "景色",
+                  "现场",
+                  "在场"
+                ]
+              }
+            ],
+            "coreMissing": [
+              "riding"
+            ],
+            "supportingMissing": [
+              "fails"
+            ],
+            "incidentalMissing": [
+              "falls",
+              "identify",
+              "protagonist",
+              "gender",
+              "role",
+              "scene"
+            ]
+          },
+          {
+            "beat": 2,
+            "risk": "MEDIUM",
+            "reason": "the central concept \"li\" has no in-level vocabulary, but the rest of the beat does",
+            "core": [
+              {
+                "concept": "li",
+                "support": "none",
+                "words": [
+                  "着凉"
+                ]
+              },
+              {
+                "concept": "ming",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "xiao",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "hong",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "walk",
+                "support": "supported",
+                "words": [
+                  "走",
+                  "走路"
+                ]
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "see",
+                "support": "supported",
+                "words": [
+                  "看",
+                  "见",
+                  "看见",
+                  "看病"
+                ]
+              },
+              {
+                "concept": "struggling",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "introduces",
+                "support": "weak",
+                "words": [
+                  "介绍"
+                ]
+              },
+              {
+                "concept": "himself",
+                "support": "none",
+                "words": [
+                  "本人"
+                ]
+              },
+              {
+                "concept": "notices",
+                "support": "weak",
+                "words": [
+                  "发现"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "neighbor",
+                "support": "supported",
+                "words": [
+                  "附近",
+                  "邻居"
+                ]
+              },
+              {
+                "concept": "upset",
+                "support": "none",
+                "words": [
+                  "刺激"
+                ]
+              },
+              {
+                "concept": "walking",
+                "support": "supported",
+                "words": [
+                  "走",
+                  "走路"
+                ]
+              },
+              {
+                "concept": "past",
+                "support": "supported",
+                "words": [
+                  "过"
+                ]
+              },
+              {
+                "concept": "scene",
+                "support": "none",
+                "words": [
+                  "景色",
+                  "现场",
+                  "在场"
+                ]
+              },
+              {
+                "concept": "accident",
+                "support": "none",
+                "words": [
+                  "受伤",
+                  "现场",
+                  "事故"
+                ]
+              },
+              {
+                "concept": "identify",
+                "support": "none",
+                "words": [
+                  "鉴定",
+                  "识别"
+                ]
+              },
+              {
+                "concept": "helper",
+                "support": "weak",
+                "words": [
+                  "帮",
+                  "帮忙",
+                  "把"
+                ]
+              },
+              {
+                "concept": "gender",
+                "support": "none",
+                "words": [
+                  "性别"
+                ]
+              },
+              {
+                "concept": "role",
+                "support": "none",
+                "words": [
+                  "任务",
+                  "起到",
+                  "角色"
+                ]
+              }
+            ],
+            "coreMissing": [
+              "li"
+            ],
+            "supportingMissing": [
+              "himself"
+            ],
+            "incidentalMissing": [
+              "upset",
+              "scene",
+              "accident",
+              "identify",
+              "gender",
+              "role"
+            ]
+          },
+          {
+            "beat": 3,
+            "risk": "MEDIUM",
+            "reason": "the central concept \"li\" has no in-level vocabulary, but the rest of the beat does",
+            "core": [
+              {
+                "concept": "li",
+                "support": "none",
+                "words": [
+                  "着凉"
+                ]
+              },
+              {
+                "concept": "ming",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "wrong",
+                "support": "supported",
+                "words": [
+                  "错"
+                ]
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "xiao",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "cars",
+                "support": "supported",
+                "words": [
+                  "车",
+                  "汽车"
+                ]
+              },
+              {
+                "concept": "work",
+                "support": "supported",
+                "words": [
+                  "上班",
+                  "下班",
+                  "工作",
+                  "努力"
+                ]
+              },
+              {
+                "concept": "bikes",
+                "support": "weak",
+                "words": [
+                  "自行车"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "bike",
+                "support": "supported",
+                "words": [
+                  "自行车"
+                ]
+              },
+              {
+                "concept": "chain",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "broken",
+                "support": "supported",
+                "words": [
+                  "坏"
+                ]
+              },
+              {
+                "concept": "help",
+                "support": "supported",
+                "words": [
+                  "帮",
+                  "帮忙",
+                  "把",
+                  "帮助"
+                ]
+              },
+              {
+                "concept": "saw",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "trouble",
+                "support": "none",
+                "words": [
+                  "麻烦",
+                  "随手",
+                  "害"
+                ]
+              },
+              {
+                "concept": "offer",
+                "support": "none",
+                "words": [
+                  "提供",
+                  "应聘",
+                  "出售"
+                ]
+              },
+              {
+                "concept": "aid",
+                "support": "supported",
+                "words": [
+                  "帮助"
+                ]
+              },
+              {
+                "concept": "polite",
+                "support": "supported",
+                "words": [
+                  "您"
+                ]
+              },
+              {
+                "concept": "question",
+                "support": "supported",
+                "words": [
+                  "吗",
+                  "呢",
+                  "问题",
+                  "题"
+                ]
+              },
+              {
+                "concept": "confirm",
+                "support": "weak",
+                "words": [
+                  "吧"
+                ]
+              },
+              {
+                "concept": "willing",
+                "support": "none",
+                "words": [
+                  "舍得"
+                ]
+              }
+            ],
+            "coreMissing": [
+              "li"
+            ],
+            "supportingMissing": [],
+            "incidentalMissing": [
+              "trouble",
+              "offer",
+              "willing"
+            ]
+          },
+          {
+            "beat": 4,
+            "risk": "MEDIUM",
+            "reason": "detail without in-level vocabulary (li, checking, owner, manual, dark, offer), but the beat's own event can be told",
+            "core": [
+              {
+                "concept": "xiao",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "ming",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "really",
+                "support": "supported",
+                "words": [
+                  "真",
+                  "其实"
+                ]
+              },
+              {
+                "concept": "help",
+                "support": "supported",
+                "words": [
+                  "帮",
+                  "帮忙",
+                  "把",
+                  "帮助"
+                ]
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "li",
+                "support": "none",
+                "words": [
+                  "着凉"
+                ]
+              },
+              {
+                "concept": "look",
+                "support": "supported",
+                "words": [
+                  "看",
+                  "找",
+                  "好看"
+                ]
+              },
+              {
+                "concept": "hong",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "suggests",
+                "support": "supported",
+                "words": [
+                  "最好"
+                ]
+              },
+              {
+                "concept": "checking",
+                "support": "none",
+                "words": [
+                  "安检",
+                  "报到",
+                  "查询"
+                ]
+              },
+              {
+                "concept": "owner",
+                "support": "none",
+                "words": [
+                  "车主",
+                  "厂家"
+                ]
+              },
+              {
+                "concept": "manual",
+                "support": "none",
+                "words": [
+                  "说明书",
+                  "手工"
+                ]
+              },
+              {
+                "concept": "relationship",
+                "support": "supported",
+                "words": [
+                  "关系"
+                ]
+              },
+              {
+                "concept": "between",
+                "support": "supported",
+                "words": [
+                  "间",
+                  "中间"
+                ]
+              },
+              {
+                "concept": "becomes",
+                "support": "weak",
+                "words": [
+                  "来",
+                  "出来",
+                  "过来"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "dark",
+                "support": "none",
+                "words": [
+                  "黑暗"
+                ]
+              },
+              {
+                "concept": "talk",
+                "support": "supported",
+                "words": [
+                  "说话",
+                  "对话"
+                ]
+              },
+              {
+                "concept": "accepted",
+                "support": "supported",
+                "words": [
+                  "受",
+                  "相信",
+                  "收"
+                ]
+              },
+              {
+                "concept": "offer",
+                "support": "none",
+                "words": [
+                  "提供",
+                  "应聘",
+                  "出售"
+                ]
+              },
+              {
+                "concept": "aid",
+                "support": "supported",
+                "words": [
+                  "帮助"
+                ]
+              },
+              {
+                "concept": "show",
+                "support": "supported",
+                "words": [
+                  "发",
+                  "表演",
+                  "照顾"
+                ]
+              },
+              {
+                "concept": "development",
+                "support": "supported",
+                "words": [
+                  "发展"
+                ]
+              },
+              {
+                "concept": "friendship",
+                "support": "weak",
+                "words": [
+                  "朋友",
+                  "小朋友"
+                ]
+              }
+            ],
+            "coreMissing": [],
+            "supportingMissing": [
+              "li",
+              "checking",
+              "owner",
+              "manual"
+            ],
+            "incidentalMissing": [
+              "dark",
+              "offer"
+            ]
+          },
+          {
+            "beat": 5,
+            "risk": "HIGH",
+            "reason": "the central action (li) and 3 more of what happens here (fixes, metal, links) have no in-level vocabulary",
+            "core": [
+              {
+                "concept": "li",
+                "support": "none",
+                "words": [
+                  "着凉"
+                ]
+              },
+              {
+                "concept": "ming",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "xiao",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "hong",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "help",
+                "support": "supported",
+                "words": [
+                  "帮",
+                  "帮忙",
+                  "把",
+                  "帮助"
+                ]
+              },
+              {
+                "concept": "put",
+                "support": "supported",
+                "words": [
+                  "放",
+                  "丢"
+                ]
+              },
+              {
+                "concept": "chain",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "back",
+                "support": "supported",
+                "words": [
+                  "后面",
+                  "回来",
+                  "回去"
+                ]
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "difficult",
+                "support": "supported",
+                "words": [
+                  "难",
+                  "难题"
+                ]
+              },
+              {
+                "concept": "work",
+                "support": "supported",
+                "words": [
+                  "上班",
+                  "下班",
+                  "工作",
+                  "努力"
+                ]
+              },
+              {
+                "concept": "holds",
+                "support": "supported",
+                "words": [
+                  "拿",
+                  "把",
+                  "开会"
+                ]
+              },
+              {
+                "concept": "wheel",
+                "support": "weak",
+                "words": [
+                  "跟"
+                ]
+              },
+              {
+                "concept": "fixes",
+                "support": "none",
+                "words": [
+                  "定",
+                  "规定",
+                  "修理"
+                ]
+              },
+              {
+                "concept": "metal",
+                "support": "none",
+                "words": [
+                  "金属"
+                ]
+              },
+              {
+                "concept": "links",
+                "support": "none",
+                "words": [
+                  "结合",
+                  "沟通",
+                  "连接"
+                ]
+              },
+              {
+                "concept": "waits",
+                "support": "supported",
+                "words": [
+                  "等"
+                ]
+              },
+              {
+                "concept": "patiently",
+                "support": "weak",
+                "words": [
+                  "病人"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "agreed",
+                "support": "weak",
+                "words": [
+                  "同意"
+                ]
+              },
+              {
+                "concept": "assist",
+                "support": "supported",
+                "words": [
+                  "帮助"
+                ]
+              }
+            ],
+            "coreMissing": [
+              "li"
+            ],
+            "supportingMissing": [
+              "fixes",
+              "metal",
+              "links"
+            ],
+            "incidentalMissing": []
+          },
+          {
+            "beat": 6,
+            "risk": "HIGH",
+            "reason": "the central action (fixed) and 2 more of what happens here (li, rides) have no in-level vocabulary",
+            "core": [
+              {
+                "concept": "bike",
+                "support": "supported",
+                "words": [
+                  "自行车"
+                ]
+              },
+              {
+                "concept": "fixed",
+                "support": "none",
+                "words": [
+                  "定时"
+                ]
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "xiao",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "ming",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "tests",
+                "support": "supported",
+                "words": [
+                  "考",
+                  "试"
+                ]
+              },
+              {
+                "concept": "works",
+                "support": "supported",
+                "words": [
+                  "上班",
+                  "下班",
+                  "工作",
+                  "努力"
+                ]
+              },
+              {
+                "concept": "thanks",
+                "support": "supported",
+                "words": [
+                  "谢谢"
+                ]
+              },
+              {
+                "concept": "li",
+                "support": "none",
+                "words": [
+                  "着凉"
+                ]
+              },
+              {
+                "concept": "rides",
+                "support": "none",
+                "words": [
+                  "除"
+                ]
+              },
+              {
+                "concept": "happily",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "three",
+                "support": "supported",
+                "words": [
+                  "三"
+                ]
+              },
+              {
+                "concept": "become",
+                "support": "supported",
+                "words": [
+                  "发现",
+                  "变"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "back",
+                "support": "supported",
+                "words": [
+                  "后面",
+                  "回来",
+                  "回去"
+                ]
+              },
+              {
+                "concept": "borrow",
+                "support": "supported",
+                "words": [
+                  "借"
+                ]
+              },
+              {
+                "concept": "tools",
+                "support": "supported",
+                "words": [
+                  "笔"
+                ]
+              },
+              {
+                "concept": "repair",
+                "support": "none",
+                "words": [
+                  "修理",
+                  "补",
+                  "修复"
+                ]
+              },
+              {
+                "concept": "successful",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "propose",
+                "support": "none",
+                "words": [
+                  "建议",
+                  "提出",
+                  "求婚"
+                ]
+              },
+              {
+                "concept": "future",
+                "support": "none",
+                "words": [
+                  "将来",
+                  "未来",
+                  "前途"
+                ]
+              },
+              {
+                "concept": "conditional",
+                "support": "supported",
+                "words": [
+                  "的话"
+                ]
+              },
+              {
+                "concept": "offer",
+                "support": "none",
+                "words": [
+                  "提供",
+                  "应聘",
+                  "出售"
+                ]
+              }
+            ],
+            "coreMissing": [
+              "fixed"
+            ],
+            "supportingMissing": [
+              "li",
+              "rides"
+            ],
+            "incidentalMissing": [
+              "repair",
+              "propose",
+              "future",
+              "offer"
+            ]
+          }
+        ],
+        "highBeats": [
+          5,
+          6
+        ],
+        "blocking": [
+          "li",
+          "fixes",
+          "metal",
+          "links",
+          "fixed",
+          "rides"
+        ]
+      }
+    },
+    {
+      "source": "data/story-candidates/blueprint-smoke-2/blueprint-smoke-2-L3-001-blueprint.json",
+      "manifestId": "blueprint-smoke-2-L3-001",
+      "problem": "Li Ming wants to help his struggling new neighbor, but doesn't know if he should or how.",
+      "beats": [
+        {
+          "id": 1,
+          "what": "Li Ming comes home from work and hears a thud."
+        },
+        {
+          "id": 2,
+          "what": "Li Ming opens his door and sees a woman on the floor with a box."
+        },
+        {
+          "id": 3,
+          "what": "Li Ming asks if she is okay; she says she is tired and needs aid."
+        },
+        {
+          "id": 4,
+          "what": "Li Ming picks up the box. He realizes they don't know each other well."
+        },
+        {
+          "id": 5,
+          "what": "He asks if there is a man in the house to help, showing concern."
+        },
+        {
+          "id": 6,
+          "what": "She smiles and thanks him. He feels good about helping a neighbor."
+        }
+      ],
+      "report": {
+        "version": "fab9-risk@1",
+        "risk": "MEDIUM",
+        "beats": [
+          {
+            "beat": 1,
+            "risk": "MEDIUM",
+            "reason": "the central concept \"li\" has no in-level vocabulary, but the rest of the beat does",
+            "core": [
+              {
+                "concept": "li",
+                "support": "none",
+                "words": [
+                  "着凉"
+                ]
+              },
+              {
+                "concept": "ming",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "work",
+                "support": "supported",
+                "words": [
+                  "上班",
+                  "下班",
+                  "工作",
+                  "努力"
+                ]
+              },
+              {
+                "concept": "hears",
+                "support": "supported",
+                "words": [
+                  "听说"
+                ]
+              },
+              {
+                "concept": "thud",
+                "support": "notLexical",
+                "words": []
+              }
+            ],
+            "supporting": [],
+            "incidental": [
+              {
+                "concept": "story",
+                "support": "supported",
+                "words": [
+                  "房子"
+                ]
+              },
+              {
+                "concept": "opens",
+                "support": "supported",
+                "words": [
+                  "开",
+                  "打开",
+                  "开花"
+                ]
+              }
+            ],
+            "coreMissing": [
+              "li"
+            ],
+            "supportingMissing": [],
+            "incidentalMissing": []
+          },
+          {
+            "beat": 2,
+            "risk": "MEDIUM",
+            "reason": "the central concept \"li\" has no in-level vocabulary, but the rest of the beat does",
+            "core": [
+              {
+                "concept": "li",
+                "support": "none",
+                "words": [
+                  "着凉"
+                ]
+              },
+              {
+                "concept": "ming",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "opens",
+                "support": "supported",
+                "words": [
+                  "开",
+                  "打开",
+                  "开花"
+                ]
+              },
+              {
+                "concept": "door",
+                "support": "supported",
+                "words": [
+                  "门",
+                  "邻居"
+                ]
+              },
+              {
+                "concept": "woman",
+                "support": "supported",
+                "words": [
+                  "女人",
+                  "老人"
+                ]
+              },
+              {
+                "concept": "floor",
+                "support": "supported",
+                "words": [
+                  "楼"
+                ]
+              },
+              {
+                "concept": "box",
+                "support": "supported",
+                "words": [
+                  "邮箱"
+                ]
+              }
+            ],
+            "supporting": [],
+            "incidental": [
+              {
+                "concept": "heard",
+                "support": "weak",
+                "words": [
+                  "听见",
+                  "听说",
+                  "难听"
+                ]
+              },
+              {
+                "concept": "sound",
+                "support": "supported",
+                "words": [
+                  "声音"
+                ]
+              },
+              {
+                "concept": "see",
+                "support": "supported",
+                "words": [
+                  "看",
+                  "见",
+                  "看见",
+                  "看病"
+                ]
+              },
+              {
+                "concept": "happened",
+                "support": "supported",
+                "words": [
+                  "发生"
+                ]
+              },
+              {
+                "concept": "identify",
+                "support": "none",
+                "words": [
+                  "鉴定",
+                  "识别"
+                ]
+              },
+              {
+                "concept": "seeing",
+                "support": "supported",
+                "words": [
+                  "认得"
+                ]
+              }
+            ],
+            "coreMissing": [
+              "li"
+            ],
+            "supportingMissing": [],
+            "incidentalMissing": [
+              "identify"
+            ]
+          },
+          {
+            "beat": 3,
+            "risk": "MEDIUM",
+            "reason": "the central concept \"li\" has no in-level vocabulary, but the rest of the beat does",
+            "core": [
+              {
+                "concept": "li",
+                "support": "none",
+                "words": [
+                  "着凉"
+                ]
+              },
+              {
+                "concept": "ming",
+                "support": "notLexical",
+                "words": []
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "tired",
+                "support": "supported",
+                "words": [
+                  "累"
+                ]
+              },
+              {
+                "concept": "aid",
+                "support": "supported",
+                "words": [
+                  "帮助"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "okay",
+                "support": "supported",
+                "words": [
+                  "没关系"
+                ]
+              },
+              {
+                "concept": "saw",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "struggling",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "explain",
+                "support": "supported",
+                "words": [
+                  "讲"
+                ]
+              },
+              {
+                "concept": "vulnerability",
+                "support": "weak",
+                "words": [
+                  "才"
+                ]
+              },
+              {
+                "concept": "offer",
+                "support": "none",
+                "words": [
+                  "提供",
+                  "应聘",
+                  "出售"
+                ]
+              },
+              {
+                "concept": "support",
+                "support": "none",
+                "words": [
+                  "支持",
+                  "架",
+                  "承受"
+                ]
+              }
+            ],
+            "coreMissing": [
+              "li"
+            ],
+            "supportingMissing": [],
+            "incidentalMissing": [
+              "offer",
+              "support"
+            ]
+          },
+          {
+            "beat": 4,
+            "risk": "MEDIUM",
+            "reason": "the central concept \"li\" has no in-level vocabulary, but the rest of the beat does",
+            "core": [
+              {
+                "concept": "li",
+                "support": "none",
+                "words": [
+                  "着凉"
+                ]
+              },
+              {
+                "concept": "ming",
+                "support": "notLexical",
+                "words": []
+              },
+              {
+                "concept": "picks",
+                "support": "supported",
+                "words": [
+                  "选择",
+                  "选"
+                ]
+              },
+              {
+                "concept": "box",
+                "support": "supported",
+                "words": [
+                  "邮箱"
+                ]
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "don",
+                "support": "supported",
+                "words": [
+                  "不要",
+                  "别"
+                ]
+              },
+              {
+                "concept": "know",
+                "support": "supported",
+                "words": [
+                  "知道",
+                  "认识",
+                  "兴趣",
+                  "懂得"
+                ]
+              },
+              {
+                "concept": "each",
+                "support": "supported",
+                "words": [
+                  "每",
+                  "见面"
+                ]
+              },
+              {
+                "concept": "other",
+                "support": "supported",
+                "words": [
+                  "其他",
+                  "别人",
+                  "别的",
+                  "见面"
+                ]
+              },
+              {
+                "concept": "well",
+                "support": "supported",
+                "words": [
+                  "有名"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "assistance",
+                "support": "supported",
+                "words": [
+                  "帮助"
+                ]
+              },
+              {
+                "concept": "contextualize",
+                "support": "weak",
+                "words": [
+                  "课文"
+                ]
+              },
+              {
+                "concept": "action",
+                "support": "supported",
+                "words": [
+                  "了",
+                  "着"
+                ]
+              }
+            ],
+            "coreMissing": [
+              "li"
+            ],
+            "supportingMissing": [],
+            "incidentalMissing": []
+          },
+          {
+            "beat": 5,
+            "risk": "MEDIUM",
+            "reason": "detail without in-level vocabulary (ensure, support, check), but the beat's own event can be told",
+            "core": [],
+            "supporting": [],
+            "incidental": [
+              {
+                "concept": "man",
+                "support": "supported",
+                "words": [
+                  "男人",
+                  "老人"
+                ]
+              },
+              {
+                "concept": "help",
+                "support": "supported",
+                "words": [
+                  "帮",
+                  "帮忙",
+                  "把",
+                  "帮助"
+                ]
+              },
+              {
+                "concept": "showing",
+                "support": "supported",
+                "words": [
+                  "发",
+                  "表演",
+                  "照顾"
+                ]
+              },
+              {
+                "concept": "concern",
+                "support": "supported",
+                "words": [
+                  "关于",
+                  "关心"
+                ]
+              },
+              {
+                "concept": "box",
+                "support": "supported",
+                "words": [
+                  "邮箱"
+                ]
+              },
+              {
+                "concept": "heavy",
+                "support": "supported",
+                "words": [
+                  "搬"
+                ]
+              },
+              {
+                "concept": "ensure",
+                "support": "none",
+                "words": [
+                  "确保",
+                  "保安",
+                  "保障"
+                ]
+              },
+              {
+                "concept": "long",
+                "support": "supported",
+                "words": [
+                  "长",
+                  "条",
+                  "只要",
+                  "久"
+                ]
+              },
+              {
+                "concept": "term",
+                "support": "supported",
+                "words": [
+                  "词",
+                  "学期"
+                ]
+              },
+              {
+                "concept": "support",
+                "support": "none",
+                "words": [
+                  "支持",
+                  "架",
+                  "承受"
+                ]
+              },
+              {
+                "concept": "check",
+                "support": "none",
+                "words": [
+                  "安检",
+                  "报到",
+                  "查询"
+                ]
+              },
+              {
+                "concept": "other",
+                "support": "supported",
+                "words": [
+                  "其他",
+                  "别人",
+                  "别的",
+                  "见面"
+                ]
+              },
+              {
+                "concept": "sources",
+                "support": "notLexical",
+                "words": []
+              }
+            ],
+            "coreMissing": [],
+            "supportingMissing": [],
+            "incidentalMissing": [
+              "ensure",
+              "support",
+              "check"
+            ]
+          },
+          {
+            "beat": 6,
+            "risk": "MEDIUM",
+            "reason": "detail without in-level vocabulary (task, social), but the beat's own event can be told",
+            "core": [
+              {
+                "concept": "smiles",
+                "support": "weak",
+                "words": [
+                  "笑"
+                ]
+              },
+              {
+                "concept": "thanks",
+                "support": "supported",
+                "words": [
+                  "谢谢"
+                ]
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "helping",
+                "support": "supported",
+                "words": [
+                  "帮",
+                  "帮忙",
+                  "把",
+                  "帮助"
+                ]
+              },
+              {
+                "concept": "neighbor",
+                "support": "supported",
+                "words": [
+                  "附近",
+                  "邻居"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "task",
+                "support": "none",
+                "words": [
+                  "任务",
+                  "动手",
+                  "创业"
+                ]
+              },
+              {
+                "concept": "complete",
+                "support": "supported",
+                "words": [
+                  "完成"
+                ]
+              },
+              {
+                "concept": "social",
+                "support": "none",
+                "words": [
+                  "成分",
+                  "风俗",
+                  "面子"
+                ]
+              },
+              {
+                "concept": "interaction",
+                "support": "weak",
+                "words": [
+                  "了",
+                  "着"
+                ]
+              },
+              {
+                "concept": "resolved",
+                "support": "weak",
+                "words": [
+                  "决定",
+                  "解决"
+                ]
+              }
+            ],
+            "coreMissing": [],
+            "supportingMissing": [],
+            "incidentalMissing": [
+              "task",
+              "social"
+            ]
+          }
+        ],
+        "highBeats": [],
+        "blocking": []
+      }
+    }
+  ]
+}
