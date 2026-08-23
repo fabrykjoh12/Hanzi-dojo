@@ -37,6 +37,7 @@ import {
 } from './storyBlueprint.mjs'
 import { realizeByBeat, BEAT_LIMITS, BEAT_QUALITY, BEAT_VERSION } from './storyBeats.mjs'
 import { buildLexicalScaffold, applyScaffold, shapeChanges, SCAFFOLD_VERSION } from './storyLexicalScaffold.mjs'
+import { assessShapeRisk, RISK, RISK_VERSION } from './storyLexicalRisk.mjs'
 import { judgePrompt, parseJudgment, JUDGE_VERSION } from './storyJudge.mjs'
 import { preRepairDecision, DRAFT_QUALITY } from './storyDraftQuality.mjs'
 import { planRepair, executeRepairPlan, LINE_QUALITY, REPAIR_PLANNER_VERSION } from './storyRepairPlanner.mjs'
@@ -75,6 +76,9 @@ const shapeFromPath = arg('shape-from', null)
 // A3.1 pilot: resume a stored run's scaffold, keeping every piece it already
 // validated and retrying only the one that failed.
 const resumeScaffoldPath = arg('resume-scaffold', null)
+// A3.2: report the lexical-risk preflight for stored shapes and exit. No model
+// calls at all — this is the regression check for the risk classifier.
+const preflightOnly = arg('preflight-only', null)
 
 if (!inputPath || !outDir || !writerSpec) {
   console.error('Required: --input <dump> --out <dir> --writer <p:m>  [--planner-b <p:m>] [--count 3] [--lines 28]')
@@ -97,6 +101,32 @@ const provider = (spec, effort) => {
 }
 const writer = provider(writerSpec, writerEffort)
 const plannerB = plannerBSpec ? provider(plannerBSpec, plannerBEffort) : null
+
+if (preflightOnly) {
+  for (const path of preflightOnly.split(',').map(x => x.trim()).filter(Boolean)) {
+    const stored = JSON.parse(readFileSync(path, 'utf8'))
+    const entry = (stored.blueprintRun.blueprints || []).find(x => x.acceptable) || (stored.blueprintRun.blueprints || []).find(x => x.blueprint)
+    if (!entry) { console.log(path + ': no stored blueprint\n'); continue }
+    const report = assessShapeRisk({ blueprint: entry.blueprint, manifest: stored.manifest, vocabMap })
+    console.log('=' .repeat(72))
+    console.log(path)
+    console.log('problem: ' + entry.blueprint.problem)
+    console.log('SHAPE RISK: ' + report.risk + (report.highBeats.length ? '  (HIGH beats: ' + report.highBeats.join(', ') + ')' : ''))
+    for (const b of report.beats) {
+      const beat = entry.blueprint.beats.find(x => x.id === b.beat)
+      console.log('\n  beat ' + b.beat + ' — ' + b.risk)
+      console.log('    ' + (beat.what || '').slice(0, 150))
+      console.log('    reason: ' + b.reason)
+      const fmt = (list) => list.map(c => c.concept + '=' + c.support + (c.words.length ? '(' + c.words.slice(0, 2).join('/') + ')' : '')).join(' ')
+      if (b.core.length) console.log('    core:        ' + fmt(b.core))
+      if (b.supporting.length) console.log('    supporting:  ' + fmt(b.supporting))
+      if (b.incidental.length) console.log('    incidental:  ' + fmt(b.incidental))
+    }
+    if (report.blocking.length) console.log('\n  blocking concepts for a replan: ' + report.blocking.join(', '))
+    console.log('')
+  }
+  process.exit(0)
+}
 
 // Either reuse a stored SHAPE (A3), resume one stored plan (retired path), or
 // compose fresh manifests.
@@ -182,7 +212,7 @@ for (const job of jobs) {
   console.log('  cast: ' + manifest.speakers.join('、') + ' | exactly ' + totalLines + ' lines')
   console.log('='.repeat(72))
 
-  const record = { manifestId: manifest.id, manifest, required, resume: null, scaffold: null, blueprints: [], selection: null, draft: null, validation: null, preRepairCritique: null, decision: null, repair: null, after: null, finalCritique: null, final: null }
+  const record = { manifestId: manifest.id, manifest, required, resume: null, risk: null, replanned: Boolean(job.replanned), scaffold: null, blueprints: [], selection: null, draft: null, validation: null, preRepairCritique: null, decision: null, repair: null, after: null, finalCritique: null, final: null }
 
   // ── 1. Blueprints: planning only ──────────────────────────────────────────
   // Qwen plans. gpt-oss was benchmarked over two pilots (4/6 valid vs 1/6, and
@@ -247,7 +277,14 @@ for (const job of jobs) {
         // A3: the shape planner writes NO Chinese, so it is validated
         // structurally — no vocabMap. Every piece of Chinese comes later,
         // from the lexical scaffold stage, one small piece at a time.
-        rawText = await writer.send({ prompt: storyShapePrompt({ manifest, meanings, totalLines, targets: required, feedback }), maxTokens: 2600 })
+        const avoidNote = job.avoidConcepts && job.avoidConcepts.length
+          ? ['The previous plan was structurally valid but too lexically specific for this level. Avoid scenes whose central action needs concepts such as: '
+            + job.avoidConcepts.join(', ') + '. Choose a simpler everyday situation that can be told with common words.']
+          : null
+        rawText = await writer.send({
+          prompt: storyShapePrompt({ manifest, meanings, totalLines, targets: required, feedback: feedback || avoidNote }),
+          maxTokens: 2600,
+        })
         bp = parseBlueprint(rawText)
       } catch (err) { error = String(err.message || err).slice(0, 160); bp = null }
       check = bp
@@ -322,6 +359,30 @@ for (const job of jobs) {
     results.push(record)
     continue
   }
+  // ── A3.2 preflight: can this shape be told at this level at all? ─────────
+  const risk = assessShapeRisk({ blueprint: chosen.blueprint, manifest, vocabMap })
+  console.log('\nLEXICAL RISK PREFLIGHT (' + RISK_VERSION + '): ' + risk.risk)
+  for (const b of risk.beats) console.log('  beat ' + b.beat + ' — ' + b.risk + ': ' + b.reason)
+  record.risk = risk
+  if (risk.risk === RISK.HIGH) {
+    console.log('\nSHAPE_LEXICAL_FEASIBILITY_FAILURE — beats ' + risk.highBeats.join(', ') + ' cannot be told at this level')
+    console.log('  blocking concepts: ' + risk.blocking.join(', '))
+    record.selection = { ...record.selection, riskCode: 'SHAPE_LEXICAL_FEASIBILITY_FAILURE', blocking: risk.blocking }
+    if (job.replanned) {
+      console.log('\nSHAPE_PLANNER_LEXICAL_BIAS — a second shape from the same planner is HIGH risk too; not regenerating again.')
+      record.selection.riskCode = 'SHAPE_PLANNER_LEXICAL_BIAS'
+      results.push(record)
+      continue
+    }
+    // Exactly one fresh shape, told in English what it must avoid.
+    jobs.push({
+      manifest, required, shape: null, resume: null, replanned: true,
+      avoidConcepts: risk.blocking,
+    })
+    results.push(record)
+    continue
+  }
+
   // ── A3 lexical scaffold: the Chinese, in the smallest pieces, each gated ──
   console.log('\nLEXICAL SCAFFOLD (' + SCAFFOLD_VERSION + ') — title, then per beat: one sentence per target, then that beat\'s words')
   const scaffold = await buildLexicalScaffold({
@@ -549,6 +610,8 @@ for (const r of results) {
       required: r.required,
       thresholds: { blueprint: BLUEPRINT_QUALITY, draft: DRAFT_QUALITY, line: LINE_QUALITY },
       resume: r.resume || null,
+      risk: r.risk || null,
+      replanned: r.replanned || false,
       scaffold: r.scaffold || null,
       blueprints: r.blueprints,
       judgeRaw: r.judgeRaw || null,

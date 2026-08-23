@@ -239,7 +239,7 @@ jobs:
           case "$BROAD_STAGE" in (self-condense|editor) ;; (*) echo "bad broad_stage"; exit 1;; esac
           MANIFEST_FLAG=""
           if [ -n "$MANIFEST" ]; then
-            case "$MANIFEST" in (*[!A-Za-z0-9._/-]*|/*|*..*) echo "bad manifest_path"; exit 1;; esac
+                case "$MANIFEST" in (*[!A-Za-z0-9._/,-]*|/*|*..*) echo "bad manifest_path"; exit 1;; esac
             [ -f "$MANIFEST" ] || { echo "manifest not found: $MANIFEST"; exit 1; }
             MANIFEST_FLAG="--manifest $MANIFEST"
           fi
@@ -476,10 +476,14 @@ jobs:
           case "$MANIFEST" in
             none|fresh|-|"") ;;
             *)
-              case "$MANIFEST" in (*[!A-Za-z0-9._/-]*|/*|*..*) echo "bad manifest_path"; exit 1;; esac
-              if [ ! -f "$MANIFEST" ]; then echo "artifact not found: $MANIFEST"; exit 1; fi
+              # a comma-separated list is allowed for the preflight stage
+              case "$MANIFEST" in (*[!A-Za-z0-9._/,-]*|/*|*..*) echo "bad manifest_path"; exit 1;; esac
+              for f in $(echo "$MANIFEST" | tr ',' ' '); do
+                if [ ! -f "$f" ]; then echo "artifact not found: $f"; exit 1; fi
+              done
               case "$STAGE" in
                 (scaffold) SRC="--resume-scaffold $MANIFEST";;
+                (preflight) SRC="--preflight-only $MANIFEST";;
                 (*) SRC="--shape-from $MANIFEST";;
               esac
             ;;
