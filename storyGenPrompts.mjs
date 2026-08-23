@@ -680,7 +680,7 @@ export function targetSketchPrompt({ manifest, word, meaning, beat, entry, pool 
 }
 
 // One beat's toolkit. Words, not sentences.
-export function beatAnchorsPrompt({ manifest, beat, sketches = [], pool = null, feedback = null }) {
+export function beatAnchorsPrompt({ manifest, beat, sketches = [], pool = null, candidates = null, feedback = null }) {
   const name = levelName(manifest)
   return 'List the Chinese words needed to write ONE short passage of a ' + name + ' graded reader.\n\n'
     + (feedback ? 'YOUR PREVIOUS LIST WAS REJECTED:\n' + feedback.map(f => '- ' + f).join('\n') + '\n\n' : '')
@@ -691,7 +691,15 @@ export function beatAnchorsPrompt({ manifest, beat, sketches = [], pool = null, 
     + '- 3 to 6 words or short phrases. WORDS, not sentences.\n'
     + '- Every one must be a word a ' + name + ' learner already knows. A word the reader does not know cannot be in the list, however much the scene seems to need it — pick a simpler way to say it.\n'
     + '- No Latin letters. No names.\n'
-    + (pool ? '- Words the reader knows (a sample):\n  ' + poolForPrompt(pool, 140) + '\n' : '')
+    // A3.1: the words the reader has that actually fit THIS beat, found in the
+    // vocabulary by code. a3-fresh-2 offered 黑 and then 亮 while 晚上, 晚, 天
+    // and 时间 sat unused — the model can obey a vocabulary, it just cannot
+    // search one. Suggestions only: everything is still validated.
+    + (candidates && candidates.length
+      ? '\nALLOWED RELEVANT VOCABULARY — words the reader knows that suit this passage. Prefer these where they say what the passage needs. They are suggestions, not a closed list: any other word is fine if it is also one a ' + name + ' learner knows.\n'
+        + candidates.map(c => '  ' + c.word + ' — ' + c.meaning).join('\n') + '\n'
+      : '')
+    + (pool ? '- Words the reader knows (a wider sample):\n  ' + poolForPrompt(pool, 140) + '\n' : '')
     + '\nOutput JSON only: {"anchors": ["<word>", "<word>", …]}'
 }
 

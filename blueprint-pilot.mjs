@@ -72,6 +72,9 @@ const resumePlanPath = arg('resume-plan', null)
 // and run the lexical scaffold stage against it. Isolates lexical generation
 // from planning variance, which is the whole point of the split.
 const shapeFromPath = arg('shape-from', null)
+// A3.1 pilot: resume a stored run's scaffold, keeping every piece it already
+// validated and retrying only the one that failed.
+const resumeScaffoldPath = arg('resume-scaffold', null)
 
 if (!inputPath || !outDir || !writerSpec) {
   console.error('Required: --input <dump> --out <dir> --writer <p:m>  [--planner-b <p:m>] [--count 3] [--lines 28]')
@@ -98,6 +101,31 @@ const plannerB = plannerBSpec ? provider(plannerBSpec, plannerBEffort) : null
 // Either reuse a stored SHAPE (A3), resume one stored plan (retired path), or
 // compose fresh manifests.
 const jobs = []
+if (resumeScaffoldPath) {
+  const stored = JSON.parse(readFileSync(resumeScaffoldPath, 'utf8'))
+  const run = stored.blueprintRun
+  const entry = (run.blueprints || []).find(x => x.acceptable) || (run.blueprints || []).find(x => x.blueprint)
+  if (!entry) { console.error('no usable blueprint in ' + resumeScaffoldPath); process.exit(1) }
+  const { chineseTitle, ...shape } = entry.blueprint
+  shape.beats = (shape.beats || []).map(b => { const { chineseLexicalAnchors, ...rest } = b; return rest })
+  shape.targetPlan = (shape.targetPlan || []).map(t => { const { usageSketch, ...rest } = t; return rest })
+  // Everything the stored scaffold accepted, so the rerun spends calls only
+  // on the piece that failed.
+  const prior = run.scaffold || {}
+  const accepted = { title: prior.title || null, beats: [] }
+  const byBeat = new Map()
+  for (const l of (prior.log || [])) {
+    if (!l.ok || !l.beat) continue
+    if (!byBeat.has(l.beat)) byBeat.set(l.beat, { beat: l.beat, anchors: [], sketches: [] })
+    if (l.piece === 'sketch') byBeat.get(l.beat).sketches.push({ word: l.word, usageSketch: l.output })
+    if (l.piece === 'anchors') byBeat.get(l.beat).anchors = l.output
+  }
+  accepted.beats = [...byBeat.values()].sort((a, b) => a.beat - b.beat)
+  jobs.push({ manifest: stored.manifest, required: run.required, shape, resume: null, resumeScaffold: accepted })
+  console.log('A3.1: resuming the stored scaffold from ' + resumeScaffoldPath)
+  console.log('  keeping title ' + JSON.stringify(accepted.title) + ' and '
+    + accepted.beats.map(b => 'beat ' + b.beat + ' (' + b.sketches.length + ' sketch(es), ' + (b.anchors || []).length + ' anchors)').join(', ') + '\n')
+}
 if (shapeFromPath) {
   const stored = JSON.parse(readFileSync(shapeFromPath, 'utf8'))
   const entry = (stored.blueprintRun.blueprints || []).find(x => x.blueprint)
@@ -301,10 +329,17 @@ for (const job of jobs) {
     buildTitlePrompt: titlePrompt, parseTitle,
     buildSketchPrompt: targetSketchPrompt, parseSketch,
     buildAnchorsPrompt: beatAnchorsPrompt, parseAnchors,
+    resume: job.resumeScaffold || null,
   })
   for (const l of scaffold.log) {
     console.log('  ' + l.piece + (l.beat ? ' beat ' + l.beat : '') + (l.word ? ' [' + l.word + ']' : '')
-      + ' attempt ' + l.attempt + ' → ' + (l.ok ? 'ACCEPTED' : 'rejected'))
+      + (l.reused ? ' — reused from the stored run' : ' attempt ' + l.attempt) + ' → ' + (l.ok ? 'ACCEPTED' : 'rejected'))
+    if (l.retrieval) {
+      console.log('      retrieval query: ' + l.retrieval.tokens.slice(0, 18).join(' '))
+      console.log('      candidates: ' + (l.retrieval.candidates.length
+        ? l.retrieval.candidates.map(c => c.word + ' (' + c.meaning + ', ' + c.score + ')').join(' · ')
+        : '(none relevant)'))
+    }
     console.log('      ' + (Array.isArray(l.output) ? l.output.join('、') : (l.output || '(nothing usable)')))
     if (!l.ok) for (const p2 of l.problems) console.log('      x ' + p2)
   }

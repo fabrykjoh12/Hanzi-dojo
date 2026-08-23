@@ -449,7 +449,8 @@ jobs:
           COUNT: ${{ inputs.count }}
           LEVEL: ${{ inputs.level }}
           LINES: ${{ inputs.writer_max_tokens }}   # reused: exact story length for this pilot
-          MANIFEST: ${{ inputs.manifest_path }}    # stored artifact to resume, or "none" to plan fresh
+          MANIFEST: ${{ inputs.manifest_path }}    # stored artifact to reuse, or "none" to plan fresh
+          STAGE: ${{ inputs.stage_name }}          # "scaffold" resumes a stored scaffold; anything else reuses the shape
         run: |
           set -e
           case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
@@ -477,7 +478,10 @@ jobs:
             *)
               case "$MANIFEST" in (*[!A-Za-z0-9._/-]*|/*|*..*) echo "bad manifest_path"; exit 1;; esac
               if [ ! -f "$MANIFEST" ]; then echo "artifact not found: $MANIFEST"; exit 1; fi
-              SRC="--shape-from $MANIFEST"
+              case "$STAGE" in
+                (scaffold) SRC="--resume-scaffold $MANIFEST";;
+                (*) SRC="--shape-from $MANIFEST";;
+              esac
             ;;
           esac
           node blueprint-pilot.mjs \

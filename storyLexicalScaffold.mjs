@@ -29,6 +29,7 @@
 
 import { checkAnchor, checkUsageSketch, hasLatin } from './storyBlueprint.mjs'
 import { analyzeStory } from './storyCorpusCalibration.mjs'
+import { retrieveCandidates } from './storyLexicalRetrieval.mjs'
 
 export const SCAFFOLD_VERSION = 'fab9-scaffold@1'
 
@@ -107,13 +108,19 @@ export async function buildLexicalScaffold({
   parseAnchors,
   attempts = 2,               // one try plus one bounded retry, per piece
   maxTokens = 400,
+  retrieve = retrieveCandidates,   // A3.1; injectable for specs
+  resume = null,                   // { title, beats: [{beat, anchors, sketches}] }
 } = {}) {
   const log = []
   const record = (entry) => { log.push(entry); return entry }
 
   // ── Title ────────────────────────────────────────────────────────────────
-  let title = null
+  // A resumed run keeps every piece a previous run already validated: the
+  // point of resuming is to retry the ONE piece that failed, not to re-roll
+  // work that passed.
+  let title = (resume && resume.title) || null
   let feedback = null
+  if (title) record({ piece: 'title', attempt: 0, output: title, ok: true, problems: [], reused: true })
   for (let a = 1; a <= attempts && !title; a += 1) {
     let out = null
     let error = null
@@ -129,10 +136,21 @@ export async function buildLexicalScaffold({
 
   // ── Beat by beat: targets first, then the beat's own words ───────────────
   const beats = []
+  const done = new Map(((resume && resume.beats) || []).map(b => [b.beat, b]))
   for (const beat of blueprint.beats) {
     const entries = (blueprint.targetPlan || []).filter(t => Number(t.beat) === beat.id)
-    const sketches = []
+    const already = done.get(beat.id)
+    if (already && already.anchors && already.anchors.length) {
+      record({ piece: 'beat', beat: beat.id, attempt: 0, output: already.anchors, ok: true, problems: [], reused: true })
+      beats.push(already)
+      continue
+    }
+    const sketches = (already && already.sketches) || []
     for (const entry of entries) {
+      if (sketches.some(s2 => s2.word === entry.word)) {
+        record({ piece: 'sketch', beat: beat.id, word: entry.word, attempt: 0, output: sketches.find(s2 => s2.word === entry.word).usageSketch, ok: true, problems: [], reused: true })
+        continue
+      }
       let sketch = null
       let fb = null
       for (let a = 1; a <= attempts && !sketch; a += 1) {
@@ -166,13 +184,19 @@ export async function buildLexicalScaffold({
 
     let anchors = null
     let fb = null
+    let rejectedWords = []
     for (let a = 1; a <= attempts && !anchors; a += 1) {
+      // A3.1: rank the reader's own vocabulary against this beat's English
+      // metadata. On a retry the rejected words join the query through their
+      // glosses, so the search leans toward the slot that failed — without
+      // anyone writing down what should replace what.
+      const retrieved = retrieve({ manifest, vocabMap, beat, entries, avoid: rejectedWords, exclude: sketches.flatMap(s2 => []) })
       let out = null
       let error = null
       try {
         out = parseAnchors(await writer.send({
           kind: 'anchors',
-          prompt: buildAnchorsPrompt({ manifest, beat, sketches, pool, feedback: fb }),
+          prompt: buildAnchorsPrompt({ manifest, beat, sketches, pool, candidates: retrieved.candidates, feedback: fb }),
           maxTokens,
         }))
       } catch (err) { error = String((err && err.message) || err).slice(0, 160) }
@@ -185,9 +209,16 @@ export async function buildLexicalScaffold({
           if (!c.ok) problems.push('"' + w + '": ' + c.reason)
         }
       }
-      record({ piece: 'anchors', beat: beat.id, attempt: a, output: out, ok: problems.length === 0, problems })
+      record({
+        piece: 'anchors', beat: beat.id, attempt: a, output: out, ok: problems.length === 0, problems,
+        retrieval: { query: retrieved.query.text, tokens: retrieved.query.tokens, candidates: retrieved.candidates },
+      })
       if (!problems.length) anchors = out
-      else fb = problems
+      else {
+        fb = problems
+        // The words the gate actually refused, for the next query.
+        rejectedWords = [...new Set([...rejectedWords, ...(out || []).filter(w => !checkAnchor(w, { manifest, vocabMap, cast: blueprint.cast || [] }).ok)])]
+      }
     }
     if (!anchors) {
       return {
