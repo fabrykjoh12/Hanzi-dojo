@@ -1,0 +1,793 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "a32-fresh-2",
+  "generatedAt": "2026-08-23T19:34:20.447Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "a32-fresh-2-L3-001",
+    "batchId": "a32-fresh-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "关系",
+      "女人",
+      "男人",
+      "帮助",
+      "需要"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "resume": null,
+    "risk": null,
+    "replanned": false,
+    "scaffold": null,
+    "blueprints": [
+      {
+        "label": "A",
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Neighbor's Request",
+          "setting": "A residential apartment building in Beijing, late afternoon on a Sunday.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "Xiao Hong needs Xiao Ming's help to move a heavy box, but Xiao Ming is not home.",
+          "incitingEvent": "Xiao Hong hears a noise from next door and goes to investigate, leading to a realization about her neighbor.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Sunday, 5:00 PM",
+              "where": "Xiao Hong's apartment hallway",
+              "what": "Xiao Hong hears loud thumping from the next apartment and stands outside the closed door.",
+              "because": "the story opens",
+              "arrivedHow": "",
+              "targets": [],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "Sunday, 5:05 PM",
+              "where": "Xiao Hong's apartment hallway",
+              "what": "Xiao Hong rings the bell several times but gets no answer. She feels worried because the noise stopped suddenly.",
+              "because": "the noise stopped, indicating a possible accident or urgent situation inside the silent apartment",
+              "arrivedHow": "",
+              "targets": [
+                "如果"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Sunday, 5:15 PM",
+              "where": "The building lobby",
+              "what": "Xiao Hong rushes downstairs to find a neighbor or security guard for help.",
+              "because": "she cannot enter Xiao Ming's apartment on her own and needs authority or assistance to open the door",
+              "arrivedHow": "walked through building doors to lobby",
+              "targets": [
+                "帮助",
+                "需要"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "Sunday, 5:20 PM",
+              "where": "The building lobby",
+              "what": "Xiao Hong sees Li Ming standing by the door, a familiar man who lives in the building.",
+              "because": "she went specifically to the lobby to find someone present",
+              "arrivedHow": "",
+              "targets": [
+                "男人"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 5,
+              "when": "Sunday, 5:25 PM",
+              "where": "The building lobby",
+              "what": "Xiao Hong realizes Li Ming's wife (a woman) is not here to recognize him, so she explains the situation about Xiao Ming.",
+              "because": "she needs to establish trust since the narrator/reader views Li Ming as a potential stranger until identified",
+              "arrivedHow": "",
+              "targets": [
+                "女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "Sunday, 5:30 PM",
+              "where": "Apartment hallway, second floor",
+              "what": "Li Ming agrees to help. He unlocks Xiao Ming's door with a spare key he happens to have. They find Xiao Ming simply stuck while moving a box. They help him out.",
+              "because": "Li Ming recognized the urgency and the friend in trouble, resolving the initial noise mystery",
+              "arrivedHow": "walked back up stairs with Xiao Hong",
+              "targets": [
+                "关系",
+                "必须"
+              ],
+              "lines": 4
+            }
+          ],
+          "resolution": "Xiao Ming is safe, and his friendship with Li Ming is strengthened by Li Ming stepping in to help when his wife was absent.",
+          "targetPlan": [
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "Xiao Hong is actively seeking an action to solve the problem of the locked door.",
+              "speaker": "小红",
+              "refersTo": "The act of opening the door.",
+              "intent": "To request aid from anyone present in the lobby."
+            },
+            {
+              "word": "需要",
+              "beat": 3,
+              "why": "Xiao Hong expresses her lack of ability to solve the problem alone.",
+              "speaker": "小红",
+              "refersTo": "Her own state of being unable to enter.",
+              "intent": "To justify her urgent presence in the lobby."
+            },
+            {
+              "word": "如果",
+              "beat": 2,
+              "why": "Xiao Hong speculates on the cause of the silence.",
+              "speaker": "小红 (internal/narrator)",
+              "refersTo": "The possibility of an accident.",
+              "intent": "To express fear/concern about Xiao Ming's condition."
+            },
+            {
+              "word": "男人",
+              "beat": 4,
+              "why": "Xiao Hong identifies the person in the lobby by gender before name recognition.",
+              "speaker": "Narrator / 小红",
+              "refersTo": "Li Ming.",
+              "intent": "To establish who is present in the scene."
+            },
+            {
+              "word": "女人",
+              "beat": 5,
+              "why": "Xiao Hong explains why Li Ming might be confused or alone (his wife is out).",
+              "speaker": "小红",
+              "refersTo": "Li Ming's wife.",
+              "intent": "To clarify the social context of why Li Ming doesn't immediately know what's happening."
+            },
+            {
+              "word": "关系",
+              "beat": 6,
+              "why": "The resolution highlights that neighbors should support each other.",
+              "speaker": "李明",
+              "refersTo": "The bond between friends/neighbors.",
+              "intent": "To express that helping friends is part of their relationship."
+            },
+            {
+              "word": "必须",
+              "beat": 6,
+              "why": "Li Ming decides action is mandatory given the situation.",
+              "speaker": "李明",
+              "refersTo": "The duty to check on the neighbor.",
+              "intent": "To show responsibility."
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "rendered": "TITLE CONCEPT: The Neighbor's Request\nSETTING: A residential apartment building in Beijing, late afternoon on a Sunday.\nCAST: 李明、小红\nCENTRAL PROBLEM: Xiao Hong needs Xiao Ming's help to move a heavy box, but Xiao Ming is not home.\nINCITING EVENT: Xiao Hong hears a noise from next door and goes to investigate, leading to a realization about her neighbor.\nBEATS:\n  1. [Sunday, 5:00 PM · Xiao Hong's apartment hallway]\n     WHAT CHANGES: Xiao Hong hears loud thumping from the next apartment and stands outside the closed door.\n  2. [Sunday, 5:05 PM · Xiao Hong's apartment hallway] · uses 如果\n     WHAT CHANGES: Xiao Hong rings the bell several times but gets no answer. She feels worried because the noise stopped suddenly.\n     BECAUSE: the noise stopped, indicating a possible accident or urgent situation inside the silent apartment\n  3. [Sunday, 5:15 PM · The building lobby] · uses 帮助、需要\n     WHAT CHANGES: Xiao Hong rushes downstairs to find a neighbor or security guard for help.\n     BECAUSE: she cannot enter Xiao Ming's apartment on her own and needs authority or assistance to open the door\n     GOT THERE BY: walked through building doors to lobby\n  4. [Sunday, 5:20 PM · The building lobby] · uses 男人\n     WHAT CHANGES: Xiao Hong sees Li Ming standing by the door, a familiar man who lives in the building.\n     BECAUSE: she went specifically to the lobby to find someone present\n  5. [Sunday, 5:25 PM · The building lobby] · uses 女人\n     WHAT CHANGES: Xiao Hong realizes Li Ming's wife (a woman) is not here to recognize him, so she explains the situation about Xiao Ming.\n     BECAUSE: she needs to establish trust since the narrator/reader views Li Ming as a potential stranger until identified\n  6. [Sunday, 5:30 PM · Apartment hallway, second floor] · uses 关系、必须\n     WHAT CHANGES: Li Ming agrees to help. He unlocks Xiao Ming's door with a spare key he happens to have. They find Xiao Ming simply stuck while moving a box. They help him out.\n     BECAUSE: Li Ming recognized the urgency and the friend in trouble, resolving the initial noise mystery\n     GOT THERE BY: walked back up stairs with Xiao Hong\nRESOLUTION: Xiao Ming is safe, and his friendship with Li Ming is strengthened by Li Ming stepping in to help when his wife was absent.\nTARGET WORDS:\n  帮助 → beat 3: Xiao Hong is actively seeking an action to solve the problem of the locked door.\n  需要 → beat 3: Xiao Hong expresses her lack of ability to solve the problem alone.\n  如果 → beat 2: Xiao Hong speculates on the cause of the silence.\n  男人 → beat 4: Xiao Hong identifies the person in the lobby by gender before name recognition.\n  女人 → beat 5: Xiao Hong explains why Li Ming might be confused or alone (his wife is out).\n  关系 → beat 6: The resolution highlights that neighbors should support each other.\n  必须 → beat 6: Li Ming decides action is mandatory given the situation.",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "帮助": 3,
+            "需要": 3,
+            "如果": 2,
+            "男人": 4,
+            "女人": 5,
+            "关系": 6,
+            "必须": 6
+          }
+        },
+        "score": {
+          "label": "A",
+          "contradiction": true,
+          "overall": 4,
+          "reason": "Identity confusion (Li Ming vs Xiao Ming) and contrived spare key plot hole undermine logic and simplicity.",
+          "causal": 6,
+          "chronology": 8,
+          "plausibility": 3,
+          "simplicity": 5,
+          "targetFit": 7,
+          "suitability": 6
+        },
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Neighbor's Package",
+          "setting": "A residential apartment building hallway, late afternoon on a sunny Friday.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "A delivery is waiting at a neighbor's door, but the neighbor is not home and does not answer the phone.",
+          "incitingEvent": "李明 finds a package at the neighbor's door just as the neighbor is supposed to arrive.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Late afternoon",
+              "where": "Hallway outside the neighbor's apartment",
+              "what": "李明 sees a large box on the floor but the door is closed. He hears noise from behind the door.",
+              "because": "the story opens",
+              "arrivedHow": "N/A",
+              "targets": [
+                "女人",
+                "男人"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 2,
+              "when": "Immediately after",
+              "where": "Hallway",
+              "what": "李明 recognizes the voices inside are not the owner's. He realizes a stranger is in the apartment.",
+              "because": "he hears unfamiliar voices when he expected the neighbor",
+              "arrivedHow": "N/A",
+              "targets": [
+                "关系"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Minutes later",
+              "where": "Hallway",
+              "what": "李明 calls the neighbor, 小红, who is stuck in traffic. He cannot leave the package outside overnight.",
+              "because": "he needs the owner to decide what to do with the stranger",
+              "arrivedHow": "N/A",
+              "targets": [
+                "需要"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "While on the phone",
+              "where": "Hallway vs Street (phone call)",
+              "what": "小红 calls her husband. She asks him to come to the apartment to identify the person inside.",
+              "because": "she cannot come back quickly and needs her husband's help",
+              "arrivedHow": "N/A",
+              "targets": [
+                "帮助"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "Ten minutes later",
+              "where": "Apartments",
+              "what": "The husband arrives. He knocks. Inside, the husband opens the door. It is a repairman checking a pipe.",
+              "because": "the husband is the only one who can authorize entry or explain the situation",
+              "arrivedHow": "He took the elevator from the ground floor",
+              "targets": [
+                "如果"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "After the misunderstanding",
+              "where": "Hallway",
+              "what": "Everyone laughs. The husband takes the package. 李明 feels relieved.",
+              "because": "the danger was resolved and the package is safe",
+              "arrivedHow": "N/A",
+              "targets": [
+                "而且"
+              ],
+              "lines": 2
+            }
+          ],
+          "resolution": "The neighbor's husband arrives, reveals the stranger is a plumber, and takes the package.",
+          "targetPlan": [
+            {
+              "word": "女人",
+              "beat": 1,
+              "why": "李明 hears a female voice inside and needs to label who he hears to contrast with the expected male neighbor.",
+              "speaker": "Narrator",
+              "refersTo": "The female voice behind the door",
+              "intent": "Identify the voice heard"
+            },
+            {
+              "word": "男人",
+              "beat": 2,
+              "why": "The husband is not home, but the voice sounds like a stranger. 李明 categorizes the voice as belonging to a 'man' he doesn't know.",
+              "speaker": "Narrator",
+              "refersTo": "The male voice of the plumber",
+              "intent": "Identify the unknown voice"
+            },
+            {
+              "word": "关系",
+              "beat": 3,
+              "why": "李明 thinks about the connection between the plumber and the neighbor. He wonders if they have a close relationship or if it is a professional one.",
+              "speaker": "李明 (internal thought)",
+              "refersTo": "The connection between the neighbor and the intruder",
+              "intent": "Assess the social dynamic/connection"
+            },
+            {
+              "word": "需要",
+              "beat": 3,
+              "why": "李明 tells 小红 that the situation requires immediate attention. He says 'This needs a quick solution' (这需要...)",
+              "speaker": "李明",
+              "refersTo": "The situation with the package and the intruder",
+              "intent": "Express necessity for action"
+            },
+            {
+              "word": "帮助",
+              "beat": 4,
+              "why": "小红 cannot come back. She asks her husband to come to the scene to provide assistance (help) with the situation.",
+              "speaker": "小红",
+              "refersTo": "The husband coming to the apartment",
+              "intent": "Request assistance"
+            },
+            {
+              "word": "如果",
+              "beat": 5,
+              "why": "The husband thinks: 'If it is a repairman, it is fine.' He uses 'if' to test the hypothesis before opening the door.",
+              "speaker": "Husband (internal thought/monologue)",
+              "refersTo": "The condition of the person being a repairman",
+              "intent": "Conditional reasoning"
+            },
+            {
+              "word": "而且",
+              "beat": 6,
+              "why": "The husband explains: 'It is a repairman, and furthermore (moreover), he is fixing the pipe.' He adds extra information about the purpose.",
+              "speaker": "Husband",
+              "refersTo": "The additional detail about the repair",
+              "intent": "Add supplementary information"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 6 moves to \"Hallway\" without saying how"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "如果 is given to \"Husband (internal thought/monologue)\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "而且 is given to \"Husband\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "女人": 1,
+            "男人": 2,
+            "关系": 3,
+            "需要": 3,
+            "帮助": 4,
+            "如果": 5,
+            "而且": 6
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Neighbors' Good Relationship",
+          "setting": "Wednesday afternoon in an apartment building hallway and inside unit 201.",
+          "cast": [
+            "小明",
+            "妈妈"
+          ],
+          "problem": "Xiao Ming needs to borrow a ladder from Mom, but she is busy helping a neighbor whose window is stuck, creating a conflict of time and obligation.",
+          "incitingEvent": "Xiao Ming arrives home and sees his Mom talking to a woman from another apartment in the hallway; he needs her attention to borrow the ladder, but she is distracted.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "2:00 PM",
+              "where": "Outside apartment 201 (Hallway)",
+              "what": "Xiao Ming walks up the stairs and sees his Mom standing with a neighbor. The neighbor is a woman (女人) who looks worried. Xiao Ming needs to enter the apartment to get the ladder for school, but they are blocking the door.",
+              "because": "the story opens",
+              "arrivedHow": "walks up the stairs",
+              "targets": [
+                "女人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 2,
+              "when": "2:05 PM",
+              "where": "Outside apartment 201 (Hallway)",
+              "what": "The woman explains that her window is stuck open. She says that if (如果) the wind gets stronger, it might break. Xiao Ming pauses because he realizes Mom is listening intently. He sees that the woman is a neighbor, not a stranger.",
+              "because": "Xiao Ming observes the interaction and understands the neighbor's urgent concern",
+              "arrivedHow": "",
+              "targets": [
+                "如果"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "2:08 PM",
+              "where": "Outside apartment 201 (Hallway)",
+              "what": "Mom realizes the woman needs help (帮助) to fix the window. She tells Xiao Ming that she must (必须) go to the neighbor's apartment to assist her. Xiao Ming is disappointed because he needs the ladder right now.",
+              "because": "Mom decides to prioritize the neighbor's emergency over Xiao Ming's request",
+              "arrivedHow": "",
+              "targets": [
+                "帮助",
+                "必须"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 4,
+              "when": "2:15 PM",
+              "where": "Neighbor's Apartment (Unit 202)",
+              "what": "Mom and Xiao Ming enter the neighbor's apartment. Mom looks at the window. She says that the neighbor needs (需要) the ladder to close it. Xiao Ming offers to carry the ladder for her.",
+              "because": "Mom went to help, so they are now inside the apartment to solve the window problem",
+              "arrivedHow": "walked through the open door of unit 202",
+              "targets": [
+                "需要"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "3:30 PM",
+              "where": "Neighbor's Apartment (Unit 202)",
+              "what": "Mom successfully closes the window. The neighbor thanks her. She says that many people are just men (男人) who pass by, but fewer people stop to help. This makes Xiao Ming feel good about helping.",
+              "because": "The window is fixed, leading to the neighbor's reflection on community kindness",
+              "arrivedHow": "",
+              "targets": [
+                "男人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "4:00 PM",
+              "where": "Back in Hallway",
+              "what": "They walk back to unit 201. Xiao Ming tells Mom that their action shows a good relationship (关系) between neighbors. Mom agrees and gives him the ladder.",
+              "because": "The task is complete, allowing time to reflect on the social benefit and resolve Xiao Ming's original need",
+              "arrivedHow": "walked back down the hall",
+              "targets": [
+                "关系"
+              ],
+              "lines": 5
+            }
+          ],
+          "resolution": "The window is fixed, the neighbor is grateful, and Xiao Ming gets the ladder while learning that helping neighbors builds good relationships.",
+          "targetPlan": [
+            {
+              "word": "女人",
+              "beat": 1,
+              "why": "Xiao Ming identifies the person his mom is talking to as a female neighbor.",
+              "speaker": "Xiao Ming",
+              "refersTo": "The neighbor from unit 202",
+              "intent": "To identify the stranger's gender"
+            },
+            {
+              "word": "如果",
+              "beat": 2,
+              "why": "The neighbor explains the conditional risk of the wind.",
+              "speaker": "The Neighbor (Woman)",
+              "refersTo": "The possibility of the window breaking",
+              "intent": "To explain urgency"
+            },
+            {
+              "word": "帮助",
+              "beat": 3,
+              "why": "Mom states her intention to aid the neighbor.",
+              "speaker": "Mom",
+              "refersTo": "Assisting with the window",
+              "intent": "To justify leaving Xiao Ming"
+            },
+            {
+              "word": "必须",
+              "beat": 3,
+              "why": "Mom emphasizes the obligation/necessity of helping.",
+              "speaker": "Mom",
+              "refersTo": "The moral duty to help",
+              "intent": "To show determination"
+            },
+            {
+              "word": "需要",
+              "beat": 4,
+              "why": "Mom identifies the specific tool the neighbor lacks.",
+              "speaker": "Mom",
+              "refersTo": "The ladder",
+              "intent": "To identify the required tool"
+            },
+            {
+              "word": "男人",
+              "beat": 5,
+              "why": "The neighbor contrasts helpers with indifferent passersby (men).",
+              "speaker": "The Neighbor (Woman)",
+              "refersTo": "Other people/passersby",
+              "intent": "To express gratitude and social commentary"
+            },
+            {
+              "word": "关系",
+              "beat": 6,
+              "why": "Xiao Ming reflects on the social bond created by the act.",
+              "speaker": "Xiao Ming",
+              "refersTo": "The connection between neighbors",
+              "intent": "To summarize the moral of the story"
+            },
+            {
+              "word": "而且",
+              "beat": 0,
+              "why": "N/A - Optional word, not explicitly forced, but can be added by writer if needed. Since it is optional and not forced, it is not in impossibleTargets.",
+              "speaker": "",
+              "refersTo": "",
+              "intent": ""
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "target_no_speaker",
+              "message": "如果 is given to \"The Neighbor (Woman)\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "帮助 is given to \"Mom\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "必须 is given to \"Mom\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "需要 is given to \"Mom\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            },
+            {
+              "code": "target_no_speaker",
+              "message": "男人 is given to \"The Neighbor (Woman)\", who is not in the cast (李明、小红、小明、妈妈、大毛)"
+            },
+            {
+              "code": "target_beat",
+              "message": "而且 is assigned to beat 0, which does not exist"
+            }
+          ],
+          "cast": [
+            "小明",
+            "妈妈"
+          ],
+          "beats": 6,
+          "placed": {
+            "女人": 1,
+            "如果": 2,
+            "帮助": 3,
+            "必须": 3,
+            "需要": 4,
+            "男人": 5,
+            "关系": 6
+          }
+        },
+        "score": null,
+        "acceptable": false
+      }
+    ],
+    "judgeRaw": "PLAN A: CAUSAL 6 CHRONOLOGY 8 PLAUSIBILITY 3 SIMPLICITY 5 TARGETFIT 7 SUITABILITY 6 CONTRADICTION yes OVERALL 4 — Identity confusion (Li Ming vs Xiao Ming) and contrived spare key plot hole undermine logic and simplicity.",
+    "selection": {
+      "code": "BLUEPRINT_QUALITY_FAILED",
+      "reason": "no plan met the plan thresholds"
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "a32-fresh-2-L3-001",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
