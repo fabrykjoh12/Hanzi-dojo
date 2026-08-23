@@ -103,6 +103,9 @@ const writer = provider(writerSpec, writerEffort)
 const plannerB = plannerBSpec ? provider(plannerBSpec, plannerBEffort) : null
 
 if (preflightOnly) {
+  // The report is written as an artifact, not just printed: a successful run
+  // commits its files, while its log is not retrievable after the fact.
+  const reports = []
   for (const path of preflightOnly.split(',').map(x => x.trim()).filter(Boolean)) {
     const stored = JSON.parse(readFileSync(path, 'utf8'))
     const entry = (stored.blueprintRun.blueprints || []).find(x => x.acceptable) || (stored.blueprintRun.blueprints || []).find(x => x.blueprint)
@@ -124,7 +127,11 @@ if (preflightOnly) {
     }
     if (report.blocking.length) console.log('\n  blocking concepts for a replan: ' + report.blocking.join(', '))
     console.log('')
+    reports.push({ source: path, manifestId: stored.manifest.id, problem: entry.blueprint.problem, beats: entry.blueprint.beats.map(b => ({ id: b.id, what: b.what })), report })
   }
+  mkdirSync(outDir, { recursive: true })
+  writeFileSync(join(outDir, 'preflight.json'), JSON.stringify({ version: RISK_VERSION, generatedAt: new Date().toISOString(), reports }, null, 2) + '\n')
+  console.log('wrote ' + join(outDir, 'preflight.json'))
   process.exit(0)
 }
 
