@@ -20,6 +20,8 @@ const VOCAB = [
   ['楼梯', 3, 'stair; staircase'], ['书', 1, 'book'], ['笔', 2, 'pen, (measure word for writing tools)'],
   ['雨', 1, 'rain'], ['伞', 3, 'umbrella; parasol'], ['走', 2, 'to walk'], ['等', 2, 'to wait, (and so on, until)'],
   ['真', 1, 'really, true'], ['关于', 3, 'pertaining to; concerning'], ['后面', 2, 'behind, back'],
+  ['住', 1, 'to live, to reside'], ['生活', 3, 'to live; life'], ['能', 1, 'can, be able to'],
+  ['高兴', 1, 'happy, glad'], ['人', 1, 'person'], ['敲', 4, 'to knock'],
   // above level — present in the dictionary, absent from the reader
   ['链子', 5, 'chain'], ['轮子', 4, 'wheel'], ['黑', 5, 'black; dark'], ['梯子', 5, 'ladder'],
   ['金属', 6, 'metal'], ['修理', 4, 'to repair'], ['耐心', 4, 'patient; patience'],
@@ -115,6 +117,22 @@ describe('gloss index and support', () => {
     expect(conceptSupport('wheel', index, full).support).toBe('none')
     expect(conceptSupport('thud', index, full).support).toBe('none')              // absent everywhere
     expect(conceptSupport('thud', index, full).words).toEqual([])
+  })
+
+  // a32-fresh-1 rejected a good shape on "cannot", "someone", "alone" and
+  // "living" — three are function words and the fourth is 住 (to live).
+  it('function words are not lexical gaps, and inflections reach their word', () => {
+    const full = buildFullGlossIndex(vocabMap)
+    const c = conceptsFromBeat(
+      { what: 'Someone knocks and he cannot carry it alone to the living room. Each of them waits.' }, [], { names: [] })
+    for (const functional of ['someone', 'cannot', 'alone', 'each']) {
+      expect([...c.core, ...c.supporting, ...c.incidental], functional).not.toContain(functional)
+    }
+    // and an inflected form finds its own word
+    expect(conceptSupport('living', index, full).support).toBe('supported')      // 住 / 生活
+    expect(conceptSupport('walking', index, full).support).toBe('supported')     // 走
+    // while a real gap stays a gap
+    expect(conceptSupport('knocks', index, full).support).toBe('none')
   })
 
   it('the cast is not vocabulary, however the English plan spells it', () => {

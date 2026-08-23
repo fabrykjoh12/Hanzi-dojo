@@ -45,6 +45,40 @@ export const RISK_VERSION = 'fab9-risk@1'
 
 export const RISK = { LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH' }
 
+// English function words that are not lexical concepts in any language's
+// vocabulary list: you say them with grammar, not with a word to look up.
+// a32-fresh-1 rejected a good shape partly on "cannot", "someone" and
+// "alone" — 能/可以/会 and 有人 are exactly how those are said.
+const FUNCTIONAL = new Set([
+  'cannot', 'someone', 'somebody', 'something', 'anyone', 'anything', 'everyone',
+  'everything', 'nobody', 'nothing', 'alone', 'able', 'unable', 'each', 'other',
+  'another', 'both', 'either', 'neither', 'himself', 'herself', 'themselves',
+  'itself', 'myself', 'yourself', 'much', 'many', 'few', 'little', 'own',
+])
+
+// The risk module normalizes English harder than retrieval does — retrieval's
+// scoring is deliberately untouched. "living" must reach 住 (to live) and
+// "happily" must reach 高兴 (happy); a stem that stops at "liv" and "happili"
+// invents gaps that are not there.
+function riskStem(word) {
+  let w = String(word || '').toLowerCase()
+  if (w.length > 4 && w.endsWith('ily')) return w.slice(0, -3) + 'y'
+  if (w.length > 3 && w.endsWith('ly')) w = w.slice(0, -2)
+  if (w.length > 4 && w.endsWith('ies')) return w.slice(0, -3) + 'y'
+  for (const suffix of ['ing', 'ed', 'es', 's']) {
+    if (w.length > suffix.length + 2 && w.endsWith(suffix)) { w = w.slice(0, -suffix.length); break }
+  }
+  return w
+}
+
+// Every form worth trying against the gloss index: the word, the shared stem,
+// the harder stem, and the harder stem plus a dropped 'e' (liv → live).
+function forms(word) {
+  const w = String(word || '').toLowerCase()
+  const r = riskStem(w)
+  return [...new Set([w, stem(w), r, r + 'e'])].filter(Boolean)
+}
+
 // Clause markers that introduce detail rather than the event itself.
 const SUBORDINATORS = /\b(because|while|since|as|when|although|though|if|after|before|so that|which|who|that)\b/i
 
@@ -73,7 +107,9 @@ function splitClause(sentence) {
 export function conceptsFromBeat(beat, entries = [], { names = [] } = {}) {
   const nameTokens = new Set([...names, ...ROMANIZED].flatMap(n => tokenize(
     String(n).normalize('NFD').replace(/[\u0300-\u036f]/g, ''))))
-  const clean = (text) => tokenize(text).filter(t => !nameTokens.has(t) && !LIGHT.has(t) && !LIGHT.has(stem(t)))
+  const clean = (text) => tokenize(text).filter(t =>
+    !nameTokens.has(t) && !FUNCTIONAL.has(t)
+    && !LIGHT.has(t) && !LIGHT.has(stem(t)) && !LIGHT.has(riskStem(t)))
   const parts = sentences(beat && beat.what)
   const core = []
   const supporting = []
@@ -107,7 +143,7 @@ export function buildGlossIndex(vocabMap, level) {
     const v = vocabMap[word]
     if (!v || !Number.isFinite(v.level) || v.level > level || !v.meaning) continue
     for (const t of tokenize(v.meaning)) {
-      for (const key of [t, stem(t)]) {
+      for (const key of [t, stem(t), riskStem(t)]) {
         if (!index.has(key)) index.set(key, [])
         if (index.get(key).length < 6 && !index.get(key).includes(word)) index.get(key).push(word)
       }
@@ -128,19 +164,20 @@ export function buildFullGlossIndex(vocabMap) {
 }
 
 export function conceptSupport(concept, index, fullIndex = null) {
-  const exact = index.get(concept)
-  if (exact && exact.length) return { support: 'supported', words: exact.slice(0, 4) }
-  const stemmed = index.get(stem(concept))
-  if (stemmed && stemmed.length) return { support: 'supported', words: stemmed.slice(0, 4) }
+  for (const form of forms(concept)) {
+    const hit = index.get(form)
+    if (hit && hit.length) return { support: 'supported', words: hit.slice(0, 4) }
+  }
   // A longer concept that is a piece of some gloss token, or vice versa.
   for (const [key, words] of index) {
-    if (concept.length >= 5 && (key.includes(concept) || concept.includes(key)) && key.length >= 4) {
+    if (concept.length >= 5 && (key.includes(riskStem(concept)) || riskStem(concept).includes(key)) && key.length >= 4) {
       return { support: 'weak', words: words.slice(0, 3) }
     }
   }
   // A gap either way; the full index only supplies evidence of what the
   // language would use, when it has anything at all.
-  const above = fullIndex ? (fullIndex.get(concept) || fullIndex.get(stem(concept))) : null
+  let above = null
+  if (fullIndex) for (const form of forms(concept)) { above = above || fullIndex.get(form) }
   return { support: 'none', words: (above || []).slice(0, 3) }
 }
 
