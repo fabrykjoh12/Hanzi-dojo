@@ -513,6 +513,7 @@ jobs:
           LEVEL: ${{ inputs.level }}
           COUNT: ${{ inputs.count }}
           LINES: ${{ inputs.writer_max_tokens }}
+          MANIFEST: ${{ inputs.manifest_path }}
         run: |
           set -e
           case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
@@ -533,9 +534,20 @@ jobs:
           fi
           JUDGE_FLAG=""
           if [ -n "$JUDGE" ]; then JUDGE_FLAG="--judge $JUDGE"; fi
+          # manifest_path names a stored bakeoff to re-judge instead of
+          # regenerating twelve plans.
+          SRC="--models $MODELS"
+          case "$MANIFEST" in
+            none|fresh|-|"") ;;
+            *)
+              case "$MANIFEST" in (*[!A-Za-z0-9._/-]*|/*|*..*) echo "bad manifest_path"; exit 1;; esac
+              if [ ! -f "$MANIFEST" ]; then echo "artifact not found: $MANIFEST"; exit 1; fi
+              SRC="--rejudge $MANIFEST"
+            ;;
+          esac
           node planner-bakeoff.mjs \
             --input reports/story-corpus-dump.json \
-            --models "$MODELS" $JUDGE_FLAG \
+            $SRC $JUDGE_FLAG \
             --per-model "$COUNT" --level "$LEVEL" --lines "$LINES" \
             --out "data/story-candidates/$PREFIX"
 

@@ -39,8 +39,12 @@ const perModel = parseInt(arg('per-model', '6'), 10)
 const judgeSpec = arg('judge', null)
 const outDir = arg('out', null)
 const modelSpecs = String(arg('models', '')).split(',').map(s => s.trim()).filter(Boolean)
+// Re-judge the plans a previous bakeoff already generated: judging is three
+// calls, generation is twelve, and a judging failure should not cost the
+// whole sample again.
+const rejudgePath = arg('rejudge', null)
 
-if (!inputPath || !outDir || modelSpecs.length < 1) {
+if (!inputPath || !outDir || (modelSpecs.length < 1 && !rejudgePath)) {
   console.error('Required: --input <dump> --out <dir> --models <p:m[:effort],…> [--judge <p:m>] [--per-model 6]')
   process.exit(1)
 }
@@ -77,7 +81,12 @@ console.log('  cast: ' + manifest.speakers.join('、') + '\n')
 // ── Generate ────────────────────────────────────────────────────────────────
 const prompt = storyShapePrompt({ manifest, meanings, totalLines, targets: required })
 const candidates = []
-for (const p of planners) {
+const stored = rejudgePath ? JSON.parse(readFileSync(rejudgePath, 'utf8')) : null
+if (stored) {
+  for (const c of stored.candidates) candidates.push({ ...c, score: null, label: null })
+  console.log('Re-judging ' + candidates.length + ' stored candidate(s) from ' + rejudgePath + '\n')
+}
+for (const p of (stored ? [] : planners)) {
   for (let k = 1; k <= perModel; k += 1) {
     const before = { prompt: p.usage.promptTokens, completion: p.usage.completionTokens }
     const startedAt = Date.now()
@@ -105,7 +114,11 @@ for (const p of planners) {
 }
 
 // ── Judge, pooled and anonymised, in mixed batches ──────────────────────────
+// A stored run keeps its own manifest, so the judge sees the plans as they
+// were written.
+const activeManifest = stored ? stored.manifest : manifest
 const judgeable = candidates.filter(c => c.blueprint)
+const judgeLog = []
 const labelled = anonymiseBlueprints(judgeable.map(c => ({ ...c, rendered: renderBlueprint(c.blueprint) })))
 const cfg = levelConfig(manifest.language, manifest.system, manifest.level)
 const levelName = (cfg && cfg.levelName) || ('HSK ' + manifest.level)
@@ -114,18 +127,25 @@ console.log('\nJudging ' + labelled.length + ' plan(s), anonymised, in batches o
 for (let i = 0; i < labelled.length && judge; i += BATCH) {
   const batch = labelled.slice(i, i + BATCH)
   let scores = null
+  let rawText = null
+  let error = null
   try {
-    const text = await judge.send({
+    rawText = await judge.send({
       kind: 'judge',
       prompt: blueprintJudgePrompt({
-        manifest, levelName,
+        manifest: activeManifest, levelName,
         candidates: batch.map(c => ({ label: c.label, rendered: c.rendered })),
         dimensions: BLUEPRINT_DIMENSIONS,
       }),
       maxTokens: 1400,
     })
-    scores = parseBlueprintJudgment(text, batch.map(c => c.label), BLUEPRINT_DIMENSIONS)
-  } catch (err) { console.error('  judging failed: ' + (err.message || err)) }
+    scores = parseBlueprintJudgment(rawText, batch.map(c => c.label), BLUEPRINT_DIMENSIONS)
+    if (!scores) error = 'the judgment did not parse'
+  } catch (err) { error = String((err && err.message) || err).slice(0, 300) }
+  // Without this the bakeoff cannot say whether "no scores" means the judge
+  // refused, errored, or answered in a shape the parser missed.
+  judgeLog.push({ labels: batch.map(c => c.label), ok: Boolean(scores), error, raw: String(rawText || '').slice(0, 1200) })
+  if (error) console.error('  batch ' + batch.map(c => c.label).join('') + ': ' + error)
   for (const c of batch) {
     const s = (scores || []).find(x => x.label === c.label) || null
     const target = candidates.find(x => x.model === c.model && x.attempt === c.attempt)
@@ -204,12 +224,14 @@ for (const [model, m] of Object.entries(byModel)) {
 mkdirSync(outDir, { recursive: true })
 writeFileSync(join(outDir, 'bakeoff.json'), JSON.stringify({
   generatedAt: new Date().toISOString(),
-  manifest,
-  required,
-  perModel,
+  manifest: activeManifest,
+  required: stored ? stored.required : required,
+  perModel: stored ? stored.perModel : perModel,
   thresholds: BLUEPRINT_QUALITY,
-  models: modelSpecs,
+  models: stored ? stored.models : modelSpecs,
   judge: judgeSpec,
+  rejudgedFrom: rejudgePath || null,
+  judgeLog,
   rates: byModel,
   candidates,
 }, null, 2) + '\n')
