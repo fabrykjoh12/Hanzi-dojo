@@ -1,0 +1,758 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "a32-fresh-3",
+  "generatedAt": "2026-08-23T19:59:05.924Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "a32-fresh-3-L3-001",
+    "batchId": "a32-fresh-3",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "关系",
+      "女人",
+      "男人",
+      "帮助",
+      "需要"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "resume": null,
+    "risk": null,
+    "replanned": false,
+    "scaffold": null,
+    "blueprints": [
+      {
+        "label": "A",
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Locked Apartment",
+          "setting": "A sunny Saturday afternoon in a city apartment building in Beijing.",
+          "cast": [
+            "李明",
+            "妈妈"
+          ],
+          "problem": "李明 has locked himself out of his apartment and does not have a spare key.",
+          "incitingEvent": "李明 arrives home from a run, realizes he has no keys, and sees 妈妈 inside the apartment but cannot get in.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday afternoon, 3:00 PM",
+              "where": "Outside 李明's apartment door",
+              "what": "李明 realizes his keys are in the apartment or he lost them in his exercise shorts. He knocks and waves, but 妈妈 is cleaning the floor inside with music on and does not hear him.",
+              "because": "the story opens",
+              "arrivedHow": "",
+              "targets": [
+                "需要"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 2,
+              "when": "Saturday afternoon, 3:10 PM",
+              "where": "The hallway outside the apartment",
+              "what": "李明 becomes anxious. He realizes he 需要 help. He decides he 必须 find someone to help him open the door or contact 妈妈 another way. He does not want to call the police for a small problem.",
+              "because": "李明 is locked out and 妈妈 inside cannot hear him.",
+              "arrivedHow": "",
+              "targets": [
+                "需要",
+                "必须"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 3,
+              "when": "Saturday afternoon, 3:15 PM",
+              "where": "The building lobby, downstairs",
+              "what": "李明 goes downstairs to find a neighbor. He sees a 男人 sitting on a bench reading a magazine. 李明 knows this 男人 is a neighbor from the upstairs floor, but is not sure if he can help with a physical lock.",
+              "because": "李明 needs help and goes to the common area to find someone.",
+              "arrivedHow": "李明 takes the elevator down to the lobby.",
+              "targets": [
+                "男人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 4,
+              "when": "Saturday afternoon, 3:20 PM",
+              "where": "The building lobby",
+              "what": "李明 approaches the 男人. The 男人 is just a resident; he is not a locksmith or a strong man who can pick the lock. He says he does not have a tool for it. 李明 is disappointed. The 男人 suggests asking 小红 who lives downstairs, but 小明 is the only other potential character allowed, and he is not here. Wait, the cast must be from the list. Let's adjust. The 男人 is just a stranger relative to the task. 李明 realizes he 如果 asks the wrong person, it will waste time.",
+              "because": "李明 seeks help in the lobby and encounters a resident.",
+              "arrivedHow": "",
+              "targets": [
+                "男人",
+                "如果"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "Saturday afternoon, 3:30 PM",
+              "where": "The apartment building corridor, walking back up",
+              "what": "李明 remembers that 妈妈 has his phone in her bag inside the apartment. The 男人 (who came down to the lobby to wait for a package) offers a surprising 帮助. He has a universal key for the building staff (he is actually the building manager, but referred to as 男人 because we don't know his name, or rather, the prompt says 'no role labels'. So let's make the 男人 a friend of 妈妈? No, cast is closed. The 男人 is just 李明's neighbor who happens to be strong and knows how to open windows. Let's pivot. Beat 3: He sees 小红? No, 小红 is in cast list but I only selected 2. I can select 3. Let's select 小明 instead of just 男人. Wait, '男人' is a required word. I must use the word '男人' in the text. It does not have to be a character name in the cast list if it is used as a descriptor? 'Every person who acts... MUST be one of those names'. So I cannot have a character named 'The Man'. I must use the name '小明' or '李明' or '妈妈' or '小红'. But I must use the word '男人' in the target list. '女人' is also a target. This is tricky. If '男人' is a required word, and I cannot create a character called 男人, I must use the word 男人 to describe 小明, 李明, or possibly a speaker? No, nouns don't speak. I must describe one of the cast members as 男人 or 女人, or have a conversation where 女人 is used to describe someone? '女人' usually means a woman. 妈妈 is a woman. 小红 is a woman. I can use 女人 to refer to 妈妈 or 小红. I can use 男人 to refer to 李明 or 小明. This satisfies the 'no new person' rule while using the words.",
+              "because": "李明 needs a different solution after the initial attempt.",
+              "arrivedHow": "李明 walks back up the stairs.",
+              "targets": [
+                "女人",
+                "男人"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "Saturday afternoon, 3:45 PM",
+              "where": "Inside 李明's apartment",
+              "what": "李明 uses his phone to call 妈妈. 妈妈 opens the door. 李明 is happy. He thanks 妈妈. He explains that his 关系 with his phone is not good (he often loses it). He realizes he 必须 keep his keys with him.",
+              "because": "李明 contacts 妈妈 directly using the phone she has.",
+              "arrivedHow": "",
+              "targets": [
+                "关系",
+                "帮助",
+                "需要"
+              ],
+              "lines": 6
+            }
+          ],
+          "resolution": "李明 gets into his apartment by calling 妈妈, who was inside, realizing he shouldn't have relied on physical entry alone.",
+          "targetPlan": [
+            {
+              "word": "需要",
+              "beat": 1,
+              "why": "李明 expresses his immediate necessity to enter the house.",
+              "speaker": "李明",
+              "refersTo": "getting help / opening the door",
+              "intent": "Stating his problem"
+            },
+            {
+              "word": "必须",
+              "beat": 2,
+              "why": "李明 realizes the urgency of finding a solution.",
+              "speaker": "李明",
+              "refersTo": "finding a way in",
+              "intent": "Self-admonition"
+            },
+            {
+              "word": "男人",
+              "beat": 5,
+              "why": "李明 or narrator describes a male figure in the building, or 李明 reflects on asking a man. Since cast is limited, let's have 李明 say: 'I asked a man (男人) downstairs, but he couldn't help.'",
+              "speaker": "李明",
+              "refersTo": "a neighbor he encountered (not a named cast member, just a descriptor of an event)",
+              "intent": "Explaining failed attempt"
+            },
+            {
+              "word": "女人",
+              "beat": 5,
+              "why": "李明 or narrator contrasts or mentions a woman, e.g., 'My 妈妈 is a woman (女人) who locks the door.' Or simpler: 'I couldn't ask the woman (女人) in the next door because I don't know her.'",
+              "speaker": "李明",
+              "refersTo": "a neighbor or 妈妈",
+              "intent": "Explaining failed attempt"
+            },
+            {
+              "word": "关系",
+              "beat": 6,
+              "why": "李明 jokes or comments on his relationship (关系) with his phone or keys.",
+              "speaker": "李明",
+              "refersTo": "his connection to his phone/keys",
+              "intent": "Post-resolution reflection"
+            },
+            {
+              "word": "帮助",
+              "beat": 6,
+              "why": "李明 thanks 妈妈 for her help.",
+              "speaker": "李明",
+              "refersTo": "opening the door",
+              "intent": "Gratitude"
+            },
+            {
+              "word": "如果",
+              "beat": 3,
+              "why": "李明 thinks about conditional outcome.",
+              "speaker": "李明",
+              "refersTo": "asking a neighbor",
+              "intent": "Decision making"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "rendered": "TITLE CONCEPT: The Locked Apartment\nSETTING: A sunny Saturday afternoon in a city apartment building in Beijing.\nCAST: 李明、妈妈\nCENTRAL PROBLEM: 李明 has locked himself out of his apartment and does not have a spare key.\nINCITING EVENT: 李明 arrives home from a run, realizes he has no keys, and sees 妈妈 inside the apartment but cannot get in.\nBEATS:\n  1. [Saturday afternoon, 3:00 PM · Outside 李明's apartment door] · uses 需要\n     WHAT CHANGES: 李明 realizes his keys are in the apartment or he lost them in his exercise shorts. He knocks and waves, but 妈妈 is cleaning the floor inside with music on and does not hear him.\n  2. [Saturday afternoon, 3:10 PM · The hallway outside the apartment] · uses 需要、必须\n     WHAT CHANGES: 李明 becomes anxious. He realizes he 需要 help. He decides he 必须 find someone to help him open the door or contact 妈妈 another way. He does not want to call the police for a small problem.\n     BECAUSE: 李明 is locked out and 妈妈 inside cannot hear him.\n  3. [Saturday afternoon, 3:15 PM · The building lobby, downstairs] · uses 男人\n     WHAT CHANGES: 李明 goes downstairs to find a neighbor. He sees a 男人 sitting on a bench reading a magazine. 李明 knows this 男人 is a neighbor from the upstairs floor, but is not sure if he can help with a physical lock.\n     BECAUSE: 李明 needs help and goes to the common area to find someone.\n     GOT THERE BY: 李明 takes the elevator down to the lobby.\n  4. [Saturday afternoon, 3:20 PM · The building lobby] · uses 男人、如果\n     WHAT CHANGES: 李明 approaches the 男人. The 男人 is just a resident; he is not a locksmith or a strong man who can pick the lock. He says he does not have a tool for it. 李明 is disappointed. The 男人 suggests asking 小红 who lives downstairs, but 小明 is the only other potential character allowed, and he is not here. Wait, the cast must be from the list. Let's adjust. The 男人 is just a stranger relative to the task. 李明 realizes he 如果 asks the wrong person, it will waste time.\n     BECAUSE: 李明 seeks help in the lobby and encounters a resident.\n  5. [Saturday afternoon, 3:30 PM · The apartment building corridor, walking back up] · uses 女人、男人\n     WHAT CHANGES: 李明 remembers that 妈妈 has his phone in her bag inside the apartment. The 男人 (who came down to the lobby to wait for a package) offers a surprising 帮助. He has a universal key for the building staff (he is actually the building manager, but referred to as 男人 because we don't know his name, or rather, the prompt says 'no role labels'. So let's make the 男人 a friend of 妈妈? No, cast is closed. The 男人 is just 李明's neighbor who happens to be strong and knows how to open windows. Let's pivot. Beat 3: He sees 小红? No, 小红 is in cast list but I only selected 2. I can select 3. Let's select 小明 instead of just 男人. Wait, '男人' is a required word. I must use the word '男人' in the text. It does not have to be a character name in the cast list if it is used as a descriptor? 'Every person who acts... MUST be one of those names'. So I cannot have a character named 'The Man'. I must use the name '小明' or '李明' or '妈妈' or '小红'. But I must use the word '男人' in the target list. '女人' is also a target. This is tricky. If '男人' is a required word, and I cannot create a character called 男人, I must use the word 男人 to describe 小明, 李明, or possibly a speaker? No, nouns don't speak. I must describe one of the cast members as 男人 or 女人, or have a conversation where 女人 is used to describe someone? '女人' usually means a woman. 妈妈 is a woman. 小红 is a woman. I can use 女人 to refer to 妈妈 or 小红. I can use 男人 to refer to 李明 or 小明. This satisfies the 'no new person' rule while using the words.\n     BECAUSE: 李明 needs a different solution after the initial attempt.\n     GOT THERE BY: 李明 walks back up the stairs.\n  6. [Saturday afternoon, 3:45 PM · Inside 李明's apartment] · uses 关系、帮助、需要\n     WHAT CHANGES: 李明 uses his phone to call 妈妈. 妈妈 opens the door. 李明 is happy. He thanks 妈妈. He explains that his 关系 with his phone is not good (he often loses it). He realizes he 必须 keep his keys with him.\n     BECAUSE: 李明 contacts 妈妈 directly using the phone she has.\nRESOLUTION: 李明 gets into his apartment by calling 妈妈, who was inside, realizing he shouldn't have relied on physical entry alone.\nTARGET WORDS:\n  需要 → beat 1: 李明 expresses his immediate necessity to enter the house.\n  必须 → beat 2: 李明 realizes the urgency of finding a solution.\n  男人 → beat 5: 李明 or narrator describes a male figure in the building, or 李明 reflects on asking a man. Since cast is limited, let's have 李明 say: 'I asked a man (男人) downstairs, but he couldn't help.'\n  女人 → beat 5: 李明 or narrator contrasts or mentions a woman, e.g., 'My 妈妈 is a woman (女人) who locks the door.' Or simpler: 'I couldn't ask the woman (女人) in the next door because I don't know her.'\n  关系 → beat 6: 李明 jokes or comments on his relationship (关系) with his phone or keys.\n  帮助 → beat 6: 李明 thanks 妈妈 for her help.\n  如果 → beat 3: 李明 thinks about conditional outcome.",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "妈妈"
+          ],
+          "beats": 6,
+          "placed": {
+            "需要": 1,
+            "必须": 2,
+            "男人": 5,
+            "女人": 5,
+            "关系": 6,
+            "帮助": 6,
+            "如果": 3
+          }
+        },
+        "score": {
+          "label": "A",
+          "contradiction": true,
+          "overall": 2,
+          "reason": "The plan contains extensive internal monologue resolving its own narrative failures (meta-commentary in beats 3-5), breaks character constraints by debating cast rules within the story beats, and features a nonsensical resolution (calling a phone that is explicitly stated to be inside the locked apartment) that contradicts the central problem.",
+          "causal": 3,
+          "chronology": 4,
+          "plausibility": 2,
+          "simplicity": 4,
+          "targetFit": 3,
+          "suitability": null
+        },
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Broke Neighbor and the Big Box",
+          "setting": "A residential apartment building hallway, on a rainy Saturday afternoon.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "小红 has moved a heavy box into the building elevator but runs out of money before the elevator arrives, leaving her stuck on the stairs with the box.",
+          "incitingEvent": "小红 accidentally spills her bus fare tokens while struggling with the heavy box in the building lobby.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Saturday afternoon",
+              "where": "The apartment building lobby and stairwell entrance",
+              "what": "小红 is trying to push a large cardboard box into the building. She slips, and her coins fall into a drain or under a gap where she cannot reach them. She realizes she has no money to take the elevator to her 6th-floor apartment.",
+              "because": "the story opens",
+              "arrivedHow": "N/A",
+              "targets": [],
+              "lines": 6
+            },
+            {
+              "id": 2,
+              "when": "Immediately after",
+              "where": "The hallway outside the elevator",
+              "what": "李明 comes home from work. He sees 小红 standing there looking worried. He recognizes her as the new neighbor he met briefly earlier that week.",
+              "because": "The noise of the dropping coins and 小红's distress attracts 李明's attention as he enters the building.",
+              "arrivedHow": "N/A",
+              "targets": [
+                "女人",
+                "关系"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 3,
+              "when": "Minutes later",
+              "where": "The hallway",
+              "what": "李明 asks what is wrong. 小红 explains that she is a woman who lives in the new apartment, but she lost the money for the elevator. She feels embarrassed.",
+              "because": "李明 has observed her situation and initiated contact.",
+              "arrivedHow": "N/A",
+              "targets": [],
+              "lines": 4
+            },
+            {
+              "id": 4,
+              "when": "Continuing the conversation",
+              "where": "The hallway",
+              "what": "李明 explains that because they are neighbors, helping each other is important. He says that if someone is in trouble, they should ask for help.",
+              "because": "小红 has explained her financial inability to take the elevator.",
+              "arrivedHow": "N/A",
+              "targets": [
+                "关系",
+                "如果"
+              ],
+              "lines": 6
+            },
+            {
+              "id": 5,
+              "when": "Immediately after",
+              "where": "The hallway / elevator",
+              "what": "李明 tells 小红 that she needs to save her strength. He offers to carry the box for her. 小红 agrees.",
+              "because": "李明 has established a supportive relationship and offered a solution to the physical burden.",
+              "arrivedHow": "N/A",
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 6,
+              "when": "A few minutes later",
+              "where": "Outside 小红's apartment door on the 6th floor",
+              "what": "They arrive at the door. 小红 thanks 李明. She realizes that being helpful is necessary for a good neighborhood relationship.",
+              "because": "李明 physically carried the box up the six flights of stairs as offered.",
+              "arrivedHow": "N/A",
+              "targets": [
+                "必须"
+              ],
+              "lines": 3
+            }
+          ],
+          "resolution": "李明 helps 小红 carry the box to her floor, resolving the physical problem of moving the item and the social awkwardness of the lost money.",
+          "targetPlan": [
+            {
+              "word": "女人",
+              "beat": 2,
+              "why": "李明 identifies 小红 internally or to himself to confirm who he is looking at, distinguishing her from the previous tenant.",
+              "speaker": "李明",
+              "refersTo": "小红",
+              "intent": "Identification"
+            },
+            {
+              "word": "关系",
+              "beat": 2,
+              "why": "李明 thinks about the potential for a neighborly relationship.",
+              "speaker": "李明",
+              "refersTo": "The connection between them",
+              "intent": "Reflection"
+            },
+            {
+              "word": "如果",
+              "beat": 4,
+              "why": "李明 gives advice on when to ask for help.",
+              "speaker": "李明",
+              "refersTo": "A hypothetical situation of needing help",
+              "intent": "Advice"
+            },
+            {
+              "word": "需要",
+              "beat": 5,
+              "why": "李明 tells 小红 what she needs to do (rest/accept help).",
+              "speaker": "李明",
+              "refersTo": "小红's physical state",
+              "intent": "Assistance"
+            },
+            {
+              "word": "帮助",
+              "beat": 5,
+              "why": "李明 explicitly offers his assistance.",
+              "speaker": "李明",
+              "refersTo": "Carrying the box",
+              "intent": "Offer"
+            },
+            {
+              "word": "必须",
+              "beat": 6,
+              "why": "小红 reflects on the necessity of such interactions for community living.",
+              "speaker": "小红",
+              "refersTo": "Neighboring behavior",
+              "intent": "Reflection"
+            },
+            {
+              "word": "男人",
+              "beat": 3,
+              "why": "小红 thinks about 李明 as a helpful man.",
+              "speaker": "小红",
+              "refersTo": "李明",
+              "intent": "Identification"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 2 moves to \"The hallway outside the elevator\" without saying how"
+            },
+            {
+              "code": "unexplained_move",
+              "message": "beat 6 moves to \"Outside 小红's apartment door on the 6th floor\" without saying how"
+            },
+            {
+              "code": "target_no_intent",
+              "message": "如果 has no communicative purpose"
+            },
+            {
+              "code": "target_no_intent",
+              "message": "帮助 has no communicative purpose"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "女人": 2,
+            "关系": 2,
+            "如果": 4,
+            "需要": 5,
+            "帮助": 5,
+            "必须": 6,
+            "男人": 3
+          }
+        },
+        "score": null,
+        "acceptable": false
+      },
+      {
+        "label": null,
+        "planner": "groq:qwen/qwen3.6-27b/none",
+        "attempt": 2,
+        "blueprint": {
+          "title": "The Key and the Neighbor",
+          "setting": "A Monday evening, 6:00 PM, in a residential apartment building.",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "李明 cannot enter his apartment because he locked the door with the keys inside.",
+          "incitingEvent": "李明 arrives home, realizes he has no keys, and sees 小红 leaving her apartment.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "6:00 PM",
+              "where": "Inside the elevator on the 1st floor",
+              "what": "李明 gets into the elevator. He talks to himself about his day.",
+              "because": "the story opens",
+              "arrivedHow": null,
+              "targets": [],
+              "lines": 4
+            },
+            {
+              "id": 2,
+              "when": "6:01 PM",
+              "where": "In the hallway of the 6th floor",
+              "what": "The elevator doors open. 李明 walks out of the elevator and goes to his apartment door.",
+              "because": "李明 needed to get from the 1st floor to the 6th floor to go home",
+              "arrivedHow": "李明 walked out of the elevator and down the hallway",
+              "targets": [
+                "男人"
+              ],
+              "lines": 4
+            },
+            {
+              "id": 3,
+              "when": "6:02 PM",
+              "where": "At 李明's apartment door",
+              "what": "李明 tries to open the door, but it is locked. He looks in his pockets and finds no keys. 小红 opens her door next to his.",
+              "because": "李明 needed to enter his apartment",
+              "arrivedHow": null,
+              "targets": [],
+              "lines": 4
+            },
+            {
+              "id": 4,
+              "when": "6:03 PM",
+              "where": "At 李明's apartment door",
+              "what": "李明 explains to 小红 that he is a 男人 (man) living here, but he has no keys. He says he 需要 (needs) help.",
+              "because": "李明 found the door locked and 小红 was watching him",
+              "arrivedHow": null,
+              "targets": [
+                "男人",
+                "需要"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 5,
+              "when": "6:05 PM",
+              "where": "At 李明's apartment door",
+              "what": "小红 asks if they are 关系 (good friends/close relationship) like neighbors who help each other. She says 如果 (if) he is really lost, she will call his 妈妈 (Mom).",
+              "because": "小明 wanted to verify if 李明 was actually the resident before helping",
+              "arrivedHow": null,
+              "targets": [
+                "关系",
+                "如果"
+              ],
+              "lines": 5
+            },
+            {
+              "id": 6,
+              "when": "6:10 PM",
+              "where": "At 李明's apartment door",
+              "what": "李明's 妈妈 arrives. She helps 李明 open the door. 李明 thanks her for the 帮助 (help).",
+              "because": "小红 called 妈妈 in the previous beat",
+              "arrivedHow": "妈妈 came from downstairs",
+              "targets": [
+                "帮助",
+                "妈妈"
+              ],
+              "lines": 6
+            }
+          ],
+          "resolution": "李明's mother arrives and unlocks the door, resolving the lockout.",
+          "targetPlan": [
+            {
+              "word": "男人",
+              "beat": 2,
+              "why": "To identify himself as a male resident to distinguish from delivery people or strangers",
+              "speaker": "李明",
+              "refersTo": "himself",
+              "intent": "Identification"
+            },
+            {
+              "word": "需要",
+              "beat": 4,
+              "why": "To express the urgent necessity of assistance",
+              "speaker": "李明",
+              "refersTo": "help entering the apartment",
+              "intent": "Requesting aid"
+            },
+            {
+              "word": "关系",
+              "beat": 5,
+              "why": "To question the level of intimacy/trust between neighbors before offering help",
+              "speaker": "小红",
+              "refersTo": "their neighborly connection",
+              "intent": "Clarifying social context"
+            },
+            {
+              "word": "如果",
+              "beat": 5,
+              "why": "To set a condition for her action (calling mom)",
+              "speaker": "小红",
+              "refersTo": "the possibility of him being lost",
+              "intent": "Proposing a conditional solution"
+            },
+            {
+              "word": "帮助",
+              "beat": 6,
+              "why": "To express gratitude for the specific act of unlocking the door",
+              "speaker": "李明",
+              "refersTo": "the act of opening the door",
+              "intent": "Expressing thanks"
+            }
+          ],
+          "impossibleTargets": [
+            "女人"
+          ]
+        },
+        "check": {
+          "ok": false,
+          "failures": [
+            {
+              "code": "unexplained_move",
+              "message": "beat 3 moves to \"At 李明's apartment door\" without saying how"
+            },
+            {
+              "code": "target_unplaced",
+              "message": "女人 has no beat where it naturally belongs"
+            }
+          ],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "男人": 2,
+            "需要": 4,
+            "关系": 5,
+            "如果": 5,
+            "帮助": 6
+          }
+        },
+        "score": null,
+        "acceptable": false
+      }
+    ],
+    "judgeRaw": "PLAN A: CAUSAL 3 CHRONOLOGY 4 PLAUSIBILITY 2 SIMPLICITY 4 TARGETFIT 3 SUITIBILITY 3 CONTRADICTION yes OVERALL 2 — The plan contains extensive internal monologue resolving its own narrative failures (meta-commentary in beats 3-5), breaks character constraints by debating cast rules within the story beats, and features a nonsensical resolution (calling a phone that is explicitly stated to be inside the locked apartment) that contradicts the central problem.",
+    "selection": {
+      "code": "BLUEPRINT_QUALITY_FAILED",
+      "reason": "no plan met the plan thresholds"
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "a32-fresh-3-L3-001",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
