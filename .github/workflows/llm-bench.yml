@@ -22,7 +22,7 @@ on:
       mode:
         description: "smoke = probe; bench = benchmark; select = K-draft selection (production flow); duo = retired edit flow (diagnostic); writer-test = one draft"
         type: choice
-        options: [smoke, bench, duo, select, writer-test, patch-test, repair-test, quality-gate, blueprint]
+        options: [smoke, bench, duo, select, writer-test, patch-test, repair-test, quality-gate, blueprint, planner-bakeoff]
         default: smoke
       max_tests:
         description: "smoke only: how many models to probe (capped at 16)"
@@ -493,6 +493,52 @@ jobs:
             $SRC --lines "$LINES" \
             $FLAGS --batch "$PREFIX" \
             --out "data/story-candidates/$PREFIX"
+      - name: Fresh corpus dump for planner-bakeoff (read-only)
+        if: inputs.mode == 'planner-bakeoff'
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node dump-story-corpus.mjs --out reports/story-corpus-dump.json
+
+      - name: "Planner bakeoff — same manifest, same prompt, only the model differs"
+        if: inputs.mode == 'planner-bakeoff'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MODEL_A: ${{ inputs.model_a }}
+          EFFORT_A: ${{ inputs.effort_a }}
+          MODEL_B: ${{ inputs.model_b }}
+          EFFORT_B: ${{ inputs.effort_b }}
+          JUDGE: ${{ inputs.probe_models }}
+          PREFIX: ${{ inputs.batch_prefix }}
+          LEVEL: ${{ inputs.level }}
+          COUNT: ${{ inputs.count }}
+          LINES: ${{ inputs.writer_max_tokens }}
+        run: |
+          set -e
+          case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
+          for spec in "$MODEL_A" "$MODEL_B" "$JUDGE"; do
+            case "$spec" in ("") ;; (*[!A-Za-z0-9._/:-]*) echo "bad model spec: $spec"; exit 1;; esac
+          done
+          if [ -z "$MODEL_A" ]; then echo "model_a is required"; exit 1; fi
+          case "$EFFORT_A" in (""|none|low|medium|high|default) ;; (*) echo "bad effort_a"; exit 1;; esac
+          case "$EFFORT_B" in (""|none|low|medium|high|default) ;; (*) echo "bad effort_b"; exit 1;; esac
+          case "$COUNT" in (*[!0-9]*|"") COUNT=6;; esac
+          if [ "$COUNT" -gt 8 ]; then COUNT=8; fi
+          case "$LEVEL" in (*[!0-9]*|"") LEVEL=3;; esac
+          case "$LINES" in (*[!0-9]*|"") LINES=28;; esac
+          MODELS="$MODEL_A"
+          if [ -n "$EFFORT_A" ]; then MODELS="$MODEL_A:$EFFORT_A"; fi
+          if [ -n "$MODEL_B" ]; then
+            if [ -n "$EFFORT_B" ]; then MODELS="$MODELS,$MODEL_B:$EFFORT_B"; else MODELS="$MODELS,$MODEL_B"; fi
+          fi
+          JUDGE_FLAG=""
+          if [ -n "$JUDGE" ]; then JUDGE_FLAG="--judge $JUDGE"; fi
+          node planner-bakeoff.mjs \
+            --input reports/story-corpus-dump.json \
+            --models "$MODELS" $JUDGE_FLAG \
+            --per-model "$COUNT" --level "$LEVEL" --lines "$LINES" \
+            --out "data/story-candidates/$PREFIX"
+
       - name: Show reports
         if: always()
         run: |
