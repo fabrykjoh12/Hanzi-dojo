@@ -1,0 +1,410 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "a3-smoke-1",
+  "generatedAt": "2026-08-23T10:03:41.495Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "blueprint-smoke-2-L3-001",
+    "batchId": "blueprint-smoke-2",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "关系",
+      "女人",
+      "男人",
+      "帮助",
+      "需要"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "resume": null,
+    "scaffold": {
+      "version": "fab9-scaffold@1",
+      "ok": false,
+      "code": "BEAT_LEXICAL_SCAFFOLD_FAILED",
+      "detail": "beat 4 has no writable vocabulary after 2 attempts",
+      "log": [
+        {
+          "piece": "title",
+          "attempt": 1,
+          "output": "邻居",
+          "ok": true,
+          "problems": []
+        },
+        {
+          "piece": "anchors",
+          "beat": 1,
+          "attempt": 1,
+          "output": [
+            "下班",
+            "回家",
+            "听见",
+            "声音",
+            "走廊"
+          ],
+          "ok": false,
+          "problems": [
+            "\"走廊\": 走廊 is HSK 6, above the story level"
+          ]
+        },
+        {
+          "piece": "anchors",
+          "beat": 1,
+          "attempt": 2,
+          "output": [
+            "回家",
+            "听",
+            "声音",
+            "听"
+          ],
+          "ok": true,
+          "problems": []
+        },
+        {
+          "piece": "sketch",
+          "beat": 2,
+          "word": "女人",
+          "attempt": 1,
+          "output": "这个女人在干什么？",
+          "ok": false,
+          "problems": [
+            "non-vocabulary text: 干什么"
+          ]
+        },
+        {
+          "piece": "sketch",
+          "beat": 2,
+          "word": "女人",
+          "attempt": 2,
+          "output": "这个女人是谁？",
+          "ok": true,
+          "problems": []
+        },
+        {
+          "piece": "anchors",
+          "beat": 2,
+          "attempt": 1,
+          "output": [
+            "李明",
+            "开门",
+            "看见",
+            "地板",
+            "盒子"
+          ],
+          "ok": false,
+          "problems": [
+            "\"地板\": not standard vocabulary",
+            "\"盒子\": 盒子 is HSK 4, above the story level"
+          ]
+        },
+        {
+          "piece": "anchors",
+          "beat": 2,
+          "attempt": 2,
+          "output": [
+            "开门",
+            "看见",
+            "在",
+            "椅子",
+            "上",
+            "旁边"
+          ],
+          "ok": true,
+          "problems": []
+        },
+        {
+          "piece": "sketch",
+          "beat": 3,
+          "word": "需要",
+          "attempt": 1,
+          "output": "我很累，需要帮忙。",
+          "ok": true,
+          "problems": []
+        },
+        {
+          "piece": "sketch",
+          "beat": 3,
+          "word": "帮助",
+          "attempt": 1,
+          "output": "请你帮助我一下。",
+          "ok": true,
+          "problems": []
+        },
+        {
+          "piece": "anchors",
+          "beat": 3,
+          "attempt": 1,
+          "output": [
+            "好",
+            "吗",
+            "走廊",
+            "刚才"
+          ],
+          "ok": false,
+          "problems": [
+            "\"走廊\": 走廊 is HSK 6, above the story level"
+          ]
+        },
+        {
+          "piece": "anchors",
+          "beat": 3,
+          "attempt": 2,
+          "output": [
+            "你",
+            "好",
+            "不",
+            "累",
+            "谁",
+            "吗"
+          ],
+          "ok": true,
+          "problems": []
+        },
+        {
+          "piece": "sketch",
+          "beat": 4,
+          "word": "关系",
+          "attempt": 1,
+          "output": "我和她的关系不好。",
+          "ok": true,
+          "problems": []
+        },
+        {
+          "piece": "anchors",
+          "beat": 4,
+          "attempt": 1,
+          "output": [
+            "走廊",
+            "拿起",
+            "箱子",
+            "认识",
+            "以后"
+          ],
+          "ok": false,
+          "problems": [
+            "\"走廊\": 走廊 is HSK 6, above the story level"
+          ]
+        },
+        {
+          "piece": "anchors",
+          "beat": 4,
+          "attempt": 2,
+          "output": [
+            "盒子",
+            "捡",
+            "发现",
+            "了解",
+            "其他"
+          ],
+          "ok": false,
+          "problems": [
+            "\"盒子\": 盒子 is HSK 4, above the story level",
+            "\"捡\": 捡 is HSK 5, above the story level"
+          ]
+        }
+      ],
+      "title": null,
+      "beats": null
+    },
+    "blueprints": [],
+    "judgeRaw": null,
+    "selection": {
+      "code": "BEAT_LEXICAL_SCAFFOLD_FAILED",
+      "reason": "beat 4 has no writable vocabulary after 2 attempts"
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "blueprint-smoke-2-L3-001",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
