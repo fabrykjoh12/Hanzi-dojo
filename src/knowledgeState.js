@@ -171,6 +171,14 @@ export function readingCoveragePct(cards, totalActiveWords) {
 // `readyAt` is when calibration may first offer this claim for checking. It
 // rides in due_at, which is NOT NULL and otherwise unused here: state 'new'
 // means isCardDue() ignores it, so it steers calibration and nothing else.
+//
+// prior_known_at is stamped from the DEVICE clock — this row is built and sent
+// client-side. verified_at is the opposite: grade_card stamps it server-side so
+// a client cannot choose it. The two therefore live in different clock domains
+// and are deliberately NOT ordered against each other in the database: a device
+// running fast writes a claim dated in the server's future, and an immediate,
+// entirely genuine calibration grade verifies it "before" it was made. See the
+// note in 20260822160000_prior_knowledge_columns.sql.
 export function priorKnownCardRow(userId, vocabId, source, now = Date.now(), readyAt = null) {
   const stamp = new Date(now).toISOString()
   return {

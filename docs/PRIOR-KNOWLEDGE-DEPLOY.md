@@ -72,9 +72,12 @@ select column_name from information_schema.columns
 
 select conname from pg_constraint where conrelid='public.cards'::regclass
    and conname in ('cards_prior_source_check','cards_unverified_claim_is_inert',
-                   'cards_prior_claim_has_source','cards_verified_requires_claim',
-                   'cards_verified_after_claim');
--- expect 5 rows
+                   'cards_prior_claim_has_source','cards_verified_requires_claim');
+-- expect 4 rows
+
+select count(*) as must_be_zero from pg_constraint
+ where conrelid='public.cards'::regclass and conname='cards_verified_after_claim';
+-- expect 0 — see "The two timestamps are not ordered" below
 
 select pg_get_functiondef(p.oid) like '%verified_at%' as grade_card_stamps_verified
   from pg_proc p join pg_namespace n on n.oid=p.pronamespace
@@ -88,10 +91,12 @@ Then run the database integration test, which writes nothing:
 supabase/tests/prior_knowledge_verification.sql   -- ends in ROLLBACK
 ```
 
-Expect `ALL PASS`. It asserts that a claim's first grade is atomic for BOTH
-outcomes, that `reps` becomes 1, that `verified_at` is set, that provenance
-survives, that exactly one review log exists, and that a failure partway leaves
-the card at reps 0 with `verified_at` still NULL.
+Expect `ALL PASS` (35 assertions). It asserts that a claim's first grade is
+atomic for BOTH outcomes, that `reps` becomes 1, that `verified_at` is set, that
+provenance survives, that exactly one review log exists, and that a failure
+partway leaves the card at reps 0 with `verified_at` still NULL. Sections 5 and
+7 cover clock skew in both directions — including a claim dated two hours in the
+server's future, which must still calibrate cleanly.
 
 ### 3. Merge the application code
 
@@ -110,12 +115,38 @@ Vercel builds from `main` within minutes. Nothing else is required.
   select count(*) from cards where prior_known_at is not null and verified_at is not null and reps >= 1;
   -- grows as checks are answered
   ```
-- Nothing impossible exists (these should all return 0):
+- Nothing impossible exists (these should both return 0):
   ```sql
   select count(*) from cards where (prior_known_at is null) <> (prior_source is null);
   select count(*) from cards where verified_at is not null and prior_known_at is null;
-  select count(*) from cards where verified_at < prior_known_at;
   ```
+  `verified_at < prior_known_at` is deliberately **not** on that list — it is
+  expected, not impossible. See below.
+
+### The two timestamps are not ordered
+
+`prior_known_at` is stamped by the **device** clock (`priorKnownCardRow` builds
+the claim row client-side); `verified_at` is stamped by the **server** clock
+(`grade_card`'s `now()`), specifically so a client cannot choose it. They come
+from different clock domains, so neither order is guaranteed:
+
+- device behind the server → `verified_at` well after the claim (ordinary);
+- device **ahead** of the server → a phone two hours fast writes a claim dated
+  in the server's future, and an immediate, entirely genuine calibration grade
+  stamps `verified_at` *before* it.
+
+An earlier draft carried `cards_verified_after_claim` asserting
+`verified_at >= prior_known_at`. That constraint would reject the second case —
+a real review, refused by the database — so it was removed before any apply. Do
+not reintroduce it, and do not "fix" the ordering with
+`greatest(now(), prior_known_at)`: that hands the device the ability to push a
+server-authoritative timestamp into the future, which is exactly what
+server-derivation exists to prevent.
+
+Nothing depends on the ordering. "Claimed, still unproven" is `verified_at is
+null`, and the fact that a genuine observation happened is carried by
+`reps >= 1`, which no clock can fake. Section 7 of the DB test proves a
+future-dated claim still calibrates cleanly, for both outcomes.
 
 ### 5. Legacy data migration — manifest-based, and only after step 4 looks right
 

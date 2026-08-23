@@ -58,16 +58,21 @@ declare
   v_inserted boolean := false;
   -- SERVER time, deliberately. An earlier draft derived this from the client's
   -- p_updates->>'last_review', which meant the client could choose its own
-  -- verified_at — contradicting the guarantee this column exists to make — and
-  -- introduced a clock-skew failure: a claim made on device A and calibrated on
-  -- device B whose clock runs behind would produce last_review < prior_known_at
-  -- and be rejected by cards_verified_after_claim, killing a legitimate grade.
+  -- verified_at — contradicting the guarantee this column exists to make.
   --
   -- verified_at answers "when did the SERVER observe this learner genuinely
   -- grade this claim", which is a fact about our own records. It deliberately
   -- does NOT have to equal the scheduler's last_review: that stays exactly as
   -- srs.schedule() produced it, because FSRS intervals are computed from it and
   -- must keep the client's grading semantics unchanged.
+  --
+  -- It is likewise NOT ordered against prior_known_at, which is stamped by the
+  -- device clock. A device running ahead of the server produces
+  -- verified_at < prior_known_at on a completely genuine grade, so 20260822160000
+  -- deliberately enforces no ordering between the two — see the long note there.
+  -- Do not "fix" that by clamping this to greatest(now(), prior_known_at): that
+  -- would hand the device the ability to push a server-authoritative timestamp
+  -- into the future.
   v_verified_at timestamptz := now();
 begin
   if v_user_id is null then

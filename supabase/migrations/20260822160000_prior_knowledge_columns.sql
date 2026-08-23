@@ -105,11 +105,41 @@ alter table public.cards drop constraint if exists cards_verified_requires_claim
 alter table public.cards add constraint cards_verified_requires_claim
   check (verified_at is null or prior_known_at is not null);
 
--- You cannot check a claim before it was made. Guards against a clock-skewed
--- client and against a migration that back-dates one half of the pair.
+-- DELIBERATELY NOT CONSTRAINED: the ordering of the two timestamps.
+--
+-- An earlier draft added cards_verified_after_claim, asserting
+-- `verified_at >= prior_known_at` on the reasoning that you cannot check a
+-- claim before it was made. That is true of events, and false of these two
+-- columns, because they are stamped by DIFFERENT CLOCKS:
+--
+--   prior_known_at  — the DEVICE clock. knowledgeState.priorKnownCardRow()
+--                     builds the claim row client-side, so its value is
+--                     whatever the phone or browser believed the time was.
+--   verified_at     — the SERVER clock. 20260822170000 stamps it with now()
+--                     inside grade_card, precisely so the client cannot steer
+--                     a timestamp the model treats as authoritative.
+--
+-- A device two hours AHEAD of the server therefore writes a claim stamped
+-- 14:00, and an immediate, entirely genuine calibration grade a second later
+-- stamps verified_at at the server's 12:00. The ordering check would reject
+-- that write and the learner's real review would fail — the exact inverse of
+-- the skew case 20260822170000 fixed, and unfixable at this layer: making the
+-- constraint hold would mean either back-deriving prior_known_at server-side
+-- (a larger change than v1 needs) or clamping verified_at with
+-- greatest(now(), prior_known_at), which would let the device push a
+-- supposedly server-authoritative timestamp into the future — the very thing
+-- server-derivation exists to prevent.
+--
+-- Two timestamps from two clock domains should not be ordered by the database.
+-- Nothing depends on the ordering: "claimed, still unproven" is
+-- `verified_at is null`, and the fact that a genuine observation happened is
+-- carried by reps >= 1, which no clock can fake. What IS enforced stays
+-- enforced — verified_at requires a claim, provenance and claim are
+-- equivalent, and an unverified claim is inert.
+--
+-- The drop is kept so an environment that ran an earlier copy of this file
+-- converges on re-run.
 alter table public.cards drop constraint if exists cards_verified_after_claim;
-alter table public.cards add constraint cards_verified_after_claim
-  check (verified_at is null or prior_known_at is null or verified_at >= prior_known_at);
 
 -- The calibration queue: claimed, not yet checked. Partial, so it indexes only
 -- the rows calibration actually selects and stays small.
