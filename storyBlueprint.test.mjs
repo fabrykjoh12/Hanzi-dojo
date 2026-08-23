@@ -140,6 +140,27 @@ describe('validateBlueprint — what code can check about a plan', () => {
       .filter(f => f.code === 'target_no_speaker' && f.message.includes('打算')).length).toBe(0)
   })
 
+  // a3-fresh-1 lost four target placements, and blueprint-4 five, because an
+  // English plan calls the cast by the romanization the project's own story
+  // bible publishes. The aliases come from that bible text, never invented.
+  it('accepts the bible\'s own romanization of a cast name', () => {
+    const vm = { 找: { word: '找', level: 1 }, 打算: { word: '打算', level: 3 }, 我: { word: '我', level: 1 }, 去: { word: '去', level: 1 }, 他: { word: '他', level: 1 } }
+    const m = manifest()
+    const withSpeaker = (speaker) => {
+      const bp = blueprint()
+      bp.targetPlan[0] = { ...bp.targetPlan[0], speaker, refersTo: 'tomorrow', intent: 'say what he plans', usageSketch: '我打算去找他' }
+      return validateBlueprint(bp, { manifest: m, vocabMap: vm }).failures
+        .filter(f => f.code === 'target_no_speaker' && f.message.includes('打算')).length
+    }
+    for (const ok of ['李明', 'Li Ming', 'LI MING', 'Li Ming (internal monologue)', 'Xiao Hong', 'narrator']) {
+      expect(withSpeaker(ok), ok + ' should be recognised').toBe(0)
+    }
+    // someone who is not in the cast is still not in the cast
+    for (const bad of ['the shopkeeper', 'Wang Laoshi', 'a passing woman']) {
+      expect(withSpeaker(bad), bad + ' should be refused').toBe(1)
+    }
+  })
+
   it('rejects a cast outside the manifest, and one too large or too small', () => {
     expect(validateBlueprint(blueprint({ cast: ['李明', '王老师'] }), { manifest: manifest() }).failures.map(f => f.code)).toContain('cast_unknown')
     expect(validateBlueprint(blueprint({ cast: ['李明'] }), { manifest: manifest() }).failures.map(f => f.code)).toContain('cast_size')

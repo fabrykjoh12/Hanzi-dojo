@@ -31,8 +31,34 @@
 
 import { analyzeStory } from './storyCorpusCalibration.mjs'
 import { splitSpeaker } from './src/storyReading.js'
+import { BIBLE_CHINESE, BIBLE_JAPANESE, BIBLE_RUSSIAN } from './storyLevels.mjs'
 
 export const BLUEPRINT_VERSION = 'fab9-blueprint@1'
+
+// A3's shape planner writes in English, and an English document calls the
+// cast by the romanization the project's own story bible publishes —
+// "Li Ming", not 李明. a3-fresh-1 lost four target placements to that, and
+// blueprint-4 five. The aliases are read out of the bible text itself
+// (汉字 (Romanization)), never invented here: a name the bible does not
+// romanize has no alias, and a stranger is still a stranger.
+const ROMANIZATION = (() => {
+  const map = new Map()
+  for (const bible of [BIBLE_CHINESE, BIBLE_JAPANESE, BIBLE_RUSSIAN]) {
+    for (const line of String((bible && bible.text) || '').split('\n')) {
+      const m = line.match(/^[-\s]*(\S+?)\s*\(([^)]+)\)/)
+      if (!m) continue
+      const roman = normalizeName(m[2])
+      if (roman) map.set(roman, m[1])
+    }
+  }
+  return map
+})()
+
+function normalizeName(v) {
+  return String(v == null ? '' : v)
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')     // Lǐ Míng → Li Ming
+    .toLowerCase().replace(/[^a-z\s]/g, ' ').replace(/\s+/g, ' ').trim()
+}
 
 // A Chinese graded reader contains no Latin text. blueprint-2 shipped
 // 李明不想和 reckless 的人打球 — an English word the writer took straight from
@@ -169,6 +195,12 @@ export function validateBlueprint(bp, { manifest, vocabMap = null, requiredTarge
     if (!t) return null
     if (allowed.has(t)) return t
     for (const name of allowed) if (t.includes(name)) return name
+    // "Li Ming", "Li Ming (internal monologue)", "LI MING" — the bible's own
+    // romanization, however the plan dresses it up.
+    const flat = normalizeName(t)
+    for (const [roman, name] of ROMANIZATION) {
+      if (allowed.has(name) && (flat === roman || flat.startsWith(roman + ' ') || flat.includes(' ' + roman + ' ') || flat.endsWith(' ' + roman))) return name
+    }
     return null
   }
   const cast = Array.isArray(bp.cast) ? bp.cast.map(text).filter(Boolean) : []
