@@ -616,7 +616,16 @@ export function storyShapePrompt({ manifest, meanings = {}, totalLines, targets 
     .join('\n')
   return 'Plan the SHAPE of a short ' + name + ' Chinese graded-reader story. Write NO Chinese sentences: this is a plan, in English, and someone else writes the story from it.\n\n'
     + (feedback ? 'YOUR PREVIOUS PLAN WAS REJECTED:\n' + feedback.map(f => '- ' + f).join('\n') + '\nFix exactly these problems.\n\n' : '')
-    + 'Characters available (use 2-3, nobody else). Write their names in CHINESE exactly as shown, everywhere in the plan:\n' + manifest.speakers.join('、') + '\n\n'
+    // A32-fresh-1 and -2 lost three of four shapes to invented people —
+    // "Husband", "The Neighbor (Woman)", "Li Ming (internal thought)". The
+    // cast was in the preamble; it needed to be in the contract.
+    + 'CAST IS CLOSED. These are the only people who exist in this story:\n'
+    + manifest.speakers.map(sp => '  ' + sp).join('\n') + '\n\n'
+    + 'Use 2-3 of them and nobody else. Every person who acts, speaks, thinks, helps, is helped, or is involved in any beat MUST be one of those names, written in CHINESE exactly as shown, everywhere in the plan — in "cast", in every "speaker", and in the beat text.\n'
+    + 'Do NOT write Husband, Wife, Mother, Father, Neighbor, Shopkeeper, Courier, Teacher, Friend, The Man, The Woman, any other role label, any translated name, or any description of a person, unless that exact string is itself one of the names above.\n'
+    + 'Do NOT create an unnamed or implied person — someone who phones, knocks, delivers, waits outside or is mentioned as needing something is a person, and must be one of the names above.\n'
+    + 'Internal thought does not make a new speaker: if ' + manifest.speakers[0] + ' thinks something, the speaker is "' + manifest.speakers[0] + '" — never "' + manifest.speakers[0] + ' (internal thought)".\n'
+    + 'If a story idea needs another person, choose a different story idea.\n\n'
     + 'Words the finished story must teach. Each REQUIRED word needs a beat where a person would genuinely need it:\n' + list + '\n\n'
     + (manifest.theme ? 'Theme: ' + manifest.theme + '\n\n' : '')
     + 'Rules:\n'

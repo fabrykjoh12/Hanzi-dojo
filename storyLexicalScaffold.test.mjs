@@ -77,6 +77,21 @@ describe('the shape planner writes no Chinese', () => {
     expect(p).toContain('"intent"')
   })
 
+  // Three of four shapes across a32-fresh-1 and -2 invented a person the
+  // story did not have: Husband, The Neighbor (Woman), Li Ming (internal
+  // thought). The cast was in the preamble; it needed to be in the contract.
+  it('states the cast as a closed set, with the traps named', () => {
+    const p = storyShapePrompt({ manifest: manifest(), totalLines: 28, targets: ['护照'] })
+    expect(p).toContain('CAST IS CLOSED')
+    for (const name of manifest().speakers) expect(p).toContain(name)
+    for (const trap of ['Husband', 'Neighbor', 'Courier', 'The Woman', 'role label']) {
+      expect(p, trap).toContain(trap)
+    }
+    expect(p).toContain('unnamed or implied person')
+    expect(p).toContain('Internal thought does not make a new speaker')
+    expect(p).toContain('choose a different story idea')
+  })
+
   it('a shape validates structurally without a vocabulary, and is not asked for Chinese', () => {
     const r = validateBlueprint(shape(), { manifest: manifest(), requiredTargets: ['护照', '邻居'] })
     expect(r.ok).toBe(true)
