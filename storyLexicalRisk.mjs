@@ -27,6 +27,19 @@
 // No LLM call, no network, no curated list of forbidden scenes.
 
 import { tokenize, stem } from './storyLexicalRetrieval.mjs'
+import { BIBLE_CHINESE } from './storyLevels.mjs'
+
+// The shape is English, so its people are "Li Ming" and "Xiao Hong". Without
+// these the preflight read "Li" as a missing word — matched against 着凉, to
+// catch a cold — and that phantom drove almost every beat's classification.
+const ROMANIZED = (() => {
+  const out = []
+  for (const line of String((BIBLE_CHINESE && BIBLE_CHINESE.text) || '').split('\n')) {
+    const m = line.match(/\(([^)]+)\)/)
+    if (m) out.push(m[1])
+  }
+  return out
+})()
 
 export const RISK_VERSION = 'fab9-risk@1'
 
@@ -58,7 +71,8 @@ function splitClause(sentence) {
 
 // The concepts a beat depends on, sorted by how central they are.
 export function conceptsFromBeat(beat, entries = [], { names = [] } = {}) {
-  const nameTokens = new Set(names.flatMap(n => tokenize(n)))
+  const nameTokens = new Set([...names, ...ROMANIZED].flatMap(n => tokenize(
+    String(n).normalize('NFD').replace(/[\u0300-\u036f]/g, ''))))
   const clean = (text) => tokenize(text).filter(t => !nameTokens.has(t) && !LIGHT.has(t) && !LIGHT.has(stem(t)))
   const parts = sentences(beat && beat.what)
   const core = []
@@ -102,6 +116,13 @@ export function buildGlossIndex(vocabMap, level) {
   return index
 }
 
+// The vocabulary dataset is a LEARNER LIST, not a dictionary of the language:
+// chain, wheel, thud and struggling appear in it at no level at all. Treating
+// "absent everywhere" as "not a lexical concept" therefore threw away exactly
+// the concrete nouns that make a beat untellable — the preflight rated the
+// bicycle-chain beat HIGH only because it had mistaken the name "Li" for a
+// missing word. Absent is a gap; the STOP and LIGHT lists are what keep
+// function words out, and they are about English parsing, not Chinese.
 export function buildFullGlossIndex(vocabMap) {
   return buildGlossIndex(vocabMap, Number.MAX_SAFE_INTEGER)
 }
@@ -117,15 +138,10 @@ export function conceptSupport(concept, index, fullIndex = null) {
       return { support: 'weak', words: words.slice(0, 3) }
     }
   }
-  if (fullIndex) {
-    const above = fullIndex.get(concept) || fullIndex.get(stem(concept))
-    // The dictionary has no word for it at any level, so this is not a
-    // vocabulary gap — it is an English word that is not a lexical concept
-    // here. It cannot make a beat impossible.
-    if (!above || !above.length) return { support: 'notLexical', words: [] }
-    return { support: 'none', words: above.slice(0, 3) }
-  }
-  return { support: 'none', words: [] }
+  // A gap either way; the full index only supplies evidence of what the
+  // language would use, when it has anything at all.
+  const above = fullIndex ? (fullIndex.get(concept) || fullIndex.get(stem(concept))) : null
+  return { support: 'none', words: (above || []).slice(0, 3) }
 }
 
 // HIGH means the beat cannot be told at this level: its own subject matter is
