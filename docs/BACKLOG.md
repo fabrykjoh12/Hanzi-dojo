@@ -184,8 +184,30 @@ fit and suitability — none of which ask whether the story can be *said* at
 this level. A premise built on fine physical detail (sweating hands, a
 slipping grip, a box hitting the floor) can therefore score 9/10 and win.
 
-Do not fix both at once. The matcher is the narrow, testable one; the missing
-feasibility dimension in plan selection is a design question.
+**Matcher fixed 2026-08-24 (`fab9-risk@2`).** Two bridges, both built from the
+canonical dataset and neither hardcoded to a concept: sense synonyms (a gloss
+lists alternative translations of one word, so its single-word senses are
+synonyms — 抱 "to hold; to carry" gives hold ~ carry; linked only when the
+senses agree in part of speech, which the glosses mark with a leading "to")
+and component heads (an above-level compound whose head is an in-level word
+means the reader has the simpler word — 大量 → 大). Re-run on the same frozen
+plan D with the real corpus (`preflight-2/preflight.json`, 4998/4998 rows
+glossed):
+
+| beat | before | after | why |
+|---|---|---|---|
+| 1 | HIGH | MEDIUM | large → 大量 → 大 (HSK 1); heavy → 搬 (HSK 3) |
+| 2 | HIGH | **HIGH** | slips (absent), falls (掉 is HSK 4) — genuine |
+| 5 | HIGH | LOW | lift → "raise" → 起 (HSK 3); carry → "hold" → 拿 (HSK 2) |
+
+The risk arithmetic and every threshold are unchanged, and the gate's original
+cases still rate HIGH — 轮子 (wheel, HSK 6) stays a gap because 轮 is not a
+word the reader has.
+
+**Still open: the missing feasibility dimension in plan selection.** Plan D
+scored 9/10 with an inciting event — a box slipping from someone's hands and
+falling on the floor — that HSK 3 cannot say. That is a design question, not a
+matcher one, and nothing has been changed for it.
 
 ### Planners omit beat-to-beat movement, and it is content, not notation (open, found 2026-08-24)
 
