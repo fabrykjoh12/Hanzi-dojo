@@ -26,6 +26,7 @@ import {
   validateBlueprint, renderBlueprint, anonymiseBlueprints, acceptableBlueprint,
   BLUEPRINT_DIMENSIONS, BLUEPRINT_QUALITY,
 } from './storyBlueprint.mjs'
+import { adaptShape, adapterLostSomething, SHAPE_CONTRACT_VERSION } from './storySemanticShape.mjs'
 import { directProvider } from './llmDirect.mjs'
 import { levelConfig } from './storyLevels.mjs'
 
