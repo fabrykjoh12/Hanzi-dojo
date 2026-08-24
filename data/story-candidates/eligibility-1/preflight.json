@@ -1,0 +1,363 @@
+{
+  "version": "fab9-risk@2",
+  "generatedAt": "2026-08-24T21:00:05.936Z",
+  "reports": [
+    {
+      "source": "data/story-candidates/transition-1/bakeoff.json",
+      "kind": "bakeoff",
+      "manifestId": "bakeoff-L3-001",
+      "rows": [
+        {
+          "label": "C",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": true,
+          "overall": 9,
+          "risk": "MEDIUM",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": true,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"lobby\" has no in-level vocabulary, but the rest of the beat does"
+            },
+            {
+              "beat": 3,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 4,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (carried), but the beat's own event can be told"
+            },
+            {
+              "beat": 6,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (bonding), but the beat's own event can be told"
+            }
+          ]
+        },
+        {
+          "label": "A",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": true,
+          "overall": 7,
+          "risk": "MEDIUM",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": true,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (stuck), but the beat's own event can be told"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (hallway, trapped), but the beat's own event can be told"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (assesses), but the beat's own event can be told"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (strength, seeks, categorize), but the beat's own event can be told"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (focus, rescuer), but the beat's own event can be told"
+            },
+            {
+              "beat": 6,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"lock\" has no in-level vocabulary, but the rest of the beat does"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": true,
+          "overall": 9,
+          "risk": "HIGH",
+          "highBeats": [
+            2
+          ],
+          "highConcepts": [
+            "slips",
+            "falls"
+          ],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (sweating, grip, slipping, complain), but the beat's own event can be told"
+            },
+            {
+              "beat": 2,
+              "risk": "HIGH",
+              "reason": "the beat's own event needs 2 words the reader does not have: slips, falls"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (loud, thump, attracts, identification), but the beat's own event can be told"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (intervene), but the beat's own event can be told"
+            },
+            {
+              "beat": 5,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 6,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (bond), but the beat's own event can be told"
+            }
+          ]
+        },
+        {
+          "label": "F",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": false,
+          "overall": 5,
+          "risk": "MEDIUM",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (sweating, fill), but the beat's own event can be told"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (stuck, causing, visible, attracts), but the beat's own event can be told"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (trouble, logically, stress, necessity), but the beat's own event can be told"
+            },
+            {
+              "beat": 4,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"knocks\" has no in-level vocabulary, but the rest of the beat does"
+            }
+          ]
+        },
+        {
+          "label": "G",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": true,
+          "quality": true,
+          "overall": 6,
+          "risk": "HIGH",
+          "highBeats": [
+            4
+          ],
+          "highConcepts": [
+            "wrench",
+            "repair"
+          ],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"upset\" has no in-level vocabulary, but the rest of the beat does"
+            },
+            {
+              "beat": 3,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 4,
+              "risk": "HIGH",
+              "reason": "the beat's own event needs 2 words the reader does not have: wrench, repair"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (bond), but the beat's own event can be told"
+            }
+          ]
+        },
+        {
+          "label": "E",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": false,
+          "quality": true,
+          "overall": 8,
+          "risk": "LOW",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 2,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 3,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 4,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 5,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": false,
+          "quality": false,
+          "overall": 4,
+          "risk": "MEDIUM",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (gender), but the beat's own event can be told"
+            },
+            {
+              "beat": 3,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (neighbourly, bond, gender, describe), but the beat's own event can be told"
+            },
+            {
+              "beat": 5,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            }
+          ]
+        },
+        {
+          "label": "H",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": true,
+          "quality": true,
+          "overall": 9,
+          "risk": "MEDIUM",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": true,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"flat\" has no in-level vocabulary, but the rest of the beat does"
+            },
+            {
+              "beat": 2,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (wrench, necessity), but the beat's own event can be told"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (repair, gender, isn, volunteer), but the beat's own event can be told"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"stronger\" has no in-level vocabulary, but the rest of the beat does"
+            }
+          ]
+        }
+      ],
+      "eligible": [
+        "C",
+        "H",
+        "A"
+      ],
+      "rates": {
+        "groq:qwen/qwen3.6-27b:none": {
+          "n": 4,
+          "structural": 4,
+          "quality": 3,
+          "feasible": 3,
+          "eligible": 2
+        },
+        "groq:openai/gpt-oss-120b:low": {
+          "n": 4,
+          "structural": 2,
+          "quality": 3,
+          "feasible": 3,
+          "eligible": 1
+        }
+      }
+    }
+  ]
+}
