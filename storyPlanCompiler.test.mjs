@@ -15,6 +15,12 @@ describe('isTravel — a movement verb is not enough', () => {
     expect(isTravel('they lift the table together')).toBe(false)
   })
 
+  it('refuses a passive clause about an object', () => {
+    // Verbatim from bakeoff plan G, which took its whole arrival from this.
+    expect(isTravel('because the box has been moved successfully thanks to their teamwork')).toBe(false)
+    expect(isTravel('the ladder was carried upstairs')).toBe(false)
+  })
+
   it('accepts a clause naming the destination even without a direction word', () => {
     expect(isTravel('小红 reaches the lobby', 'Lobby')).toBe(true)
   })
@@ -29,6 +35,11 @@ describe('destinationOf — only a place counts', () => {
   it('refuses a purpose clause', () => {
     expect(destinationOf('he steps out to think')).toBeNull()
     expect(destinationOf('she comes to help')).toBeNull()
+  })
+
+  it('refuses a phrase that is not a place at all', () => {
+    expect(destinationOf('thanks to their teamwork')).toBeNull()
+    expect(destinationOf('he listens to her advice')).toBeNull()
   })
 })
 
@@ -75,6 +86,16 @@ describe('compileBeat — arrivals the plan already explained', () => {
     const r = compileBeat({ where: 'The park', what: 'They eat lunch', when: 'Noon', because: 'because they are hungry' }, prev, 1)
     expect(r.beat.arrivedHow).toBeUndefined()
     expect(r.misses).toEqual([{ beat: 2, field: 'arrivedHow', reason: expect.stringContaining('The park') }])
+  })
+
+  it('never reuses the previous beat’s own arrival', () => {
+    // Verbatim from bakeoff plan G: beat 4 says how 小明 reached the hallway.
+    // It says nothing about how anyone later reached 李明's apartment, and the
+    // shared word "apartment" must not make it look as though it does.
+    const beat4 = { where: 'Hallway', arrivedHow: '小明 walks from his apartment down the stairs', what: '小明 arrives and they lift the box' }
+    const r = compileBeat({ where: '李明 apartment', what: 'They place the box inside 李明 room', when: 'Morning', because: 'because the box has been moved' }, beat4, 4)
+    expect(r.beat.arrivedHow).toBeUndefined()
+    expect(r.misses.map(m => m.field)).toContain('arrivedHow')
   })
 
   it('never overwrites an arrival the plan supplied', () => {

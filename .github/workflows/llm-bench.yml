@@ -484,6 +484,12 @@ jobs:
               case "$STAGE" in
                 (scaffold) SRC="--resume-scaffold $MANIFEST";;
                 (preflight) SRC="--preflight-only $MANIFEST";;
+                # "shape:G" reuses one labelled plan out of a planner bakeoff.
+                (shape:*)
+                  LBL="${STAGE#shape:}"
+                  case "$LBL" in (*[!A-Za-z0-9_-]*|"") echo "bad shape label"; exit 1;; esac
+                  SRC="--shape-from $MANIFEST --shape-label $LBL"
+                ;;
                 (*) SRC="--shape-from $MANIFEST";;
               esac
             ;;

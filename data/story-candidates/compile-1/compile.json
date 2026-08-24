@@ -13,10 +13,10 @@
     "groq:openai/gpt-oss-120b:low": {
       "n": 6,
       "structBefore": 0,
-      "structAfter": 2,
+      "structAfter": 1,
       "quality": 4,
       "jointBefore": 0,
-      "jointAfter": 1
+      "jointAfter": 0
     }
   },
   "rows": [
@@ -252,22 +252,22 @@
         ]
       },
       "after": {
-        "ok": true,
-        "codes": []
+        "ok": false,
+        "codes": [
+          "unexplained_move"
+        ]
       },
       "qualityOk": true,
       "jointBefore": false,
-      "jointAfter": true,
-      "derived": [
+      "jointAfter": false,
+      "derived": [],
+      "misses": [
         {
           "beat": 5,
           "field": "arrivedHow",
-          "value": "because the box has been moved successfully thanks to their teamwork",
-          "from": "because",
-          "reason": "the plan already said how they travelled"
+          "reason": "nothing in the plan says how anyone reached \"李明's apartment\""
         }
       ],
-      "misses": [],
       "rewrote": []
     },
     {

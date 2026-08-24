@@ -154,6 +154,34 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### Planners omit beat-to-beat movement, and it is content, not notation (open, found 2026-08-24)
+
+Measured on the twelve stored plans in `data/story-candidates/planner-bakeoff-1t/`
+and `compile-1/compile.json`. Both planners were run on one manifest, one
+prompt, one validator: **joint pass 0/6 each**. gpt-oss lost all six plans to
+`unexplained_move`; Qwen lost two to unparseable JSON and two to unplaced
+targets.
+
+`storyPlanCompiler.mjs` was built to test whether that was serialization —
+the plans do often say how the cast travelled, just in `what` or inside
+`where` instead of in `arrivedHow`. It compiles the structural fields out of
+the plan's own words and never invents any. **Answer: serialization was not
+the main blocker.** It recovers exactly one plan of six (structural 0/6 → 1/6),
+and joint pass stays 0/6, because that plan's story quality was 4/10 anyway.
+
+The residual is real content: in E, G, H, B and F the cast arrives in a lobby,
+a courtyard, a living room and an apartment with nothing in the plan saying
+anyone went there. A planner writing a five-beat story simply does not narrate
+its transitions.
+
+**Method note worth keeping.** The compiler's first two measured "successes"
+were its own fabrications — it read "the box **has been moved** thanks **to
+their teamwork**" as travel, and reused one beat's arrival for the next beat
+by matching the shared word "apartment". Both were caught by reading the
+compiled output, not by the specs; both are now specs. Any future harness that
+derives a field must record its provenance and be read line by line before its
+numbers are believed.
+
 ### Canonical segmentation splits unknown compounds into single characters (open, found 2026-08-22)
 
 **Do not fix this without a separate investigation** — it lives in the canonical

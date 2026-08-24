@@ -49,6 +49,11 @@ const VERB_START = /^(?:help|think|ask|see|get|do|make|take|find|buy|talk|speak|
 // destination while accepting "walks to 李明's apartment".
 const PLACE_NOUN = /\b(room|rooms|hallway|hall|corridor|kitchen|stairs|stair|stairwell|staircase|lobby|entrance|gate|door|doorway|apartment|flat|house|home|building|floor|balcony|yard|courtyard|garden|park|street|road|shop|store|market|school|classroom|office|station|stop|restaurant|cafe|café|library|hospital|bank|bus|train|car|taxi|elevator|lift|bathroom|bedroom|living|dining|roof|rooftop|field|playground|counter|table|desk|window|park|bridge|river|square|hotel|airport|platform)\b/i
 
+// "the box has been moved" describes an object being handled, not a person
+// travelling. Passive voice is the clearest deterministic signal of the
+// difference, and plan G's beat 5 took its whole arrival from one.
+const PASSIVE = /\b(?:is|are|was|were|has|have|had|been|be|being)\s+(?:been\s+)?(?:moved|carried|brought|taken|pushed|pulled|returned|placed|lifted|delivered)\b/i
+
 const STATE_CLAUSE = /\b(is|are|was|were|has|have|had|now|already|still|feeling|holding|waiting|sitting|standing)\b/i
 
 function clauses(v) {
@@ -62,7 +67,7 @@ function clauses(v) {
 // given, travelling somewhere consistent with it?
 export function isTravel(clause, destination = null) {
   const c = text(clause)
-  if (!c || !MOVEMENT.test(c)) return false
+  if (!c || !MOVEMENT.test(c) || PASSIVE.test(c)) return false
   if (DIRECTION.test(c) || destinationOf(c)) return true
   return Boolean(destination && placeMatch(c, destination))
 }
@@ -86,9 +91,10 @@ export function destinationOf(clause) {
   if (!m) return null
   const tail = m[1].trim().replace(/[.。!?]+$/, '')
   if (!tail || VERB_START.test(tail)) return null
+  // A determiner is not enough: "thanks to their teamwork" and "listens to
+  // her mother" are not destinations. The tail has to name somewhere — a
+  // place noun, or a name in the story's own script.
   const looksLikePlace = PLACE_NOUN.test(tail)
-    || /(?:^|\s)(?:the|a|an|his|her|their|my|your|its)\s+\S+/i.test(tail)
-    || /\S+['’]s\s+\S+/.test(tail)
     || /[\p{Script=Han}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Cyrillic}]/u.test(tail)
   return looksLikePlace ? tail : null
 }
@@ -118,15 +124,26 @@ export function travelClause(source, place) {
   return null
 }
 
+// Where a journey ENDS. Comparing a whole clause to a place matches on the
+// origin as readily as the destination — "小明 walks from his apartment down
+// the stairs" shares "apartment" with "李明's apartment" and is about neither
+// arriving there nor 李明 — so only the tail after the direction counts.
+export function arrivalTarget(clause) {
+  const dest = destinationOf(clause)
+  if (dest) return dest
+  const m = text(clause).match(/\b(?:down|up|into|onto|out|back|toward|towards|through|across|along)\b\s*(.+)$/i)
+  return m && m[1].trim() ? m[1].trim() : null
+}
+
 // A journey narrated in an EARLIER beat only explains this arrival when it
-// points here. "They carry it down the stairs" says how the cast reached the
+// ENDS here. "They carry it down the stairs" says how the cast reached the
 // stairwell; it says nothing about how they later reached the lobby, and
 // filling that in would be the compiler inventing the story.
 export function arrivalClause(source, place) {
   for (const c of clauses(source)) {
     if (!isTravel(c, place)) continue
-    const dest = destinationOf(c)
-    if (placeMatch(c, place) || (dest && placeMatch(dest, place))) return c
+    const end = arrivalTarget(c)
+    if (end && placeMatch(end, place)) return c
   }
   return null
 }
@@ -156,8 +173,9 @@ export function compileBeat(beat, prev, index) {
       [transition, 'where'],
       [travelClause(b.what, place), 'what'],
       [travelClause(b.because, place), 'because'],
+      // NOT prev.arrivedHow: that field is by definition about arriving at
+      // the PREVIOUS beat's place, and reusing it invents a second journey.
       [arrivalClause(prev && prev.what, place), 'previous beat'],
-      [arrivalClause(prev && prev.arrivedHow, place), 'previous beat'],
     ]
     const hit = sources.find(([c]) => Boolean(c))
     if (hit) {

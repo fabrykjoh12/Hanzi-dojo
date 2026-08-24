@@ -31,6 +31,7 @@ import {
   lineJudgePrompt, parseLineJudgment,
   PROMPT_VERSION,
 } from './storyGenPrompts.mjs'
+import { compilePlan, compileChanges, COMPILER_VERSION } from './storyPlanCompiler.mjs'
 import {
   validateBlueprint, allocateLines, anonymiseBlueprints, renderBlueprint,
   acceptableBlueprint, hasLatin, BLUEPRINT_DIMENSIONS, BLUEPRINT_QUALITY, BLUEPRINT_VERSION,
@@ -73,6 +74,8 @@ const resumePlanPath = arg('resume-plan', null)
 // and run the lexical scaffold stage against it. Isolates lexical generation
 // from planning variance, which is the whole point of the split.
 const shapeFromPath = arg('shape-from', null)
+// Which plan, when the stored artifact is a planner bakeoff holding several.
+const shapeLabel = arg('shape-label', null)
 // A3.1 pilot: resume a stored run's scaffold, keeping every piece it already
 // validated and retrying only the one that failed.
 const resumeScaffoldPath = arg('resume-scaffold', null)
@@ -135,6 +138,27 @@ if (preflightOnly) {
   process.exit(0)
 }
 
+// planner → COMPILER → validator. The planner supplies meaning; the schema is
+// compiled from it deterministically, because the bakeoff showed gpt-oss
+// losing 6/6 plans to a field whose answer was already written in `what`.
+// A compiler that edited the story would be a second, unaccountable writer,
+// so a semantic change aborts the run instead of being reported as a result.
+function compileShape(bp, where) {
+  if (!bp) return bp
+  const { blueprint, derived, misses } = compilePlan(bp)
+  const rewrote = compileChanges(bp, blueprint)
+  if (rewrote.length) {
+    console.error('COMPILER REWROTE THE STORY (' + where + '): ' + rewrote.join(', '))
+    process.exit(2)
+  }
+  if (derived.length) {
+    console.log('  compiled (' + COMPILER_VERSION + '): '
+      + derived.map(d => 'beat ' + d.beat + ' ' + d.field + ' ← ' + d.from).join(', '))
+  }
+  for (const m of misses) console.log('  compiler MISS: beat ' + m.beat + ' ' + m.field + ' — ' + m.reason)
+  return blueprint
+}
+
 // Either reuse a stored SHAPE (A3), resume one stored plan (retired path), or
 // compose fresh manifests.
 const jobs = []
@@ -165,15 +189,30 @@ if (resumeScaffoldPath) {
 }
 if (shapeFromPath) {
   const stored = JSON.parse(readFileSync(shapeFromPath, 'utf8'))
-  const entry = (stored.blueprintRun.blueprints || []).find(x => x.blueprint)
-  if (!entry) { console.error('no stored blueprint in ' + shapeFromPath); process.exit(1) }
+  // A planner bakeoff stores its plans as candidates[], a pilot as
+  // blueprintRun.blueprints[]. Both are story shapes; --shape-label picks one
+  // out of a bakeoff by the anonymised label it was judged under.
+  const fromBakeoff = Array.isArray(stored.candidates)
+  const entry = fromBakeoff
+    ? stored.candidates.find(c => c.blueprint && (!shapeLabel || c.label === shapeLabel))
+    : (stored.blueprintRun.blueprints || []).find(x => x.blueprint)
+  if (!entry) { console.error('no stored blueprint in ' + shapeFromPath + (shapeLabel ? ' labelled ' + shapeLabel : '')); process.exit(1) }
+  if (fromBakeoff) {
+    const { chineseTitle, ...shape } = entry.blueprint
+    shape.beats = (shape.beats || []).map(b => { const { chineseLexicalAnchors, ...rest } = b; return rest })
+    shape.targetPlan = (shape.targetPlan || []).map(t => { const { usageSketch, ...rest } = t; return rest })
+    jobs.push({ manifest: stored.manifest, required: stored.required, shape, resume: null })
+    console.log('A3: reusing bakeoff plan ' + entry.label + ' (' + entry.model + ') from ' + shapeFromPath + '\n')
+  }
+  if (!fromBakeoff) {
   // Keep the SHAPE, discard every piece of Chinese it carried: the lexical
   // stage generates all of that from scratch, one small piece at a time.
-  const { chineseTitle, ...shape } = entry.blueprint
-  shape.beats = (shape.beats || []).map(b => { const { chineseLexicalAnchors, ...rest } = b; return rest })
-  shape.targetPlan = (shape.targetPlan || []).map(t => { const { usageSketch, ...rest } = t; return rest })
-  jobs.push({ manifest: stored.manifest, required: stored.blueprintRun.required, shape, resume: null })
-  console.log('A3: reusing the stored story shape from ' + shapeFromPath + ' (its Chinese is discarded)\n')
+    const { chineseTitle, ...shape } = entry.blueprint
+    shape.beats = (shape.beats || []).map(b => { const { chineseLexicalAnchors, ...rest } = b; return rest })
+    shape.targetPlan = (shape.targetPlan || []).map(t => { const { usageSketch, ...rest } = t; return rest })
+    jobs.push({ manifest: stored.manifest, required: stored.blueprintRun.required, shape, resume: null })
+    console.log('A3: reusing the stored story shape from ' + shapeFromPath + ' (its Chinese is discarded)\n')
+  }
 }
 if (resumePlanPath) {
   const stored = JSON.parse(readFileSync(resumePlanPath, 'utf8'))
@@ -227,6 +266,7 @@ for (const job of jobs) {
   // is nothing left to learn by paying for it to plan again.
   const raws = []
   if (job.shape) {
+    job.shape = compileShape(job.shape, 'stored shape')
     const structural = validateBlueprint(job.shape, { manifest, requiredTargets: required })
     console.log('STORY SHAPE (reused; its Chinese was discarded):')
     console.log(renderBlueprint(job.shape).split('\n').map(l => '  ' + l).join('\n'))
@@ -292,7 +332,7 @@ for (const job of jobs) {
           prompt: storyShapePrompt({ manifest, meanings, totalLines, targets: required, feedback: feedback || avoidNote }),
           maxTokens: 2600,
         })
-        bp = parseBlueprint(rawText)
+        bp = compileShape(parseBlueprint(rawText), 'fresh plan, attempt ' + k)
       } catch (err) { error = String(err.message || err).slice(0, 160); bp = null }
       check = bp
         ? validateBlueprint(bp, { manifest, requiredTargets: required })
