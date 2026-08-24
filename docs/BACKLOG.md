@@ -174,6 +174,26 @@ a courtyard, a living room and an apartment with nothing in the plan saying
 anyone went there. A planner writing a five-beat story simply does not narrate
 its transitions.
 
+**Resolved 2026-08-24 by asking the planner instead of the code.** The
+planning contract now carries `location` and `transition_from_previous`
+("same_place", or the movement the planner intends), and
+`storySemanticShape.mjs` renames that into the strict schema with no
+inference of any kind. Measured on 4 fresh plans per model
+(`data/story-candidates/transition-1/`), same validator, same thresholds:
+
+| | before | after |
+|---|---|---|
+| Qwen joint | 0/6 | **3/4** |
+| gpt-oss joint | 0/6 | **2/4** |
+| `unexplained_move` | 6/6 of gpt-oss plans | **0** |
+| transitions stated | n/a | **9/9**, 0 contract violations, 0 adapter losses |
+
+Watch one thing: Qwen's plans move much less (2 required transitions across
+4 plans, against gpt-oss's 7), so part of its structural lead is staying in
+one room. Its quality scores are the run's highest, so it is not buying
+structure with dullness — but a planner that never leaves the kitchen would
+be a regression worth catching early.
+
 **Method note worth keeping.** The compiler's first two measured "successes"
 were its own fabrications — it read "the box **has been moved** thanks **to
 their teamwork**" as travel, and reused one beat's arrival for the next beat
