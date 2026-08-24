@@ -154,6 +154,34 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### Planners omit beat-to-beat movement, and it is content, not notation (open, found 2026-08-24)
+
+Measured on the twelve stored plans in `data/story-candidates/planner-bakeoff-1t/`
+and `compile-1/compile.json`. Both planners were run on one manifest, one
+prompt, one validator: **joint pass 0/6 each**. gpt-oss lost all six plans to
+`unexplained_move`; Qwen lost two to unparseable JSON and two to unplaced
+targets.
+
+`storyPlanCompiler.mjs` was built to test whether that was serialization —
+the plans do often say how the cast travelled, just in `what` or inside
+`where` instead of in `arrivedHow`. It compiles the structural fields out of
+the plan's own words and never invents any. **Answer: serialization was not
+the main blocker.** It recovers exactly one plan of six (structural 0/6 → 1/6),
+and joint pass stays 0/6, because that plan's story quality was 4/10 anyway.
+
+The residual is real content: in E, G, H, B and F the cast arrives in a lobby,
+a courtyard, a living room and an apartment with nothing in the plan saying
+anyone went there. A planner writing a five-beat story simply does not narrate
+its transitions.
+
+**Method note worth keeping.** The compiler's first two measured "successes"
+were its own fabrications — it read "the box **has been moved** thanks **to
+their teamwork**" as travel, and reused one beat's arrival for the next beat
+by matching the shared word "apartment". Both were caught by reading the
+compiled output, not by the specs; both are now specs. Any future harness that
+derives a field must record its provenance and be read line by line before its
+numbers are believed.
+
 ### Canonical segmentation splits unknown compounds into single characters (open, found 2026-08-22)
 
 **Do not fix this without a separate investigation** — it lives in the canonical
@@ -320,59 +348,6 @@ migration to drop them, since this removed the feature, not historical data.
   reads them.
 
 ## Frontend cleanup
-- [x] **B2: prior knowledge is distinguishable from earned mastery (2026-08-22).**
-  Five commits. A claim used to be written as a finished FSRS review card —
-  `state 'review'`, `stability` exactly 21, `learned true`, `reps 0` — so one
-  tap asserted three weeks of proven recall, and 594 production rows across 2
-  accounts read as mastered on no evidence.
-  **The model:** one row per (user, vocab) still, but a claim is an INERT row —
-  `state 'new'`, stability/difficulty/last_review NULL, reps/lapses 0 — marked
-  by three new columns (`prior_known_at`, `prior_source`, `verified_at`) and
-  held to that shape server-side by `cards_unverified_claim_is_inert`.
-  **The invariant:** `reps >= 1` means a human graded this word here. ts-fsrs
-  increments it on every `repeat()` and nothing else may write it (CLAUDE.md
-  §7.3b). `isLearned` and `isMastered` both require it now.
-  **Why inert wins over a separate table:** it fails SAFE. A query that forgets
-  the new columns sees an ordinary unstarted card and under-claims. It also
-  needed no change to `grade_card`, either reset RPC, `delete_my_account`, the
-  offline cache or the outbox — a separate table would have touched all of them,
-  plus a second paged fetch in ~10 screens and the eight add-to-deck dup guards
-  that check only for a card row.
-  **Semantics:** claims count for READING (story % known, story tier gates) and
-  never for TAUGHT (learned/mastered counts, level completion). The level test
-  gained a coverage-based unlock so an experienced learner can prove a level in
-  one exam instead of calibrating hundreds of words; passing still needs 30/30
-  and writes no per-word FSRS state.
-  **Calibration** ships with the model, not after — an inert claim is never due
-  and never offered as a new card, so it is otherwise unreachable. A check is
-  the word's first real review through the ONE canonical scheduler (binary: I
-  knew it → Easy, didn't → Again). No second FSRS config.
-  **Not yet applied:** the data migration for the 594 + 51 legacy rows. Tooling
-  and dry run are committed (`migrate-legacy-claims.mjs`, dry run is the
-  default); see the dry-run numbers in the session report before running
-  `--apply`.
-- [x] **B1: every core query paged past PostgREST's 1000-row cap (2026-08-22).**
-  The engine-audit's top blocker: `getTrackCards`, the session-build and
-  Home-counts vocabulary windows, the level-test gate (`testLogic.js` +
-  `Test.jsx`), the onboarding placement claim, KnownWords' carded set, and a
-  sweep of per-level/whole-track reads (Study's recap loaders, Profile stats
-  incl. all-time `review_logs`, PlacementTest, Words/Listen/Tones/Speaking/
-  FillBlank/SentenceBuilder/Writer/Writing, Analyzer, ChatMission, homeStory,
-  prefetch, LanguageSwitcher, Dev) all ran unpaged, so anything past 1,000 rows
-  was silently dropped — an HSK 1–4 window is already 1,879 words, HSK 6 alone
-  is 1,621, and an HSK 6 placement claim is 3,374. All now go through
-  `fetchPaged`/`fetchPagedSafe`/`fetchPagedResult` (new) or `fetchChunkedIn`
-  (new, for `.in()` id lists), each with a unique trailing `.order('id')` so
-  offset pages can't overlap on tied sort keys. Extracted
-  `priorKnowledgeVocab.js` and `knownWordsData.js` so the two inline component
-  queries are unit-tested. `src/fakePostgrest.js` (test-only) emulates the
-  capped server; specs assert exact counts at real HSK sizes and failed
-  against the old code. **The invariant:** any new query that can return a
-  whole track, a whole deck, or a learner's whole history MUST page, and MUST
-  order by a unique key. Deliberately left unpaged (bounded): stories /
-  story_reads (bounded by the published-story count — page these if the
-  library ever approaches 1,000), `review_logs` recent-window with `.limit(400)`
-  in Stories, small `.in()` lists, singleton/config reads.
 - [x] **`Stories.jsx` shelf logic extracted to `src/storyShelves.js` (2026-07-30).** The
   screen held two closures over render scope (`shelvesForTier`, `tierInfo`) plus a
   ~70-line IIFE inside the JSX that filtered, arc-grouped and split every level of
