@@ -1,0 +1,1197 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "a3-final-1",
+  "generatedAt": "2026-08-24T15:31:59.970Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bakeoff-L3-001",
+    "batchId": "bakeoff",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "关系",
+      "女人",
+      "男人",
+      "帮助",
+      "需要"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "resume": null,
+    "risk": {
+      "version": "fab9-risk@1",
+      "risk": "HIGH",
+      "beats": [
+        {
+          "beat": 1,
+          "risk": "HIGH",
+          "reason": "the central action (large) and 4 more of what happens here (sweating, grip, slipping, struggling) have no in-level vocabulary",
+          "core": [
+            {
+              "concept": "holding",
+              "support": "supported",
+              "words": [
+                "拿",
+                "把",
+                "开会"
+              ]
+            },
+            {
+              "concept": "large",
+              "support": "none",
+              "words": [
+                "大量",
+                "大巴",
+                "强大"
+              ]
+            },
+            {
+              "concept": "heavy",
+              "support": "supported",
+              "words": [
+                "搬"
+              ]
+            },
+            {
+              "concept": "box",
+              "support": "supported",
+              "words": [
+                "邮箱"
+              ]
+            }
+          ],
+          "supporting": [
+            {
+              "concept": "hands",
+              "support": "supported",
+              "words": [
+                "手",
+                "身边"
+              ]
+            },
+            {
+              "concept": "sweating",
+              "support": "none",
+              "words": [
+                "汗水"
+              ]
+            },
+            {
+              "concept": "grip",
+              "support": "none",
+              "words": [
+                "抓紧"
+              ]
+            },
+            {
+              "concept": "slipping",
+              "support": "none",
+              "words": []
+            },
+            {
+              "concept": "struggling",
+              "support": "none",
+              "words": [
+                "奋斗",
+                "斗争"
+              ]
+            },
+            {
+              "concept": "walk",
+              "support": "supported",
+              "words": [
+                "走",
+                "走路"
+              ]
+            }
+          ],
+          "incidental": [
+            {
+              "concept": "story",
+              "support": "supported",
+              "words": [
+                "房子"
+              ]
+            },
+            {
+              "concept": "opens",
+              "support": "supported",
+              "words": [
+                "开",
+                "打开",
+                "开花"
+              ]
+            },
+            {
+              "concept": "complain",
+              "support": "none",
+              "words": [
+                "抱怨",
+                "投诉"
+              ]
+            },
+            {
+              "concept": "state",
+              "support": "supported",
+              "words": [
+                "着",
+                "国家"
+              ]
+            },
+            {
+              "concept": "deficit",
+              "support": "none",
+              "words": [
+                "亏",
+                "亏损"
+              ]
+            }
+          ],
+          "coreMissing": [
+            "large"
+          ],
+          "supportingMissing": [
+            "sweating",
+            "grip",
+            "slipping",
+            "struggling"
+          ],
+          "incidentalMissing": [
+            "complain",
+            "deficit"
+          ]
+        },
+        {
+          "beat": 2,
+          "risk": "HIGH",
+          "reason": "the beat's own event needs 2 words the reader does not have: slips, falls",
+          "core": [
+            {
+              "concept": "box",
+              "support": "supported",
+              "words": [
+                "邮箱"
+              ]
+            },
+            {
+              "concept": "slips",
+              "support": "none",
+              "words": []
+            },
+            {
+              "concept": "hands",
+              "support": "supported",
+              "words": [
+                "手",
+                "身边"
+              ]
+            },
+            {
+              "concept": "falls",
+              "support": "none",
+              "words": [
+                "傍晚"
+              ]
+            },
+            {
+              "concept": "heavily",
+              "support": "supported",
+              "words": [
+                "搬"
+              ]
+            },
+            {
+              "concept": "floor",
+              "support": "supported",
+              "words": [
+                "楼"
+              ]
+            }
+          ],
+          "supporting": [
+            {
+              "concept": "lift",
+              "support": "none",
+              "words": [
+                "抬",
+                "提升"
+              ]
+            },
+            {
+              "concept": "requires",
+              "support": "supported",
+              "words": [
+                "需要",
+                "要求"
+              ]
+            },
+            {
+              "concept": "help",
+              "support": "supported",
+              "words": [
+                "帮",
+                "帮忙",
+                "把",
+                "帮助"
+              ]
+            }
+          ],
+          "incidental": [
+            {
+              "concept": "carry",
+              "support": "none",
+              "words": [
+                "抱",
+                "执行",
+                "采取"
+              ]
+            },
+            {
+              "concept": "too",
+              "support": "supported",
+              "words": [
+                "也",
+                "太",
+                "不久"
+              ]
+            },
+            {
+              "concept": "heavy",
+              "support": "supported",
+              "words": [
+                "搬"
+              ]
+            },
+            {
+              "concept": "loses",
+              "support": "supported",
+              "words": [
+                "丢",
+                "瘦"
+              ]
+            },
+            {
+              "concept": "grip",
+              "support": "none",
+              "words": [
+                "抓紧"
+              ]
+            }
+          ],
+          "coreMissing": [
+            "slips",
+            "falls"
+          ],
+          "supportingMissing": [
+            "lift"
+          ],
+          "incidentalMissing": [
+            "carry",
+            "grip"
+          ]
+        },
+        {
+          "beat": 3,
+          "risk": "MEDIUM",
+          "reason": "detail without in-level vocabulary (loud, thump, falling, attracts, identification), but the beat's own event can be told",
+          "core": [
+            {
+              "concept": "young",
+              "support": "supported",
+              "words": [
+                "年轻"
+              ]
+            },
+            {
+              "concept": "woman",
+              "support": "supported",
+              "words": [
+                "女人",
+                "老人"
+              ]
+            },
+            {
+              "concept": "opens",
+              "support": "supported",
+              "words": [
+                "开",
+                "打开",
+                "开花"
+              ]
+            },
+            {
+              "concept": "door",
+              "support": "supported",
+              "words": [
+                "门",
+                "邻居"
+              ]
+            },
+            {
+              "concept": "nearby",
+              "support": "supported",
+              "words": [
+                "附近"
+              ]
+            }
+          ],
+          "supporting": [
+            {
+              "concept": "man",
+              "support": "supported",
+              "words": [
+                "男人",
+                "老人"
+              ]
+            },
+            {
+              "concept": "floor",
+              "support": "supported",
+              "words": [
+                "楼"
+              ]
+            },
+            {
+              "concept": "broken",
+              "support": "supported",
+              "words": [
+                "坏"
+              ]
+            },
+            {
+              "concept": "box",
+              "support": "supported",
+              "words": [
+                "邮箱"
+              ]
+            }
+          ],
+          "incidental": [
+            {
+              "concept": "okay",
+              "support": "supported",
+              "words": [
+                "没关系"
+              ]
+            },
+            {
+              "concept": "loud",
+              "support": "none",
+              "words": []
+            },
+            {
+              "concept": "thump",
+              "support": "none",
+              "words": []
+            },
+            {
+              "concept": "falling",
+              "support": "none",
+              "words": [
+                "掉",
+                "倒",
+                "降"
+              ]
+            },
+            {
+              "concept": "attracts",
+              "support": "none",
+              "words": [
+                "吸引",
+                "哎"
+              ]
+            },
+            {
+              "concept": "attention",
+              "support": "supported",
+              "words": [
+                "注意",
+                "关注"
+              ]
+            },
+            {
+              "concept": "neighbor",
+              "support": "supported",
+              "words": [
+                "附近",
+                "邻居"
+              ]
+            },
+            {
+              "concept": "next",
+              "support": "supported",
+              "words": [
+                "明年",
+                "次",
+                "邻居",
+                "后年"
+              ]
+            },
+            {
+              "concept": "doorway",
+              "support": "supported",
+              "words": [
+                "门口"
+              ]
+            },
+            {
+              "concept": "identification",
+              "support": "none",
+              "words": []
+            }
+          ],
+          "coreMissing": [],
+          "supportingMissing": [],
+          "incidentalMissing": [
+            "loud",
+            "thump",
+            "falling",
+            "attracts",
+            "identification"
+          ]
+        },
+        {
+          "beat": 4,
+          "risk": "MEDIUM",
+          "reason": "detail without in-level vocabulary (lift, offers, observes, intervene, offering), but the beat's own event can be told",
+          "core": [
+            {
+              "concept": "woman",
+              "support": "supported",
+              "words": [
+                "女人",
+                "老人"
+              ]
+            },
+            {
+              "concept": "introduces",
+              "support": "supported",
+              "words": [
+                "介绍"
+              ]
+            }
+          ],
+          "supporting": [
+            {
+              "concept": "lift",
+              "support": "none",
+              "words": [
+                "抬",
+                "提升"
+              ]
+            },
+            {
+              "concept": "box",
+              "support": "supported",
+              "words": [
+                "邮箱"
+              ]
+            },
+            {
+              "concept": "offers",
+              "support": "none",
+              "words": [
+                "提供",
+                "应聘",
+                "出售"
+              ]
+            },
+            {
+              "concept": "assist",
+              "support": "supported",
+              "words": [
+                "帮助"
+              ]
+            }
+          ],
+          "incidental": [
+            {
+              "concept": "observes",
+              "support": "none",
+              "words": [
+                "观察",
+                "考察"
+              ]
+            },
+            {
+              "concept": "man",
+              "support": "supported",
+              "words": [
+                "男人",
+                "老人"
+              ]
+            },
+            {
+              "concept": "difficulty",
+              "support": "weak",
+              "words": [
+                "难",
+                "难题"
+              ]
+            },
+            {
+              "concept": "intervene",
+              "support": "none",
+              "words": []
+            },
+            {
+              "concept": "offering",
+              "support": "none",
+              "words": [
+                "提供",
+                "应聘",
+                "出售"
+              ]
+            },
+            {
+              "concept": "aid",
+              "support": "supported",
+              "words": [
+                "帮助"
+              ]
+            }
+          ],
+          "coreMissing": [],
+          "supportingMissing": [
+            "lift",
+            "offers"
+          ],
+          "incidentalMissing": [
+            "observes",
+            "intervene",
+            "offering"
+          ]
+        },
+        {
+          "beat": 5,
+          "risk": "HIGH",
+          "reason": "the beat's own event needs 2 words the reader does not have: lift, carry",
+          "core": [
+            {
+              "concept": "lift",
+              "support": "none",
+              "words": [
+                "抬",
+                "提升"
+              ]
+            },
+            {
+              "concept": "box",
+              "support": "supported",
+              "words": [
+                "邮箱"
+              ]
+            },
+            {
+              "concept": "carry",
+              "support": "none",
+              "words": [
+                "抱",
+                "执行",
+                "采取"
+              ]
+            }
+          ],
+          "supporting": [
+            {
+              "concept": "put",
+              "support": "supported",
+              "words": [
+                "放",
+                "丢"
+              ]
+            },
+            {
+              "concept": "safely",
+              "support": "supported",
+              "words": [
+                "安全"
+              ]
+            }
+          ],
+          "incidental": [
+            {
+              "concept": "since",
+              "support": "none",
+              "words": [
+                "之后",
+                "既然",
+                "既"
+              ]
+            },
+            {
+              "concept": "offered",
+              "support": "none",
+              "words": [
+                "提供",
+                "应聘",
+                "出售"
+              ]
+            },
+            {
+              "concept": "help",
+              "support": "supported",
+              "words": [
+                "帮",
+                "帮忙",
+                "把",
+                "帮助"
+              ]
+            },
+            {
+              "concept": "physically",
+              "support": "supported",
+              "words": [
+                "体育"
+              ]
+            },
+            {
+              "concept": "move",
+              "support": "supported",
+              "words": [
+                "动",
+                "运动",
+                "搬",
+                "搬家"
+              ]
+            },
+            {
+              "concept": "object",
+              "support": "supported",
+              "words": [
+                "它们",
+                "东西",
+                "个",
+                "条"
+              ]
+            },
+            {
+              "concept": "destination",
+              "support": "weak",
+              "words": [
+                "国家"
+              ]
+            }
+          ],
+          "coreMissing": [
+            "lift",
+            "carry"
+          ],
+          "supportingMissing": [],
+          "incidentalMissing": [
+            "since",
+            "offered"
+          ]
+        },
+        {
+          "beat": 6,
+          "risk": "MEDIUM",
+          "reason": "detail without in-level vocabulary (task, social, bond), but the beat's own event can be told",
+          "core": [
+            {
+              "concept": "thanks",
+              "support": "supported",
+              "words": [
+                "谢谢"
+              ]
+            }
+          ],
+          "supporting": [],
+          "incidental": [
+            {
+              "concept": "neighbors",
+              "support": "supported",
+              "words": [
+                "附近",
+                "邻居"
+              ]
+            },
+            {
+              "concept": "help",
+              "support": "supported",
+              "words": [
+                "帮",
+                "帮忙",
+                "把",
+                "帮助"
+              ]
+            },
+            {
+              "concept": "physical",
+              "support": "supported",
+              "words": [
+                "体育"
+              ]
+            },
+            {
+              "concept": "task",
+              "support": "none",
+              "words": [
+                "任务",
+                "动手",
+                "创业"
+              ]
+            },
+            {
+              "concept": "complete",
+              "support": "supported",
+              "words": [
+                "完成"
+              ]
+            },
+            {
+              "concept": "allowing",
+              "support": "supported",
+              "words": [
+                "让"
+              ]
+            },
+            {
+              "concept": "social",
+              "support": "none",
+              "words": [
+                "成分",
+                "风俗",
+                "面子"
+              ]
+            },
+            {
+              "concept": "closure",
+              "support": "weak",
+              "words": [
+                "一定"
+              ]
+            },
+            {
+              "concept": "relationship",
+              "support": "supported",
+              "words": [
+                "关系"
+              ]
+            },
+            {
+              "concept": "building",
+              "support": "supported",
+              "words": [
+                "楼",
+                "房子"
+              ]
+            },
+            {
+              "concept": "defining",
+              "support": "weak",
+              "words": [
+                "些"
+              ]
+            },
+            {
+              "concept": "bond",
+              "support": "none",
+              "words": [
+                "券"
+              ]
+            }
+          ],
+          "coreMissing": [],
+          "supportingMissing": [],
+          "incidentalMissing": [
+            "task",
+            "social",
+            "bond"
+          ]
+        }
+      ],
+      "highBeats": [
+        1,
+        2,
+        5
+      ],
+      "blocking": [
+        "large",
+        "sweating",
+        "grip",
+        "slipping",
+        "struggling",
+        "slips",
+        "falls",
+        "lift",
+        "carry"
+      ]
+    },
+    "replanned": false,
+    "scaffold": null,
+    "blueprints": [
+      {
+        "label": "A",
+        "planner": "stored shape",
+        "attempt": 1,
+        "blueprint": {
+          "title": "The Heavy Box and the New Neighbor",
+          "setting": "A residential apartment building hallway, weekday afternoon",
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "problem": "李明 is struggling to move a heavy box without assistance.",
+          "incitingEvent": "李明 drops his package after his hands slip.",
+          "beats": [
+            {
+              "id": 1,
+              "when": "Tuesday, 5:00 PM",
+              "what": "李明 is holding a large, heavy box. His hands are sweating and his grip is slipping. He is struggling to walk.",
+              "because": "the story opens",
+              "targets": [
+                "需要"
+              ],
+              "lines": 4,
+              "where": "Apartment Building Hallway",
+              "arrivedHow": ""
+            },
+            {
+              "id": 2,
+              "when": "Tuesday, 5:05 PM",
+              "what": "The box slips from 李明's hands and falls heavily on the floor. 李明 cannot lift it alone. He realizes he requires help.",
+              "because": "李明 tries to carry the box, but it is too heavy and he loses his grip.",
+              "targets": [
+                "需要"
+              ],
+              "lines": 5,
+              "where": "Apartment Building Hallway",
+              "arrivedHow": ""
+            },
+            {
+              "id": 3,
+              "when": "Tuesday, 5:06 PM",
+              "what": "A young woman opens her door nearby. She sees the man on the floor with the broken box. She asks if he is okay.",
+              "because": "The loud thump of the box falling attracts the attention of the neighbor in the next doorway.",
+              "targets": [
+                "女人",
+                "男人"
+              ],
+              "lines": 4,
+              "where": "Apartment Building Hallway",
+              "arrivedHow": ""
+            },
+            {
+              "id": 4,
+              "when": "Tuesday, 5:08 PM",
+              "what": "The woman introduces herself as 小红. 李明 explains he cannot lift the box. 小红 offers to assist him.",
+              "because": "The woman observes the man's difficulty and decides to intervene.",
+              "targets": [
+                "帮助"
+              ],
+              "lines": 6,
+              "where": "Apartment Building Hallway",
+              "arrivedHow": ""
+            },
+            {
+              "id": 5,
+              "when": "Tuesday, 5:12 PM",
+              "what": "They lift the box together and carry it into 李明's home. They put it down safely.",
+              "because": "Since 小红 offered to help, they physically move the object to its destination.",
+              "targets": [],
+              "lines": 5,
+              "where": "李明's Apartment",
+              "arrivedHow": "李明 and 小红 walk together up the stairs to 李明's door"
+            },
+            {
+              "id": 6,
+              "when": "Tuesday, 5:15 PM",
+              "what": "李明 thanks 小红. She says that good neighbors should help each other. They are now friends.",
+              "because": "The physical task is complete, allowing for social closure and relationship building.",
+              "targets": [
+                "关系"
+              ],
+              "lines": 4,
+              "where": "李明's Apartment",
+              "arrivedHow": ""
+            }
+          ],
+          "resolution": "The box is moved safely, and 李明 and 小红 establish a friendly neighborly relationship.",
+          "targetPlan": [
+            {
+              "word": "需要",
+              "beat": 1,
+              "why": "李明 needs to express his physical struggle and requirement for ease or help.",
+              "speaker": "李明",
+              "refersTo": "The difficulty of carrying the box",
+              "intent": "To complain or state a deficit"
+            },
+            {
+              "word": "女人",
+              "beat": 3,
+              "why": "The narrator or 李明 identifies the person appearing as a female.",
+              "speaker": "Narrator",
+              "refersTo": "The neighbor who opens the door",
+              "intent": "Identification"
+            },
+            {
+              "word": "男人",
+              "beat": 3,
+              "why": "The woman identifies 李明 as a male who is in trouble.",
+              "speaker": "小红",
+              "refersTo": "李明",
+              "intent": "Identification"
+            },
+            {
+              "word": "帮助",
+              "beat": 4,
+              "why": "小红 explicitly offers assistance to solve the problem.",
+              "speaker": "小红",
+              "refersTo": "The act of lifting the box",
+              "intent": "Offering aid"
+            },
+            {
+              "word": "关系",
+              "beat": 6,
+              "why": "They reflect on the improved social connection resulting from the help.",
+              "speaker": "小红",
+              "refersTo": "Their new acquaintance",
+              "intent": "Defining the social bond"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "rendered": "TITLE CONCEPT: The Heavy Box and the New Neighbor\nSETTING: A residential apartment building hallway, weekday afternoon\nCAST: 李明、小红\nCENTRAL PROBLEM: 李明 is struggling to move a heavy box without assistance.\nINCITING EVENT: 李明 drops his package after his hands slip.\nBEATS:\n  1. [Tuesday, 5:00 PM · Apartment Building Hallway] · uses 需要\n     WHAT CHANGES: 李明 is holding a large, heavy box. His hands are sweating and his grip is slipping. He is struggling to walk.\n  2. [Tuesday, 5:05 PM · Apartment Building Hallway] · uses 需要\n     WHAT CHANGES: The box slips from 李明's hands and falls heavily on the floor. 李明 cannot lift it alone. He realizes he requires help.\n     BECAUSE: 李明 tries to carry the box, but it is too heavy and he loses his grip.\n  3. [Tuesday, 5:06 PM · Apartment Building Hallway] · uses 女人、男人\n     WHAT CHANGES: A young woman opens her door nearby. She sees the man on the floor with the broken box. She asks if he is okay.\n     BECAUSE: The loud thump of the box falling attracts the attention of the neighbor in the next doorway.\n  4. [Tuesday, 5:08 PM · Apartment Building Hallway] · uses 帮助\n     WHAT CHANGES: The woman introduces herself as 小红. 李明 explains he cannot lift the box. 小红 offers to assist him.\n     BECAUSE: The woman observes the man's difficulty and decides to intervene.\n  5. [Tuesday, 5:12 PM · 李明's Apartment]\n     WHAT CHANGES: They lift the box together and carry it into 李明's home. They put it down safely.\n     BECAUSE: Since 小红 offered to help, they physically move the object to its destination.\n     GOT THERE BY: 李明 and 小红 walk together up the stairs to 李明's door\n  6. [Tuesday, 5:15 PM · 李明's Apartment] · uses 关系\n     WHAT CHANGES: 李明 thanks 小红. She says that good neighbors should help each other. They are now friends.\n     BECAUSE: The physical task is complete, allowing for social closure and relationship building.\nRESOLUTION: The box is moved safely, and 李明 and 小红 establish a friendly neighborly relationship.\nTARGET WORDS:\n  需要 → beat 1: 李明 needs to express his physical struggle and requirement for ease or help.\n  女人 → beat 3: The narrator or 李明 identifies the person appearing as a female.\n  男人 → beat 3: The woman identifies 李明 as a male who is in trouble.\n  帮助 → beat 4: 小红 explicitly offers assistance to solve the problem.\n  关系 → beat 6: They reflect on the improved social connection resulting from the help.",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小红"
+          ],
+          "beats": 6,
+          "placed": {
+            "需要": 1,
+            "女人": 3,
+            "男人": 3,
+            "帮助": 4,
+            "关系": 6
+          }
+        },
+        "score": {
+          "label": "A",
+          "contradiction": false,
+          "overall": 9,
+          "reason": "Strong causal chain, natural word placement, and a clear, realistic resolution suitable for the level.",
+          "causal": 9,
+          "chronology": 10,
+          "plausibility": 10,
+          "simplicity": 9,
+          "targetFit": 9,
+          "suitability": 9
+        },
+        "acceptable": true
+      }
+    ],
+    "judgeRaw": null,
+    "selection": {
+      "riskCode": "SHAPE_LEXICAL_FEASIBILITY_FAILURE",
+      "blocking": [
+        "large",
+        "sweating",
+        "grip",
+        "slipping",
+        "struggling",
+        "slips",
+        "falls",
+        "lift",
+        "carry"
+      ]
+    },
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "bakeoff-L3-001",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
