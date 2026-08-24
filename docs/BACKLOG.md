@@ -154,6 +154,31 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### A3.1 scaffold: one bad anchor sinks the set, and the retry degenerates (open, found 2026-08-24)
+
+`a3-final-2` ran the first eligible plan (C: structural PASS, quality 9,
+A3.2 MEDIUM) and stopped at `BEAT_LEXICAL_SCAFFOLD_FAILED`, beat 3 — a beat
+whose content is "Li Ming asks if the woman needs help with the box", which
+its own usage sketches said perfectly (你需要我帮忙吗？ / 你需要我的帮助吗？).
+
+Two separate defects, both in beat-anchor generation:
+
+1. **All-or-nothing validation.** Attempt 1 returned 后来、门口、女人、拿、很重、不用
+   and was rejected whole for one word: 很重 (重 is HSK 4). Five of the six were
+   valid and the gate only requires three.
+2. **The retry got worse, not better.** Told 重 was above level, attempt 2
+   returned 李、明、女、人、拿、包 — single characters, including the cast name
+   李明 and the target word 女人 broken apart. Rejected as non-vocabulary, and
+   the one-retry rule ended the run.
+
+Also seen, and not currently checked: the beat 2 sketch 李明的爸爸是大男人
+passed. It introduces 爸爸, who is not in the cast — the sketch validator
+checks vocabulary but never the closed cast, so a downstream stage can add a
+character the plan does not have.
+
+Nothing was fixed: the layer is identified, and which of the three to change
+is a decision, not a cleanup.
+
 ### A3.2 lexical risk only sees a concept if the gloss uses that exact English word (open, found 2026-08-24)
 
 The first full A3 run on a frozen, high-quality plan (`a3-final-1`, Qwen plan
