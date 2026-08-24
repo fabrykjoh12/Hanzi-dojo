@@ -125,6 +125,68 @@ if (preflightOnly) {
   const reports = []
   for (const path of preflightOnly.split(',').map(x => x.trim()).filter(Boolean)) {
     const stored = JSON.parse(readFileSync(path, 'utf8'))
+    // A planner bakeoff holds many candidates. Lexical feasibility is now a
+    // hard prerequisite for selection, so every one of them is measured and
+    // the eligible set is what ranking is allowed to see. Nothing is
+    // regenerated and nothing is re-judged: the stored quality score stands.
+    if (Array.isArray(stored.candidates)) {
+      const rows = []
+      for (const c of stored.candidates) {
+        if (!c.blueprint && !c.plan) {
+          rows.push({ label: c.label || '-', model: c.model, structural: false, quality: Boolean(c.qualityOk), overall: c.score ? c.score.overall : null, risk: null, highBeats: [], highConcepts: [], eligible: false, note: 'no plan' })
+          continue
+        }
+        const blueprint = c.plan ? adaptShape(c.plan).blueprint : c.blueprint
+        const report = assessShapeRisk({ blueprint, manifest: stored.manifest, vocabMap })
+        const highBeats = report.beats.filter(b => b.risk === RISK.HIGH)
+        rows.push({
+          label: c.label || '-',
+          model: c.model,
+          structural: Boolean(c.structural && c.structural.ok),
+          quality: Boolean(c.qualityOk),
+          overall: c.score ? c.score.overall : null,
+          risk: report.risk,
+          highBeats: highBeats.map(b => b.beat),
+          highConcepts: [...new Set(highBeats.flatMap(b => [...b.coreMissing, ...b.supportingMissing]))],
+          eligible: Boolean(c.structural && c.structural.ok) && Boolean(c.qualityOk) && report.risk !== RISK.HIGH,
+          beats: report.beats.map(b => ({ beat: b.beat, risk: b.risk, reason: b.reason })),
+        })
+      }
+      console.log('='.repeat(96))
+      console.log(path + '  —  eligibility = structural PASS AND quality PASS AND no lexical HIGH')
+      console.log('lbl  model     struct  quality  overall  A3.2      HIGH concepts                        ELIGIBLE')
+      for (const r of rows) {
+        console.log(
+          String(r.label).padEnd(5)
+          + (r.model.includes('qwen') ? 'qwen' : 'gpt-oss').padEnd(10)
+          + (r.structural ? 'PASS' : 'fail').padEnd(8)
+          + (r.quality ? 'PASS' : 'fail').padEnd(9)
+          + String(r.overall == null ? '-' : r.overall).padEnd(9)
+          + String(r.risk || '-').padEnd(10)
+          + (r.highConcepts.join(', ') || '—').slice(0, 36).padEnd(38)
+          + (r.eligible ? 'YES' : 'no'))
+      }
+      const eligible = rows.filter(r => r.eligible).sort((a, b) => (b.overall || 0) - (a.overall || 0))
+      console.log('\nELIGIBLE, ranked by the already-recorded quality score: '
+        + (eligible.length ? eligible.map(r => r.label + ' (' + r.overall + ')').join(', ') : 'NONE'))
+      const rate = {}
+      for (const r of rows) {
+        const m = rate[r.model] || (rate[r.model] = { n: 0, structural: 0, quality: 0, feasible: 0, eligible: 0 })
+        m.n += 1
+        if (r.structural) m.structural += 1
+        if (r.quality) m.quality += 1
+        if (r.risk && r.risk !== RISK.HIGH) m.feasible += 1
+        if (r.eligible) m.eligible += 1
+      }
+      console.log('')
+      for (const [model, m] of Object.entries(rate)) {
+        console.log('  ' + model + ': structural ' + m.structural + '/' + m.n + '  quality ' + m.quality + '/' + m.n
+          + '  lexically feasible ' + m.feasible + '/' + m.n + '  ELIGIBLE ' + m.eligible + '/' + m.n)
+      }
+      console.log('')
+      reports.push({ source: path, kind: 'bakeoff', manifestId: stored.manifest.id, rows, eligible: eligible.map(r => r.label), rates: rate })
+      continue
+    }
     const entry = (stored.blueprintRun.blueprints || []).find(x => x.acceptable) || (stored.blueprintRun.blueprints || []).find(x => x.blueprint)
     if (!entry) { console.log(path + ': no stored blueprint\n'); continue }
     const report = assessShapeRisk({ blueprint: entry.blueprint, manifest: stored.manifest, vocabMap })
@@ -392,8 +454,46 @@ for (const job of jobs) {
     continue
   }
 
-  // ── 2. Anonymised ranking ─────────────────────────────────────────────────
-  const labelled = anonymiseBlueprints(valid.map(r => ({ ...r, rendered: renderBlueprint(r.blueprint) })))
+  // ── 2. Lexical feasibility, BEFORE quality ranking ────────────────────────
+  // A plan whose central event cannot be said at this level is not a plan for
+  // this level, however good a story it is. a3-final-1 chose a 9/10 plan whose
+  // inciting event — a box slipping from someone's hands and falling — needs
+  // 掉 (HSK 4), because feasibility was checked after the winner was picked.
+  // It is a prerequisite now, and quality can never buy its way past it.
+  const feasibility = new Map()
+  for (const r of valid) feasibility.set(r, assessShapeRisk({ blueprint: r.blueprint, manifest, vocabMap }))
+  const feasible = valid.filter(r => feasibility.get(r).risk !== RISK.HIGH)
+  console.log('\nLEXICAL FEASIBILITY (' + RISK_VERSION + '): ' + feasible.length + '/' + valid.length + ' plan(s) eligible')
+  for (const r of valid) {
+    const risk = feasibility.get(r)
+    if (risk.risk !== RISK.HIGH) continue
+    console.log('  INELIGIBLE [' + r.planner + ' #' + r.attempt + '] — HIGH on beat(s) ' + risk.highBeats.join(', ')
+      + ': ' + risk.blocking.join(', '))
+  }
+  record.feasibility = valid.map(r => ({ planner: r.planner, attempt: r.attempt, risk: feasibility.get(r).risk, highBeats: feasibility.get(r).highBeats, blocking: feasibility.get(r).blocking }))
+  if (!feasible.length) {
+    console.log('\nNO LEXICALLY FEASIBLE PLAN — nothing is eligible for selection.')
+    const blocking = [...new Set(valid.flatMap(r => feasibility.get(r).blocking))]
+    record.selection = { code: 'SHAPE_LEXICAL_FEASIBILITY_FAILURE', blocking }
+    if (job.frozen) {
+      console.log('FROZEN PLAN — not regenerating. The plan is rejected, not repaired.')
+      results.push(record)
+      continue
+    }
+    if (job.replanned) {
+      console.log('SHAPE_PLANNER_LEXICAL_BIAS — a second shape from the same planner is HIGH risk too; not regenerating again.')
+      record.selection.code = 'SHAPE_PLANNER_LEXICAL_BIAS'
+      results.push(record)
+      continue
+    }
+    // Exactly one fresh shape, told in English what it must avoid.
+    jobs.push({ manifest, required, shape: null, resume: null, replanned: true, avoidConcepts: blocking })
+    results.push(record)
+    continue
+  }
+
+  // ── 3. Anonymised ranking, over the eligible plans only ───────────────────
+  const labelled = anonymiseBlueprints(feasible.map(r => ({ ...r, rendered: renderBlueprint(r.blueprint) })))
   let scores = null
   let judgeRaw = null
   if (job.frozen) {
@@ -440,7 +540,9 @@ for (const job of jobs) {
     results.push(record)
     continue
   }
-  // ── A3.2 preflight: can this shape be told at this level at all? ─────────
+  // The chosen plan's per-beat report. It cannot be HIGH — feasibility ran
+  // before ranking — and the branch below stays only as a guard against a
+  // future edit that reorders the two.
   const risk = assessShapeRisk({ blueprint: chosen.blueprint, manifest, vocabMap })
   console.log('\nLEXICAL RISK PREFLIGHT (' + RISK_VERSION + '): ' + risk.risk)
   for (const b of risk.beats) console.log('  beat ' + b.beat + ' — ' + b.risk + ': ' + b.reason)
