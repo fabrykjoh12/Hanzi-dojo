@@ -13,13 +13,29 @@ const CORS = {
 };
 
 const VOCAB = [{ id: 'v1', word: '我们', reading: 'wǒmen', meaning: 'we', level: 1 }];
+
+// Production shape: a cover is `image_path`, a path inside the public `audio`
+// bucket, which the app resolves through getAudioUrl(). It is NOT a ready-made
+// URL, and there is no `cover_url` column — a fixture that invents one hides a
+// broken query, which is exactly how Home shipped with no story hand-off.
+const COVER_PATH = 'stories/published-our-song/cover.webp';
+const COVER_URL = 'https://mock.supabase.co/storage/v1/object/public/audio/' + COVER_PATH;
 const STORY = [{
   id: 'published-our-song', title: '6. 我们的歌', content: '我们一起唱歌。',
   level: 1, tier: 1, story_number: 12, is_published: true,
-  cover_url: '/story-covers/generated/hsk1-12-our-song.webp',
+  image_path: COVER_PATH,
 }];
 
+// A 1x1 PNG, so the cover <img> has something real to load and the "the cover
+// leads the row" assertion tests the resolved URL rather than a 404 fallback.
+const PIXEL_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
 async function installHomeState(page, state) {
+  // Per-test, so nothing leaks between the stages below.
+  const storySelects = [];
   const queueWaiting = state === 'cards';
   const storyAvailable = state !== 'caught-up';
   const storyComplete = state === 'practice' || state === 'complete';
@@ -42,9 +58,18 @@ async function installHomeState(page, state) {
   const reads = storyComplete ? [{ story_id: STORY[0].id, read_at: new Date().toISOString() }] : [];
   const grammar = state === 'practice' ? [{ topic_id: 'grammar-review', state: 'new', due_at: new Date().toISOString() }] : [];
 
+  await page.route(COVER_URL, async (route) => route.fulfill({
+    status: 200, headers: { 'content-type': 'image/png', 'access-control-allow-origin': '*' },
+    body: PIXEL_PNG,
+  }));
+
   await page.route('**/mock.supabase.co/rest/v1/**', async (route) => {
     const url = new URL(route.request().url());
     const table = url.pathname.replace('/rest/v1/', '').split('?')[0];
+    // The mock answers with fixtures whatever the select asked for, so a stale
+    // column list is invisible here unless it is checked. Record it; the specs
+    // below assert Home asked the production schema for the production column.
+    if (table === 'stories') storySelects.push(url.searchParams.get('select') || '');
     const rows = {
       cards,
       vocabulary: VOCAB,
@@ -56,6 +81,8 @@ async function installHomeState(page, state) {
     if (rows === undefined) return route.fallback();
     return route.fulfill({ status: 200, headers: CORS, body: JSON.stringify(rows) });
   });
+
+  return storySelects;
 }
 
 const STATES = ['cards', 'story', 'practice', 'complete', 'caught-up'];
@@ -63,7 +90,7 @@ const STATES = ['cards', 'story', 'practice', 'complete', 'caught-up'];
 for (const state of STATES) {
   test(`${state} renders from persisted learning state`, async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
-    await installHomeState(page, state);
+    const storySelects = await installHomeState(page, state);
     await page.goto('/');
     const home = page.locator('[data-home-stage]');
     await expect(home).toHaveAttribute('data-home-stage', state);
@@ -81,7 +108,11 @@ for (const state of STATES) {
       await expect(handoff.getByText('Then read')).toBeVisible();
       await expect(handoff.getByText('Finish cards to unlock')).toBeVisible();
       await expect(handoff.getByText('我们的歌')).toBeVisible();
-      await expect(handoff.locator('img')).toBeVisible();
+      // The cover resolved from image_path through the audio bucket, and did
+      // not fall back — a stale column would have left the painted tile here.
+      const cover = handoff.locator('img');
+      await expect(cover).toBeVisible();
+      await expect(cover).toHaveAttribute('src', COVER_URL);
     } else {
       // The queue is clear: the ✓ replaces the number and the one action is
       // reading — no reviewing button remains.
@@ -101,6 +132,13 @@ for (const state of STATES) {
     if (state === 'caught-up') {
       // No story unlocked — the hand-off does not invent one.
       await expect(handoff).toHaveCount(0);
+    }
+
+    // Whatever the stage, Home read the real column off the real schema.
+    expect(storySelects.length).toBeGreaterThan(0);
+    for (const select of storySelects) {
+      expect(select).toContain('image_path');
+      expect(select).not.toContain('cover_url');
     }
   });
 }

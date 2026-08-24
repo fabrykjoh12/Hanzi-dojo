@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { ArrowRight, ChevronRight, Lock, Sunrise } from 'lucide-react'
-import { getLevelLabel } from './utils'
+import { getAudioUrl, getLevelLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak, gentleReturnMessage, GENTLE_REVIEW_CAP } from './gentleReturn'
@@ -327,7 +327,11 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
 // full colour once reading is what's next.
 function ThenRead({ daily, stage, title, sub, theme, accentInk, isMobile, onOpen }) {
   const [artFailed, setArtFailed] = useState(false)
-  const art = daily.story.cover_url && !artFailed ? daily.story.cover_url : null
+  // `image_path` is a path inside the public `audio` bucket, not a URL — the
+  // same contract every other cover on the site reads (StoryCover does exactly
+  // this). getAudioUrl returns null for a story with no artwork, which drops
+  // through to the painted fallback tile below.
+  const art = artFailed ? null : getAudioUrl(daily.story.image_path)
   const ready = stage === 'story'
   const status = storyStatus({ stage, daily })
   const press = {
