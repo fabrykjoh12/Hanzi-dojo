@@ -204,10 +204,23 @@ The risk arithmetic and every threshold are unchanged, and the gate's original
 cases still rate HIGH — 轮子 (wheel, HSK 6) stays a gap because 轮 is not a
 word the reader has.
 
-**Still open: the missing feasibility dimension in plan selection.** Plan D
-scored 9/10 with an inciting event — a box slipping from someone's hands and
-falling on the floor — that HSK 3 cannot say. That is a design question, not a
-matcher one, and nothing has been changed for it.
+**Resolved 2026-08-24: feasibility is a prerequisite for selection.** Plan D
+was rejected, not repaired. Ranking now sees only plans that pass the adapter,
+the structural validator AND A3.2; a genuine HIGH is ineligible regardless of
+quality score, and lexical risk stays a three-state verdict rather than a
+number blended into quality.
+
+Measured retrospectively over the eight stored transition-contract plans
+(`eligibility-1/preflight.json`, no regeneration, no re-judging):
+
+| | structural | quality | lexically feasible | **eligible** |
+|---|---|---|---|---|
+| Qwen | 4/4 | 3/4 | 3/4 | **2/4** |
+| gpt-oss | 2/4 | 3/4 | 3/4 | **1/4** |
+
+Two of the eight lose on feasibility alone: plan D (slips, falls) and plan G
+(**wrench, repair** — exactly the class the gate was built for). Eligible, by
+recorded quality: C (9), H (9), A (7).
 
 ### Planners omit beat-to-beat movement, and it is content, not notation (open, found 2026-08-24)
 
