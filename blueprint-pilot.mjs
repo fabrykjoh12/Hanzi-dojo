@@ -38,7 +38,7 @@ import {
 } from './storyBlueprint.mjs'
 import { realizeByBeat, BEAT_LIMITS, BEAT_QUALITY, BEAT_VERSION } from './storyBeats.mjs'
 import { buildLexicalScaffold, applyScaffold, shapeChanges, SCAFFOLD_VERSION } from './storyLexicalScaffold.mjs'
-import { assessShapeRisk, RISK, RISK_VERSION } from './storyLexicalRisk.mjs'
+import { assessShapeRisk, validateGlossCorpus, RISK, RISK_VERSION } from './storyLexicalRisk.mjs'
 import { judgePrompt, parseJudgment, JUDGE_VERSION } from './storyJudge.mjs'
 import { preRepairDecision, DRAFT_QUALITY } from './storyDraftQuality.mjs'
 import { planRepair, executeRepairPlan, LINE_QUALITY, REPAIR_PLANNER_VERSION } from './storyRepairPlanner.mjs'
@@ -94,6 +94,20 @@ const vocab = raw.vocab || []
 const vocabMap = {}
 for (const v of vocab) if (v && v.word && !vocabMap[v.word]) vocabMap[v.word] = v
 const meanings = Object.fromEntries(vocab.filter(v => v.meaning).map(v => [v.word, v.meaning]))
+// A corpus without glosses makes every concept look impossible, and a stale
+// local dump with `meaning: "undefined"` on every row once rated five of six
+// beats HIGH for words the reader plainly has. Stop here rather than produce
+// lexical results nobody can trust. The corpus is never repaired or
+// substituted in place: the workflow's own dump step is the only thing that
+// refreshes it.
+const corpusCheck = validateGlossCorpus(vocabMap)
+if (!corpusCheck.ok) {
+  console.error('\nCORPUS UNUSABLE — ' + corpusCheck.reason)
+  console.error('Run the corpus dump against the live database and try again.\n')
+  process.exit(3)
+}
+console.log('corpus: ' + corpusCheck.glossed + '/' + corpusCheck.total + ' vocabulary rows glossed ('
+  + Math.round(corpusCheck.share * 100) + '%)')
 const pool = vocab.filter(v => v.level <= level)
 const pct = (x) => (x * 100).toFixed(1) + '%'
 
@@ -123,7 +137,18 @@ if (preflightOnly) {
       console.log('\n  beat ' + b.beat + ' — ' + b.risk)
       console.log('    ' + (beat.what || '').slice(0, 150))
       console.log('    reason: ' + b.reason)
-      const fmt = (list) => list.map(c => c.concept + '=' + c.support + (c.words.length ? '(' + c.words.slice(0, 2).join('/') + ')' : '')).join(' ')
+      // The evidence chain per concept: which word supports it, at what
+      // level, and by which bridge — or, when it does not, what the language
+      // would have used.
+      const hsk = (w) => (vocabMap[w] && Number.isFinite(vocabMap[w].level) ? ' HSK' + vocabMap[w].level : '')
+      const one = (c) => {
+        const words = c.words.slice(0, 2).map(w => w + hsk(w)).join('/')
+        if (c.support === 'none') return c.concept + '=NONE' + (c.via === 'above-level' ? ' [only ' + words + ']' : ' [not in the dictionary]')
+        if (c.via === 'synonym') return c.concept + '=ok via "' + c.synonym + '" → ' + words
+        if (c.via === 'component') return c.concept + '=ok via ' + c.compound + hsk(c.compound) + ' built on ' + words
+        return c.concept + '=' + (c.support === 'weak' ? 'weak' : 'ok') + (words ? ' → ' + words : '')
+      }
+      const fmt = (list) => list.map(one).join('  |  ')
       if (b.core.length) console.log('    core:        ' + fmt(b.core))
       if (b.supporting.length) console.log('    supporting:  ' + fmt(b.supporting))
       if (b.incidental.length) console.log('    incidental:  ' + fmt(b.incidental))

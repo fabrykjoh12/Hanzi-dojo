@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   assessShapeRisk, assessBeatRisk, conceptsFromBeat, buildGlossIndex, buildFullGlossIndex,
-  conceptSupport, RISK, RISK_VERSION,
+  conceptSupport, buildSenseSynonyms, buildInLevelWords, componentHead,
+  validateGlossCorpus, GlossCorpusError, RISK, RISK_VERSION,
 } from './storyLexicalRisk.mjs'
 import { buildManifest } from './storyManifestPlanner.mjs'
 
@@ -171,5 +172,117 @@ describe('assessShapeRisk', () => {
     expect(r.risk).not.toBe(RISK.HIGH)
     expect(r.blocking).toEqual([])
     expect(r.beats.every(b => b.coreMissing.length === 0)).toBe(true)
+  })
+})
+
+// ── The a3-final-1 false-negative class ─────────────────────────────────────
+// Every gloss below is verbatim from the canonical vocabulary table. The bug:
+// a concept was called unsupported whenever the gloss happened to use a
+// different English word for it.
+describe('conceptSupport — different wording is not a lexical gap', () => {
+  const ROWS = [
+    ['大', 1, 'big'],
+    ['拿', 2, 'to take, to hold'],
+    ['花', 2, 'to spend (money or time), flower, (colorful)'],
+    ['提高', 3, 'to raise; to increase'],
+    ['起', 3, 'to rise; to raise'],
+    ['搬', 3, 'to move (i.e. relocate oneself); to move (sth relatively heavy or bulky)'],
+    ['抬', 4, 'to lift; to raise'],
+    ['抱', 4, 'to hold; to carry (in one\'s arms)'],
+    ['掉', 4, 'to fall; to drop'],
+    ['大型', 5, 'large; large-scale'],
+    ['奋斗', 5, 'to strive; to struggle'],
+    ['汗水', 5, 'sweat; perspiration'],
+    ['轮子', 6, 'wheel; (derog.) Falun Gong practitioner'],
+  ]
+  const vocabMap = Object.fromEntries(ROWS.map(([word, level, meaning]) => [word, { level, meaning }]))
+  const LEVEL = 3
+  const index = buildGlossIndex(vocabMap, LEVEL)
+  const fullIndex = buildFullGlossIndex(vocabMap)
+  const synonyms = buildSenseSynonyms(vocabMap)
+  const inLevelWords = buildInLevelWords(vocabMap, LEVEL)
+  const support = (concept) => conceptSupport(concept, index, fullIndex, { synonyms, inLevelWords })
+
+  it('synonym wording: "large" is sayable because 大 is', () => {
+    // 大 is glossed "big", so exact overlap never found it.
+    expect(support('big').support).toBe('supported')
+    const large = support('large')
+    expect(large.support).toBe('supported')
+    expect(large.via).toBe('component')
+    expect(large.words).toContain('大')
+  })
+
+  it('compatible action wording: "carry" and "lift" are sayable', () => {
+    const carry = support('carry')
+    const lift = support('lift')
+    expect(carry.support).toBe('supported')
+    expect(lift.support).toBe('supported')
+    // Both arrive through a synonym the dataset itself declares —
+    // 抱 "to hold; to carry", 抬 "to lift; to raise".
+    expect([carry.via, lift.via]).toEqual(['synonym', 'synonym'])
+    expect(carry.synonym).toBe('hold')
+    expect(lift.synonym).toBe('raise')
+  })
+
+  it('morphology: inflected forms reach the same evidence', () => {
+    expect(support('carrying').support).toBe('supported')
+    expect(support('lifted').support).toBe('supported')
+    expect(support('raises').support).toBe('supported')
+  })
+
+  it('a genuine gap stays a gap, with the evidence for it', () => {
+    // The language has these words; the reader does not have them.
+    for (const concept of ['wheel', 'struggle', 'sweat', 'fall']) {
+      const r = support(concept)
+      expect(r.support, concept + ' must stay unsupported').toBe('none')
+      expect(r.via, concept).toBe('above-level')
+    }
+    expect(support('wheel').words).toContain('轮子')
+  })
+
+  it('the component bridge needs the HEAD, not any shared character', () => {
+    // 轮子 is wheel; even with 子 in level, 轮 is not a word the reader has.
+    const withSuffix = buildInLevelWords({ ...vocabMap, 子: { level: 1, meaning: 'child' } }, LEVEL)
+    expect(componentHead('轮子', withSuffix)).toBeNull()
+    expect(componentHead('大型', inLevelWords)).toBe('大')
+  })
+
+  it('senses of different parts of speech are not synonyms', () => {
+    // 花 is "to spend (money or time), flower": spending is not flowering,
+    // and one being in level must not make the other sayable.
+    expect([...(synonyms.get('spend') || [])]).not.toContain('flower')
+    expect([...(synonyms.get('flower') || [])]).not.toContain('spend')
+  })
+
+  it('a concept the dictionary has never heard of is still not supported', () => {
+    const r = support('thud')
+    expect(r.support).toBe('none')
+    expect(r.via).toBe('absent')
+  })
+})
+
+describe('corpus integrity — a gate without evidence must refuse', () => {
+  const beat = { id: 1, what: 'Li Ming carries a large box up the stairs.', because: 'the story opens' }
+  const manifest = buildManifest({ id: 'x', level: 3, language: 'chinese', targets: [{ word: '帮助', min: 2, max: 4 }], speakers: ['李明'] })
+
+  it('rejects a dump whose glosses are all "undefined"', () => {
+    // Exactly the stale local dump that rated five of six beats HIGH.
+    const stale = Object.fromEntries(['大', '拿', '搬', '门'].map(w => [w, { level: 2, meaning: 'undefined' }]))
+    const v = validateGlossCorpus(stale)
+    expect(v.ok).toBe(false)
+    expect(v.reason).toMatch(/gloss/i)
+    expect(() => assessShapeRisk({ blueprint: { beats: [beat], cast: ['李明'] }, manifest, vocabMap: stale }))
+      .toThrow(GlossCorpusError)
+  })
+
+  it('rejects an empty vocabulary rather than calling everything impossible', () => {
+    expect(validateGlossCorpus({}).ok).toBe(false)
+    expect(() => assessShapeRisk({ blueprint: { beats: [beat], cast: ['李明'] }, manifest, vocabMap: {} }))
+      .toThrow(GlossCorpusError)
+  })
+
+  it('accepts a corpus that actually carries glosses', () => {
+    const good = { 大: { level: 1, meaning: 'big' }, 拿: { level: 2, meaning: 'to take, to hold' } }
+    expect(validateGlossCorpus(good)).toMatchObject({ ok: true, glossed: 2, total: 2 })
   })
 })

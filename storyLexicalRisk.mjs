@@ -41,7 +41,7 @@ const ROMANIZED = (() => {
   return out
 })()
 
-export const RISK_VERSION = 'fab9-risk@1'
+export const RISK_VERSION = 'fab9-risk@2'
 
 export const RISK = { LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH' }
 
@@ -163,31 +163,170 @@ export function buildFullGlossIndex(vocabMap) {
   return buildGlossIndex(vocabMap, Number.MAX_SAFE_INTEGER)
 }
 
-export function conceptSupport(concept, index, fullIndex = null) {
+// ── Why exact gloss-token overlap is not evidence of impossibility ──────────
+// a3-final-1 rejected a plan for "large" while 大 (HSK 1) is glossed "big",
+// and for "carry"/"lift" while 搬 (HSK 3) is "to move (sth relatively heavy
+// or bulky)". The concepts were expressible; only the English wording
+// differed. Two bridges fix that class, and both are built from the canonical
+// dataset itself — no curated synonym table, no per-word fix.
+//
+// 1. SENSE SYNONYMS. A gloss lists alternative translations of ONE word, so
+//    its single-word senses are synonyms of each other: 抱 "to hold; to carry
+//    (in one's arms)" says hold ≈ carry, 抬 "to lift; to raise" says lift ≈
+//    raise. If a synonym of the concept is in level, the concept is sayable.
+//    Senses are linked only when they agree in part of speech, which the
+//    glosses mark themselves with a leading "to": 花 "flower; to spend" must
+//    never make "spend" sayable because "flower" is.
+//
+// 2. COMPONENT HEAD. When the language expresses a concept with an
+//    above-level compound whose HEAD is an in-level word, the learner has the
+//    simpler word: 大型/大量/大巴 are all above level and all begin with 大.
+//    The head must itself be an in-level entry, which is what keeps 轮子
+//    (wheel, HSK 6) a real gap — 轮 is not a word the reader has.
+const SENSE_STOP = new Set(['the', 'and', 'for', 'with', 'that', 'this', 'sth', 'sb', 'etc', 'coll', 'used', 'not'])
+
+function senseHeads(meaning) {
+  const out = []
+  for (const raw of String(meaning || '').split(/[;,]/)) {
+    const sense = raw.replace(/\([^)]*\)/g, ' ').trim()
+    if (!sense) continue
+    const verb = /^to\s+/i.test(sense)
+    const head = sense.replace(/^to\s+/i, '').replace(/^(?:a|an|the)\s+/i, '').trim().toLowerCase()
+    // One word only: "large bus" is not a synonym of "coach", it is a phrase.
+    if (!/^[a-z][a-z'-]*$/.test(head) || head.length < 3 || SENSE_STOP.has(head)) continue
+    if (/-/.test(head)) continue
+    out.push({ head, verb })
+  }
+  return out
+}
+
+// token → tokens that some entry lists as an alternative translation of it.
+export function buildSenseSynonyms(vocabMap) {
+  const syn = new Map()
+  const link = (a, b) => {
+    for (const key of new Set([a, stem(a), riskStem(a)])) {
+      if (!syn.has(key)) syn.set(key, new Set())
+      syn.get(key).add(b)
+    }
+  }
+  for (const word of Object.keys(vocabMap || {})) {
+    const v = vocabMap[word]
+    if (!v || !v.meaning) continue
+    const heads = senseHeads(v.meaning)
+    if (heads.length < 2) continue
+    for (const a of heads) {
+      for (const b of heads) {
+        if (a.head === b.head || a.verb !== b.verb) continue
+        link(a.head, b.head)
+      }
+    }
+  }
+  return syn
+}
+
+// The words the reader has, for testing whether an above-level compound is
+// built on one of them.
+export function buildInLevelWords(vocabMap, level) {
+  const out = new Set()
+  for (const word of Object.keys(vocabMap || {})) {
+    const v = vocabMap[word]
+    if (v && Number.isFinite(v.level) && v.level <= level) out.add(word)
+  }
+  return out
+}
+
+// Is `word` (above level) built on a word the reader already has?
+export function componentHead(word, inLevelWords) {
+  const w = String(word || '')
+  for (let n = w.length - 1; n >= 1; n -= 1) {
+    const head = w.slice(0, n)
+    if (inLevelWords.has(head)) return head
+  }
+  return null
+}
+
+export function conceptSupport(concept, index, fullIndex = null, { synonyms = null, inLevelWords = null } = {}) {
   for (const form of forms(concept)) {
     const hit = index.get(form)
-    if (hit && hit.length) return { support: 'supported', words: hit.slice(0, 4) }
+    if (hit && hit.length) return { support: 'supported', via: 'gloss', words: hit.slice(0, 4) }
   }
+
+  // Bridge 1 — a synonym the dataset itself declares.
+  if (synonyms) {
+    for (const form of forms(concept)) {
+      for (const synonym of (synonyms.get(form) || [])) {
+        for (const sf of forms(synonym)) {
+          const hit = index.get(sf)
+          if (hit && hit.length) {
+            return { support: 'supported', via: 'synonym', synonym, words: hit.slice(0, 4) }
+          }
+        }
+      }
+    }
+  }
+
+  // Bridge 2 — the language says it with a compound built on a word the
+  // reader already has.
+  let above = null
+  if (fullIndex) for (const form of forms(concept)) { above = above || fullIndex.get(form) }
+  if (inLevelWords && above) {
+    for (const word of above) {
+      const head = componentHead(word, inLevelWords)
+      if (head) return { support: 'supported', via: 'component', compound: word, words: [head] }
+    }
+  }
+
   // A longer concept that is a piece of some gloss token, or vice versa.
   for (const [key, words] of index) {
     if (concept.length >= 5 && (key.includes(riskStem(concept)) || riskStem(concept).includes(key)) && key.length >= 4) {
-      return { support: 'weak', words: words.slice(0, 3) }
+      return { support: 'weak', via: 'substring', words: words.slice(0, 3) }
     }
   }
-  // A gap either way; the full index only supplies evidence of what the
-  // language would use, when it has anything at all.
-  let above = null
-  if (fullIndex) for (const form of forms(concept)) { above = above || fullIndex.get(form) }
-  return { support: 'none', words: (above || []).slice(0, 3) }
+  // Only now is the concept unsupported, and the full index says which kind:
+  // a word the language has and the reader does not, or nothing at all.
+  return { support: 'none', via: above ? 'above-level' : 'absent', words: (above || []).slice(0, 3) }
 }
+
+// ── Corpus integrity ────────────────────────────────────────────────────────
+// A stale local dump with `meaning: "undefined"` on every row made this gate
+// rate five of six beats HIGH, for words the reader plainly has. A gate whose
+// evidence is missing must refuse to answer, not answer wrongly: without
+// glosses every concept looks unsupported, and that reads exactly like a
+// story that cannot be told.
+export const MIN_GLOSSED_SHARE = 0.5
+
+export function validateGlossCorpus(vocabMap) {
+  const words = Object.keys(vocabMap || {})
+  const glossed = words.filter(w => {
+    const m = vocabMap[w] && vocabMap[w].meaning
+    return typeof m === 'string' && m.trim() && m.trim().toLowerCase() !== 'undefined' && m.trim().toLowerCase() !== 'null'
+  })
+  const share = words.length ? glossed.length / words.length : 0
+  if (!words.length) return { ok: false, share: 0, glossed: 0, total: 0, reason: 'the vocabulary is empty' }
+  if (share < MIN_GLOSSED_SHARE) {
+    return {
+      ok: false,
+      share,
+      glossed: glossed.length,
+      total: words.length,
+      reason: 'only ' + glossed.length + ' of ' + words.length + ' vocabulary rows carry a usable gloss ('
+        + Math.round(share * 100) + '%). Lexical risk cannot be judged without glosses — regenerate the corpus dump.',
+    }
+  }
+  return { ok: true, share, glossed: glossed.length, total: words.length }
+}
+
+export class GlossCorpusError extends Error {}
 
 // HIGH means the beat cannot be told at this level: its own subject matter is
 // missing, not a detail of it.
-export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index = null, fullIndex = null, names = [] } = {}) {
+export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index = null, fullIndex = null, names = [], synonyms = null, inLevelWords = null } = {}) {
   const idx = index || buildGlossIndex(vocabMap, manifest.level)
   const full = fullIndex || buildFullGlossIndex(vocabMap)
+  const syn = synonyms || buildSenseSynonyms(vocabMap)
+  const inLevel = inLevelWords || buildInLevelWords(vocabMap, manifest.level)
   const concepts = conceptsFromBeat(beat, entries, { names })
-  const rate = (list) => list.map(c => ({ concept: c, ...conceptSupport(c, idx, full) }))
+  const rate = (list) => list.map(c => ({ concept: c, ...conceptSupport(c, idx, full, { synonyms: syn, inLevelWords: inLevel }) }))
   const core = rate(concepts.core)
   const supporting = rate(concepts.supporting)
   const incidental = rate(concepts.incidental)
@@ -217,17 +356,23 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
 }
 
 export function assessShapeRisk({ blueprint, manifest, vocabMap } = {}) {
+  // Refuse rather than guess: a corpus without glosses makes every concept
+  // look impossible, which is indistinguishable from a story that is.
+  const corpus = validateGlossCorpus(vocabMap)
+  if (!corpus.ok) throw new GlossCorpusError('lexical risk refused: ' + corpus.reason)
   const index = buildGlossIndex(vocabMap, manifest.level)
   const fullIndex = buildFullGlossIndex(vocabMap)
+  const synonyms = buildSenseSynonyms(vocabMap)
+  const inLevelWords = buildInLevelWords(vocabMap, manifest.level)
   const names = [...(blueprint.cast || []), ...(manifest.speakers || [])]
   const beats = (blueprint.beats || []).map(beat => assessBeatRisk({
     beat,
     entries: (blueprint.targetPlan || []).filter(t => Number(t.beat) === beat.id),
-    manifest, vocabMap, index, fullIndex, names,
+    manifest, vocabMap, index, fullIndex, names, synonyms, inLevelWords,
   }))
   const high = beats.filter(b => b.risk === RISK.HIGH)
   const risk = high.length ? RISK.HIGH : (beats.some(b => b.risk === RISK.MEDIUM) ? RISK.MEDIUM : RISK.LOW)
   // What the planner has to avoid next time, in its own English.
   const blocking = [...new Set(high.flatMap(b => [...b.coreMissing, ...b.supportingMissing]))]
-  return { version: RISK_VERSION, risk, beats, highBeats: high.map(b => b.beat), blocking }
+  return { version: RISK_VERSION, risk, beats, highBeats: high.map(b => b.beat), blocking, corpus }
 }
