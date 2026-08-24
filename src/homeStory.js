@@ -62,9 +62,16 @@ export async function getDailyStoryCard(userId, track, learnedCount, dateStr = t
     // vocabulary is paged — the cumulative window passes the 1000-row cap at
     // HSK 4, and a truncated read skews the story pick's known-%. stories and
     // story_reads stay unpaged: both are bounded by the published-story count.
+    //
+    // The cover column is `image_path` — a path INSIDE the public `audio`
+    // bucket, which callers resolve with getAudioUrl(). There is no `cover_url`
+    // column and never has been; selecting one made PostgREST reject the whole
+    // stories query (42703), so `data` came back null and Home silently showed
+    // no story at all. Every other story surface (Stories, the reader, the
+    // poster) already reads `image_path` — keep this select in step with them.
     const [storiesRes, readsRes, vocabRows] = await Promise.all([
       supabase
-        .from('stories').select('id, title, content, level, tier, story_number, cover_url')
+        .from('stories').select('id, title, content, level, tier, story_number, image_path')
         .eq('language', track.language).eq('system', track.system)
         .lte('level', track.current_level).eq('is_published', true),
       supabase
