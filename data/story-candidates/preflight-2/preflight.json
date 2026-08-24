@@ -1,0 +1,905 @@
+{
+  "version": "fab9-risk@2",
+  "generatedAt": "2026-08-24T16:03:24.353Z",
+  "reports": [
+    {
+      "source": "data/story-candidates/a3-final-1/bakeoff-L3-001-blueprint.json",
+      "manifestId": "bakeoff-L3-001",
+      "problem": "李明 is struggling to move a heavy box without assistance.",
+      "beats": [
+        {
+          "id": 1,
+          "what": "李明 is holding a large, heavy box. His hands are sweating and his grip is slipping. He is struggling to walk."
+        },
+        {
+          "id": 2,
+          "what": "The box slips from 李明's hands and falls heavily on the floor. 李明 cannot lift it alone. He realizes he requires help."
+        },
+        {
+          "id": 3,
+          "what": "A young woman opens her door nearby. She sees the man on the floor with the broken box. She asks if he is okay."
+        },
+        {
+          "id": 4,
+          "what": "The woman introduces herself as 小红. 李明 explains he cannot lift the box. 小红 offers to assist him."
+        },
+        {
+          "id": 5,
+          "what": "They lift the box together and carry it into 李明's home. They put it down safely."
+        },
+        {
+          "id": 6,
+          "what": "李明 thanks 小红. She says that good neighbors should help each other. They are now friends."
+        }
+      ],
+      "report": {
+        "version": "fab9-risk@2",
+        "risk": "HIGH",
+        "beats": [
+          {
+            "beat": 1,
+            "risk": "MEDIUM",
+            "reason": "detail without in-level vocabulary (sweating, grip, slipping, complain), but the beat's own event can be told",
+            "core": [
+              {
+                "concept": "holding",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "拿",
+                  "把",
+                  "开会"
+                ]
+              },
+              {
+                "concept": "large",
+                "support": "supported",
+                "via": "component",
+                "compound": "大量",
+                "words": [
+                  "大"
+                ]
+              },
+              {
+                "concept": "heavy",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "搬"
+                ]
+              },
+              {
+                "concept": "box",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "邮箱"
+                ]
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "hands",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "手",
+                  "身边"
+                ]
+              },
+              {
+                "concept": "sweating",
+                "support": "none",
+                "via": "above-level",
+                "words": [
+                  "汗水"
+                ]
+              },
+              {
+                "concept": "grip",
+                "support": "none",
+                "via": "above-level",
+                "words": [
+                  "抓紧"
+                ]
+              },
+              {
+                "concept": "slipping",
+                "support": "none",
+                "via": "absent",
+                "words": []
+              },
+              {
+                "concept": "struggling",
+                "support": "supported",
+                "via": "synonym",
+                "synonym": "strive",
+                "words": [
+                  "努力"
+                ]
+              },
+              {
+                "concept": "walk",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "走",
+                  "走路"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "story",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "房子"
+                ]
+              },
+              {
+                "concept": "opens",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "开",
+                  "打开",
+                  "开花"
+                ]
+              },
+              {
+                "concept": "complain",
+                "support": "none",
+                "via": "above-level",
+                "words": [
+                  "抱怨",
+                  "投诉"
+                ]
+              },
+              {
+                "concept": "state",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "着",
+                  "国家"
+                ]
+              },
+              {
+                "concept": "deficit",
+                "support": "supported",
+                "via": "synonym",
+                "synonym": "loss",
+                "words": [
+                  "丢",
+                  "瘦"
+                ]
+              }
+            ],
+            "coreMissing": [],
+            "supportingMissing": [
+              "sweating",
+              "grip",
+              "slipping"
+            ],
+            "incidentalMissing": [
+              "complain"
+            ]
+          },
+          {
+            "beat": 2,
+            "risk": "HIGH",
+            "reason": "the beat's own event needs 2 words the reader does not have: slips, falls",
+            "core": [
+              {
+                "concept": "box",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "邮箱"
+                ]
+              },
+              {
+                "concept": "slips",
+                "support": "none",
+                "via": "absent",
+                "words": []
+              },
+              {
+                "concept": "hands",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "手",
+                  "身边"
+                ]
+              },
+              {
+                "concept": "falls",
+                "support": "none",
+                "via": "above-level",
+                "words": [
+                  "傍晚"
+                ]
+              },
+              {
+                "concept": "heavily",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "搬"
+                ]
+              },
+              {
+                "concept": "floor",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "楼"
+                ]
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "lift",
+                "support": "supported",
+                "via": "synonym",
+                "synonym": "raise",
+                "words": [
+                  "起",
+                  "养",
+                  "提高"
+                ]
+              },
+              {
+                "concept": "requires",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "需要",
+                  "要求"
+                ]
+              },
+              {
+                "concept": "help",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "帮",
+                  "帮忙",
+                  "把",
+                  "帮助"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "carry",
+                "support": "supported",
+                "via": "synonym",
+                "synonym": "hold",
+                "words": [
+                  "拿",
+                  "把",
+                  "开会"
+                ]
+              },
+              {
+                "concept": "too",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "也",
+                  "太",
+                  "不久"
+                ]
+              },
+              {
+                "concept": "heavy",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "搬"
+                ]
+              },
+              {
+                "concept": "loses",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "丢",
+                  "瘦"
+                ]
+              },
+              {
+                "concept": "grip",
+                "support": "none",
+                "via": "above-level",
+                "words": [
+                  "抓紧"
+                ]
+              }
+            ],
+            "coreMissing": [
+              "slips",
+              "falls"
+            ],
+            "supportingMissing": [],
+            "incidentalMissing": [
+              "grip"
+            ]
+          },
+          {
+            "beat": 3,
+            "risk": "MEDIUM",
+            "reason": "detail without in-level vocabulary (loud, thump, attracts, identification), but the beat's own event can be told",
+            "core": [
+              {
+                "concept": "young",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "年轻"
+                ]
+              },
+              {
+                "concept": "woman",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "女人",
+                  "老人"
+                ]
+              },
+              {
+                "concept": "opens",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "开",
+                  "打开",
+                  "开花"
+                ]
+              },
+              {
+                "concept": "door",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "门",
+                  "邻居"
+                ]
+              },
+              {
+                "concept": "nearby",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "附近"
+                ]
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "man",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "男人",
+                  "老人"
+                ]
+              },
+              {
+                "concept": "floor",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "楼"
+                ]
+              },
+              {
+                "concept": "broken",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "坏"
+                ]
+              },
+              {
+                "concept": "box",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "邮箱"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "okay",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "没关系"
+                ]
+              },
+              {
+                "concept": "loud",
+                "support": "none",
+                "via": "absent",
+                "words": []
+              },
+              {
+                "concept": "thump",
+                "support": "none",
+                "via": "absent",
+                "words": []
+              },
+              {
+                "concept": "falling",
+                "support": "supported",
+                "via": "component",
+                "compound": "到期",
+                "words": [
+                  "到"
+                ]
+              },
+              {
+                "concept": "attracts",
+                "support": "none",
+                "via": "above-level",
+                "words": [
+                  "吸引",
+                  "哎"
+                ]
+              },
+              {
+                "concept": "attention",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "注意",
+                  "关注"
+                ]
+              },
+              {
+                "concept": "neighbor",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "附近",
+                  "邻居"
+                ]
+              },
+              {
+                "concept": "next",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "明年",
+                  "次",
+                  "邻居",
+                  "后年"
+                ]
+              },
+              {
+                "concept": "doorway",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "门口"
+                ]
+              },
+              {
+                "concept": "identification",
+                "support": "none",
+                "via": "absent",
+                "words": []
+              }
+            ],
+            "coreMissing": [],
+            "supportingMissing": [],
+            "incidentalMissing": [
+              "loud",
+              "thump",
+              "attracts",
+              "identification"
+            ]
+          },
+          {
+            "beat": 4,
+            "risk": "MEDIUM",
+            "reason": "detail without in-level vocabulary (intervene), but the beat's own event can be told",
+            "core": [
+              {
+                "concept": "woman",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "女人",
+                  "老人"
+                ]
+              },
+              {
+                "concept": "introduces",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "介绍"
+                ]
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "lift",
+                "support": "supported",
+                "via": "synonym",
+                "synonym": "raise",
+                "words": [
+                  "起",
+                  "养",
+                  "提高"
+                ]
+              },
+              {
+                "concept": "box",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "邮箱"
+                ]
+              },
+              {
+                "concept": "offers",
+                "support": "supported",
+                "via": "synonym",
+                "synonym": "open",
+                "words": [
+                  "开",
+                  "打开",
+                  "开花"
+                ]
+              },
+              {
+                "concept": "assist",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "帮助"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "observes",
+                "support": "supported",
+                "via": "synonym",
+                "synonym": "watch",
+                "words": [
+                  "手表"
+                ]
+              },
+              {
+                "concept": "man",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "男人",
+                  "老人"
+                ]
+              },
+              {
+                "concept": "difficulty",
+                "support": "supported",
+                "via": "component",
+                "compound": "难度",
+                "words": [
+                  "难"
+                ]
+              },
+              {
+                "concept": "intervene",
+                "support": "none",
+                "via": "absent",
+                "words": []
+              },
+              {
+                "concept": "offering",
+                "support": "supported",
+                "via": "synonym",
+                "synonym": "open",
+                "words": [
+                  "开",
+                  "打开",
+                  "开花"
+                ]
+              },
+              {
+                "concept": "aid",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "帮助"
+                ]
+              }
+            ],
+            "coreMissing": [],
+            "supportingMissing": [],
+            "incidentalMissing": [
+              "intervene"
+            ]
+          },
+          {
+            "beat": 5,
+            "risk": "LOW",
+            "reason": "every central concept has in-level vocabulary",
+            "core": [
+              {
+                "concept": "lift",
+                "support": "supported",
+                "via": "synonym",
+                "synonym": "raise",
+                "words": [
+                  "起",
+                  "养",
+                  "提高"
+                ]
+              },
+              {
+                "concept": "box",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "邮箱"
+                ]
+              },
+              {
+                "concept": "carry",
+                "support": "supported",
+                "via": "synonym",
+                "synonym": "hold",
+                "words": [
+                  "拿",
+                  "把",
+                  "开会"
+                ]
+              }
+            ],
+            "supporting": [
+              {
+                "concept": "put",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "放",
+                  "丢"
+                ]
+              },
+              {
+                "concept": "safely",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "安全"
+                ]
+              }
+            ],
+            "incidental": [
+              {
+                "concept": "since",
+                "support": "supported",
+                "via": "synonym",
+                "synonym": "already",
+                "words": [
+                  "已经"
+                ]
+              },
+              {
+                "concept": "offered",
+                "support": "supported",
+                "via": "synonym",
+                "synonym": "open",
+                "words": [
+                  "开",
+                  "打开",
+                  "开花"
+                ]
+              },
+              {
+                "concept": "help",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "帮",
+                  "帮忙",
+                  "把",
+                  "帮助"
+                ]
+              },
+              {
+                "concept": "physically",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "体育"
+                ]
+              },
+              {
+                "concept": "move",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "动",
+                  "运动",
+                  "搬",
+                  "搬家"
+                ]
+              },
+              {
+                "concept": "object",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "它们",
+                  "东西",
+                  "个",
+                  "条"
+                ]
+              },
+              {
+                "concept": "destination",
+                "support": "weak",
+                "via": "substring",
+                "words": [
+                  "国家"
+                ]
+              }
+            ],
+            "coreMissing": [],
+            "supportingMissing": [],
+            "incidentalMissing": []
+          },
+          {
+            "beat": 6,
+            "risk": "MEDIUM",
+            "reason": "detail without in-level vocabulary (bond), but the beat's own event can be told",
+            "core": [
+              {
+                "concept": "thanks",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "谢谢"
+                ]
+              }
+            ],
+            "supporting": [],
+            "incidental": [
+              {
+                "concept": "neighbors",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "附近",
+                  "邻居"
+                ]
+              },
+              {
+                "concept": "help",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "帮",
+                  "帮忙",
+                  "把",
+                  "帮助"
+                ]
+              },
+              {
+                "concept": "physical",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "体育"
+                ]
+              },
+              {
+                "concept": "task",
+                "support": "supported",
+                "via": "synonym",
+                "synonym": "assignment",
+                "words": [
+                  "作业"
+                ]
+              },
+              {
+                "concept": "complete",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "完成"
+                ]
+              },
+              {
+                "concept": "allowing",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "让"
+                ]
+              },
+              {
+                "concept": "social",
+                "support": "supported",
+                "via": "component",
+                "compound": "风俗",
+                "words": [
+                  "风"
+                ]
+              },
+              {
+                "concept": "closure",
+                "support": "weak",
+                "via": "substring",
+                "words": [
+                  "一定"
+                ]
+              },
+              {
+                "concept": "relationship",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "关系"
+                ]
+              },
+              {
+                "concept": "building",
+                "support": "supported",
+                "via": "gloss",
+                "words": [
+                  "楼",
+                  "房子"
+                ]
+              },
+              {
+                "concept": "defining",
+                "support": "weak",
+                "via": "substring",
+                "words": [
+                  "些"
+                ]
+              },
+              {
+                "concept": "bond",
+                "support": "none",
+                "via": "above-level",
+                "words": [
+                  "券"
+                ]
+              }
+            ],
+            "coreMissing": [],
+            "supportingMissing": [],
+            "incidentalMissing": [
+              "bond"
+            ]
+          }
+        ],
+        "highBeats": [
+          2
+        ],
+        "blocking": [
+          "slips",
+          "falls"
+        ],
+        "corpus": {
+          "ok": true,
+          "share": 1,
+          "glossed": 4998,
+          "total": 4998
+        }
+      }
+    }
+  ]
+}
