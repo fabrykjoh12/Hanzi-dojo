@@ -1,0 +1,2872 @@
+{
+  "generatedAt": "2026-08-24T14:31:48.063Z",
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bakeoff-L3-001",
+    "batchId": "bakeoff",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "required": [
+    "关系",
+    "女人",
+    "男人",
+    "帮助",
+    "需要"
+  ],
+  "perModel": 4,
+  "thresholds": {
+    "overall": 6,
+    "causal": 6,
+    "chronology": 6,
+    "targetFit": 5
+  },
+  "models": [
+    "groq:qwen/qwen3.6-27b:none",
+    "groq:openai/gpt-oss-120b:low"
+  ],
+  "judge": "groq:qwen/qwen3.6-27b:none",
+  "contract": "fab9-transition@1",
+  "rejudgedFrom": null,
+  "judgeLog": [
+    {
+      "labels": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "ok": true,
+      "error": null,
+      "raw": "PLAN A: CAUSAL 8 CHRONOLOGY 9 PLAUSIBILITY 8 SIMPLICITY 7 TARGETFIT 5 SUITABILITY 8 CONTRADICTION no OVERALL 7 — Replacing the handle with a multi-tool is mechanically odd for an external fix; \"relationship\" feels tacked on.\nPLAN B: CAUSAL 6 CHRONOLOGY 5 PLAUSIBILITY 4 SIMPLICITY 6 TARGETFIT 2 SUITABILITY 5 CONTRADICTION yes OVERALL 4 — Characters explicitly stating their biological sex (\"I am a man\") to ask for help is unnatural and contradictory to social norms; target word usage is forced.\nPLAN C: CAUSAL 9 CHRONOLOGY 10 PLAUSIBILITY 10 SIMPLICITY 9 TARGETFIT 8 SUITABILITY 9 CONTRADICTION no OVERALL 9 — Simple, logical, natural dialogue; fits HSK 3 constraints perfectly with no logical gaps.\nPLAN D: CAUSAL 9 CHRONOLOGY 10 PLAUSIBILITY 10 SIMPLICITY 9 TARGETFIT 9 SUITABILITY 9 CONTRADICTION no OVERALL 9 — Strong causal chain, natural word placement, and a clear, realistic resolution suitable for the level."
+    },
+    {
+      "labels": [
+        "E",
+        "F",
+        "G",
+        "H"
+      ],
+      "ok": true,
+      "error": null,
+      "raw": "PLAN E: CAUSAL 8 CHRONOLOGY 8 PLAUSIBILITY 8 SIMPLICITY 9 TARGETFIT 7 SUITABILITY 8 CONTRADICTION no OVERALL 8 — Solid domestic plot; \"man/woman\" intros are slightly stiff but functional for grammar drilling.\nPLAN F: CAUSAL 7 CHRONOLOGY 9 PLAUSIBILITY 9 SIMPLICITY 9 TARGETFIT 7 SUITABILITY 8 CONTRADICTION yes OVERALL 5 — Title says Monday, beats say Tuesday (contradiction); \"man/woman\" usage is awkward and unnatural.\nPLAN G: CAUSAL 9 CHRONOLOGY 8 PLAUSIBILITY 7 SIMPLICITY 9 TARGETFIT 7 SUITABILITY 8 CONTRADICTION no OVERALL 6 — Logical flow, but claiming a \"new chain\" is needed for a slipped chain is technically inaccurate/plausibility issue for a simple fix story.\nPLAN H: CAUSAL 9 CHRONOLOGY 8 PLAUSIBILITY 8 SIMPLICITY 9 TARGETFIT 8 SUITABILITY 8 CONTRADICTION no OVERALL 9 — Strong cause-and-effect, natural motivation for all target words, fits HSK 3 level well."
+    }
+  ],
+  "rates": {
+    "groq:qwen/qwen3.6-27b:none": {
+      "n": 4,
+      "structural": 4,
+      "quality": 3,
+      "joint": 3,
+      "overall": [
+        9,
+        7,
+        9,
+        5
+      ],
+      "buckets": {
+        "contradiction": 1
+      },
+      "transitionsStated": 2,
+      "transitionsRequired": 2,
+      "contractViolations": 0,
+      "adapterLosses": 0
+    },
+    "groq:openai/gpt-oss-120b:low": {
+      "n": 4,
+      "structural": 2,
+      "quality": 3,
+      "joint": 2,
+      "overall": [
+        6,
+        8,
+        4,
+        9
+      ],
+      "buckets": {
+        "target intent": 2,
+        "target placement": 2,
+        "contradiction": 1,
+        "implausible causality": 1,
+        "chronology": 1
+      },
+      "transitionsStated": 7,
+      "transitionsRequired": 7,
+      "contractViolations": 0,
+      "adapterLosses": 0
+    }
+  },
+  "candidates": [
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 1,
+      "blueprint": {
+        "title": "The Heavy Box Problem",
+        "setting": "A residential apartment building on a Saturday afternoon.",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "Xiao Hong needs to move a heavy box upstairs but cannot lift it alone.",
+        "incitingEvent": "Xiao Hong waits with a large box while looking for help.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Saturday afternoon",
+            "what": "Xiao Hong stands with a large, heavy green box. She looks tired and unsure.",
+            "because": "the story opens",
+            "targets": [
+              "女人"
+            ],
+            "lines": 5,
+            "where": "Building entrance lobby",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "Immediately after",
+            "what": "Li Ming walks into the lobby and sees the woman with the box.",
+            "because": "Li Ming is walking home and enters the building just as Xiao Hong is waiting there.",
+            "targets": [
+              "男人"
+            ],
+            "lines": 5,
+            "where": "Building entrance lobby",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "Seconds later",
+            "what": "Li Ming asks if the woman needs help with the box.",
+            "because": "He notices her struggle and recognizes a neighbor in need.",
+            "targets": [
+              "需要",
+              "帮助"
+            ],
+            "lines": 5,
+            "where": "Building entrance lobby",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "Immediately after",
+            "what": "Xiao Hong accepts the help and thanks him.",
+            "because": "She cannot move the box by herself.",
+            "targets": [],
+            "lines": 4,
+            "where": "Building entrance lobby",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "Five minutes later",
+            "what": "They arrive at Xiao Hong's apartment door. The box is safe.",
+            "because": "They lifted and carried the box together up the stairs.",
+            "targets": [],
+            "lines": 4,
+            "where": "Fourth-floor hallway",
+            "arrivedHow": "李明 and 小红 carry the box up the stairs together."
+          },
+          {
+            "id": 6,
+            "when": "Immediately after",
+            "what": "They chat about how friendly neighbors are. Li Ming leaves.",
+            "because": "The task is finished, allowing time for conversation.",
+            "targets": [
+              "关系"
+            ],
+            "lines": 5,
+            "where": "Fourth-floor hallway",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "Li Ming helps Xiao Hong move the box to her apartment, and they agree that being helpful neighbors is good.",
+        "targetPlan": [
+          {
+            "word": "女人",
+            "beat": 1,
+            "why": "To identify Xiao Hong's gender role in the scene before she speaks.",
+            "speaker": "narrator",
+            "refersTo": "Xiao Hong",
+            "intent": "Description"
+          },
+          {
+            "word": "男人",
+            "beat": 2,
+            "why": "To identify Li Ming's gender role when he enters the scene.",
+            "speaker": "narrator",
+            "refersTo": "Li Ming",
+            "intent": "Description"
+          },
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "Li Ming asks if she has a requirement for assistance.",
+            "speaker": "李明",
+            "refersTo": "The act of helping",
+            "intent": "Offering help"
+          },
+          {
+            "word": "帮助",
+            "beat": 3,
+            "why": "Li Ming offers his aid.",
+            "speaker": "李明",
+            "refersTo": "Moving the box",
+            "intent": "Offering help"
+          },
+          {
+            "word": "关系",
+            "beat": 6,
+            "why": "To comment on the social bond between neighbors after the act of kindness.",
+            "speaker": "小红",
+            "refersTo": "Neighborliness",
+            "intent": "Social bonding"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "The Heavy Box Problem",
+        "setting": "A residential apartment building on a Saturday afternoon.",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "Xiao Hong needs to move a heavy box upstairs but cannot lift it alone.",
+        "incitingEvent": "Xiao Hong waits with a large box while looking for help.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Saturday afternoon",
+            "location": "Building entrance lobby",
+            "what": "Xiao Hong stands with a large, heavy green box. She looks tired and unsure.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "女人"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "Immediately after",
+            "location": "Building entrance lobby",
+            "what": "Li Ming walks into the lobby and sees the woman with the box.",
+            "because": "Li Ming is walking home and enters the building just as Xiao Hong is waiting there.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "男人"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 3,
+            "when": "Seconds later",
+            "location": "Building entrance lobby",
+            "what": "Li Ming asks if the woman needs help with the box.",
+            "because": "He notices her struggle and recognizes a neighbor in need.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要",
+              "帮助"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "Immediately after",
+            "location": "Building entrance lobby",
+            "what": "Xiao Hong accepts the help and thanks him.",
+            "because": "She cannot move the box by herself.",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 4
+          },
+          {
+            "id": 5,
+            "when": "Five minutes later",
+            "location": "Fourth-floor hallway",
+            "what": "They arrive at Xiao Hong's apartment door. The box is safe.",
+            "because": "They lifted and carried the box together up the stairs.",
+            "transition_from_previous": "李明 and 小红 carry the box up the stairs together.",
+            "targets": [],
+            "lines": 4
+          },
+          {
+            "id": 6,
+            "when": "Immediately after",
+            "location": "Fourth-floor hallway",
+            "what": "They chat about how friendly neighbors are. Li Ming leaves.",
+            "because": "The task is finished, allowing time for conversation.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "关系"
+            ],
+            "lines": 5
+          }
+        ],
+        "resolution": "Li Ming helps Xiao Hong move the box to her apartment, and they agree that being helpful neighbors is good.",
+        "targetPlan": [
+          {
+            "word": "女人",
+            "beat": 1,
+            "why": "To identify Xiao Hong's gender role in the scene before she speaks.",
+            "speaker": "narrator",
+            "refersTo": "Xiao Hong",
+            "intent": "Description"
+          },
+          {
+            "word": "男人",
+            "beat": 2,
+            "why": "To identify Li Ming's gender role when he enters the scene.",
+            "speaker": "narrator",
+            "refersTo": "Li Ming",
+            "intent": "Description"
+          },
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "Li Ming asks if she has a requirement for assistance.",
+            "speaker": "李明",
+            "refersTo": "The act of helping",
+            "intent": "Offering help"
+          },
+          {
+            "word": "帮助",
+            "beat": 3,
+            "why": "Li Ming offers his aid.",
+            "speaker": "李明",
+            "refersTo": "Moving the box",
+            "intent": "Offering help"
+          },
+          {
+            "word": "关系",
+            "beat": 6,
+            "why": "To comment on the social bond between neighbors after the act of kindness.",
+            "speaker": "小红",
+            "refersTo": "Neighborliness",
+            "intent": "Social bonding"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 1,
+        "required": 1,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 2693,
+      "tokens": {
+        "prompt": 1085,
+        "completion": 1096
+      },
+      "score": {
+        "label": "C",
+        "contradiction": false,
+        "overall": 9,
+        "reason": "Simple, logical, natural dialogue; fits HSK 3 constraints perfectly with no logical gaps.",
+        "causal": 9,
+        "chronology": 10,
+        "plausibility": 10,
+        "simplicity": 9,
+        "targetFit": 8,
+        "suitability": 9
+      },
+      "label": "C",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": []
+    },
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 2,
+      "blueprint": {
+        "title": "The Help",
+        "setting": "A residential apartment building, Saturday afternoon.",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 is trapped inside his apartment with a slipped lock and cannot get out for fresh air.",
+        "incitingEvent": "李明 tries to open his door to leave, but the handle breaks off in his hand.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Saturday, 2:00 PM",
+            "what": "李明 tries to open the door to go for a walk, but the handle breaks. He is stuck inside.",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 3,
+            "where": "李明's Apartment Door",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "Saturday, 2:15 PM",
+            "what": "李明 calls 小红, who is passing by in the hallway, asking for something.",
+            "because": "He is trapped and sees a neighbor nearby, realizing he requires assistance.",
+            "targets": [],
+            "lines": 4,
+            "where": "The Hallway Outside 李明's Door",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "Saturday, 2:17 PM",
+            "what": "小红 looks at the door and says it is locked; she cannot open it without a key.",
+            "because": "李明 asked for help, so she assesses the situation physically.",
+            "targets": [
+              "必须"
+            ],
+            "lines": 5,
+            "where": "The Hallway Outside 李明's Door",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "Saturday, 2:20 PM",
+            "what": "A 男人 walks by. 小红 asks him if he can help because he looks strong.",
+            "because": "小红 realizes she lacks the physical strength or skill, so she seeks another adult.",
+            "targets": [
+              "男人"
+            ],
+            "lines": 5,
+            "where": "The Hallway Outside 李明's Door",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "Saturday, 2:22 PM",
+            "what": "The 女人 who lives next door appears and says she has a multi-tool in her bag.",
+            "because": "The 男人 does not stop, changing the context of who can provide aid; 小红 shifts focus to the other neighbor.",
+            "targets": [
+              "女人"
+            ],
+            "lines": 6,
+            "where": "The Hallway Outside 李明's Door",
+            "arrivedHow": ""
+          },
+          {
+            "id": 6,
+            "when": "Saturday, 2:25 PM",
+            "what": "The 女人 fixes the lock. 李明 opens the door. They discuss how friends help each other.",
+            "because": "The 女人 had the tool and the skill, resolving the physical barrier.",
+            "targets": [
+              "帮助",
+              "关系"
+            ],
+            "lines": 5,
+            "where": "The Hallway Outside 李明's Door",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "The door is opened by the neighbor using a tool, and the characters acknowledge the value of neighborly support.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 realizes he cannot open the door himself and requires assistance.",
+            "speaker": "李明",
+            "refersTo": "The situation of being trapped",
+            "intent": "To state his inability to solve the problem alone"
+          },
+          {
+            "word": "必须",
+            "beat": 3,
+            "why": "小红 explains the condition required to open the door (a key or tools).",
+            "speaker": "小红",
+            "refersTo": "The necessity of a proper method",
+            "intent": "To explain why she cannot just push it open"
+          },
+          {
+            "word": "男人",
+            "beat": 4,
+            "why": "小红 identifies a specific type of person who might offer physical help.",
+            "speaker": "小红",
+            "refersTo": "The passerby",
+            "intent": "To categorize the potential helper"
+          },
+          {
+            "word": "女人",
+            "beat": 5,
+            "why": "The narrative introduces the next available neighbor.",
+            "speaker": "Narrator",
+            "refersTo": "The neighbor with the tool",
+            "intent": "To identify the rescuer"
+          },
+          {
+            "word": "帮助",
+            "beat": 6,
+            "why": "The problem is solved through external aid.",
+            "speaker": "李明",
+            "refersTo": "The act of fixing the door",
+            "intent": "To express gratitude for the action taken"
+          },
+          {
+            "word": "关系",
+            "beat": 6,
+            "why": "The characters reflect on the social bond between them.",
+            "speaker": "小红",
+            "refersTo": "Friendship/Neighborliness",
+            "intent": "To contextualize the interaction as a positive social event"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "The Help",
+        "setting": "A residential apartment building, Saturday afternoon.",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 is trapped inside his apartment with a slipped lock and cannot get out for fresh air.",
+        "incitingEvent": "李明 tries to open his door to leave, but the handle breaks off in his hand.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Saturday, 2:00 PM",
+            "location": "李明's Apartment Door",
+            "what": "李明 tries to open the door to go for a walk, but the handle breaks. He is stuck inside.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 3
+          },
+          {
+            "id": 2,
+            "when": "Saturday, 2:15 PM",
+            "location": "The Hallway Outside 李明's Door",
+            "what": "李明 calls 小红, who is passing by in the hallway, asking for something.",
+            "because": "He is trapped and sees a neighbor nearby, realizing he requires assistance.",
+            "transition_from_previous": "李明 yells out the crack of the door to 小红 who is walking past in the hallway",
+            "targets": [],
+            "lines": 4
+          },
+          {
+            "id": 3,
+            "when": "Saturday, 2:17 PM",
+            "location": "The Hallway Outside 李明's Door",
+            "what": "小红 looks at the door and says it is locked; she cannot open it without a key.",
+            "because": "李明 asked for help, so she assesses the situation physically.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "必须"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "Saturday, 2:20 PM",
+            "location": "The Hallway Outside 李明's Door",
+            "what": "A 男人 walks by. 小红 asks him if he can help because he looks strong.",
+            "because": "小红 realizes she lacks the physical strength or skill, so she seeks another adult.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "男人"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 5,
+            "when": "Saturday, 2:22 PM",
+            "location": "The Hallway Outside 李明's Door",
+            "what": "The 女人 who lives next door appears and says she has a multi-tool in her bag.",
+            "because": "The 男人 does not stop, changing the context of who can provide aid; 小红 shifts focus to the other neighbor.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "女人"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 6,
+            "when": "Saturday, 2:25 PM",
+            "location": "The Hallway Outside 李明's Door",
+            "what": "The 女人 fixes the lock. 李明 opens the door. They discuss how friends help each other.",
+            "because": "The 女人 had the tool and the skill, resolving the physical barrier.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "帮助",
+              "关系"
+            ],
+            "lines": 5
+          }
+        ],
+        "resolution": "The door is opened by the neighbor using a tool, and the characters acknowledge the value of neighborly support.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 realizes he cannot open the door himself and requires assistance.",
+            "speaker": "李明",
+            "refersTo": "The situation of being trapped",
+            "intent": "To state his inability to solve the problem alone"
+          },
+          {
+            "word": "必须",
+            "beat": 3,
+            "why": "小红 explains the condition required to open the door (a key or tools).",
+            "speaker": "小红",
+            "refersTo": "The necessity of a proper method",
+            "intent": "To explain why she cannot just push it open"
+          },
+          {
+            "word": "男人",
+            "beat": 4,
+            "why": "小红 identifies a specific type of person who might offer physical help.",
+            "speaker": "小红",
+            "refersTo": "The passerby",
+            "intent": "To categorize the potential helper"
+          },
+          {
+            "word": "女人",
+            "beat": 5,
+            "why": "The narrative introduces the next available neighbor.",
+            "speaker": "Narrator",
+            "refersTo": "The neighbor with the tool",
+            "intent": "To identify the rescuer"
+          },
+          {
+            "word": "帮助",
+            "beat": 6,
+            "why": "The problem is solved through external aid.",
+            "speaker": "李明",
+            "refersTo": "The act of fixing the door",
+            "intent": "To express gratitude for the action taken"
+          },
+          {
+            "word": "关系",
+            "beat": 6,
+            "why": "The characters reflect on the social bond between them.",
+            "speaker": "小红",
+            "refersTo": "Friendship/Neighborliness",
+            "intent": "To contextualize the interaction as a positive social event"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 0,
+        "required": 0,
+        "violations": [],
+        "warnings": [
+          {
+            "beat": 2,
+            "code": "transition_within_place",
+            "message": "beat 2 describes a move inside \"The Hallway Outside 李明's Door\""
+          }
+        ],
+        "mapped": [],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 4600,
+      "tokens": {
+        "prompt": 1085,
+        "completion": 1350
+      },
+      "score": {
+        "label": "A",
+        "contradiction": false,
+        "overall": 7,
+        "reason": "Replacing the handle with a multi-tool is mechanically odd for an external fix; \"relationship\" feels tacked on.",
+        "causal": 8,
+        "chronology": 9,
+        "plausibility": 8,
+        "simplicity": 7,
+        "targetFit": 5,
+        "suitability": 8
+      },
+      "label": "A",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": []
+    },
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 3,
+      "blueprint": {
+        "title": "The Heavy Box and the New Neighbor",
+        "setting": "A residential apartment building hallway, weekday afternoon",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 is struggling to move a heavy box without assistance.",
+        "incitingEvent": "李明 drops his package after his hands slip.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Tuesday, 5:00 PM",
+            "what": "李明 is holding a large, heavy box. His hands are sweating and his grip is slipping. He is struggling to walk.",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 4,
+            "where": "Apartment Building Hallway",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "Tuesday, 5:05 PM",
+            "what": "The box slips from 李明's hands and falls heavily on the floor. 李明 cannot lift it alone. He realizes he requires help.",
+            "because": "李明 tries to carry the box, but it is too heavy and he loses his grip.",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "Apartment Building Hallway",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "Tuesday, 5:06 PM",
+            "what": "A young woman opens her door nearby. She sees the man on the floor with the broken box. She asks if he is okay.",
+            "because": "The loud thump of the box falling attracts the attention of the neighbor in the next doorway.",
+            "targets": [
+              "女人",
+              "男人"
+            ],
+            "lines": 4,
+            "where": "Apartment Building Hallway",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "Tuesday, 5:08 PM",
+            "what": "The woman introduces herself as 小红. 李明 explains he cannot lift the box. 小红 offers to assist him.",
+            "because": "The woman observes the man's difficulty and decides to intervene.",
+            "targets": [
+              "帮助"
+            ],
+            "lines": 6,
+            "where": "Apartment Building Hallway",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "Tuesday, 5:12 PM",
+            "what": "They lift the box together and carry it into 李明's home. They put it down safely.",
+            "because": "Since 小红 offered to help, they physically move the object to its destination.",
+            "targets": [],
+            "lines": 5,
+            "where": "李明's Apartment",
+            "arrivedHow": ""
+          },
+          {
+            "id": 6,
+            "when": "Tuesday, 5:15 PM",
+            "what": "李明 thanks 小红. She says that good neighbors should help each other. They are now friends.",
+            "because": "The physical task is complete, allowing for social closure and relationship building.",
+            "targets": [
+              "关系"
+            ],
+            "lines": 4,
+            "where": "李明's Apartment",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "The box is moved safely, and 李明 and 小红 establish a friendly neighborly relationship.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 needs to express his physical struggle and requirement for ease or help.",
+            "speaker": "李明",
+            "refersTo": "The difficulty of carrying the box",
+            "intent": "To complain or state a deficit"
+          },
+          {
+            "word": "女人",
+            "beat": 3,
+            "why": "The narrator or 李明 identifies the person appearing as a female.",
+            "speaker": "Narrator",
+            "refersTo": "The neighbor who opens the door",
+            "intent": "Identification"
+          },
+          {
+            "word": "男人",
+            "beat": 3,
+            "why": "The woman identifies 李明 as a male who is in trouble.",
+            "speaker": "小红",
+            "refersTo": "李明",
+            "intent": "Identification"
+          },
+          {
+            "word": "帮助",
+            "beat": 4,
+            "why": "小红 explicitly offers assistance to solve the problem.",
+            "speaker": "小红",
+            "refersTo": "The act of lifting the box",
+            "intent": "Offering aid"
+          },
+          {
+            "word": "关系",
+            "beat": 6,
+            "why": "They reflect on the improved social connection resulting from the help.",
+            "speaker": "小红",
+            "refersTo": "Their new acquaintance",
+            "intent": "Defining the social bond"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "The Heavy Box and the New Neighbor",
+        "setting": "A residential apartment building hallway, weekday afternoon",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 is struggling to move a heavy box without assistance.",
+        "incitingEvent": "李明 drops his package after his hands slip.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Tuesday, 5:00 PM",
+            "location": "Apartment Building Hallway",
+            "what": "李明 is holding a large, heavy box. His hands are sweating and his grip is slipping. He is struggling to walk.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 4
+          },
+          {
+            "id": 2,
+            "when": "Tuesday, 5:05 PM",
+            "location": "Apartment Building Hallway",
+            "what": "The box slips from 李明's hands and falls heavily on the floor. 李明 cannot lift it alone. He realizes he requires help.",
+            "because": "李明 tries to carry the box, but it is too heavy and he loses his grip.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 3,
+            "when": "Tuesday, 5:06 PM",
+            "location": "Apartment Building Hallway",
+            "what": "A young woman opens her door nearby. She sees the man on the floor with the broken box. She asks if he is okay.",
+            "because": "The loud thump of the box falling attracts the attention of the neighbor in the next doorway.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "女人",
+              "男人"
+            ],
+            "lines": 4
+          },
+          {
+            "id": 4,
+            "when": "Tuesday, 5:08 PM",
+            "location": "Apartment Building Hallway",
+            "what": "The woman introduces herself as 小红. 李明 explains he cannot lift the box. 小红 offers to assist him.",
+            "because": "The woman observes the man's difficulty and decides to intervene.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "帮助"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "Tuesday, 5:12 PM",
+            "location": "李明's Apartment",
+            "what": "They lift the box together and carry it into 李明's home. They put it down safely.",
+            "because": "Since 小红 offered to help, they physically move the object to its destination.",
+            "transition_from_previous": "李明 and 小红 walk together up the stairs to 李明's door",
+            "targets": [],
+            "lines": 5
+          },
+          {
+            "id": 6,
+            "when": "Tuesday, 5:15 PM",
+            "location": "李明's Apartment",
+            "what": "李明 thanks 小红. She says that good neighbors should help each other. They are now friends.",
+            "because": "The physical task is complete, allowing for social closure and relationship building.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "关系"
+            ],
+            "lines": 4
+          }
+        ],
+        "resolution": "The box is moved safely, and 李明 and 小红 establish a friendly neighborly relationship.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 needs to express his physical struggle and requirement for ease or help.",
+            "speaker": "李明",
+            "refersTo": "The difficulty of carrying the box",
+            "intent": "To complain or state a deficit"
+          },
+          {
+            "word": "女人",
+            "beat": 3,
+            "why": "The narrator or 李明 identifies the person appearing as a female.",
+            "speaker": "Narrator",
+            "refersTo": "The neighbor who opens the door",
+            "intent": "Identification"
+          },
+          {
+            "word": "男人",
+            "beat": 3,
+            "why": "The woman identifies 李明 as a male who is in trouble.",
+            "speaker": "小红",
+            "refersTo": "李明",
+            "intent": "Identification"
+          },
+          {
+            "word": "帮助",
+            "beat": 4,
+            "why": "小红 explicitly offers assistance to solve the problem.",
+            "speaker": "小红",
+            "refersTo": "The act of lifting the box",
+            "intent": "Offering aid"
+          },
+          {
+            "word": "关系",
+            "beat": 6,
+            "why": "They reflect on the improved social connection resulting from the help.",
+            "speaker": "小红",
+            "refersTo": "Their new acquaintance",
+            "intent": "Defining the social bond"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 0,
+        "required": 0,
+        "violations": [],
+        "warnings": [
+          {
+            "beat": 5,
+            "code": "transition_within_place",
+            "message": "beat 5 describes a move inside \"李明's Apartment\""
+          }
+        ],
+        "mapped": [],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 55320,
+      "tokens": {
+        "prompt": 1085,
+        "completion": 1201
+      },
+      "score": {
+        "label": "D",
+        "contradiction": false,
+        "overall": 9,
+        "reason": "Strong causal chain, natural word placement, and a clear, realistic resolution suitable for the level.",
+        "causal": 9,
+        "chronology": 10,
+        "plausibility": 10,
+        "simplicity": 9,
+        "targetFit": 9,
+        "suitability": 9
+      },
+      "label": "D",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": []
+    },
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 4,
+      "blueprint": {
+        "title": "The Heavy Box",
+        "setting": "A Monday morning in an apartment building complex in Beijing",
+        "cast": [
+          "李明",
+          "小红",
+          "小明"
+        ],
+        "problem": "李明 has a heavy box he cannot move alone and needs help carrying it to his apartment.",
+        "incitingEvent": "李明 is standing in the hallway with a large, heavy box that is stuck.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Tuesday morning, 9:00 AM",
+            "what": "李明 is trying to carry a big box into his room. It is too heavy. He is sweating and stops, unable to move the box forward.",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "The building hallway, 3rd floor",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "Tuesday morning, 9:02 AM",
+            "what": "小红 comes out of her apartment next door. She sees 李明 struggling with the box.",
+            "because": "李明 is clearly stuck, causing a noise or visible struggle that attracts 小红's attention",
+            "targets": [
+              "女人",
+              "关系"
+            ],
+            "lines": 6,
+            "where": "The building hallway, 3rd floor",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "Tuesday morning, 9:03 AM",
+            "what": "小红 asks if 李明 is okay. 李明 says he needs help because the box is heavy. 小红 agrees to help.",
+            "because": "小红 sees 李明 is in trouble and her neighborly relationship prompts her to ask",
+            "targets": [
+              "如果",
+              "必须"
+            ],
+            "lines": 6,
+            "where": "The building hallway, 3rd floor",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "Tuesday morning, 9:10 AM",
+            "what": "小红 and 李明 carry the box together into 李明's apartment. They put it down on the floor.",
+            "because": "They agreed to carry the box together inside",
+            "targets": [
+              "帮助"
+            ],
+            "lines": 6,
+            "where": "李明's apartment living room",
+            "arrivedHow": "李明 and 小红 carry the box from the hallway into 李明's apartment"
+          },
+          {
+            "id": 5,
+            "when": "Tuesday morning, 9:15 AM",
+            "what": "小明 knocks on the door. 李明 opens it. 小明 is a邻居 (neighbor) too. 李明 introduces 小红 and 小明. They talk happily.",
+            "because": "小明 came over to say hello, an event that happens while 李明 is preoccupied but now free",
+            "targets": [
+              "男人"
+            ],
+            "lines": 5,
+            "where": "李明's apartment living room",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "The box is safely inside 李明's apartment, and the neighbors have bonded through the act of helping.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 realizes he cannot do it alone and articulates his lack of ability as a necessity for assistance.",
+            "speaker": "李明",
+            "refersTo": "The act of moving the box",
+            "intent": "To express that he has a deficit he must fill"
+          },
+          {
+            "word": "女人",
+            "beat": 2,
+            "why": "小明 or 李明 might refer to 小红, or the narrator describes her, establishing her presence. In this plan, 小红 is the 女人 who sees him.",
+            "speaker": "Narrator",
+            "refersTo": "小红",
+            "intent": "To identify the character entering the scene"
+          },
+          {
+            "word": "关系",
+            "beat": 2,
+            "why": "After seeing 李明 struggle, the narrator or a character reflects on their neighborly bond.",
+            "speaker": "Narrator",
+            "refersTo": "The connection between 李明 and 小红",
+            "intent": "To contextualize why 小红 cares"
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "小红 proposes a conditional action: 'If I help you, you won't be tired.'",
+            "speaker": "小红",
+            "refersTo": "The hypothetical situation of getting help",
+            "intent": "To offer assistance logically"
+          },
+          {
+            "word": "必须",
+            "beat": 3,
+            "why": "李明 emphasizes that he must have help to succeed.",
+            "speaker": "李明",
+            "refersTo": "The requirement of assistance",
+            "intent": "To stress the obligation/necessity"
+          },
+          {
+            "word": "帮助",
+            "beat": 4,
+            "why": "The action of helping is completed. 李明 thanks 小红 for her help.",
+            "speaker": "李明",
+            "refersTo": "The act of carrying the box",
+            "intent": "To express gratitude for the aid received"
+          },
+          {
+            "word": "男人",
+            "beat": 5,
+            "why": "When 小明 arrives, 小红 refers to 李明 as 'the man' or 小明 is referred to as 'the man' in the greeting/introduction.",
+            "speaker": "小红",
+            "refersTo": "李明 or 小明",
+            "intent": "To identify the male neighbor"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "The Heavy Box",
+        "setting": "A Monday morning in an apartment building complex in Beijing",
+        "cast": [
+          "李明",
+          "小红",
+          "小明"
+        ],
+        "problem": "李明 has a heavy box he cannot move alone and needs help carrying it to his apartment.",
+        "incitingEvent": "李明 is standing in the hallway with a large, heavy box that is stuck.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Tuesday morning, 9:00 AM",
+            "location": "The building hallway, 3rd floor",
+            "what": "李明 is trying to carry a big box into his room. It is too heavy. He is sweating and stops, unable to move the box forward.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "Tuesday morning, 9:02 AM",
+            "location": "The building hallway, 3rd floor",
+            "what": "小红 comes out of her apartment next door. She sees 李明 struggling with the box.",
+            "because": "李明 is clearly stuck, causing a noise or visible struggle that attracts 小红's attention",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "女人",
+              "关系"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 3,
+            "when": "Tuesday morning, 9:03 AM",
+            "location": "The building hallway, 3rd floor",
+            "what": "小红 asks if 李明 is okay. 李明 says he needs help because the box is heavy. 小红 agrees to help.",
+            "because": "小红 sees 李明 is in trouble and her neighborly relationship prompts her to ask",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果",
+              "必须"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 4,
+            "when": "Tuesday morning, 9:10 AM",
+            "location": "李明's apartment living room",
+            "what": "小红 and 李明 carry the box together into 李明's apartment. They put it down on the floor.",
+            "because": "They agreed to carry the box together inside",
+            "transition_from_previous": "李明 and 小红 carry the box from the hallway into 李明's apartment",
+            "targets": [
+              "帮助"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "Tuesday morning, 9:15 AM",
+            "location": "李明's apartment living room",
+            "what": "小明 knocks on the door. 李明 opens it. 小明 is a邻居 (neighbor) too. 李明 introduces 小红 and 小明. They talk happily.",
+            "because": "小明 came over to say hello, an event that happens while 李明 is preoccupied but now free",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "男人"
+            ],
+            "lines": 5
+          }
+        ],
+        "resolution": "The box is safely inside 李明's apartment, and the neighbors have bonded through the act of helping.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 realizes he cannot do it alone and articulates his lack of ability as a necessity for assistance.",
+            "speaker": "李明",
+            "refersTo": "The act of moving the box",
+            "intent": "To express that he has a deficit he must fill"
+          },
+          {
+            "word": "女人",
+            "beat": 2,
+            "why": "小明 or 李明 might refer to 小红, or the narrator describes her, establishing her presence. In this plan, 小红 is the 女人 who sees him.",
+            "speaker": "Narrator",
+            "refersTo": "小红",
+            "intent": "To identify the character entering the scene"
+          },
+          {
+            "word": "关系",
+            "beat": 2,
+            "why": "After seeing 李明 struggle, the narrator or a character reflects on their neighborly bond.",
+            "speaker": "Narrator",
+            "refersTo": "The connection between 李明 and 小红",
+            "intent": "To contextualize why 小红 cares"
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "小红 proposes a conditional action: 'If I help you, you won't be tired.'",
+            "speaker": "小红",
+            "refersTo": "The hypothetical situation of getting help",
+            "intent": "To offer assistance logically"
+          },
+          {
+            "word": "必须",
+            "beat": 3,
+            "why": "李明 emphasizes that he must have help to succeed.",
+            "speaker": "李明",
+            "refersTo": "The requirement of assistance",
+            "intent": "To stress the obligation/necessity"
+          },
+          {
+            "word": "帮助",
+            "beat": 4,
+            "why": "The action of helping is completed. 李明 thanks 小红 for her help.",
+            "speaker": "李明",
+            "refersTo": "The act of carrying the box",
+            "intent": "To express gratitude for the aid received"
+          },
+          {
+            "word": "男人",
+            "beat": 5,
+            "why": "When 小明 arrives, 小红 refers to 李明 as 'the man' or 小明 is referred to as 'the man' in the greeting/introduction.",
+            "speaker": "小红",
+            "refersTo": "李明 or 小明",
+            "intent": "To identify the male neighbor"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 1,
+        "required": 1,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 4,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 12599,
+      "tokens": {
+        "prompt": 1085,
+        "completion": 1417
+      },
+      "score": {
+        "label": "F",
+        "contradiction": true,
+        "overall": 5,
+        "reason": "Title says Monday, beats say Tuesday (contradiction); \"man/woman\" usage is awkward and unnatural.",
+        "causal": 7,
+        "chronology": 9,
+        "plausibility": 9,
+        "simplicity": 9,
+        "targetFit": 7,
+        "suitability": 8
+      },
+      "label": "F",
+      "qualityOk": false,
+      "jointOk": false,
+      "buckets": [
+        "contradiction"
+      ]
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:low",
+      "attempt": 1,
+      "blueprint": {
+        "title": "Helping a neighbor with a broken bike",
+        "setting": "A small apartment building courtyard, modern day",
+        "cast": [
+          "李明",
+          "小红",
+          "妈妈"
+        ],
+        "problem": "小红's bike is broken and she cannot go to the market",
+        "incitingEvent": "小红 finds the bike chain fell off while she is about to leave",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning",
+            "what": "小红 notices the bike problem",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "courtyard",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "shortly after",
+            "what": "李明 sees 小红 looking upset",
+            "because": "because 小红 is standing by the bike",
+            "targets": [
+              "帮助",
+              "男人"
+            ],
+            "lines": 5,
+            "where": "courtyard",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "a few minutes later",
+            "what": "李明 offers to help and asks if 妈妈 can bring a tool",
+            "because": "because 李明 wants to fix the bike",
+            "targets": [
+              "帮助",
+              "关系",
+              "女人"
+            ],
+            "lines": 6,
+            "where": "courtyard",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "immediately after",
+            "what": "妈妈 brings a small wrench, they repair the bike together",
+            "because": "because 妈妈 heard the request",
+            "targets": [
+              "必须",
+              "如果"
+            ],
+            "lines": 6,
+            "where": "courtyard",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "after the repair",
+            "what": "小红 thanks them and says their help shows a good relationship",
+            "because": "because the bike works again",
+            "targets": [
+              "关系",
+              "帮助"
+            ],
+            "lines": 6,
+            "where": "courtyard",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "小红 rides the fixed bike to the market, feeling grateful for the help from 李明 and 妈妈, and their friendship is stronger.",
+        "targetPlan": [
+          {
+            "word": "关系",
+            "beat": 5,
+            "why": "小红 comments on the relationship after receiving help",
+            "speaker": "小红",
+            "refersTo": "the friendship between the three characters",
+            "intent": "to acknowledge their bond"
+          },
+          {
+            "word": "女人",
+            "beat": 3,
+            "why": "李明 mentions 妈妈 as a woman who can bring tools",
+            "speaker": "李明",
+            "refersTo": "妈妈",
+            "intent": "to identify who will help"
+          },
+          {
+            "word": "男人",
+            "beat": 2,
+            "why": "小红 looks at 李明, a man, for assistance",
+            "speaker": "小红",
+            "refersTo": "李明",
+            "intent": "to point out who can help"
+          },
+          {
+            "word": "帮助",
+            "beat": 2,
+            "why": "李明 offers his help to fix the bike",
+            "speaker": "李明",
+            "refersTo": "the bike repair",
+            "intent": "to propose assistance"
+          },
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "小红 realizes she needs a new chain",
+            "speaker": "小红",
+            "refersTo": "the broken bike",
+            "intent": "to express a need"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Helping a neighbor with a broken bike",
+        "setting": "A small apartment building courtyard, modern day",
+        "cast": [
+          "李明",
+          "小红",
+          "妈妈"
+        ],
+        "problem": "小红's bike is broken and she cannot go to the market",
+        "incitingEvent": "小红 finds the bike chain fell off while she is about to leave",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning",
+            "location": "courtyard",
+            "what": "小红 notices the bike problem",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "shortly after",
+            "location": "courtyard",
+            "what": "李明 sees 小红 looking upset",
+            "because": "because 小红 is standing by the bike",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "帮助",
+              "男人"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 3,
+            "when": "a few minutes later",
+            "location": "courtyard",
+            "what": "李明 offers to help and asks if 妈妈 can bring a tool",
+            "because": "because 李明 wants to fix the bike",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "帮助",
+              "关系",
+              "女人"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 4,
+            "when": "immediately after",
+            "location": "courtyard",
+            "what": "妈妈 brings a small wrench, they repair the bike together",
+            "because": "because 妈妈 heard the request",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "必须",
+              "如果"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "after the repair",
+            "location": "courtyard",
+            "what": "小红 thanks them and says their help shows a good relationship",
+            "because": "because the bike works again",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "关系",
+              "帮助"
+            ],
+            "lines": 6
+          }
+        ],
+        "resolution": "小红 rides the fixed bike to the market, feeling grateful for the help from 李明 and 妈妈, and their friendship is stronger.",
+        "targetPlan": [
+          {
+            "word": "关系",
+            "beat": 5,
+            "why": "小红 comments on the relationship after receiving help",
+            "speaker": "小红",
+            "refersTo": "the friendship between the three characters",
+            "intent": "to acknowledge their bond"
+          },
+          {
+            "word": "女人",
+            "beat": 3,
+            "why": "李明 mentions 妈妈 as a woman who can bring tools",
+            "speaker": "李明",
+            "refersTo": "妈妈",
+            "intent": "to identify who will help"
+          },
+          {
+            "word": "男人",
+            "beat": 2,
+            "why": "小红 looks at 李明, a man, for assistance",
+            "speaker": "小红",
+            "refersTo": "李明",
+            "intent": "to point out who can help"
+          },
+          {
+            "word": "帮助",
+            "beat": 2,
+            "why": "李明 offers his help to fix the bike",
+            "speaker": "李明",
+            "refersTo": "the bike repair",
+            "intent": "to propose assistance"
+          },
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "小红 realizes she needs a new chain",
+            "speaker": "小红",
+            "refersTo": "the broken bike",
+            "intent": "to express a need"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 0,
+        "required": 0,
+        "violations": [],
+        "warnings": [],
+        "mapped": [],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 2489,
+      "tokens": {
+        "prompt": 1111,
+        "completion": 1029
+      },
+      "score": {
+        "label": "G",
+        "contradiction": false,
+        "overall": 6,
+        "reason": "Logical flow, but claiming a \"new chain\" is needed for a slipped chain is technically inaccurate/plausibility issue for a simple fix story.",
+        "causal": 9,
+        "chronology": 8,
+        "plausibility": 7,
+        "simplicity": 9,
+        "targetFit": 7,
+        "suitability": 8
+      },
+      "label": "G",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": []
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:low",
+      "attempt": 2,
+      "blueprint": {
+        "title": "Helping Mom Fix the Pot",
+        "setting": "A modern apartment, morning to late morning",
+        "cast": [
+          "李明",
+          "小红",
+          "妈妈"
+        ],
+        "problem": "妈妈的锅坏了，不能继续做饭",
+        "incitingEvent": "李明发现锅底裂开，需要找人帮助",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning",
+            "what": "李明看到锅裂开，意识到需要帮助",
+            "because": "the story opens",
+            "targets": [
+              "需要",
+              "帮助"
+            ],
+            "lines": 5,
+            "where": "kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "shortly after",
+            "what": "妈妈和李明一起去客厅找工具",
+            "because": "因为锅坏了，他们必须找工具来修理",
+            "targets": [
+              "必须",
+              "关系"
+            ],
+            "lines": 6,
+            "where": "living room",
+            "arrivedHow": "李明和妈妈走到客厅"
+          },
+          {
+            "id": 3,
+            "when": "a few minutes later",
+            "what": "小红从楼上走下来，说明她是女人，李明是男人",
+            "because": "因为她想帮助他们修锅",
+            "targets": [
+              "女人",
+              "男人"
+            ],
+            "lines": 6,
+            "where": "living room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "mid‑morning",
+            "what": "三人一起用工具修锅，互相帮助",
+            "because": "因为大家都想把锅修好",
+            "targets": [
+              "帮助"
+            ],
+            "lines": 6,
+            "where": "living room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "late morning",
+            "what": "锅修好，妈妈高兴，大家感受到家庭关系更亲密",
+            "because": "因为锅修好了，问题解决了",
+            "targets": [
+              "关系"
+            ],
+            "lines": 5,
+            "where": "kitchen",
+            "arrivedHow": "李明和小红把锅搬回厨房"
+          }
+        ],
+        "resolution": "锅修好，妈妈可以继续做饭，大家的关系更亲密，问题圆满解决",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明发现锅坏了，必须说出自己需要帮助",
+            "speaker": "李明",
+            "refersTo": "修理锅的帮助",
+            "intent": "表达缺乏帮助的状态"
+          },
+          {
+            "word": "帮助",
+            "beat": 1,
+            "why": "李明想让别人知道他想要帮助",
+            "speaker": "李明",
+            "refersTo": "请求修锅的帮助",
+            "intent": "请求援助"
+          },
+          {
+            "word": "必须",
+            "beat": 2,
+            "why": "他们必须找工具才能修锅",
+            "speaker": "妈妈",
+            "refersTo": "找工具的必要性",
+            "intent": "说明必要条件"
+          },
+          {
+            "word": "关系",
+            "beat": 2,
+            "why": "妈妈提到家庭关系需要合作",
+            "speaker": "妈妈",
+            "refersTo": "家庭成员之间的关系",
+            "intent": "强调合作的重要性"
+          },
+          {
+            "word": "女人",
+            "beat": 3,
+            "why": "小红介绍自己是女人",
+            "speaker": "小红",
+            "refersTo": "她自己的性别",
+            "intent": "表明身份"
+          },
+          {
+            "word": "男人",
+            "beat": 3,
+            "why": "李明说明自己是男人",
+            "speaker": "李明",
+            "refersTo": "他自己的性别",
+            "intent": "表明身份"
+          },
+          {
+            "word": "帮助",
+            "beat": 4,
+            "why": "三人互相帮助修锅",
+            "speaker": "小红",
+            "refersTo": "共同的帮助行为",
+            "intent": "描述合作过程"
+          },
+          {
+            "word": "关系",
+            "beat": 5,
+            "why": "修好锅后感受到家庭关系更亲密",
+            "speaker": "妈妈",
+            "refersTo": "家庭关系的改善",
+            "intent": "表达情感"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Helping Mom Fix the Pot",
+        "setting": "A modern apartment, morning to late morning",
+        "cast": [
+          "李明",
+          "小红",
+          "妈妈"
+        ],
+        "problem": "妈妈的锅坏了，不能继续做饭",
+        "incitingEvent": "李明发现锅底裂开，需要找人帮助",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning",
+            "location": "kitchen",
+            "what": "李明看到锅裂开，意识到需要帮助",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要",
+              "帮助"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "shortly after",
+            "location": "living room",
+            "what": "妈妈和李明一起去客厅找工具",
+            "because": "因为锅坏了，他们必须找工具来修理",
+            "transition_from_previous": "李明和妈妈走到客厅",
+            "targets": [
+              "必须",
+              "关系"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 3,
+            "when": "a few minutes later",
+            "location": "living room",
+            "what": "小红从楼上走下来，说明她是女人，李明是男人",
+            "because": "因为她想帮助他们修锅",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "女人",
+              "男人"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 4,
+            "when": "mid‑morning",
+            "location": "living room",
+            "what": "三人一起用工具修锅，互相帮助",
+            "because": "因为大家都想把锅修好",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "帮助"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "late morning",
+            "location": "kitchen",
+            "what": "锅修好，妈妈高兴，大家感受到家庭关系更亲密",
+            "because": "因为锅修好了，问题解决了",
+            "transition_from_previous": "李明和小红把锅搬回厨房",
+            "targets": [
+              "关系"
+            ],
+            "lines": 5
+          }
+        ],
+        "resolution": "锅修好，妈妈可以继续做饭，大家的关系更亲密，问题圆满解决",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明发现锅坏了，必须说出自己需要帮助",
+            "speaker": "李明",
+            "refersTo": "修理锅的帮助",
+            "intent": "表达缺乏帮助的状态"
+          },
+          {
+            "word": "帮助",
+            "beat": 1,
+            "why": "李明想让别人知道他想要帮助",
+            "speaker": "李明",
+            "refersTo": "请求修锅的帮助",
+            "intent": "请求援助"
+          },
+          {
+            "word": "必须",
+            "beat": 2,
+            "why": "他们必须找工具才能修锅",
+            "speaker": "妈妈",
+            "refersTo": "找工具的必要性",
+            "intent": "说明必要条件"
+          },
+          {
+            "word": "关系",
+            "beat": 2,
+            "why": "妈妈提到家庭关系需要合作",
+            "speaker": "妈妈",
+            "refersTo": "家庭成员之间的关系",
+            "intent": "强调合作的重要性"
+          },
+          {
+            "word": "女人",
+            "beat": 3,
+            "why": "小红介绍自己是女人",
+            "speaker": "小红",
+            "refersTo": "她自己的性别",
+            "intent": "表明身份"
+          },
+          {
+            "word": "男人",
+            "beat": 3,
+            "why": "李明说明自己是男人",
+            "speaker": "李明",
+            "refersTo": "他自己的性别",
+            "intent": "表明身份"
+          },
+          {
+            "word": "帮助",
+            "beat": 4,
+            "why": "三人互相帮助修锅",
+            "speaker": "小红",
+            "refersTo": "共同的帮助行为",
+            "intent": "描述合作过程"
+          },
+          {
+            "word": "关系",
+            "beat": 5,
+            "why": "修好锅后感受到家庭关系更亲密",
+            "speaker": "妈妈",
+            "refersTo": "家庭关系的改善",
+            "intent": "表达情感"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": false,
+        "failures": [
+          {
+            "code": "target_unjustified",
+            "message": "帮助 has no reason for belonging in beat 1"
+          },
+          {
+            "code": "target_unjustified",
+            "message": "必须 has no reason for belonging in beat 2"
+          },
+          {
+            "code": "target_unjustified",
+            "message": "关系 has no reason for belonging in beat 2"
+          },
+          {
+            "code": "target_unjustified",
+            "message": "女人 has no reason for belonging in beat 3"
+          },
+          {
+            "code": "target_unjustified",
+            "message": "男人 has no reason for belonging in beat 3"
+          },
+          {
+            "code": "target_unjustified",
+            "message": "帮助 has no reason for belonging in beat 4"
+          },
+          {
+            "code": "target_unjustified",
+            "message": "关系 has no reason for belonging in beat 5"
+          },
+          {
+            "code": "target_unplaced",
+            "message": "关系 has no beat where it naturally belongs"
+          },
+          {
+            "code": "target_unplaced",
+            "message": "女人 has no beat where it naturally belongs"
+          },
+          {
+            "code": "target_unplaced",
+            "message": "男人 has no beat where it naturally belongs"
+          },
+          {
+            "code": "target_unplaced",
+            "message": "帮助 has no beat where it naturally belongs"
+          }
+        ]
+      },
+      "transitions": {
+        "stated": 2,
+        "required": 2,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 2,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 3217,
+      "tokens": {
+        "prompt": 1111,
+        "completion": 1420
+      },
+      "score": {
+        "label": "E",
+        "contradiction": false,
+        "overall": 8,
+        "reason": "Solid domestic plot; \"man/woman\" intros are slightly stiff but functional for grammar drilling.",
+        "causal": 8,
+        "chronology": 8,
+        "plausibility": 8,
+        "simplicity": 9,
+        "targetFit": 7,
+        "suitability": 8
+      },
+      "label": "E",
+      "qualityOk": true,
+      "jointOk": false,
+      "buckets": [
+        "target intent",
+        "target placement"
+      ]
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:low",
+      "attempt": 3,
+      "blueprint": {
+        "title": "A Neighbor Helps Fix a Bike",
+        "setting": "A modern Chinese apartment building, morning to afternoon",
+        "cast": [
+          "李明",
+          "小红",
+          "小明"
+        ],
+        "problem": "小明's bicycle is broken and he needs it fixed to go to class",
+        "incitingEvent": "小明发现自行车的轮子掉了",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning, inside 小明's room",
+            "what": "小明发现自行车轮子掉了，感到很着急",
+            "because": "the story opens",
+            "targets": [
+              "需要",
+              "帮助"
+            ],
+            "lines": 5,
+            "where": "小明's room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "shortly after, hallway outside 小明's room",
+            "what": "小明向李明求助，说明自己是一个男人，需要帮助修车",
+            "because": "because 小明 needs help with the bike",
+            "targets": [
+              "男人",
+              "需要",
+              "帮助"
+            ],
+            "lines": 5,
+            "where": "hallway",
+            "arrivedHow": "小明 walks out of his room and meets 李明 in the hallway"
+          },
+          {
+            "id": 3,
+            "when": "a few minutes later, 小红's kitchen",
+            "what": "李明告诉小红情况，如果她有工具就必须借给他们",
+            "because": "because 李明 needs a screwdriver that only 小红 has",
+            "targets": [
+              "如果",
+              "必须"
+            ],
+            "lines": 5,
+            "where": "小红's kitchen",
+            "arrivedHow": "李明 and 小明 walk down to 小红's kitchen together"
+          },
+          {
+            "id": 4,
+            "when": "midday, 小红's kitchen",
+            "what": "小红帮忙找工具，修好自行车，同时说她和小明是好邻居，关系很好",
+            "because": "because 小红 provides the needed assistance",
+            "targets": [
+              "帮助",
+              "关系",
+              "女人"
+            ],
+            "lines": 6,
+            "where": "小红's kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "afternoon, outside the building",
+            "what": "小明骑好自行车离开，感谢李明和小红，大家笑着说以后要互相帮助",
+            "because": "because the bike is fixed and the problem is resolved",
+            "targets": [
+              "帮助"
+            ],
+            "lines": 7,
+            "where": "building courtyard",
+            "arrivedHow": "小明 rides the repaired bike out to the courtyard where 李明 and 小红 are waiting"
+          }
+        ],
+        "resolution": "小明的自行车被修好，他可以去上课，大家的邻里关系更加亲密",
+        "targetPlan": [
+          {
+            "word": "关系",
+            "beat": 4,
+            "why": "小红提到她和小明是好邻居，需要说明他们的关系",
+            "speaker": "小红",
+            "refersTo": "neighborly connection between 小红 and 小明",
+            "intent": "to express friendly neighbourly bond"
+          },
+          {
+            "word": "女人",
+            "beat": 4,
+            "why": "小红自我介绍时说自己是女人，帮助听者区分性别",
+            "speaker": "小红",
+            "refersTo": "小红 herself",
+            "intent": "to identify her gender"
+          },
+          {
+            "word": "男人",
+            "beat": 2,
+            "why": "小明在请求帮助时说自己是男人，强调自己需要帮助",
+            "speaker": "小明",
+            "refersTo": "小明",
+            "intent": "to state his gender while asking for help"
+          },
+          {
+            "word": "帮助",
+            "beat": 1,
+            "why": "小明感到需要帮助修自行车",
+            "speaker": "小明",
+            "refersTo": "repairing the bike",
+            "intent": "to ask for assistance"
+          },
+          {
+            "word": "帮助",
+            "beat": 2,
+            "why": "李明答应帮助小明找工具",
+            "speaker": "李明",
+            "refersTo": "providing assistance",
+            "intent": "to offer help"
+          },
+          {
+            "word": "帮助",
+            "beat": 4,
+            "why": "小红实际帮忙修车",
+            "speaker": "小红",
+            "refersTo": "fixing the bike",
+            "intent": "to describe her action"
+          },
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "小明说自己需要帮助",
+            "speaker": "小明",
+            "refersTo": "the need for assistance",
+            "intent": "to express a need"
+          },
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "李明说明他们需要工具",
+            "speaker": "李明",
+            "refersTo": "the necessity of a screwdriver",
+            "intent": "to state a requirement"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "A Neighbor Helps Fix a Bike",
+        "setting": "A modern Chinese apartment building, morning to afternoon",
+        "cast": [
+          "李明",
+          "小红",
+          "小明"
+        ],
+        "problem": "小明's bicycle is broken and he needs it fixed to go to class",
+        "incitingEvent": "小明发现自行车的轮子掉了",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning, inside 小明's room",
+            "location": "小明's room",
+            "what": "小明发现自行车轮子掉了，感到很着急",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要",
+              "帮助"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "shortly after, hallway outside 小明's room",
+            "location": "hallway",
+            "what": "小明向李明求助，说明自己是一个男人，需要帮助修车",
+            "because": "because 小明 needs help with the bike",
+            "transition_from_previous": "小明 walks out of his room and meets 李明 in the hallway",
+            "targets": [
+              "男人",
+              "需要",
+              "帮助"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 3,
+            "when": "a few minutes later, 小红's kitchen",
+            "location": "小红's kitchen",
+            "what": "李明告诉小红情况，如果她有工具就必须借给他们",
+            "because": "because 李明 needs a screwdriver that only 小红 has",
+            "transition_from_previous": "李明 and 小明 walk down to 小红's kitchen together",
+            "targets": [
+              "如果",
+              "必须"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "midday, 小红's kitchen",
+            "location": "小红's kitchen",
+            "what": "小红帮忙找工具，修好自行车，同时说她和小明是好邻居，关系很好",
+            "because": "because 小红 provides the needed assistance",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "帮助",
+              "关系",
+              "女人"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "afternoon, outside the building",
+            "location": "building courtyard",
+            "what": "小明骑好自行车离开，感谢李明和小红，大家笑着说以后要互相帮助",
+            "because": "because the bike is fixed and the problem is resolved",
+            "transition_from_previous": "小明 rides the repaired bike out to the courtyard where 李明 and 小红 are waiting",
+            "targets": [
+              "帮助"
+            ],
+            "lines": 7
+          }
+        ],
+        "resolution": "小明的自行车被修好，他可以去上课，大家的邻里关系更加亲密",
+        "targetPlan": [
+          {
+            "word": "关系",
+            "beat": 4,
+            "why": "小红提到她和小明是好邻居，需要说明他们的关系",
+            "speaker": "小红",
+            "refersTo": "neighborly connection between 小红 and 小明",
+            "intent": "to express friendly neighbourly bond"
+          },
+          {
+            "word": "女人",
+            "beat": 4,
+            "why": "小红自我介绍时说自己是女人，帮助听者区分性别",
+            "speaker": "小红",
+            "refersTo": "小红 herself",
+            "intent": "to identify her gender"
+          },
+          {
+            "word": "男人",
+            "beat": 2,
+            "why": "小明在请求帮助时说自己是男人，强调自己需要帮助",
+            "speaker": "小明",
+            "refersTo": "小明",
+            "intent": "to state his gender while asking for help"
+          },
+          {
+            "word": "帮助",
+            "beat": 1,
+            "why": "小明感到需要帮助修自行车",
+            "speaker": "小明",
+            "refersTo": "repairing the bike",
+            "intent": "to ask for assistance"
+          },
+          {
+            "word": "帮助",
+            "beat": 2,
+            "why": "李明答应帮助小明找工具",
+            "speaker": "李明",
+            "refersTo": "providing assistance",
+            "intent": "to offer help"
+          },
+          {
+            "word": "帮助",
+            "beat": 4,
+            "why": "小红实际帮忙修车",
+            "speaker": "小红",
+            "refersTo": "fixing the bike",
+            "intent": "to describe her action"
+          },
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "小明说自己需要帮助",
+            "speaker": "小明",
+            "refersTo": "the need for assistance",
+            "intent": "to express a need"
+          },
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "李明说明他们需要工具",
+            "speaker": "李明",
+            "refersTo": "the necessity of a screwdriver",
+            "intent": "to state a requirement"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": false,
+        "failures": [
+          {
+            "code": "target_unjustified",
+            "message": "帮助 has no reason for belonging in beat 1"
+          },
+          {
+            "code": "target_unjustified",
+            "message": "帮助 has no reason for belonging in beat 2"
+          },
+          {
+            "code": "target_unjustified",
+            "message": "帮助 has no reason for belonging in beat 4"
+          },
+          {
+            "code": "target_unjustified",
+            "message": "需要 has no reason for belonging in beat 1"
+          },
+          {
+            "code": "target_unjustified",
+            "message": "需要 has no reason for belonging in beat 2"
+          },
+          {
+            "code": "target_unplaced",
+            "message": "帮助 has no beat where it naturally belongs"
+          },
+          {
+            "code": "target_unplaced",
+            "message": "需要 has no beat where it naturally belongs"
+          }
+        ]
+      },
+      "transitions": {
+        "stated": 3,
+        "required": 3,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 2,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 3,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 57617,
+      "tokens": {
+        "prompt": 1111,
+        "completion": 1415
+      },
+      "score": {
+        "label": "B",
+        "contradiction": true,
+        "overall": 4,
+        "reason": "Characters explicitly stating their biological sex (\"I am a man\") to ask for help is unnatural and contradictory to social norms; target word usage is forced.",
+        "causal": 6,
+        "chronology": 5,
+        "plausibility": 4,
+        "simplicity": 6,
+        "targetFit": 2,
+        "suitability": 5
+      },
+      "label": "B",
+      "qualityOk": false,
+      "jointOk": false,
+      "buckets": [
+        "target intent",
+        "target placement",
+        "contradiction",
+        "implausible causality",
+        "chronology"
+      ]
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:low",
+      "attempt": 4,
+      "blueprint": {
+        "title": "Fixing the Bike",
+        "setting": "A modern apartment building, morning to afternoon",
+        "cast": [
+          "李明",
+          "小红",
+          "妈妈"
+        ],
+        "problem": "李明's bike has a flat tire and he cannot ride to work",
+        "incitingEvent": "李明 discovers the flat tire while preparing to leave",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning, kitchen",
+            "what": "李明 sees the flat tire and realizes he needs help",
+            "because": "the story opens",
+            "targets": [
+              "需要",
+              "帮助"
+            ],
+            "lines": 6,
+            "where": "kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "morning, kitchen",
+            "what": "小红 arrives after hearing 李明 and offers to assist",
+            "because": "李明 called for help because he needs it",
+            "targets": [
+              "帮助"
+            ],
+            "lines": 6,
+            "where": "kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "mid‑morning, hallway",
+            "what": "李明 and 小红 go downstairs to find a tool box",
+            "because": "they need a wrench to fix the tire",
+            "targets": [
+              "必须",
+              "需要"
+            ],
+            "lines": 5,
+            "where": "hallway",
+            "arrivedHow": "李明 and 小红 walk downstairs together"
+          },
+          {
+            "id": 4,
+            "when": "mid‑morning, hallway",
+            "what": "妈妈 appears, says a man (男人) can fix it, but a woman (女人) can also help",
+            "because": "they look for someone who knows how to repair bikes",
+            "targets": [
+              "男人",
+              "女人",
+              "帮助"
+            ],
+            "lines": 6,
+            "where": "hallway",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "afternoon, kitchen",
+            "what": "They fix the bike together and feel their friendship (关系) is stronger",
+            "because": "the tire is repaired, ending the problem",
+            "targets": [
+              "关系"
+            ],
+            "lines": 5,
+            "where": "kitchen",
+            "arrivedHow": "李明 and 小红 carry the repaired bike back upstairs"
+          }
+        ],
+        "resolution": "The bike is repaired, 李明 can ride to work, and the friends feel a closer relationship",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 realizes he cannot fix the tire alone",
+            "speaker": "李明",
+            "refersTo": "assistance for the bike",
+            "intent": "express his need"
+          },
+          {
+            "word": "帮助",
+            "beat": 1,
+            "why": "He asks for help explicitly",
+            "speaker": "李明",
+            "refersTo": "someone to assist with the tire",
+            "intent": "request aid"
+          },
+          {
+            "word": "帮助",
+            "beat": 2,
+            "why": "小红 offers her assistance",
+            "speaker": "小红",
+            "refersTo": "helping 李明",
+            "intent": "agree to help"
+          },
+          {
+            "word": "必须",
+            "beat": 3,
+            "why": "They realize they must get a wrench",
+            "speaker": "李明",
+            "refersTo": "the necessity of a tool",
+            "intent": "state necessity"
+          },
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "They need the wrench to fix the tire",
+            "speaker": "小红",
+            "refersTo": "the tool",
+            "intent": "explain requirement"
+          },
+          {
+            "word": "男人",
+            "beat": 4,
+            "why": "妈妈 mentions a man who can fix bikes",
+            "speaker": "妈妈",
+            "refersTo": "a male bike repairer",
+            "intent": "give example"
+          },
+          {
+            "word": "女人",
+            "beat": 4,
+            "why": "妈妈 also says a woman can help",
+            "speaker": "妈妈",
+            "refersTo": "a female helper",
+            "intent": "show gender isn’t limiting"
+          },
+          {
+            "word": "帮助",
+            "beat": 4,
+            "why": "妈妈 offers her own help",
+            "speaker": "妈妈",
+            "refersTo": "assistance with the bike",
+            "intent": "volunteer aid"
+          },
+          {
+            "word": "关系",
+            "beat": 5,
+            "why": "They reflect on how fixing the bike improves their friendship",
+            "speaker": "小红",
+            "refersTo": "their relationship",
+            "intent": "express closeness"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Fixing the Bike",
+        "setting": "A modern apartment building, morning to afternoon",
+        "cast": [
+          "李明",
+          "小红",
+          "妈妈"
+        ],
+        "problem": "李明's bike has a flat tire and he cannot ride to work",
+        "incitingEvent": "李明 discovers the flat tire while preparing to leave",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning, kitchen",
+            "location": "kitchen",
+            "what": "李明 sees the flat tire and realizes he needs help",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要",
+              "帮助"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 2,
+            "when": "morning, kitchen",
+            "location": "kitchen",
+            "what": "小红 arrives after hearing 李明 and offers to assist",
+            "because": "李明 called for help because he needs it",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "帮助"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 3,
+            "when": "mid‑morning, hallway",
+            "location": "hallway",
+            "what": "李明 and 小红 go downstairs to find a tool box",
+            "because": "they need a wrench to fix the tire",
+            "transition_from_previous": "李明 and 小红 walk downstairs together",
+            "targets": [
+              "必须",
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "mid‑morning, hallway",
+            "location": "hallway",
+            "what": "妈妈 appears, says a man (男人) can fix it, but a woman (女人) can also help",
+            "because": "they look for someone who knows how to repair bikes",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "男人",
+              "女人",
+              "帮助"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "afternoon, kitchen",
+            "location": "kitchen",
+            "what": "They fix the bike together and feel their friendship (关系) is stronger",
+            "because": "the tire is repaired, ending the problem",
+            "transition_from_previous": "李明 and 小红 carry the repaired bike back upstairs",
+            "targets": [
+              "关系"
+            ],
+            "lines": 5
+          }
+        ],
+        "resolution": "The bike is repaired, 李明 can ride to work, and the friends feel a closer relationship",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 realizes he cannot fix the tire alone",
+            "speaker": "李明",
+            "refersTo": "assistance for the bike",
+            "intent": "express his need"
+          },
+          {
+            "word": "帮助",
+            "beat": 1,
+            "why": "He asks for help explicitly",
+            "speaker": "李明",
+            "refersTo": "someone to assist with the tire",
+            "intent": "request aid"
+          },
+          {
+            "word": "帮助",
+            "beat": 2,
+            "why": "小红 offers her assistance",
+            "speaker": "小红",
+            "refersTo": "helping 李明",
+            "intent": "agree to help"
+          },
+          {
+            "word": "必须",
+            "beat": 3,
+            "why": "They realize they must get a wrench",
+            "speaker": "李明",
+            "refersTo": "the necessity of a tool",
+            "intent": "state necessity"
+          },
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "They need the wrench to fix the tire",
+            "speaker": "小红",
+            "refersTo": "the tool",
+            "intent": "explain requirement"
+          },
+          {
+            "word": "男人",
+            "beat": 4,
+            "why": "妈妈 mentions a man who can fix bikes",
+            "speaker": "妈妈",
+            "refersTo": "a male bike repairer",
+            "intent": "give example"
+          },
+          {
+            "word": "女人",
+            "beat": 4,
+            "why": "妈妈 also says a woman can help",
+            "speaker": "妈妈",
+            "refersTo": "a female helper",
+            "intent": "show gender isn’t limiting"
+          },
+          {
+            "word": "帮助",
+            "beat": 4,
+            "why": "妈妈 offers her own help",
+            "speaker": "妈妈",
+            "refersTo": "assistance with the bike",
+            "intent": "volunteer aid"
+          },
+          {
+            "word": "关系",
+            "beat": 5,
+            "why": "They reflect on how fixing the bike improves their friendship",
+            "speaker": "小红",
+            "refersTo": "their relationship",
+            "intent": "express closeness"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 2,
+        "required": 2,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 3,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 6186,
+      "tokens": {
+        "prompt": 1111,
+        "completion": 1407
+      },
+      "score": {
+        "label": "H",
+        "contradiction": false,
+        "overall": 9,
+        "reason": "Strong cause-and-effect, natural motivation for all target words, fits HSK 3 level well.",
+        "causal": 9,
+        "chronology": 8,
+        "plausibility": 8,
+        "simplicity": 9,
+        "targetFit": 8,
+        "suitability": 8
+      },
+      "label": "H",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": []
+    }
+  ]
+}
