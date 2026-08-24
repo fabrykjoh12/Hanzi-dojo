@@ -634,7 +634,17 @@ export function storyShapePrompt({ manifest, meanings = {}, totalLines, targets 
     + 'Rules:\n'
     + '- ONE central problem. No subplots, no side quests, nothing invented just to fit a word in.\n'
     + '- 5 or 6 beats. Every beat after the first happens BECAUSE of the beat before it — "because → therefore", never "and then".\n'
-    + '- Every beat states when and where it happens. If a beat is somewhere new, say how they got there.\n'
+    + '- Every beat states when it happens and its location.\n'
+    // The planner bakeoff lost 6/6 gpt-oss plans to movement the plan never
+    // described, and a compiler that guessed the movement from the prose
+    // invented two journeys before it was caught. So the transition is asked
+    // for as story content: the planner decides how people move, and code
+    // only copies that decision. Nothing infers it.
+    + '- "transition_from_previous" is part of the STORY, not paperwork. Every beat after the first says how the story physically got from the previous beat to this one:\n'
+    + '    * If this beat is in the SAME location as the previous beat, write exactly: same_place\n'
+    + '    * If the location CHANGED, write the movement you actually intend — who moves, and how they get from the previous location to this one ("Li Ming and Xiao Hong walk downstairs together").\n'
+    + '    A changed location may NEVER be same_place or empty, and an unchanged location may NEVER be anything but same_place. If you cannot say how they got there, they do not go there — keep the beat where it was.\n'
+    + '    Beat 1 has no previous beat: write same_place.\n'
     + '- Nothing happens before the thing it depends on. Nobody appears where they could not be.\n'
     + '- The ending resolves the problem the story started with.\n'
     + '- Keep it ordinary and concrete, and keep it SAYABLE by a beginner: everyday places, small stakes, ordinary objects. A scene needing specialist words (tools, equipment, machinery, food names) cannot be written at this level — plan a different scene.\n'
@@ -648,7 +658,7 @@ export function storyShapePrompt({ manifest, meanings = {}, totalLines, targets 
     + '  "problem": "<the ONE thing the story is about>",\n'
     + '  "incitingEvent": "<what starts it>",\n'
     + '  "beats": [\n'
-    + '    { "id": 1, "when": "<time>", "where": "<place>", "what": "<what changes here>", "because": "<why this follows — beat 1: \\"the story opens\\">", "arrivedHow": "<only if the place changed>", "targets": ["<target words used here>"], "lines": <2-8> }\n'
+    + '    { "id": 1, "when": "<time>", "location": "<place>", "what": "<what changes here>", "because": "<why this follows — beat 1: \\"the story opens\\">", "transition_from_previous": "same_place | <who moves, and how they get here from the previous location>", "targets": ["<target words used here>"], "lines": <2-8> }\n'
     + '  ],\n'
     + '  "resolution": "<how the central problem ends>",\n'
     + '  "targetPlan": [ { "word": "<target>", "beat": <n>, "why": "<why a person would need this word right here>", "speaker": "<which character says it, or narrator>", "refersTo": "<the thing in the story it is about>", "intent": "<what they are trying to communicate>" } ],\n'

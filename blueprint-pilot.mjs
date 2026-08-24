@@ -31,7 +31,7 @@ import {
   lineJudgePrompt, parseLineJudgment,
   PROMPT_VERSION,
 } from './storyGenPrompts.mjs'
-import { compilePlan, compileChanges, COMPILER_VERSION } from './storyPlanCompiler.mjs'
+import { adaptShape, adapterLostSomething } from './storySemanticShape.mjs'
 import {
   validateBlueprint, allocateLines, anonymiseBlueprints, renderBlueprint,
   acceptableBlueprint, hasLatin, BLUEPRINT_DIMENSIONS, BLUEPRINT_QUALITY, BLUEPRINT_VERSION,
@@ -136,27 +136,6 @@ if (preflightOnly) {
   writeFileSync(join(outDir, 'preflight.json'), JSON.stringify({ version: RISK_VERSION, generatedAt: new Date().toISOString(), reports }, null, 2) + '\n')
   console.log('wrote ' + join(outDir, 'preflight.json'))
   process.exit(0)
-}
-
-// planner → COMPILER → validator. The planner supplies meaning; the schema is
-// compiled from it deterministically, because the bakeoff showed gpt-oss
-// losing 6/6 plans to a field whose answer was already written in `what`.
-// A compiler that edited the story would be a second, unaccountable writer,
-// so a semantic change aborts the run instead of being reported as a result.
-function compileShape(bp, where) {
-  if (!bp) return bp
-  const { blueprint, derived, misses } = compilePlan(bp)
-  const rewrote = compileChanges(bp, blueprint)
-  if (rewrote.length) {
-    console.error('COMPILER REWROTE THE STORY (' + where + '): ' + rewrote.join(', '))
-    process.exit(2)
-  }
-  if (derived.length) {
-    console.log('  compiled (' + COMPILER_VERSION + '): '
-      + derived.map(d => 'beat ' + d.beat + ' ' + d.field + ' ← ' + d.from).join(', '))
-  }
-  for (const m of misses) console.log('  compiler MISS: beat ' + m.beat + ' ' + m.field + ' — ' + m.reason)
-  return blueprint
 }
 
 // Either reuse a stored SHAPE (A3), resume one stored plan (retired path), or
@@ -266,7 +245,6 @@ for (const job of jobs) {
   // is nothing left to learn by paying for it to plan again.
   const raws = []
   if (job.shape) {
-    job.shape = compileShape(job.shape, 'stored shape')
     const structural = validateBlueprint(job.shape, { manifest, requiredTargets: required })
     console.log('STORY SHAPE (reused; its Chinese was discarded):')
     console.log(renderBlueprint(job.shape).split('\n').map(l => '  ' + l).join('\n'))
@@ -312,6 +290,7 @@ for (const job of jobs) {
     let rawText = null
     let feedback = null
     let check = null
+    let contract = null
     // One bounded lexical repair: a plan whose only problem is that it needs
     // words the reader does not have gets told exactly which ones, once.
     for (let attempt = 1; attempt <= 2; attempt += 1) {
@@ -332,11 +311,20 @@ for (const job of jobs) {
           prompt: storyShapePrompt({ manifest, meanings, totalLines, targets: required, feedback: feedback || avoidNote }),
           maxTokens: 2600,
         })
-        bp = compileShape(parseBlueprint(rawText), 'fresh plan, attempt ' + k)
+        // The planner writes `location` and `transition_from_previous`; the
+        // adapter renames them into the strict schema and decides nothing.
+        // Stored shapes below are already in the strict schema and skip it.
+        const adapted = adaptShape(parseBlueprint(rawText))
+        bp = adapted.blueprint
+        contract = adapted.contract
       } catch (err) { error = String(err.message || err).slice(0, 160); bp = null }
-      check = bp
+      const base = bp
         ? validateBlueprint(bp, { manifest, requiredTargets: required })
         : { ok: false, failures: [{ code: error ? 'provider_error' : 'unparseable', message: error || 'no JSON plan in the response' }] }
+      const lost = bp && contract ? adapterLostSomething(contract, base.failures) : null
+      if (lost) console.error('  ADAPTER LOSS: ' + lost)
+      const merged = [...base.failures, ...((contract && contract.violations) || [])]
+      check = { ...base, ok: merged.length === 0, failures: merged }
       // Feed back only what the planner can act on, and only a handful of
       // items: a wall of twenty rejections is not a repair brief.
       feedback = check.failures.map(f => f.message).slice(0, 8)
