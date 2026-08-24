@@ -64,6 +64,7 @@ export function checkTransitions(shape) {
   const warnings = []
   let stated = 0
   let required = 0
+  let statedTotal = 0
   beats.forEach((b, i) => {
     const n = i + 1
     const { value: location } = readLocation(b)
@@ -73,6 +74,7 @@ export function checkTransitions(shape) {
     const prev = readLocation(beats[i - 1]).value
     const moved = movedFrom(prev, location)
     const exactSame = norm(prev) === norm(location)
+    if (transition && !isSamePlaceToken(transition)) statedTotal += 1
     if (moved) {
       required += 1
       if (!transition) {
@@ -96,7 +98,7 @@ export function checkTransitions(shape) {
       warnings.push({ beat: n, code: 'transition_key_drift', message: 'beat ' + n + ' used "' + key + '"' })
     }
   })
-  return { ok: violations.length === 0, violations, warnings, stated, required }
+  return { ok: violations.length === 0, violations, warnings, stated, required, statedTotal }
 }
 
 // Map the semantic plan onto the strict blueprint schema. This is a rename and
@@ -112,14 +114,20 @@ export function adaptShape(shape) {
   const out = beats.map((b, i) => {
     const { value: location } = readLocation(b)
     const { value: transition } = readTransition(b)
-    const moved = i > 0 && movedFrom(readLocation(beats[i - 1]).value, location)
+    // Carry EVERY movement the planner stated, not only the ones samePlace
+    // calls a move. samePlace is deliberately loose — it read "Apartment
+    // Building Hallway" and "李明's Apartment" as one place and threw away
+    // plan D's "walk together up the stairs to 李明's door" — and a mapping
+    // that drops the planner's own words is exactly the loss this contract
+    // exists to prevent. Carrying it is never invention: the planner wrote it.
+    const stated = i > 0 && Boolean(transition) && !isSamePlaceToken(transition)
     const beat = { ...b }
     delete beat.location
     delete beat.transition_from_previous
     delete beat.transitionFromPrevious
     delete beat.transition
     beat.where = location
-    beat.arrivedHow = moved && !isSamePlaceToken(transition) ? transition : ''
+    beat.arrivedHow = stated ? transition : ''
     if (beat.arrivedHow) mapped.push({ beat: i + 1, from: 'transition_from_previous', to: 'arrivedHow' })
     return beat
   })
@@ -134,4 +142,20 @@ export function adapterLostSomething(contract, failures) {
   if (!contract.ok) return null
   const move = (failures || []).find(f => f.code === 'unexplained_move')
   return move ? move.message : null
+}
+
+// The other half of losslessness, and the one that bites quietly: every
+// movement the planner stated must appear in the blueprint. Returns the beats
+// where one did not.
+export function droppedTransitions(shape, blueprint) {
+  const from = Array.isArray(shape && shape.beats) ? shape.beats : []
+  const to = Array.isArray(blueprint && blueprint.beats) ? blueprint.beats : []
+  const out = []
+  from.forEach((b, i) => {
+    if (i === 0) return
+    const { value: transition } = readTransition(b)
+    if (!transition || isSamePlaceToken(transition)) return
+    if (text(to[i] && to[i].arrivedHow) !== transition) out.push({ beat: i + 1, transition })
+  })
+  return out
 }

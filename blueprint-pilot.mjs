@@ -31,7 +31,7 @@ import {
   lineJudgePrompt, parseLineJudgment,
   PROMPT_VERSION,
 } from './storyGenPrompts.mjs'
-import { adaptShape, adapterLostSomething } from './storySemanticShape.mjs'
+import { adaptShape, adapterLostSomething, droppedTransitions } from './storySemanticShape.mjs'
 import {
   validateBlueprint, allocateLines, anonymiseBlueprints, renderBlueprint,
   acceptableBlueprint, hasLatin, BLUEPRINT_DIMENSIONS, BLUEPRINT_QUALITY, BLUEPRINT_VERSION,
@@ -177,11 +177,27 @@ if (shapeFromPath) {
     : (stored.blueprintRun.blueprints || []).find(x => x.blueprint)
   if (!entry) { console.error('no stored blueprint in ' + shapeFromPath + (shapeLabel ? ' labelled ' + shapeLabel : '')); process.exit(1) }
   if (fromBakeoff) {
-    const { chineseTitle, ...shape } = entry.blueprint
+    // Re-map from the FROZEN SEMANTIC PLAN when the artifact kept it, so the
+    // run uses the current adapter rather than whatever mapping was stored.
+    // The plan itself is never regenerated — only renamed into the schema.
+    const source = entry.plan ? adaptShape(entry.plan) : { blueprint: entry.blueprint, mapped: [], contract: null }
+    const dropped = entry.plan ? droppedTransitions(entry.plan, source.blueprint) : []
+    if (dropped.length) {
+      console.error('ADAPTER DROPPED ' + dropped.length + ' stated transition(s): '
+        + dropped.map(d => 'beat ' + d.beat + ' "' + d.transition + '"').join('; '))
+      process.exit(2)
+    }
+    console.log('ADAPTER: ' + source.mapped.length + ' transition(s) mapped, 0 dropped'
+      + (source.contract ? ', ' + (source.contract.violations || []).length + ' contract violation(s)' : ''))
+    const { chineseTitle, ...shape } = source.blueprint
     shape.beats = (shape.beats || []).map(b => { const { chineseLexicalAnchors, ...rest } = b; return rest })
     shape.targetPlan = (shape.targetPlan || []).map(t => { const { usageSketch, ...rest } = t; return rest })
-    jobs.push({ manifest: stored.manifest, required: stored.required, shape, resume: null })
-    console.log('A3: reusing bakeoff plan ' + entry.label + ' (' + entry.model + ') from ' + shapeFromPath + '\n')
+    // The plan is FROZEN: it already passed structural validation and the
+    // plan-quality judge in the bakeoff, and re-judging a frozen plan would
+    // put an authorised run at the mercy of judge variance.
+    jobs.push({ manifest: stored.manifest, required: stored.required, shape, resume: null, frozen: entry.score || null, frozenLabel: entry.label })
+    console.log('A3: reusing bakeoff plan ' + entry.label + ' (' + entry.model + ') from ' + shapeFromPath
+      + (entry.score ? ' — frozen score: overall ' + entry.score.overall : '') + '\n')
   }
   if (!fromBakeoff) {
   // Keep the SHAPE, discard every piece of Chinese it carried: the lexical
@@ -355,7 +371,12 @@ for (const job of jobs) {
   const labelled = anonymiseBlueprints(valid.map(r => ({ ...r, rendered: renderBlueprint(r.blueprint) })))
   let scores = null
   let judgeRaw = null
-  try {
+  if (job.frozen) {
+    scores = [{ ...job.frozen, label: labelled[0].label }]
+    console.log('\nPLAN QUALITY: frozen from ' + job.frozenLabel + ' — not re-judged ('
+      + BLUEPRINT_DIMENSIONS.map(([k]) => k + ' ' + job.frozen[k]).join(' ') + ' OVERALL ' + job.frozen.overall + ')')
+  }
+  if (!job.frozen) try {
     const cfg = levelConfig(manifest.language, manifest.system, manifest.level)
     judgeRaw = await writer.send({
       prompt: blueprintJudgePrompt({
@@ -406,6 +427,14 @@ for (const job of jobs) {
     if (job.replanned) {
       console.log('\nSHAPE_PLANNER_LEXICAL_BIAS — a second shape from the same planner is HIGH risk too; not regenerating again.')
       record.selection.riskCode = 'SHAPE_PLANNER_LEXICAL_BIAS'
+      results.push(record)
+      continue
+    }
+    // A FROZEN plan is the subject of the run, not a candidate to be replaced.
+    // Regenerating here would answer a question nobody asked and destroy the
+    // only thing this run is measuring.
+    if (job.frozen) {
+      console.log('\nFROZEN PLAN — not regenerating. The lexical layer is where this run stopped.')
       results.push(record)
       continue
     }

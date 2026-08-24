@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
-  readTransition, readLocation, movedFrom, checkTransitions, adaptShape, adapterLostSomething, SAME_PLACE,
+  readTransition, readLocation, movedFrom, checkTransitions, adaptShape, adapterLostSomething,
+  droppedTransitions, SAME_PLACE,
 } from './storySemanticShape.mjs'
 import { validateBlueprint } from './storyBlueprint.mjs'
 
@@ -95,6 +96,19 @@ describe('adaptShape — a rename, not a decision', () => {
     expect(b.transition_from_previous).toBeUndefined()
   })
 
+  it('keeps a stated movement that samePlace would call one place', () => {
+    // Verbatim from plan D: samePlace reads these two as the same place
+    // because both contain "apartment", and the planner's own movement was
+    // being thrown away because of it.
+    const near = { beats: [
+      beat(1, 'Apartment Building Hallway', SAME_PLACE),
+      beat(2, '李明 Apartment', '李明 and 小红 walk together up the stairs to 李明 door'),
+    ] }
+    const r = adaptShape(near)
+    expect(r.blueprint.beats[1].arrivedHow).toBe('李明 and 小红 walk together up the stairs to 李明 door')
+    expect(droppedTransitions(near, r.blueprint)).toEqual([])
+  })
+
   it('never writes an arrival the planner did not', () => {
     const r = adaptShape({ beats: [beat(1, 'Apartment', SAME_PLACE), beat(2, 'Courtyard', '')] })
     expect(r.blueprint.beats[1].arrivedHow).toBe('')
@@ -124,6 +138,12 @@ describe('losslessness — a contract-keeping plan cannot fail for movement', ()
     const check = validateBlueprint(blueprint, { manifest, requiredTargets: ['帮助'] })
     expect(check.failures.map(f => f.code)).not.toContain('unexplained_move')
     expect(adapterLostSomething(contract, check.failures)).toBeNull()
+  })
+
+  it('catches a stated movement that never reached the blueprint', () => {
+    const shape = { beats: [beat(1, 'Kitchen', SAME_PLACE), beat(2, 'Roof', 'they climb the stairs to the roof')] }
+    const stripped = { beats: [{ where: 'Kitchen', arrivedHow: '' }, { where: 'Roof', arrivedHow: '' }] }
+    expect(droppedTransitions(shape, stripped)).toEqual([{ beat: 2, transition: 'they climb the stairs to the roof' }])
   })
 
   it('reports adapter loss rather than blaming the planner', () => {
