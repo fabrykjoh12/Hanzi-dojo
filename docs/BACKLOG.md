@@ -154,6 +154,39 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### A3.2 lexical risk only sees a concept if the gloss uses that exact English word (open, found 2026-08-24)
+
+The first full A3 run on a frozen, high-quality plan (`a3-final-1`, Qwen plan
+D: structural PASS, overall 9, causality 9, chronology 10, plausibility 10)
+never reached prose. It stopped at the A3.2 preflight with
+`SHAPE_LEXICAL_FEASIBILITY_FAILURE`, blocking on: large, sweating, grip,
+slipping, struggling, slips, falls, lift, carry.
+
+**Some of those blocks are wrong.** `conceptSupport` matches an English
+concept against the tokens of a learner-list gloss, with no synonym coverage,
+so a supported action is invisible whenever the gloss uses a different English
+verb. Reproduced with the real glosses:
+
+| concept | verdict | truth |
+|---|---|---|
+| carry | none | 搬 is **HSK 3** — "to move (sth relatively heavy or bulky)" |
+| lift | none | 搬 / 起来 (HSK 2) |
+| large | none | 大 is **HSK 1** — glossed "big" |
+| move | supported (搬) | the same word, found only under its own gloss word |
+| hold | supported (拿) | correct |
+
+So beat 5's HIGH ("lift, carry") is a false block. Beats 1-2 are a fair call:
+sweating, grip, slipping and falls (掉 is HSK 4) have no in-level cover.
+
+**Second, upstream:** plan selection has no lexical-feasibility signal at all.
+The plan judge scores causality, chronology, plausibility, simplicity, target
+fit and suitability — none of which ask whether the story can be *said* at
+this level. A premise built on fine physical detail (sweating hands, a
+slipping grip, a box hitting the floor) can therefore score 9/10 and win.
+
+Do not fix both at once. The matcher is the narrow, testable one; the missing
+feasibility dimension in plan selection is a design question.
+
 ### Planners omit beat-to-beat movement, and it is content, not notation (open, found 2026-08-24)
 
 Measured on the twelve stored plans in `data/story-candidates/planner-bakeoff-1t/`
