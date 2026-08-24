@@ -1,0 +1,383 @@
+{
+  "compiler": "fab9-compile@1",
+  "source": "data/story-candidates/planner-bakeoff-1t/bakeoff.json",
+  "rates": {
+    "groq:qwen/qwen3.6-27b:none": {
+      "n": 6,
+      "structBefore": 2,
+      "structAfter": 2,
+      "quality": 1,
+      "jointBefore": 0,
+      "jointAfter": 0
+    },
+    "groq:openai/gpt-oss-120b:low": {
+      "n": 6,
+      "structBefore": 0,
+      "structAfter": 2,
+      "quality": 4,
+      "jointBefore": 0,
+      "jointAfter": 1
+    }
+  },
+  "rows": [
+    {
+      "label": "I",
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "before": {
+        "ok": true,
+        "codes": []
+      },
+      "after": {
+        "ok": true,
+        "codes": []
+      },
+      "qualityOk": false,
+      "jointBefore": false,
+      "jointAfter": false,
+      "derived": [],
+      "misses": [],
+      "rewrote": []
+    },
+    {
+      "label": "J",
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "before": {
+        "ok": false,
+        "codes": [
+          "target_unplaced"
+        ]
+      },
+      "after": {
+        "ok": false,
+        "codes": [
+          "target_unplaced"
+        ]
+      },
+      "qualityOk": false,
+      "jointBefore": false,
+      "jointAfter": false,
+      "derived": [],
+      "misses": [],
+      "rewrote": []
+    },
+    {
+      "label": "A",
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "before": {
+        "ok": true,
+        "codes": []
+      },
+      "after": {
+        "ok": true,
+        "codes": []
+      },
+      "qualityOk": false,
+      "jointBefore": false,
+      "jointAfter": false,
+      "derived": [],
+      "misses": [],
+      "rewrote": []
+    },
+    {
+      "label": "-",
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "before": {
+        "ok": false,
+        "codes": [
+          "unparseable"
+        ]
+      },
+      "after": {
+        "ok": false,
+        "codes": [
+          "unparseable"
+        ]
+      },
+      "qualityOk": false,
+      "jointBefore": false,
+      "jointAfter": false,
+      "derived": [],
+      "misses": [
+        {
+          "beat": 0,
+          "field": "blueprint",
+          "reason": "no plan object"
+        }
+      ],
+      "rewrote": []
+    },
+    {
+      "label": "C",
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "before": {
+        "ok": false,
+        "codes": [
+          "target_unplaced"
+        ]
+      },
+      "after": {
+        "ok": false,
+        "codes": [
+          "target_unplaced"
+        ]
+      },
+      "qualityOk": true,
+      "jointBefore": false,
+      "jointAfter": false,
+      "derived": [],
+      "misses": [],
+      "rewrote": []
+    },
+    {
+      "label": "-",
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "before": {
+        "ok": false,
+        "codes": [
+          "unparseable"
+        ]
+      },
+      "after": {
+        "ok": false,
+        "codes": [
+          "unparseable"
+        ]
+      },
+      "qualityOk": false,
+      "jointBefore": false,
+      "jointAfter": false,
+      "derived": [],
+      "misses": [
+        {
+          "beat": 0,
+          "field": "blueprint",
+          "reason": "no plan object"
+        }
+      ],
+      "rewrote": []
+    },
+    {
+      "label": "E",
+      "model": "groq:openai/gpt-oss-120b:low",
+      "before": {
+        "ok": false,
+        "codes": [
+          "unexplained_move",
+          "unexplained_move"
+        ]
+      },
+      "after": {
+        "ok": false,
+        "codes": [
+          "unexplained_move"
+        ]
+      },
+      "qualityOk": true,
+      "jointBefore": false,
+      "jointAfter": false,
+      "derived": [
+        {
+          "beat": 4,
+          "field": "arrivedHow",
+          "value": "They lift the table together and carry it down the stairs",
+          "from": "what",
+          "reason": "the plan already said how they travelled"
+        }
+      ],
+      "misses": [
+        {
+          "beat": 5,
+          "field": "arrivedHow",
+          "reason": "nothing in the plan says how anyone reached \"Lobby\""
+        }
+      ],
+      "rewrote": []
+    },
+    {
+      "label": "D",
+      "model": "groq:openai/gpt-oss-120b:low",
+      "before": {
+        "ok": false,
+        "codes": [
+          "unexplained_move"
+        ]
+      },
+      "after": {
+        "ok": true,
+        "codes": []
+      },
+      "qualityOk": false,
+      "jointBefore": false,
+      "jointAfter": false,
+      "derived": [
+        {
+          "beat": 2,
+          "field": "where",
+          "value": "Li Ming's balcony",
+          "from": "where",
+          "reason": "place separated from the movement or state described with it"
+        },
+        {
+          "beat": 2,
+          "field": "arrivedHow",
+          "value": "he steps out to think",
+          "from": "where",
+          "reason": "the plan already said how they travelled"
+        },
+        {
+          "beat": 3,
+          "field": "where",
+          "value": "李明's apartment",
+          "from": "where",
+          "reason": "place separated from the movement or state described with it"
+        },
+        {
+          "beat": 5,
+          "field": "where",
+          "value": "Living room",
+          "from": "where",
+          "reason": "place separated from the movement or state described with it"
+        }
+      ],
+      "misses": [],
+      "rewrote": []
+    },
+    {
+      "label": "G",
+      "model": "groq:openai/gpt-oss-120b:low",
+      "before": {
+        "ok": false,
+        "codes": [
+          "unexplained_move"
+        ]
+      },
+      "after": {
+        "ok": true,
+        "codes": []
+      },
+      "qualityOk": true,
+      "jointBefore": false,
+      "jointAfter": true,
+      "derived": [
+        {
+          "beat": 5,
+          "field": "arrivedHow",
+          "value": "because the box has been moved successfully thanks to their teamwork",
+          "from": "because",
+          "reason": "the plan already said how they travelled"
+        }
+      ],
+      "misses": [],
+      "rewrote": []
+    },
+    {
+      "label": "H",
+      "model": "groq:openai/gpt-oss-120b:low",
+      "before": {
+        "ok": false,
+        "codes": [
+          "unexplained_move",
+          "unexplained_move"
+        ]
+      },
+      "after": {
+        "ok": false,
+        "codes": [
+          "unexplained_move",
+          "unexplained_move"
+        ]
+      },
+      "qualityOk": true,
+      "jointBefore": false,
+      "jointAfter": false,
+      "derived": [],
+      "misses": [
+        {
+          "beat": 4,
+          "field": "arrivedHow",
+          "reason": "nothing in the plan says how anyone reached \"Courtyard between the apartments\""
+        },
+        {
+          "beat": 5,
+          "field": "arrivedHow",
+          "reason": "nothing in the plan says how anyone reached \"李明's balcony\""
+        }
+      ],
+      "rewrote": []
+    },
+    {
+      "label": "B",
+      "model": "groq:openai/gpt-oss-120b:low",
+      "before": {
+        "ok": false,
+        "codes": [
+          "unexplained_move",
+          "unexplained_move",
+          "target_no_intent"
+        ]
+      },
+      "after": {
+        "ok": false,
+        "codes": [
+          "unexplained_move",
+          "target_no_intent"
+        ]
+      },
+      "qualityOk": true,
+      "jointBefore": false,
+      "jointAfter": false,
+      "derived": [
+        {
+          "beat": 3,
+          "field": "where",
+          "value": "屋顶的自行车维修站",
+          "from": "where",
+          "reason": "place separated from the movement or state described with it"
+        },
+        {
+          "beat": 5,
+          "field": "arrivedHow",
+          "value": "and rides off to work feeling grateful",
+          "from": "what",
+          "reason": "the plan already said how they travelled"
+        }
+      ],
+      "misses": [
+        {
+          "beat": 2,
+          "field": "arrivedHow",
+          "reason": "nothing in the plan says how anyone reached \"building lobby\""
+        }
+      ],
+      "rewrote": []
+    },
+    {
+      "label": "F",
+      "model": "groq:openai/gpt-oss-120b:low",
+      "before": {
+        "ok": false,
+        "codes": [
+          "unexplained_move"
+        ]
+      },
+      "after": {
+        "ok": false,
+        "codes": [
+          "unexplained_move"
+        ]
+      },
+      "qualityOk": false,
+      "jointBefore": false,
+      "jointAfter": false,
+      "derived": [],
+      "misses": [
+        {
+          "beat": 2,
+          "field": "arrivedHow",
+          "reason": "nothing in the plan says how anyone reached \"Living room\""
+        }
+      ],
+      "rewrote": []
+    }
+  ]
+}
