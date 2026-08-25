@@ -4,9 +4,13 @@ import {
   applyScaffold,
   shapeChanges,
   checkTitle,
+  checkSketchCast,
+  fragmentOf,
+  frozenTokens,
+  ANCHOR_BOUNDS,
   SCAFFOLD_VERSION,
 } from './storyLexicalScaffold.mjs'
-import { validateBlueprint } from './storyBlueprint.mjs'
+import { validateBlueprint, checkAnchor } from './storyBlueprint.mjs'
 import {
   storyShapePrompt,
   titlePrompt, parseTitle,
@@ -237,6 +241,136 @@ describe('the shape is locked', () => {
     expect(checkTitle('Passport', { manifest: m, vocabMap }).problems.join(' ')).toContain('Latin')
     expect(checkTitle('森林的故事', { manifest: m, vocabMap }).problems.join(' ')).toContain('above-level')
     expect(checkTitle('找', { manifest: m, vocabMap }).problems.join(' ')).toContain('characters')
-    expect(SCAFFOLD_VERSION).toBe('fab9-scaffold@1')
+    expect(SCAFFOLD_VERSION).toBe('fab9-scaffold@2')
+  })
+})
+
+// ── a3-final-2: the three demonstrated scaffold defects ─────────────────────
+// Vocabulary and glosses verbatim from the canonical table.
+describe('the lexical scaffold, after a3-final-2', () => {
+  const ROWS = [
+    ['后来', 3, 'afterwards; later'], ['门口', 3, 'doorway; gate'], ['女人', 3, 'woman'],
+    ['男人', 3, 'a man; a male'], ['拿', 2, 'to take, to hold'], ['不用', 2, 'need not'],
+    ['重', 4, 'to repeat; repetition'], ['人', 1, 'person; people'], ['大', 1, 'big'],
+    ['搬', 3, 'to move (i.e. relocate oneself); to move (sth relatively heavy or bulky)'],
+    ['那个', 1, 'that one'], ['来', 1, 'to come'], ['了', 1, '(completed action marker)'],
+    ['爸爸', 1, 'father; dad'], ['楼', 3, 'building; floor'], ['箱子', 3, 'suitcase; chest'],
+    ['帮助', 3, 'assistance; aid; to help; to assist'], ['需要', 3, 'to need; to require'],
+    ['是', 1, 'to be'], ['的', 1, 'of'], ['很', 1, 'very'], ['累', 2, 'tired, to tire'],
+    ['这个', 1, 'this one'], ['我', 1, 'I; me'], ['你', 1, 'you'], ['吗', 1, '(question particle)'],
+  ]
+  const vm = Object.fromEntries(ROWS.map(([word, level, meaning]) => [word, { word, level, meaning }]))
+  const m = () => buildManifest({ batchId: 'c', seq: 1, level: 3, targets: ['女人', '男人'], defaults: { lines: [14, 38] } })
+  // Plan C's own beats, frozen.
+  const plan = () => ({
+    title: 'A heavy box in the lobby', setting: 'An apartment building', cast: ['李明', '小红'],
+    problem: 'the box is too heavy for one person', incitingEvent: 'she cannot lift it',
+    resolution: 'they carry it up together',
+    beats: [
+      { id: 1, when: 'afternoon', where: 'lobby', what: 'Xiao Hong stands with a large green box. She looks tired.', because: 'the story opens', targets: ['女人'], lines: 14 },
+      { id: 2, when: 'later', where: 'lobby', what: 'Li Ming walks into the lobby and sees the woman with the box.', because: 'he is coming home', targets: ['男人'], lines: 14 },
+    ],
+    targetPlan: [
+      { word: '女人', beat: 1, why: 'she is the woman with the box', speaker: '李明', refersTo: 'Xiao Hong', intent: 'describe who is waiting' },
+      { word: '男人', beat: 2, why: 'he is the man who arrives', speaker: '小红', refersTo: 'Li Ming', intent: 'describe who came' },
+    ],
+  })
+
+  it('1. drops one invalid anchor and accepts the other five', () => {
+    // The verbatim a3-final-2 set: 很重 is invalid because 重 is HSK 4.
+    const frozen = frozenTokens({ blueprint: plan(), manifest: m() })
+    const proposed = ['后来', '门口', '女人', '拿', '很重', '不用']
+    const kept = proposed.filter(w => !fragmentOf(w, frozen)
+      && checkAnchor(w, { manifest: m(), vocabMap: vm, cast: plan().cast }).ok)
+    expect(kept).toEqual(['后来', '门口', '女人', '拿', '不用'])
+    expect(kept.length).toBeGreaterThanOrEqual(ANCHOR_BOUNDS.min)
+  })
+
+  it('3. a piece of a cast name is not a word choice', () => {
+    const frozen = frozenTokens({ blueprint: plan(), manifest: m() })
+    expect(frozen).toContain('李明')
+    expect(fragmentOf('李', frozen)).toBe('李明')
+    expect(fragmentOf('明', frozen)).toBe('李明')
+    expect(fragmentOf('李明', frozen)).toBeNull()
+  })
+
+  it('4. a piece of a target word is not a replacement for it', () => {
+    const frozen = frozenTokens({ blueprint: plan(), manifest: m() })
+    // 人 is a perfectly good HSK 1 word, and still not a substitute for 女人.
+    expect(checkAnchor('人', { manifest: m(), vocabMap: vm, cast: plan().cast }).ok).toBe(true)
+    expect(fragmentOf('人', frozen)).toBe('女人')
+    expect(fragmentOf('女', frozen)).toBe('女人')
+  })
+
+  it('5. a sketch may not hire a new person', () => {
+    // Verbatim from a3-final-2, and it passed every vocabulary rule.
+    const r = checkSketchCast('李明的爸爸是大男人', { word: '男人', beat: plan().beats[1], blueprint: plan(), manifest: m(), vocabMap: vm })
+    expect(r.ok).toBe(false)
+    expect(r.problems.join(' ')).toContain('爸爸')
+  })
+
+  it('6. a sketch using only the people the plan has is fine', () => {
+    const beat1 = plan().beats[0]
+    expect(checkSketchCast('这个女人很累', { word: '女人', beat: beat1, blueprint: plan(), manifest: m(), vocabMap: vm }).ok).toBe(true)
+    // A person word that is a target is allowed where the beat already has
+    // that person — beat 2's text says "sees the woman" — and nowhere else.
+    expect(checkSketchCast('女人需要帮助', { word: '需要', beat: plan().beats[1], blueprint: plan(), manifest: m(), vocabMap: vm }).ok).toBe(true)
+    expect(checkSketchCast('女人需要帮助', { word: '需要', beat: { what: 'Li Ming opens his own door', because: 'he is home' }, blueprint: plan(), manifest: m(), vocabMap: vm }).ok).toBe(false)
+  })
+
+  const anchorRun = (writer) => buildLexicalScaffold({
+    blueprint: plan(), manifest: m(), vocabMap: vm, pool: Object.values(vm).filter(v => v.level <= 3), writer,
+    buildTitlePrompt: titlePrompt, parseTitle,
+    buildSketchPrompt: targetSketchPrompt, parseSketch,
+    buildAnchorsPrompt: beatAnchorsPrompt, parseAnchors,
+  })
+
+  it('1b. end to end: the five survivors become the beat’s anchors, with no retry', async () => {
+    const w = gen('qwen', [
+      J({ title: '搬箱子' }),
+      J({ sentence: '这个女人很累' }),
+      J({ anchors: ['后来', '门口', '女人', '拿', '很重', '不用'] }),
+      J({ sentence: '那个男人来了' }),
+      J({ anchors: ['楼', '箱子', '拿', '后来'] }),
+    ])
+    const r = await anchorRun(w)
+    expect(r.ok).toBe(true)
+    expect(r.beats[0].anchors).toEqual(['后来', '门口', '女人', '拿', '不用'])
+    const attempts = r.log.filter(l => l.piece === 'anchors' && l.beat === 1)
+    expect(attempts).toHaveLength(1)
+    expect(attempts[0].dropped).toEqual([{ word: '很重', reason: expect.stringContaining('HSK 4') }])
+  })
+
+  it('2. fewer than three survivors still gets exactly one retry', async () => {
+    const w = gen('qwen', [
+      J({ title: '搬箱子' }),
+      J({ sentence: '这个女人很累' }),
+      // The a3-final-2 retry, verbatim: the cast name and the target, in pieces.
+      J({ anchors: ['李', '明', '女', '人', '拿', '包'] }),
+      J({ anchors: ['后来', '门口', '拿', '不用'] }),
+      J({ sentence: '那个男人来了' }),
+      J({ anchors: ['楼', '箱子', '拿', '后来'] }),
+    ])
+    const r = await anchorRun(w)
+    expect(r.ok).toBe(true)
+    const attempts = r.log.filter(l => l.piece === 'anchors' && l.beat === 1)
+    expect(attempts).toHaveLength(2)
+    expect(attempts[0].ok).toBe(false)
+    expect(attempts[0].dropped.map(d => d.word)).toEqual(['李', '明', '女', '人', '包'])
+    expect(attempts[0].dropped.find(d => d.word === '人').reason).toContain('女人')
+    expect(r.beats[0].anchors).toEqual(['后来', '门口', '拿', '不用'])
+  })
+
+  it('2b. and stops after that one retry, as before', async () => {
+    const w = gen('qwen', [
+      J({ title: '搬箱子' }),
+      J({ sentence: '这个女人很累' }),
+      J({ anchors: ['李', '明', '女', '人'] }),
+      J({ anchors: ['李', '明'] }),
+    ])
+    const r = await anchorRun(w)
+    expect(r.ok).toBe(false)
+    expect(r.code).toBe('BEAT_LEXICAL_SCAFFOLD_FAILED')
+    expect(r.failedAt).toEqual({ beat: 1 })
   })
 })

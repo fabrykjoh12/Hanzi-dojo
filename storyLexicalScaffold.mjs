@@ -31,7 +31,14 @@ import { checkAnchor, checkUsageSketch, hasLatin } from './storyBlueprint.mjs'
 import { analyzeStory } from './storyCorpusCalibration.mjs'
 import { retrieveCandidates } from './storyLexicalRetrieval.mjs'
 
-export const SCAFFOLD_VERSION = 'fab9-scaffold@1'
+export const SCAFFOLD_VERSION = 'fab9-scaffold@2'
+
+// A beat's toolkit needs three usable words and has never needed more than
+// six. a3-final-2 threw away 后来、门口、女人、拿、不用 — five valid words — because
+// 很重 was in the same list, and the retry came back with single characters.
+// The bound has not moved; what changed is that the set is now judged word by
+// word, and the invalid ones are simply dropped.
+export const ANCHOR_BOUNDS = { min: 3, max: 6 }
 
 export const TITLE_BOUNDS = { min: 2, max: 12 }
 
@@ -55,6 +62,76 @@ export function checkTitle(title, { manifest, vocabMap }) {
 
 // Rebuild the plan from the ORIGINAL shape plus the three lexical fields.
 // Anything else a lexical call returned is discarded by construction.
+// The words the plan has already frozen: the cast, and the vocabulary the
+// story exists to teach. Nothing downstream may take one of these apart.
+export function frozenTokens({ blueprint = null, manifest = null } = {}) {
+  const out = new Set()
+  for (const name of (blueprint && blueprint.cast) || []) if (String(name || '').trim()) out.add(String(name).trim())
+  for (const name of (manifest && manifest.speakers) || []) if (String(name || '').trim()) out.add(String(name).trim())
+  for (const t of (manifest && manifest.targets) || []) if (t && t.word) out.add(String(t.word).trim())
+  return [...out]
+}
+
+// 李明 → 李 + 明, 女人 → 女 + 人. a3-final-2's retry answered a rejected anchor
+// list by breaking the cast name and a target word into their characters,
+// which is not a replacement for either — it is the same semantic item,
+// dismantled. A proposed anchor that is a strict piece of a frozen token is
+// therefore not a word choice at all, whatever the character means alone.
+export function fragmentOf(word, frozen = []) {
+  const w = String(word == null ? '' : word).trim()
+  if (!w) return null
+  for (const token of frozen) {
+    if (w !== token && token.length > w.length && token.includes(w)) return token
+  }
+  return null
+}
+
+// Glosses that name a human being. This is a lexical-semantic category read
+// off the canonical dataset, not a list of forbidden words: any entry whose
+// gloss says it is a person counts, in any language track.
+const PERSON_GLOSS = /\b(person|people|man|men|woman|women|boy|girl|child|children|kid|baby|father|dad|daddy|mother|mom|mum|parent|parents|brother|sister|son|daughter|grandfather|grandmother|grandpa|grandma|uncle|aunt|cousin|husband|wife|friend|neighbour|neighbor|teacher|student|classmate|pupil|doctor|nurse|driver|worker|boss|colleague|guest|customer|waiter|waitress|shopkeeper|clerk|stranger|owner|manager|nanny|maid)\b/i
+
+// The planner's cast is closed, and a sketch is downstream of the plan: it may
+// use the people the plan has, and it may not hire anyone. a3-final-2's
+// 李明的爸爸是大男人 passed every vocabulary rule and quietly gave 李明 a father
+// the story does not have. The target word itself is always allowed — that is
+// the word being taught — and so are pronouns, which refer to whoever is
+// already there.
+const PRONOUNS = new Set(['我', '你', '您', '他', '她', '它', '我们', '你们', '他们', '她们', '大家', '自己'])
+
+export function checkSketchCast(sketch, { word, beat = null, blueprint = null, manifest = null, vocabMap = {} } = {}) {
+  const text = String(sketch == null ? '' : sketch).trim()
+  if (!text) return { ok: false, problems: ['no sketch'] }
+  const cast = new Set((blueprint && blueprint.cast) || [])
+  const targets = new Set(((manifest && manifest.targets) || []).map(t => t && t.word).filter(Boolean))
+  // The people the FROZEN beat already has, read off its own English text.
+  // 女人 is fair game in a beat about a woman and an invention in one without
+  // her: teaching a word for a person is not a licence to add one.
+  const beatWords = new Set(
+    (String((beat && beat.what) || '') + ' ' + String((beat && beat.because) || ''))
+      .toLowerCase().split(/[^a-z]+/).filter(Boolean))
+  const inFrozenBeat = (w) => {
+    const meaning = String((vocabMap[w] && vocabMap[w].meaning) || '').toLowerCase()
+    return meaning.split(/[^a-z]+/).filter(t => t.length > 2).some(t => beatWords.has(t))
+  }
+  const analysis = analyzeStory({ title: '', level: (manifest && manifest.level) || 1, content: text }, vocabMap)
+  const intruders = []
+  for (const w of analysis.counts.keys()) {
+    if (w === word || cast.has(w) || PRONOUNS.has(w)) continue
+    if (targets.has(w) && inFrozenBeat(w)) continue
+    const meaning = vocabMap[w] && vocabMap[w].meaning
+    if (meaning && PERSON_GLOSS.test(meaning)) intruders.push(w)
+  }
+  if (intruders.length) {
+    return {
+      ok: false,
+      problems: ['introduces ' + intruders.join('、') + ', who ' + (intruders.length > 1 ? 'are' : 'is')
+        + ' not in this story. The people are: ' + [...cast].join('、')],
+    }
+  }
+  return { ok: true, problems: [] }
+}
+
 export function applyScaffold(blueprint, scaffold) {
   const anchorsByBeat = new Map((scaffold.beats || []).map(b => [b.beat, b.anchors]))
   const sketchByWord = new Map()
@@ -113,6 +190,7 @@ export async function buildLexicalScaffold({
 } = {}) {
   const log = []
   const record = (entry) => { log.push(entry); return entry }
+  const frozen = frozenTokens({ blueprint, manifest })
 
   // ── Title ────────────────────────────────────────────────────────────────
   // A resumed run keeps every piece a previous run already validated: the
@@ -163,9 +241,15 @@ export async function buildLexicalScaffold({
             maxTokens,
           }))
         } catch (err) { error = String((err && err.message) || err).slice(0, 160) }
-        const check = out
+        const lexical = out
           ? checkUsageSketch(out, { word: entry.word, manifest, vocabMap })
           : { ok: false, problems: [error || 'no usable sentence in the response'] }
+        // The closed cast survives into the lexical stage: a sketch may use
+        // the people the plan has and may not introduce another one.
+        const castCheck = out && lexical.ok
+          ? checkSketchCast(out, { word: entry.word, beat, blueprint, manifest, vocabMap })
+          : { ok: true, problems: [] }
+        const check = { ok: lexical.ok && castCheck.ok, problems: [...lexical.problems, ...castCheck.problems] }
         record({ piece: 'sketch', beat: beat.id, word: entry.word, attempt: a, output: out, ok: check.ok, problems: check.problems })
         if (check.ok) sketch = out
         else fb = check.problems
@@ -200,24 +284,37 @@ export async function buildLexicalScaffold({
           maxTokens,
         }))
       } catch (err) { error = String((err && err.message) || err).slice(0, 160) }
+      // Word by word, not all or nothing: an invalid anchor is dropped and
+      // the rest of the set stands, because the beat needs three usable words
+      // and never needed this particular one.
       const problems = []
+      const kept = []
+      const dropped = []
+      for (const w of (out || [])) {
+        if (kept.includes(w)) continue
+        const fragment = fragmentOf(w, frozen)
+        const c = fragment
+          ? { ok: false, reason: 'a piece of ' + fragment + ', not a word of its own' }
+          : checkAnchor(w, { manifest, vocabMap, cast: blueprint.cast || [] })
+        if (c.ok) kept.push(w)
+        else dropped.push({ word: w, reason: c.reason })
+      }
+      const usable = kept.slice(0, ANCHOR_BOUNDS.max)
       if (!out) problems.push(error || 'no usable word list in the response')
-      else {
-        if (out.length < 3) problems.push('only ' + out.length + ' words')
-        for (const w of out) {
-          const c = checkAnchor(w, { manifest, vocabMap, cast: blueprint.cast || [] })
-          if (!c.ok) problems.push('"' + w + '": ' + c.reason)
-        }
+      else if (usable.length < ANCHOR_BOUNDS.min) {
+        problems.push('only ' + usable.length + ' usable word(s) — '
+          + dropped.map(d => '"' + d.word + '": ' + d.reason).join('; '))
       }
       record({
-        piece: 'anchors', beat: beat.id, attempt: a, output: out, ok: problems.length === 0, problems,
+        piece: 'anchors', beat: beat.id, attempt: a, output: out, kept: usable, dropped,
+        ok: problems.length === 0, problems,
         retrieval: { query: retrieved.query.text, tokens: retrieved.query.tokens, candidates: retrieved.candidates },
       })
-      if (!problems.length) anchors = out
+      if (!problems.length) anchors = usable
       else {
         fb = problems
         // The words the gate actually refused, for the next query.
-        rejectedWords = [...new Set([...rejectedWords, ...(out || []).filter(w => !checkAnchor(w, { manifest, vocabMap, cast: blueprint.cast || [] }).ok)])]
+        rejectedWords = [...new Set([...rejectedWords, ...dropped.map(d => d.word)])]
       }
     }
     if (!anchors) {
