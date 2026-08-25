@@ -78,7 +78,14 @@ async function loadWorld() {
     if (!l.card_id) continue
     ;(logsByCardId[l.card_id] || (logsByCardId[l.card_id] = [])).push(l)
   }
-  return { cards, logs, logsByCardId }
+  // The oldest review_log in the database. Provenance is only provable for
+  // cards born after it — derived, never hardcoded.
+  let loggingEpoch = null
+  for (const l of logs) {
+    if (!l.reviewed_at) continue
+    if (loggingEpoch === null || new Date(l.reviewed_at) < new Date(loggingEpoch)) loggingEpoch = l.reviewed_at
+  }
+  return { cards, logs, logsByCardId, loggingEpoch }
 }
 
 const line = (n = 70) => '='.repeat(n)
@@ -157,17 +164,51 @@ async function dryRun() {
   console.log('LEGACY CLAIM MIGRATION — FRESH DRY RUN (nothing is written)')
   console.log(line())
 
-  const { cards, logs, logsByCardId } = await loadWorld()
+  const { cards, logs, logsByCardId, loggingEpoch } = await loadWorld()
   console.log('\nRead ' + cards.length + ' cards and ' + logs.length + ' review logs at ' + new Date().toISOString())
 
-  const plan = buildMigrationPlan({ cards, logsByCardId })
-  const manifest = buildManifest({ cards, logsByCardId, replayFor: (h) => replayCard(h) })
+  const plan = buildMigrationPlan({ cards, logsByCardId, loggingEpoch })
+  const manifest = buildManifest({ cards, logsByCardId, replayFor: (h) => replayCard(h), loggingEpoch })
+
+  console.log('\n  logging epoch (oldest review_log): ' + loggingEpoch)
+  console.log('  Provenance rule: a genuine card\'s history opens with a `new ->`')
+  console.log('  transition. A fabricated seed has none, and no later grade can')
+  console.log('  create one — so classification survives legitimate grading.')
 
   console.log('\nCLASSIFICATION')
   console.log('  convert_legacy_claim   ' + pad(manifest.counts.convert_legacy_claim, 6))
   console.log('  replay_reviewed_seed   ' + pad(manifest.counts.replay_reviewed_seed, 6))
   console.log('  excluded_ambiguous     ' + pad(manifest.counts.excluded_ambiguous, 6) + '   (never actionable)')
+  console.log('  excluded_foreign       ' + pad(manifest.counts.excluded_foreign_written, 6) + '   (reps no grade wrote — import/restore)')
+  console.log('  excluded_pre_logging   ' + pad(manifest.counts.excluded_pre_logging, 6) + '   (born before complete history)')
+  console.log('  excluded_b2_claims     ' + pad(manifest.counts.excluded_prior_known_claims, 6) + '   (already modelled)')
   console.log('  untouched_genuine      ' + pad(manifest.counts.untouched_genuine, 6))
+  console.log('  untouched_unstarted    ' + pad(manifest.counts.untouched_unstarted, 6))
+  const partition = manifest.counts.convert_legacy_claim + manifest.counts.replay_reviewed_seed
+    + manifest.counts.excluded_ambiguous + manifest.counts.excluded_foreign_written
+    + manifest.counts.excluded_pre_logging + manifest.counts.excluded_prior_known_claims
+    + manifest.counts.untouched_genuine + manifest.counts.untouched_unstarted
+  console.log('  ' + '-'.repeat(40))
+  console.log('  partition total        ' + pad(partition, 6)
+    + (partition === cards.length ? '   == cards table (' + cards.length + ')'
+                                  : '   !! MISMATCH, cards table has ' + cards.length))
+
+  // Independent corroboration: the fabricated rows were bulk INSERTs, so they
+  // share an exact created_at. This is a CHECK on the provenance rule, never an
+  // input to it. Anything actionable outside a demonstrated cohort is a stop.
+  console.log('\nBATCH CORROBORATION (independent check, not a classifier input)')
+  for (const b of plan.corroboration.demonstrated) {
+    console.log('  ' + b.created_at + '  untouched ' + pad(b.untouched, 5) + '  reviewed ' + pad(b.reviewed, 5))
+  }
+  if (plan.corroboration.outlierCards > 0) {
+    console.log('\n  !! ' + plan.corroboration.outlierCards + ' actionable row(s) fall OUTSIDE any demonstrated bulk cohort:')
+    for (const b of plan.corroboration.outliers) {
+      console.log('     ' + b.created_at + '  untouched ' + b.untouched + '  reviewed ' + b.reviewed)
+    }
+    console.log('  These are unexplained. STOP and account for them before applying.')
+  } else {
+    console.log('  every actionable row sits inside a demonstrated bulk cohort')
+  }
   console.log('  ' + '-'.repeat(40))
   console.log('  actionable entries     ' + pad(manifest.counts.actionable, 6))
 
@@ -225,7 +266,7 @@ async function apply() {
     console.log('  ⚠ older than an hour — expect stale rows; a fresher manifest is safer.')
   }
 
-  const { cards, logsByCardId } = await loadWorld()
+  const { cards, logsByCardId, loggingEpoch } = await loadWorld()
   const byId = new Map(cards.map(c => [c.id, c]))
 
   const report = {
@@ -334,9 +375,9 @@ async function printPostApply(report, manifest) {
   console.log('\n' + line())
   console.log('INVARIANT VERIFICATION (fresh read)')
   console.log(line())
-  const { cards, logsByCardId } = await loadWorld()
+  const { cards, logsByCardId, loggingEpoch } = await loadWorld()
 
-  const remaining = buildMigrationPlan({ cards, logsByCardId })
+  const remaining = buildMigrationPlan({ cards, logsByCardId, loggingEpoch })
   const stillActionable = remaining.counts.conversions + remaining.counts.replays
   // Rows deliberately skipped as stale are legitimately still actionable, so
   // they are subtracted before this is called a problem.
