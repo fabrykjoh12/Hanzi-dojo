@@ -10,6 +10,12 @@ import { BUILD_SHA, BUILD_TIME } from './version'
 import { installErrorMonitoring } from './errorMonitor'
 import { isNativeApp } from './nativeShell'
 
+// Bundled web fonts, native only (FAB-19 F4). __DOJO_NATIVE_BUILD__ is a
+// compile-time constant, so the web build folds this to `false` and Rollup
+// drops the stylesheet and all 441 woff2 files from the artifact — the web
+// keeps using the Google Fonts CDN, which nativeFonts.mjs explains.
+if (__DOJO_NATIVE_BUILD__) import('./webfonts.css')
+
 // Announce the running build so "which version is live?" is answerable from the
 // console (also in Settings, and at /version.json).
 console.info('Hanzi Dojo · build ' + BUILD_SHA + (BUILD_TIME ? ' · ' + BUILD_TIME : ''))

@@ -177,7 +177,7 @@ both stores and describes a feature reviewers cannot find.
 
 **Fix:** scope the paragraph to the web until native push ships.
 
-#### F3 · MISSING · medium (latent, not active) — Discord is an undisclosed recipient of feedback content
+#### F3 · FIXED in Stage 3 (migration written, NOT yet applied) · medium — Discord as an undisclosed recipient of feedback content
 **Layer: code/SQL to remove the relay — or policy text**
 
 > **Corrected 2026-08-25 after a live check.** The trigger is installed and
@@ -205,7 +205,7 @@ F26 outright — while keeping the existing "no third-party sharing" answer true
 Otherwise: name Discord in the policy *and* declare the sharing in Play Data
 Safety **before** the secret is ever set.
 
-#### F4 · MISMATCH · medium — Google Fonts is scoped "on the web" but loads natively too
+#### F4 · FIXED in Stage 3 · medium — Google Fonts is scoped "on the web" but loaded natively too
 **Layer: code (preferred) or policy text**
 
 The policy lists *"Google Fonts (font delivery on the web)"*. But
@@ -309,7 +309,7 @@ Note on "Linked": Apple asks per data type, not per row. Signed-in events carry
 `user_id`, so Usage Data and Diagnostics must be declared Linked even though the
 pre-auth events are anonymous.
 
-#### F13 · PASS today, MISMATCH the moment the relay is enabled · high — "Data shared with third parties: No"
+#### F13 · PASS, permanently once the migration is applied · high — "Data shared with third parties: No"
 **Layer: Play Console metadata — or code/SQL (see F3)**
 
 `docs/STORE-LISTING.md:184`. The answer is **true today**, because the Discord
@@ -356,7 +356,7 @@ Two packaging notes, not privacy issues: `web-push` and `drizzle-orm` sit in
 there is nothing in the App target's Resources build phase either. Apple has
 required this since May 2024; uploads without it draw ITMS-91053.
 
-#### F18 · PARTLY CLOSED — see §2.6 · blocker — `@capacitor-community/apple-sign-in` calls `UserDefaults` and ships no manifest
+#### F18 · NEEDS ARCHIVE VERIFICATION — see §2.6 · blocker — `@capacitor-community/apple-sign-in` calls `UserDefaults` and ships no manifest
 **Layer: native project config**
 
 `node_modules/@capacitor-community/apple-sign-in/ios/Sources/SignInWithApple/Plugin.swift:20,55,77`
@@ -646,8 +646,125 @@ without a Mac:
   are the check: an invalid reason string is rejected at upload, not silently
   accepted.
 
-**F18 therefore stays open** until the archive check confirms static linkage and
-the Capacitor/Cordova manifests. What Stage 1 closed is the app's own obligation.
+**F18 stays NEEDS ARCHIVE VERIFICATION** until the archive check confirms static
+linkage and the Capacitor/Cordova manifests. What Stage 1 closed is the app's own
+obligation — not F18, and not the App Store privacy work as a whole.
+
+### 2.7 What Stage 3 closed (2026-08-25)
+
+Stage 3 was the "reduce what has to be declared" stage: remove capabilities so
+there is less to disclose, rather than write disclosures. Three items.
+
+#### 3.1 · The Discord feedback relay is removed — **migration written, NOT applied**
+
+`supabase/migrations/20260825120000_drop_feedback_discord_relay.sql` drops the
+`on_feedback_notify_discord` trigger and the `notify_discord_feedback()`
+function. It touches no feedback rows, no RLS policy, no FK, and no Vault
+secret. `pg_net` is deliberately left installed — after this migration
+`notify_discord_feedback` is the only thing in `public` that ever called
+`net.http` (verified live), so removing the caller is the fix; removing a
+platform-managed extension is a wider blast radius than this change is entitled
+to.
+
+Verified on a throwaway PostgreSQL 16.13 cluster that reproduces the production
+shape (profiles, feedback with its FK cascade and both RLS policies,
+`delete_my_account`, a stubbed `net.http_post`, `vault.secrets`), with the two
+historical Discord migrations applied verbatim first:
+
+| | before the migration | after |
+|---|---|---|
+| relay trigger gone | FAIL (1) | **PASS** (0) |
+| relay function gone | FAIL (1) | **PASS** (0) |
+| no trigger on feedback calls `net.http` | FAIL (1) | **PASS** (0) |
+| nothing in `public` calls `net.http` | FAIL (1) | **PASS** (0) |
+| feedback still inserts | PASS | **PASS** |
+| inserted row reads back unchanged | PASS | **PASS** |
+| exactly one row added, none altered | PASS | **PASS** |
+| RLS still enabled + both policies intact | PASS | **PASS** |
+| `feedback.user_id` still CASCADEs from `profiles` | PASS | **PASS** |
+| `delete_my_account` still exists | PASS | **PASS** |
+| no `discord_feedback_webhook` secret | PASS | **PASS** |
+
+The before/after split matters: the four checks that fail beforehand are what
+prove the test discriminates rather than passing vacuously.
+
+Also proven locally: the migration is idempotent (a second apply emits two
+NOTICEs and no error); the two pre-existing feedback rows are untouched; and
+**the relay cannot be re-armed by accident** — after the migration, creating the
+`discord_feedback_webhook` secret exactly as the old migration's setup comment
+instructs leaves 0 triggers on `feedback`, 0 functions reading that secret, and
+0 functions calling `net.http`, while feedback inserts keep working.
+
+Production was checked read-only and matches the local "before" baseline
+exactly. **The migration has not been applied** — the apply step is in §4.
+
+#### 3.2 · The native build no longer contacts Google Fonts
+
+The apps bundle Noto Sans SC, Inter and Poppins locally; the web keeps the CDN.
+The split is build-time (`DOJO_NATIVE_BUILD=1`, set only by `cap:sync` via the
+new `build:native` script), because there is nothing to branch on at runtime —
+the tags are either in the shipped HTML or they are not. `nativeFonts.mjs` holds
+the rule as a pure, tested function; `grep -rn __DOJO_NATIVE_BUILD__` is the
+complete audit of the flag.
+
+Three things had to change, not one:
+
+1. `index.html`'s stylesheet link and both preconnect hints are stripped from
+   the native HTML by a Vite plugin, which **throws** if it finds nothing to
+   strip rather than silently becoming a no-op.
+2. `src/fontLoader.js` — `fontHrefFor` now returns null inside the native shell.
+   It fetches Noto Sans JP on demand for the paused Japanese track, so without
+   this a grandfathered learner on that track would still have hit Google. The
+   track keeps working; it just renders in the platform CJK face instead.
+3. `sw.js` is no longer emitted for native. It is never registered inside the
+   shell (`main.jsx:91`) and its font-caching rule names both hosts.
+
+`npm run verify:native-fonts` proves it at two levels — static (no tag in the
+HTML, no stylesheet references either host, every `@font-face src` is local, no
+`sw.js`) and, more importantly, **runtime**: it serves the built bundle, loads it
+in Chromium with all non-local requests aborted, and records every request made.
+Zero go to either Google host. Run against the *web* build the same script fails
+on three checks including the live request, which is what shows it discriminates.
+
+One honest detail: `fontLoader.js`'s `GOOGLE_FONTS_BASE` constant still appears
+as a dead string in the native JS chunk. It sits behind the native guard that
+returns before reaching it. A dead string is not a request, and the runtime check
+above is the evidence — contorting the source so a grep comes back clean would be
+cosmetics, not a fix.
+
+**Cost correction.** The first measurement of this said 17.22 MB for Noto Sans
+SC. That was wrong: Google serves these as *variable* fonts, so one woff2 per
+unicode-range covers all four weights, and the naive per-weight count counted the
+same bytes four times. The real payload is **117 files, 4.66 MB** for all three
+families.
+
+Typography is unchanged: the generated `src/webfonts.css` mirrors Google's rules
+including `unicode-range`, so a device still decodes only the ranges it paints.
+The OFL's redistribution conditions now apply, so each family's licence ships
+beside the binaries and `NOTICE.md` has been corrected — it previously said "no
+font binary is redistributed by this project", which is no longer true.
+
+#### 3.3 · `web-push` and `drizzle-orm` moved to devDependencies
+
+Neither is imported anywhere under `src/`. `web-push` is used only by
+`send-review-reminders.mjs` (a GitHub Action), `drizzle-orm` only by
+`db/schema.ts`. Every workflow installs with a plain `npm ci`, so both remain
+available where they are actually used.
+
+Proving the bundle is unaffected needed care: `vite.config.js` stamps
+`builtAt: new Date().toISOString()` into every build, so **two builds of
+identical code produce 162 differing filenames**. Comparing raw hashes is
+meaningless. After normalising the build stamp and the content-hash filenames,
+the pre-move and post-move bundles are **identical** — and the same normaliser
+reports two builds of unchanged code as identical, which is the control that
+makes the result trustworthy.
+
+#### What Stage 3 did NOT close
+
+- **F18 remains NEEDS ARCHIVE VERIFICATION.** Nothing in Stage 3 touched it.
+- The App Store Connect answers, the Play Data Safety corrections and every
+  privacy-policy wording fix are Stage 2 and Stage 4, deliberately untouched.
+- **The App Store privacy work as a whole is not complete.**
 
 ### 2.5 Other PASS results worth recording
 
@@ -756,3 +873,36 @@ Nothing below has been applied. Ordered by what blocks submission.
 - **`bodyos_app_state`** — is this Supabase project shared with another product?
   It is empty today, so nothing is wrong yet; the answer decides whether the
   policy and the store answers need to describe a shared identity tenant. *(F11)*
+
+---
+
+## 4 · Applying the Stage 3 migration to production
+
+**Not yet applied.** The migration is committed and locally verified; running it
+is a deliberate, separate step.
+
+```
+supabase/migrations/20260825120000_drop_feedback_discord_relay.sql
+```
+
+Apply it exactly as committed — do not improvise the DDL at the prompt
+(CLAUDE.md §8). Either:
+
+* **Supabase SQL editor** — paste the file's contents and run; or
+* **`apply_migration`** with the file's contents, named
+  `drop_feedback_discord_relay`.
+
+Then confirm, against production:
+
+```
+supabase/tests/feedback_relay_removal_verification.sql
+```
+
+It runs in one transaction and ends in `ROLLBACK`, so it writes nothing and is
+safe to run against production. All 13 checks must report PASS. Before the
+apply, checks 1–4 report FAIL — that is expected, and is what shows the test is
+actually measuring something.
+
+Nothing else needs to change at apply time: no client deploy, no config, no
+Vault edit. Feedback keeps working throughout; the only difference is that the
+insert no longer fires a trigger.

@@ -29,9 +29,26 @@ describe('fontHrefFor', () => {
   it('falls back with the rest of the theme for an unknown language', () => {
     expect(fontHrefFor('klingon')).toBe(fontHrefFor('chinese'))
   })
+
+  // FAB-19 F4: the store apps bundle their own faces and must never reach
+  // fonts.googleapis.com. Only the paused Japanese track declares a webFont, so
+  // this is the one language where the guard changes anything.
+  it('returns null inside the native shell, even for a language that wants a web font', () => {
+    expect(fontHrefFor('japanese', { native: true })).toBe(null)
+  })
+
+  it('still builds the URL on the web', () => {
+    expect(fontHrefFor('japanese', { native: false })).toContain('Noto+Sans+JP')
+  })
 })
 
 describe('ensureLanguageFont', () => {
+  it('injects nothing inside the native shell — no Google Fonts request on any track', () => {
+    const doc = fakeDoc()
+    expect(ensureLanguageFont('japanese', doc, { native: true })).toBe(false)
+    expect(doc.links).toHaveLength(0)
+  })
+
   it('does nothing for a language already covered by the base stylesheet', () => {
     const doc = fakeDoc()
     expect(ensureLanguageFont('chinese', doc)).toBe(false)

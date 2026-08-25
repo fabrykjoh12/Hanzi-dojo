@@ -24,7 +24,7 @@ export default defineConfig([
       // __DOJO_INTERNAL_BUILD__ is a Vite `define` constant, not a runtime
       // global — it is replaced with a literal at build time. Declaring it
       // readonly here is what keeps no-undef quiet without weakening the rule.
-      globals: { ...globals.browser, __DOJO_INTERNAL_BUILD__: 'readonly' },
+      globals: { ...globals.browser, __DOJO_INTERNAL_BUILD__: 'readonly', __DOJO_NATIVE_BUILD__: 'readonly' },
       parserOptions: { ecmaFeatures: { jsx: true } },
     },
   },

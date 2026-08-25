@@ -4,6 +4,7 @@ import { copyFile, cp, mkdir, rm } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { stripGoogleFontTags } from './nativeFonts.mjs'
 
 // Build stamp so a running app can prove which commit it is. Sources, in order:
 // the CI-provided commit SHA (GitHub Actions / Vercel), else the local git HEAD,
@@ -43,6 +44,14 @@ function buildInfo() {
 // Vercel reads. `npm run build:public` reproduces it locally.
 const SITES_BUILD = process.env.DOJO_PUBLIC_BUILD !== '1'
 
+// The NATIVE build (FAB-19 F4). `cap:sync` sets this; Vercel does not, so the
+// web deploy is byte-for-byte what it was. It does two things and nothing else:
+// strips the Google Fonts tags out of index.html, and switches on the bundled
+// @font-face stylesheet in main.jsx. Both surfaces still run the same code from
+// the same build:public artifact — see nativeFonts.mjs for why this is a
+// build-time split rather than an isNativeApp() branch.
+const NATIVE_BUILD = process.env.DOJO_NATIVE_BUILD === '1'
+
 export default defineConfig(() => {
   const info = buildInfo()
   return {
@@ -57,6 +66,10 @@ export default defineConfig(() => {
       // bundle that ships to the App Store and Play. A runtime guard would
       // still have emitted the chunk and left it fetchable.
       __DOJO_INTERNAL_BUILD__: JSON.stringify(SITES_BUILD),
+      // Compile-time constant. main.jsx guards its `import('./webfonts.css')`
+      // on this, so the web build folds it to `false` and Rollup drops the
+      // stylesheet AND all 441 woff2 files from the artifact entirely.
+      __DOJO_NATIVE_BUILD__: JSON.stringify(NATIVE_BUILD),
     },
     build: {
       outDir: 'dist/client',
@@ -80,6 +93,29 @@ export default defineConfig(() => {
     },
     plugins: [
       react(),
+      NATIVE_BUILD && {
+        name: 'dojo-native-fonts',
+        apply: 'build',
+        transformIndexHtml(html) {
+          // The store apps must not phone Google on cold launch. The bundled
+          // faces come in through src/webfonts.css instead.
+          const { html: stripped, removed } = stripGoogleFontTags(html)
+          if (removed === 0) {
+            throw new Error(
+              'dojo-native-fonts: found no Google Fonts tags to strip. Either index.html ' +
+              'changed shape, or this plugin is now a no-op hiding a live CDN request.',
+            )
+          }
+          return stripped
+        },
+        async closeBundle() {
+          // main.jsx never registers the service worker inside the Capacitor
+          // shell, so shipping it is dead weight — and its font-caching rule
+          // names both Google hosts, which makes an artifact-level grep for
+          // "does this build reference Google Fonts" impossible to read.
+          await rm(resolve('dist', 'client', 'sw.js'), { force: true })
+        },
+      },
       SITES_BUILD && {
         name: 'dojo-sites-output',
         apply: 'build',

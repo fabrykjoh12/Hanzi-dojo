@@ -9,12 +9,24 @@
 // before (CLAUDE.md §1: frozen means untouched, not broken).
 
 import { languageTheme } from './languageTheme'
+import { isNativeApp } from './nativeShell'
 
 const GOOGLE_FONTS_BASE = 'https://fonts.googleapis.com/css2?family='
 
 // The stylesheet URL a language needs, or null when its faces are already in
 // the base stylesheet. Pure — the fetching itself is the caller's job.
-export function fontHrefFor(language) {
+//
+// `native` is injected for testing; it defaults to the real shell check. In the
+// store apps this ALWAYS returns null: the app bundles its own faces
+// (src/webfonts.css) and must not contact fonts.googleapis.com at all (FAB-19
+// F4). Only the paused Japanese track declares a webFont, so in practice this
+// affects a grandfathered learner on that track — their Chinese-equivalent
+// faces come from the platform's own CJK font instead of Google's. The track
+// keeps working, which is what CLAUDE.md §1 asks of a frozen track; it just
+// stops reaching the network to do it.
+export function fontHrefFor(language, { native } = {}) {
+  const inNativeShell = native === undefined ? isNativeApp() : Boolean(native)
+  if (inNativeShell) return null
   const spec = languageTheme(language).webFont
   if (!spec) return null
   return GOOGLE_FONTS_BASE + spec + '&display=swap'
@@ -30,9 +42,9 @@ export function fontAlreadyLoaded(doc, href) {
 // Fetch the language's font if it needs one. Best-effort in every direction:
 // a missing document, a blocked CDN or a thrown DOM call must never break a
 // screen — the text still renders in the system fallback.
-export function ensureLanguageFont(language, doc) {
+export function ensureLanguageFont(language, doc, opts) {
   const target = doc || (typeof document !== 'undefined' ? document : null)
-  const href = fontHrefFor(language)
+  const href = fontHrefFor(language, opts || {})
   if (!href || !target) return false
   try {
     if (fontAlreadyLoaded(target, href)) return false
