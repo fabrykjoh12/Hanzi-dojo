@@ -203,3 +203,30 @@ describe('a repair whose broken part was Latin', () => {
     expect(checkBeatDrift(a1, withDog, { manifest: m(), vocabMap: { ...vm, 狗: { word: '狗', level: 1, meaning: 'dog' }, 跑: { word: '跑', level: 2, meaning: 'to run' }, 的: { word: '的', level: 1, meaning: 'of' } }, brief: brief() }).ok).toBe(false)
   })
 })
+
+// ── a3-final-10: a beat the JUDGE rejected, not the gate ────────────────────
+describe('a semantic rejection may re-say the prose', () => {
+  const vm = { ...vocabMap, 觉得: { word: '觉得', level: 1, meaning: 'to feel; to think' }, 难: { word: '难', level: 3, meaning: 'difficult' }, 那儿: { word: '那儿', level: 1, meaning: 'there' }, 这儿: { word: '这儿', level: 1, meaning: 'here' }, 看到: { word: '看到', level: 1, meaning: 'to see' }, 大厅: { word: '大厅', level: 4, meaning: 'hall' }, 拿着: { word: '拿着', level: 2, meaning: 'holding' } }
+  const m = () => buildManifest({ batchId: 'c', seq: 1, level: 3, targets: ['男人', '女人'], defaults: { lines: [14, 38] } })
+  const beat2 = { id: 2, when: 'later', where: 'lobby', what: 'Li Ming walks into the lobby and sees the woman with the box.', because: 'he is coming home', targets: ['男人'], chineseLexicalAnchors: ['走', '进', '看见', '女人'], lines: 5 }
+  // Verbatim from a3-final-10: legal Chinese, judged 2/10 for nonsense.
+  const a1 = ['李明走进大楼的大厅。', '他看见小红站在那儿。', '旁边有个女人，那个男人觉得很难。', '小红：他来了吗？', '李明：我看见了。']
+  const a2 = ['李明走进大楼。', '他看见小红站在那儿。', '那个男人看到女人拿着箱子。', '小红：他来了吗？', '李明：他在这儿。']
+  const brief = (semanticOnly) => beatRepairBrief(classifyBeat(a1, { beat: beat2, blueprint, manifest: m(), vocabMap: vm, sketches: [], failures: ['judged 2/10'], semanticOnly }))
+
+  it('accepts the retry that fixed the nonsense', () => {
+    // The guard refused this for "dropping" 觉得 and 难 — the very words the
+    // judge had condemned.
+    expect(checkBeatDrift(a1, a2, { manifest: m(), vocabMap: vm, brief: brief(true) }).ok).toBe(true)
+  })
+
+  it('still holds the line on a new living thing', () => {
+    const withDog = a2.map(l => (l.includes('看到') ? '他的狗跑了。' : l))
+    const vd = { ...vm, 狗: { word: '狗', level: 1, meaning: 'dog' }, 跑: { word: '跑', level: 2, meaning: 'to run' } }
+    expect(checkBeatDrift(a1, withDog, { manifest: m(), vocabMap: vd, brief: brief(true) }).ok).toBe(false)
+  })
+
+  it('and a DETERMINISTIC rejection still has to preserve what was correct', () => {
+    expect(checkBeatDrift(a1, a2, { manifest: m(), vocabMap: vm, brief: brief(false) }).ok).toBe(false)
+  })
+})

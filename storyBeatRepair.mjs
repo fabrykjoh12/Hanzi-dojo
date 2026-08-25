@@ -47,7 +47,7 @@ function words(line, level, vocabMap) {
 // approved anchors, not in an approved usage sketch. Those may simply go —
 // hunting for a synonym of a detail the beat never needed is how a retry ends
 // up rewriting the whole scene.
-export function classifyBeat(lines, { beat, blueprint = null, manifest, vocabMap, sketches = [], failures = [] } = {}) {
+export function classifyBeat(lines, { beat, blueprint = null, manifest, vocabMap, sketches = [], failures = [], semanticOnly = false } = {}) {
   const level = manifest.level
   const clean = (lines || []).map(text).filter(Boolean)
   const anchors = (beat && beat.chineseLexicalAnchors) || []
@@ -89,7 +89,12 @@ export function classifyBeat(lines, { beat, blueprint = null, manifest, vocabMap
     perLine,
     badTokens,
     decorative,
-    keepLines: perLine.filter(l => !l.unknown.length && !l.above.length).map(l => l.line),
+    // When the JUDGE is what rejected the beat, its words were all legal and
+    // some of them were the problem — 那个男人觉得很难 is in-level nonsense. There
+    // is nothing to "keep" in that case, and insisting on it would forbid the
+    // only repair available.
+    keepLines: semanticOnly ? [] : perLine.filter(l => !l.unknown.length && !l.above.length).map(l => l.line),
+    semanticOnly,
     failures,
   }
 }
@@ -102,6 +107,7 @@ export function beatRepairBrief(classified) {
     anchors: classified.anchors,
     sketches: classified.sketches,
     keep: classified.keepLines,
+    semanticOnly: Boolean(classified.semanticOnly),
     remove: classified.decorative,
     fix: classified.badTokens.filter(t => !classified.decorative.includes(t)),
   }
@@ -131,7 +137,11 @@ export function checkBeatDrift(before, after, { manifest, vocabMap, brief } = {}
     ...(brief.sketches || []).flatMap(s => (s.usageSketch ? words(s.usageSketch, level, vocabMap).all : [])),
   ])
 
-  const lost = beforeWords.filter(w => !bad.has(w) && !afterWords.includes(w))
+  // A semantic rejection means the prose itself was wrong, so preserving it is
+  // not a virtue: a4-final-10's retry fixed 那个男人觉得很难 and was refused for
+  // dropping 觉得 and 难. What still holds either way is below — no living
+  // thing that was not there, and the beat gate's own rules.
+  const lost = brief.semanticOnly ? [] : beforeWords.filter(w => !bad.has(w) && !afterWords.includes(w))
   const added = afterWords.filter(w => !beforeWords.includes(w))
   // Deleting decoration leaves a hole the writer still has to fill, so a
   // repair may add words — but only ones the story already has: approved
@@ -155,7 +165,7 @@ export function checkBeatDrift(before, after, { manifest, vocabMap, brief } = {}
   // new person.
   // How much may be added: roughly one word per piece of broken material, plus
   // one, and never while something correct was lost.
-  const room = Math.max(3, bad.size + 1)
+  const room = brief.semanticOnly ? Number.MAX_SAFE_INTEGER : Math.max(3, bad.size + 1)
   const mayAdd = !lost.length && added.length <= room
   // And WHAT may be added. Deleting a broken phrase leaves a hole the writer
   // still has to fill, and it will need ordinary words to fill it — 着急 for a

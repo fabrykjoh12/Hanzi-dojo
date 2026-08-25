@@ -240,7 +240,12 @@ export async function realizeByBeat({
       // anchors, and the decoration it may simply delete.
       if (lines && !repair) {
         firstAttempt = lines
-        repair = beatRepairBrief(classifyBeat(lines, { beat, blueprint, manifest, vocabMap, sketches, failures: feedback }))
+        repair = beatRepairBrief(classifyBeat(lines, {
+          beat, blueprint, manifest, vocabMap, sketches, failures: feedback,
+          // The deterministic gate passed and the judge did not: the words
+          // were legal and the writing was the problem.
+          semanticOnly: gate.ok && !semanticOk,
+        }))
       }
     }
 
