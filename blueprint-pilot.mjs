@@ -245,7 +245,11 @@ if (resumeScaffoldPath) {
     if (!l.ok || !l.beat) continue
     if (!byBeat.has(l.beat)) byBeat.set(l.beat, { beat: l.beat, anchors: [], sketches: [] })
     if (l.piece === 'sketch') byBeat.get(l.beat).sketches.push({ word: l.word, usageSketch: l.output })
-    if (l.piece === 'anchors') byBeat.get(l.beat).anchors = l.output
+    // The ACCEPTED anchors, not the raw answer. Anchors are validated one by
+    // one now, so an accepted set is the survivors — replaying `output` put
+    // 一个大绿箱子 and 看着很重 back into a beat that had already dropped them,
+    // and the resumed run died on the words the first run had thrown away.
+    if (l.piece === 'anchors') byBeat.get(l.beat).anchors = l.kept || l.output
   }
   accepted.beats = [...byBeat.values()].sort((a, b) => a.beat - b.beat)
   // The plan's judgment is frozen with it: resuming a stored scaffold must not
@@ -617,7 +621,9 @@ for (const job of jobs) {
   console.log('\nCOMPLETE SCAFFOLD VALIDATION: ' + (fullCheck.ok ? 'every piece passes' : 'REJECTED'))
   for (const f of fullCheck.failures) console.log('  x ' + f.code + ': ' + f.message)
   if (!fullCheck.ok) {
-    record.selection = { ...record.selection, scaffoldCode: 'SCAFFOLD_INVALID' }
+    // Keep WHY: this rejection cost a run to diagnose because only the code
+    // was recorded.
+    record.selection = { ...record.selection, scaffoldCode: 'SCAFFOLD_INVALID', scaffoldFailures: fullCheck.failures }
     results.push(record)
     continue
   }

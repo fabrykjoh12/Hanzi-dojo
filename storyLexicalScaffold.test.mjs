@@ -365,6 +365,24 @@ describe('the lexical scaffold, after a3-final-2', () => {
     expect(r.beats[0].anchors).toEqual(['后来', '门口', '拿', '不用'])
   })
 
+  it('an accepted anchor log carries the survivors, so a resume replays those', async () => {
+    // The resume path reads the log: it must find the ACCEPTED set there, or
+    // it puts the dropped words back and the resumed run dies on them.
+    const w = gen('qwen', [
+      J({ title: '搬箱子' }),
+      J({ sentence: '这个女人很累' }),
+      J({ anchors: ['后来', '门口', '女人', '拿', '很重', '不用'] }),
+      J({ sentence: '那个男人来了' }),
+      J({ anchors: ['楼', '箱子', '拿', '后来'] }),
+    ])
+    const r = await anchorRun(w)
+    const entry = r.log.find(l => l.piece === 'anchors' && l.beat === 1 && l.ok)
+    expect(entry.kept).toEqual(['后来', '门口', '女人', '拿', '不用'])
+    expect(entry.output).toContain('很重')
+    expect(entry.kept).not.toContain('很重')
+    expect(r.beats[0].anchors).toEqual(entry.kept)
+  })
+
   it('2b. and stops after that one retry, as before', async () => {
     const w = gen('qwen', [
       J({ title: '搬箱子' }),
