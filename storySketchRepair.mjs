@@ -78,7 +78,11 @@ export function classifySketch(sketch, { word, blueprint = null, manifest, vocab
   // The tokens the checker actually refused: an unknown run, or an entry above
   // the level. Read off the same analysis the checker used, never re-judged.
   const above = [...a.counts.keys()].filter(w => !targets.has(w) && vocabMap[w] && vocabMap[w].level > level)
-  const invalidTokens = [...new Set([...a.unknownRuns, ...above])]
+  // Latin is invalid material too, and the engine does not segment it. Without
+  // this a sketch that wrote 很 tired had nothing recorded as broken, so no
+  // repair could be approved and every repair looked like drift.
+  const latin = (text(sketch).match(/[A-Za-z]+/g) || [])
+  const invalidTokens = [...new Set([...a.unknownRuns, ...above, ...latin])]
 
   // A3.2 established that a beat may lose an incidental detail and still be
   // the same beat. The mechanical test of "incidental" here is whether the
@@ -162,7 +166,16 @@ export function checkRepairDrift(before, after, { word, manifest, vocabMap, brie
   if (lost.length) problems.push('dropped words that were already fine: ' + lost.join('、'))
 
   const added = afterWords.filter(w => !beforeWords.includes(w) && w !== word)
-  const unapproved = added.filter(w => !approved.has(w))
+  // A repair may need a word nobody could have offered: when the broken part
+  // was Latin, or a character no in-level entry contains, there are no
+  // candidates to approve, and refusing every substitute would leave the
+  // writer no legal move at all. So an in-level word is allowed at the repair
+  // site — bounded by the number of things being repaired, and only while
+  // every correct word survived. Anything else is a rewrite.
+  const budget = invalidTokens.size + 1
+  const inLevel = (w) => Boolean(vocabMap[w]) && Number.isFinite(vocabMap[w].level) && vocabMap[w].level <= level
+  const unapproved = added.filter(w => !approved.has(w)
+    && !(inLevel(w) && !lost.length && added.length <= budget))
   if (unapproved.length) problems.push('introduced ' + unapproved.join('、') + ', which the repair did not offer')
 
   if (!String(after).includes(word)) problems.push('the sentence no longer uses ' + word)

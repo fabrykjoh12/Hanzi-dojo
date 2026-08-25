@@ -211,3 +211,36 @@ describe('a person the FROZEN BEAT already has is not an intruder', () => {
     expect(brief.keep).not.toContain('爸爸')
   })
 })
+
+// ── a3-final-6: a repair the writer could not legally make ──────────────────
+describe('a repair site with nothing to approve', () => {
+  const vm = { ...vocabMap, 看起来: { word: '看起来', level: 3, meaning: 'it seems; it looks as if' }, 那个: { word: '那个', level: 1, meaning: 'that one' } }
+  const m = () => buildManifest({ batchId: 'c', seq: 1, level: 3, targets: ['女人', '男人'], defaults: { lines: [14, 38] } })
+  // Verbatim: the writer answered in English, so no candidate could exist.
+  const broken = '那个女人很 tired'
+  const classified = classifySketch(broken, { word: '女人', blueprint: plan, manifest: m(), vocabMap: vm, problems: ['contains Latin text'] })
+
+  it('records Latin as the invalid material', () => {
+    expect(classified.invalid.map(i => i.token)).toContain('tired')
+  })
+
+  it('accepts an in-level repair of that site, losing nothing', () => {
+    // a3-final-6 refused this and lost the run on it.
+    const brief = repairBrief(classified)
+    const r = checkRepairDrift(broken, '那个女人看起来很累。', { word: '女人', manifest: m(), vocabMap: vm, brief })
+    expect(r.ok).toBe(true)
+  })
+
+  it('still refuses a rewrite that discards correct material', () => {
+    const brief = repairBrief(classified)
+    const r = checkRepairDrift(broken, '李明的狗跑了。', { word: '女人', manifest: m(), vocabMap: vm, brief })
+    expect(r.ok).toBe(false)
+  })
+
+  it('still refuses an above-level substitute', () => {
+    const brief = repairBrief(classified)
+    const r = checkRepairDrift(broken, '那个女人拿着盒子。', { word: '女人', manifest: m(), vocabMap: vm, brief })
+    expect(r.ok).toBe(false)
+    expect(r.problems.join(' ')).toContain('盒子')
+  })
+})
