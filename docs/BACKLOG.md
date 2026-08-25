@@ -154,6 +154,89 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### A gender word placed as a label has no natural sentence (open, found 2026-08-25)
+
+`a3-final-11` got beat 1 accepted on the first attempt (judged 6) and then lost
+beat 2 twice, both times to the same contradiction:
+
+```
+a1  那个男人就是小红。   judged 1 — "calling a woman a man makes the text nonsensical"
+a2  那个男人就是小红。   judged 1 — "fatal contradiction"
+```
+
+The beat gate is working. What it is enforcing is unwritable: plan C places
+男人 in beat 2 with `refersTo: Li Ming` and the reason *"to identify Li Ming's
+gender role when he enters the scene"*, in a beat whose only man is the
+viewpoint character. The honest realization is 李明是一个男人 — a sentence with
+no reason to exist — so the writer reached for a contrastive one and attached
+the label to the wrong person, twice.
+
+Both gender targets are placed this way; 女人 in beat 1 survives only because
+这个女人很累 happens to read naturally. **The plan-quality judge scored this
+plan targetFit 8 and overall 9.** A target with a real communicative purpose is
+exactly what `target_no_intent` and the judge's targetFit dimension exist to
+check, and "Description" passed both.
+
+That is a plan-selection question, not a beat-realization one, and nothing has
+been changed for it.
+
+### Beat realization: a decorative detail and a narrated quote (open, found 2026-08-25)
+
+`a3-final-7` is the first run to clear the lexical scaffold end to end — title
+李明帮忙, five valid target sketches, six valid anchor sets — and it stopped at
+`BEAT_REALIZATION_FAILED` on beat 1 after both attempts:
+
+```
+a1  ... 小红擦了擦额头上的汗。          unknown_words: 额头、汗 (2, max 1)
+a2  ... 他走过去问：小红，你需要帮忙吗？  unknown_speaker: "他走过去问"
+```
+
+**a1** is the writer decorating: wiping sweat from a forehead is not in the
+beat, and it costs two words the reader does not have. The limit is one and it
+did not move.
+
+**a2 was otherwise clean** — 5 lines, out-of-level 2.0%, zero unknown words,
+the target present. Its only fault is form: 他走过去问：… is a narration clause
+introducing a quote, and the house format is a bare name before the colon.
+
+Worth fixing together with it: **the message is wrong.** `narrated_speaker`
+only fires when the prefix is exactly a cast name (小明说), so a fuller clause
+falls through to `unknown_speaker` and the writer is told the speaker is not in
+the cast — which is not the problem and does not lead to the fix.
+
+Not touched: this is the next layer, reported rather than changed.
+
+### A3.1 sketches: a bare character where the word is a compound, and a drifting retry (open, found 2026-08-24)
+
+`a3-final-3` re-ran frozen plan C through the corrected scaffold rules and
+stopped earlier than before, at `TARGET_SCAFFOLD_FAILED` on beat 1's sketch
+for 女人:
+
+```
+a1  这个女人很累，她拿着一个大绿箱子。   non-vocabulary text: 绿
+a2  这个女人提着大盒子，很累。          non-vocabulary text: 提 · above-level: 盒子
+```
+
+**Everything that sentence needs is in level.** 绿色 is **HSK 2**, 箱子 is HSK 3,
+拿 is HSK 2, 大 is HSK 1 — 拿着一个大箱子 was available. Two mechanisms:
+
+1. **A bare character where the entry is a compound.** 绿 is not a vocabulary
+   item; 绿色 is. Same family as the anchor fragmentation fixed in
+   `fab9-scaffold@2`, but inside a sketch and against ordinary vocabulary
+   rather than a frozen cast name or target.
+2. **The retry drifted instead of correcting.** Told exactly which token was
+   bad, the writer rewrote the whole sentence and introduced two NEW
+   violations (提, absent at any level; 盒子, HSK 4) while dropping the words
+   that had been fine.
+
+Note what this is not: the beat's own risk was LOW/MEDIUM, and A3.2 was right —
+the green box is incidental detail a beat can lose. The sketch stage has no way
+to say so, and the deterministic gate cannot drop the word itself without
+rewriting the story.
+
+The three `fab9-scaffold@2` fixes are covered by regressions but were **not
+exercised by this run** — it failed before any anchor set was generated.
+
 ### A3.1 scaffold: one bad anchor sinks the set, and the retry degenerates (open, found 2026-08-24)
 
 `a3-final-2` ran the first eligible plan (C: structural PASS, quality 9,
