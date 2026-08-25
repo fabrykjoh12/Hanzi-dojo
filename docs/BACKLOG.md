@@ -154,6 +154,36 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### Target-placement viability is now a gate — and it changed the selection (2026-08-25)
+
+`storyTargetViability.mjs` judges every target→beat placement on its own:
+could a competent writer use THAT word in THAT beat, leaving the event
+unchanged, without labelling the obvious, defining something so the word can
+appear, or writing a line that would be cut if the word were not required.
+One fatal placement makes a plan ineligible whatever its quality score.
+
+Run over the three stored eligible candidates (`viability-1/preflight.json`,
+nothing re-judged but this):
+
+| plan | quality | verdict | failing placements |
+|---|---|---|---|
+| C (qwen) | 9 | **ineligible** | 女人→b1, 男人→b2, 关系→b6 |
+| A (qwen) | 7 | **ineligible** | 男人→b4 |
+| H (gpt-oss) | 9 | **eligible** | — (必须→b3 fails, but it is optional) |
+
+C fails on both gender words for the general reason, not a story-specific one:
+*"the reader already knows … labelling him adds no narrative value beyond
+satisfying the word list"* — and 关系 too, as *"gratuitous meta-commentary"*.
+The 女人 placement that happened to realize grammatically in a3-final-11 fails
+the same way; passing beat realization was luck, not viability.
+
+**Known gap, deliberately left:** the gate fails a plan only on REQUIRED
+placements, as specified. H's 必须 → beat 3 was judged unwritable and H is
+still eligible, yet `beat.targets` lists 必须, so the beat realizer will be
+asked to use it — the same instruction that produced 那个男人就是小红. Either
+optional targets should be droppable from a beat when the gate fails them, or
+the gate should fail on any placement the realizer will be told to satisfy.
+
 ### A gender word placed as a label has no natural sentence (open, found 2026-08-25)
 
 `a3-final-11` got beat 1 accepted on the first attempt (judged 6) and then lost
