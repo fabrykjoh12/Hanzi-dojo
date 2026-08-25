@@ -1,13 +1,15 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { supabase } from './supabase'
 import {
   Palette, Sun, Moon, Keyboard, Eye,
   Volume2, BookOpenCheck, Gauge, Bell, HardDrive, Trash2, CheckCircle2,
-  MessagesSquare, ArrowUpRight, Brain, ArrowLeft, Compass,
+  MessagesSquare, ArrowUpRight, Brain, ArrowLeft, Compass, ShieldCheck, ChevronRight,
 } from 'lucide-react'
 import { RETENTION_PRESETS, presetForRetention, setTargetRetention } from './srs'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 import { externalLinkProps } from './externalLink'
+import { LEGAL_LINKS } from './legalLinks'
 import { useIsMobile } from './useIsMobile'
 import { useTheme } from './ThemeContext'
 import { languageTheme } from './languageTheme'
@@ -312,6 +314,11 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
             </Card>
           )}
 
+          {/* Privacy, Terms, Support — reachable signed-in, which App Store
+              guideline 5.1.1(i) requires and only the signup screen offered
+              before (src/legalLinks.js). */}
+          <LegalCard accentHex={accentHex} />
+
           {/* Build stamp — confirms which version is running. */}
           <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-faint)', fontWeight: 600, marginTop: '4px' }}>
             Version <span style={{ fontFamily: 'ui-monospace, monospace' }}>{buildLabel()}</span>
@@ -319,6 +326,40 @@ export default function Settings({ session, profile, onUpdate, onBack }) {
         </div>
       </div>
     </div>
+  )
+}
+
+// The trust pages, in-app. These navigate rather than opening the system
+// browser: App.jsx renders /privacy, /terms and /support before the session
+// check, so a signed-in learner stays inside the app.
+function LegalCard({ accentHex }) {
+  const navigate = useNavigate()
+  return (
+    <Card
+      icon={ShieldCheck}
+      title="Privacy & terms"
+      text="What Hanzi Dojo stores, what it doesn't, and how to reach a human."
+      accentHex={accentHex}
+    >
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        {LEGAL_LINKS.map(link => (
+          <button
+            key={link.path}
+            onClick={() => navigate(link.path)}
+            style={{
+              display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              width: '100%', minHeight: '44px', padding: '0 14px', borderRadius: '12px',
+              border: '1px solid var(--border)', background: 'var(--surface-2)',
+              color: 'var(--text)', fontSize: '13px', fontWeight: 700,
+              fontFamily: 'Inter, sans-serif', cursor: 'pointer', textAlign: 'left',
+            }}
+          >
+            {link.label}
+            <ChevronRight size={16} strokeWidth={2} color="var(--text-faint)" />
+          </button>
+        ))}
+      </div>
+    </Card>
   )
 }
 

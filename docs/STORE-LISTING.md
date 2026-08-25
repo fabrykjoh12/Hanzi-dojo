@@ -180,8 +180,18 @@ background with the wordmark — no screenshot collage, no marketing gradient.
 | Audio | **Not collected.** Speech recognition, where available, is processed by the browser and never recorded or uploaded. |
 | Location, contacts, photos, files | Not collected |
 | Data encrypted in transit | Yes |
-| Can users request deletion? | Yes — in-app, and at https://hanzi-dojo.com/profile |
+| Can users request deletion? | Yes — in-app (Profile → Delete account), and the public web deletion page is https://hanzi-dojo.com/support |
 | Data shared with third parties | No |
+
+**Why the deletion URL is `/support`, not `/profile`:** Play requires the
+answered URL to be reachable and to explain the deletion process *without*
+signing in first. `/profile` is not a trust page (`src/routes.js` `trustPageKey`
+covers only `/privacy` `/terms` `/support` `/methodology`), so `App.jsx` serves
+the sign-in screen to a signed-out visitor — a reviewer following the link would
+see a login wall, not instructions. `/support` renders signed-out and already
+carries the step-by-step "Account deletion" section. Deletion behaviour itself is
+unchanged: the learner still deletes from Profile → Delete account, in the app or
+on the web. (FAB-19 F33, `docs/PRIVACY-AUDIT.md`.)
 
 **Age rating:** answer honestly that the bundled dictionary can surface
 explicit language on an explicit search (hidden behind a reveal by default).

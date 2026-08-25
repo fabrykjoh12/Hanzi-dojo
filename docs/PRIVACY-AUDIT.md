@@ -348,7 +348,7 @@ Two packaging notes, not privacy issues: `web-push` and `drizzle-orm` sit in
 
 ### 2.3 Privacy manifest (`PrivacyInfo.xcprivacy`)
 
-#### F17 · MISSING · blocker — the app has no privacy manifest
+#### F17 · FIXED in Stage 1 (archive verification pending) · blocker — the app had no privacy manifest
 **Layer: native project config**
 
 `find ios -name '*.xcprivacy'` returns nothing, and
@@ -356,7 +356,7 @@ Two packaging notes, not privacy issues: `web-push` and `drizzle-orm` sit in
 there is nothing in the App target's Resources build phase either. Apple has
 required this since May 2024; uploads without it draw ITMS-91053.
 
-#### F18 · MISSING · blocker — `@capacitor-community/apple-sign-in` calls `UserDefaults` and ships no manifest
+#### F18 · PARTLY CLOSED — see §2.6 · blocker — `@capacitor-community/apple-sign-in` calls `UserDefaults` and ships no manifest
 **Layer: native project config**
 
 `node_modules/@capacitor-community/apple-sign-in/ios/Sources/SignInWithApple/Plugin.swift:20,55,77`
@@ -398,7 +398,7 @@ mentions `PrivacyInfo.xcprivacy` or required-reason APIs.
 
 ### 2.4 In-app access
 
-#### F22 · MISSING · high — a signed-in user cannot reach the Privacy Policy inside the app
+#### F22 · FIXED in Stage 1 · high — a signed-in user could not reach the Privacy Policy inside the app
 **Layer: code**
 
 The only links are `src/Auth.jsx:350` (sign-up screen) and `src/Landing.jsx:780`
@@ -510,7 +510,7 @@ never mentions collection from visitors who never sign up, nor offers an opt-out
 Because nothing is written to the device for analytics, this is not an ePrivacy
 consent problem — but it is an accuracy and transparency gap.
 
-#### F33 · MISMATCH · blocker — the Play data-deletion URL sits behind the sign-in gate
+#### F33 · FIXED in Stage 1 · blocker — the Play data-deletion URL sat behind the sign-in gate
 **Layer: Play Console metadata (+ policy text)**
 
 `docs/STORE-LISTING.md:183` answers the deletion URL as
@@ -548,6 +548,106 @@ A live constraint query shows `profiles.id → auth.users ON DELETE CASCADE`
 exists. The RPC deletes the profile explicitly anyway, so behaviour is correct
 and belt-and-braces — but the comment is wrong and would mislead the next person
 reasoning about deletion completeness.
+
+### 2.6 F18 packaging determination (Stage 1)
+
+The audit's Stage 1 instruction was not to treat F18 as closed by adding
+`CA92.1` to the app manifest. That was right: **two different Apple obligations
+were being conflated.** Here is what the packaging actually is, and which
+obligation each fact settles. Apple's current documentation is the authority
+throughout — quotes below are verbatim from
+`developer.apple.com/documentation/bundleresources/adding-a-privacy-manifest-to-your-app-or-third-party-sdk`,
+`.../describing-use-of-required-reason-api`, and
+`developer.apple.com/support/third-party-SDK-requirements/`.
+
+**How the package is linked.** Source-only Swift package, statically linked,
+no bundle of its own:
+
+- `ios/App/CapApp-SPM/Package.swift:16` pulls it in by local path:
+  `.package(name: "CapacitorCommunityAppleSignIn", path: "../../../node_modules/@capacitor-community/apple-sign-in")`.
+- Its own manifest declares
+  `.library(name: "CapacitorCommunityAppleSignIn", targets: ["SignInWithApple"])`
+  — **no `type:`**, so linkage is SPM's "automatic", which Xcode resolves to
+  **static** for an app target.
+- The `SignInWithApple` target sets `path: "ios/Sources/SignInWithApple"` and
+  declares **no `resources:`** — so it produces no resource bundle at all.
+- There is **no `Podfile` and no `Pods/` directory**, so CocoaPods is not
+  involved and the `CapacitorCommunityAppleSignIn.podspec` in the package is
+  dead weight here.
+
+Net: its `UserDefaults()` calls are compiled into `App.app/App`. It contributes
+no framework, no dynamic library, and no bundle.
+
+**Where Apple expects *its* manifest in this packaging form.** In the package,
+not in our app. From "Add a privacy manifest to your Swift package":
+
+> "Place your privacy manifest file in Sources/SomeLibrary if you don't specify
+> an alternative location"
+
+> "Xcode doesn't recognize privacy manifest files as resources by default. After
+> adding the manifest file to your package, explicitly declare the file or the
+> directory that includes it as a package resource."
+
+So the upstream fix is `ios/Sources/SignInWithApple/PrivacyInfo.xcprivacy`
+**plus** `resources: [.process("PrivacyInfo.xcprivacy")]` in its `Package.swift`.
+Neither exists. This is F34, and it is the plugin's bug to fix — worth an
+upstream issue or PR.
+
+**What our app manifest does and does not settle.** Two obligations:
+
+1. **Required-reason API declaration (ITMS-91053) — settled by our manifest.**
+   Apple: *"For each executable or dynamic library in an app that uses a required
+   reason API, the bundle that includes the executable or dynamic library needs
+   to include a privacy manifest file that reports the API."* Statically linked
+   package code is neither an executable nor a dynamic library of its own — it is
+   part of `App.app/App`, whose bundle is the app bundle. The app's
+   `PrivacyInfo.xcprivacy` is therefore the correct *and only possible* place for
+   this declaration, and the `NSPrivacyAccessedAPICategoryUserDefaults` / `CA92.1`
+   entry added in Stage 1 covers it.
+
+2. **Third-party SDK manifest + signature (ITMS-91061) — not settled, and not
+   ours to settle.** This applies only to SDKs on Apple's published list.
+   `@capacitor-community/apple-sign-in` is **not** on that list. But **`Capacitor`
+   and `Cordova` are**, and this app links both (via `capacitor-swift-pm` 8.5.0).
+   Apple: *"You must include the privacy manifest for any SDK listed below when
+   you submit new apps in App Store Connect that include those SDKs… Any version
+   of a listed SDK, as well as any SDKs that repackage those on the list, are
+   included in the requirement."* Nothing in our app manifest discharges that;
+   Capacitor must ship its own.
+
+Apple's other sentence — *"Your third-party SDK can't rely on the privacy
+manifest files for apps that link the third-party SDK… to report your third-party
+SDK's use of required reasons API"* — is addressed to **SDK vendors**. It obliges
+the plugin to ship its own manifest so that app developers get an accurate
+Privacy Report. It does not relieve this app of the per-executable duty in (1),
+and it does not make our declaration wrong. Both things are true at once: our
+declaration is required, *and* the plugin should still be fixed upstream.
+
+**What must stay NEEDS ARCHIVE VERIFICATION.** None of this can be finished
+without a Mac:
+
+- **That the library really links statically.** The absence of `type: .dynamic`
+  is the determinative source-level fact, but only a real build proves it —
+  check `otool -L App.app/App` and confirm there is no
+  `App.app/Frameworks/CapacitorCommunityAppleSignIn.framework`. If it ever links
+  dynamically, the declaration must move into *that* framework's bundle and our
+  app-level entry stops covering it.
+- **Whether `capacitor-swift-pm` 8.5.0 ships valid `Capacitor` and `Cordova`
+  manifests.** Both are on Apple's required list. The copies under
+  `node_modules/@capacitor/ios` are not necessarily the ones linked, and both
+  declare an **empty** `NSPrivacyAccessedAPITypes`.
+- **Xcode → Organizer → Generate Privacy Report** on a real archive, compared
+  against the manifest committed in Stage 1.
+- **The verbatim wording of reason `CA92.1`.** Apple's public documentation JSON
+  API does not expose the reason-code tables — they render client-side — so it
+  could not be quoted here. The code is the standard one for "access info from
+  the app itself", which is exactly what the plugin does (it stores and reads its
+  own `callbackId`). Xcode's manifest editor and App Store Connect's validation
+  are the check: an invalid reason string is rejected at upload, not silently
+  accepted.
+
+**F18 therefore stays open** until the archive check confirms static linkage and
+the Capacitor/Cordova manifests. What Stage 1 closed is the app's own obligation.
 
 ### 2.5 Other PASS results worth recording
 
