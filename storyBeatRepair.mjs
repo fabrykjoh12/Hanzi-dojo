@@ -31,6 +31,12 @@ const text = (v) => String(v == null ? '' : v).trim()
 // gate uses, applied to a whole beat.
 const PERSON_GLOSS = /\b(person|people|man|men|woman|women|boy|girl|child|children|kid|baby|father|dad|mother|mom|parent|brother|sister|son|daughter|grandfather|grandmother|uncle|aunt|cousin|husband|wife|friend|neighbour|neighbor|teacher|student|classmate|doctor|nurse|driver|worker|boss|colleague|guest|customer|waiter|shopkeeper|stranger|owner|manager)\b/i
 
+// Whatever else a repair may adjust, it may not put a new living thing in the
+// scene. People and animals are the ones that read as a different story rather
+// than a different sentence, and they are the ones a line-level judge is least
+// likely to catch.
+const ANIMAL_GLOSS = /\b(dog|cat|bird|fish|horse|pig|chicken|duck|rabbit|mouse|rat|cow|sheep|goat|monkey|tiger|snake|insect|bee|puppy|kitten)\b/i
+
 function words(line, level, vocabMap) {
   const a = analyzeStory({ title: '', level, content: text(line) }, vocabMap)
   return { all: [...a.counts.keys()], unknown: a.unknownRuns, analysis: a }
@@ -62,7 +68,11 @@ export function classifyBeat(lines, { beat, blueprint = null, manifest, vocabMap
   // Invalid material is both kinds: a word the dictionary does not have, and
   // one the reader does not have yet. Counting only the first left 擦 (HSK 5)
   // unremovable — not bad enough to delete, not fine enough to keep.
-  const badTokens = [...new Set([...perLine.flatMap(l => l.unknown), ...perLine.flatMap(l => l.above)])]
+  // Latin is invalid material too and the engine does not segment it, so
+  // without this a beat rejected for 她站在那里， looking around。 had nothing
+  // recorded as broken and no room to repair it.
+  const latin = clean.flatMap(l => l.match(/[A-Za-z]+/g) || [])
+  const badTokens = [...new Set([...perLine.flatMap(l => l.unknown), ...perLine.flatMap(l => l.above), ...latin])]
   const decorative = badTokens.filter(t => !required.has(t))
   return {
     lines: clean,
@@ -143,15 +153,30 @@ export function checkBeatDrift(before, after, { manifest, vocabMap, brief } = {}
   // requires those lines to be said again, so ordinary in-level words are
   // allowed there. Either way nothing correct may be lost, and neither buys a
   // new person.
-  const structural = bad.size === 0
-  const room = structural ? Math.max(3, (brief.original || []).length) : (brief.fix || []).length + 1
-  const mayAdd = (structural || (brief.fix || []).length > 0) && !lost.length && added.length <= room
-  const unapproved = added.filter(w => !approved.has(w) && !describedByBeat(w) && !(mayAdd && inLevel(w)))
+  // How much may be added: roughly one word per piece of broken material, plus
+  // one, and never while something correct was lost.
+  const room = Math.max(3, bad.size + 1)
+  const mayAdd = !lost.length && added.length <= room
+  // And WHAT may be added. Deleting a broken phrase leaves a hole the writer
+  // still has to fill, and it will need ordinary words to fill it — 着急 for a
+  // scrapped English clause, 站 for a beat whose text says "stands". Those are
+  // allowed, in level and within the room above. A LIVING thing is not: a dog
+  // that runs off is a different story, not a different sentence.
+  //
+  // Be honest about the limit here: a brand-new inanimate object inside the
+  // room is bounded but not provably excluded by this function — the frozen
+  // brief and the existing per-beat semantic judge carry that, and this code
+  // does not claim otherwise.
+  const animate = (w) => {
+    const meaning = String((vocabMap[w] && vocabMap[w].meaning) || '')
+    return PERSON_GLOSS.test(meaning) || ANIMAL_GLOSS.test(meaning)
+  }
+  const unapproved = added.filter(w => !approved.has(w) && !describedByBeat(w)
+    && !(mayAdd && inLevel(w) && !animate(w)))
 
   // A new person is never a repair.
   const castNames = new Set(brief.frozen.cast || [])
-  const newPeople = added.filter(w => !castNames.has(w)
-    && vocabMap[w] && PERSON_GLOSS.test(String(vocabMap[w].meaning || '')))
+  const newPeople = added.filter(w => !castNames.has(w) && !describedByBeat(w) && animate(w))
 
   if (lost.length) problems.push('dropped material that was already fine: ' + lost.join('、'))
   if (newPeople.length) problems.push('brought in ' + newPeople.join('、') + ', who is not in this beat')

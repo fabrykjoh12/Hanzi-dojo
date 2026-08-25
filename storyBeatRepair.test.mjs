@@ -171,3 +171,35 @@ describe('checkBeatDrift — a repair, not a new scene', () => {
     expect(BEAT_REPAIR_VERSION).toBe('fab9-beat-repair@1')
   })
 })
+
+// ── a3-final-9: the repair the guard would not let through ──────────────────
+describe('a repair whose broken part was Latin', () => {
+  const vm = { ...vocabMap, 着急: { word: '着急', level: 3, meaning: 'to worry; anxious' }, 星期六: { word: '星期六', level: 1, meaning: 'Saturday' }, 那里: { word: '那里', level: 1, meaning: 'there' }, 没: { word: '没', level: 1, meaning: 'not have' }, 到: { word: '到', level: 1, meaning: 'to arrive' }, 还: { word: '还', level: 1, meaning: 'still' }, 拿: { word: '拿', level: 2, meaning: 'to take, to hold' }, 点: { word: '点', level: 1, meaning: 'point; a little' } }
+  const m = () => buildManifest({ batchId: 'c', seq: 1, level: 3, targets: ['女人'], defaults: { lines: [14, 38] } })
+  // Verbatim from a3-final-9.
+  const a1 = [
+    '星期六下午，在大楼门口，', '小红拿着一个很大的绿色箱子。', '这个女人很累，不知道怎么办。',
+    '她站在那里， looking around。', '李明还没到。',
+  ]
+  const a2 = [
+    '星期六下午，在大楼门口，', '小红拿着一个很大的绿色箱子。', '这个女人很累，不知道怎么办。',
+    '她站在那里，有点着急。', '李明还没到。',
+  ]
+  const brief = () => beatRepairBrief(classifyBeat(a1, { beat: beat(), blueprint, manifest: m(), vocabMap: vm, sketches, failures: ['a story line contains Latin text'] }))
+
+  it('records the Latin as the broken material', () => {
+    expect(brief().remove).toEqual(expect.arrayContaining(['looking', 'around']))
+  })
+
+  it('accepts the repair that replaced it with in-level Chinese', () => {
+    // The guard refused this and cost the run: 着急 was called an import.
+    const r = checkBeatDrift(a1, a2, { manifest: m(), vocabMap: vm, brief: brief() })
+    expect(r.ok).toBe(true)
+    expect(r.lost).toEqual([])
+  })
+
+  it('still refuses a living thing that was not there', () => {
+    const withDog = a2.map(l => (l.includes('着急') ? '她的狗跑了。' : l))
+    expect(checkBeatDrift(a1, withDog, { manifest: m(), vocabMap: { ...vm, 狗: { word: '狗', level: 1, meaning: 'dog' }, 跑: { word: '跑', level: 2, meaning: 'to run' }, 的: { word: '的', level: 1, meaning: 'of' } }, brief: brief() }).ok).toBe(false)
+  })
+})

@@ -41,6 +41,8 @@ export const GRAMMAR = new Set([
   '把', '被', '给', '对', '从', '到', '个', '一个', '这', '那', '这个', '那个', '一', '两',
   '吗', '呢', '吧', '啊', '我', '你', '您', '他', '她', '它', '我们', '你们', '他们', '她们',
   '会', '能', '可以', '要', '想', '说', '来', '去', '上', '下', '里', '中', '们',
+  // 点 is a degree particle in 有点/一点, not a thing anyone brought into the scene.
+  '点', '有点', '一点', '些', '那里', '这里',
 ])
 
 // Every in-level entry that this token is a strict piece of. The learner list
