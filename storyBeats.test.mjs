@@ -201,7 +201,9 @@ describe('realizeByBeat — sequential, gated, never rewinds', () => {
     const r = await run(writer, judge)
     expect(r.ok).toBe(true)
     expect(r.attempts.filter(a => a.beat === 1).length).toBe(2)
-    expect(writer.seen[1]).toContain('YOUR PREVIOUS ATTEMPT AT THIS BEAT WAS REJECTED')
+    // The retry is a repair now: the failures arrive inside the repair brief.
+    expect(writer.seen[1]).toContain('REPAIR YOUR OWN BEAT')
+    expect(writer.seen[1]).toContain('Why it was rejected')
     expect(writer.seen[1]).toContain('护照')
     expect(r.attempts.filter(a => a.beat === 2).length).toBe(1)      // beat 1 never regenerated after acceptance
   })

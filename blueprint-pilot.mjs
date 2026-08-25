@@ -248,7 +248,10 @@ if (resumeScaffoldPath) {
     if (l.piece === 'anchors') byBeat.get(l.beat).anchors = l.output
   }
   accepted.beats = [...byBeat.values()].sort((a, b) => a.beat - b.beat)
-  jobs.push({ manifest: stored.manifest, required: run.required, shape, resume: null, resumeScaffold: accepted })
+  // The plan's judgment is frozen with it: resuming a stored scaffold must not
+  // put an authorised run at the mercy of a fresh opinion about a plan that
+  // already passed.
+  jobs.push({ manifest: stored.manifest, required: run.required, shape, resume: null, resumeScaffold: accepted, frozen: entry.score || null, frozenLabel: entry.label })
   console.log('A3.1: resuming the stored scaffold from ' + resumeScaffoldPath)
   console.log('  keeping title ' + JSON.stringify(accepted.title) + ' and '
     + accepted.beats.map(b => 'beat ' + b.beat + ' (' + b.sketches.length + ' sketch(es), ' + (b.anchors || []).length + ' anchors)').join(', ') + '\n')

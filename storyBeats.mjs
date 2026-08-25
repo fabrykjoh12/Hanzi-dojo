@@ -25,10 +25,11 @@
 // Pure: providers injected, no network/fs/clock here.
 
 import { analyzeStory } from './storyCorpusCalibration.mjs'
+import { classifyBeat, beatRepairBrief, checkBeatDrift } from './storyBeatRepair.mjs'
 import { splitSpeaker } from './src/storyReading.js'
 import { hasLatin } from './storyBlueprint.mjs'
 
-export const BEAT_VERSION = 'fab9-beats@1'
+export const BEAT_VERSION = 'fab9-beats@2'
 
 // Local limits, deliberately tighter than the whole-story gates: a beat is a
 // handful of lines, so one unknown word there is already a higher density
@@ -78,15 +79,23 @@ export function validateBeat(lines, { beat, manifest, vocabMap, expectedLines, c
   const allowed = new Set(cast.length ? cast : [...(manifest.speakers || []), ...(manifest.extraNames || [])])
   for (const l of clean) {
     const { speaker } = splitSpeaker(l)
-    if (!speaker) continue
-    // 小明说：“…” is not the house dialogue format, and blueprint-2's writer
-    // slipped into it the moment it was writing whole scenes. It parses as a
-    // speaker called 小明说 — worth its own message, since the fix is to drop
-    // one character rather than to change who is talking.
-    const narrated = speaker.match(/^(.+?)(说|问|回答|喊|叫)$/)
-    if (narrated && allowed.has(narrated[1])) {
-      fail('narrated_speaker', 'dialogue is a bare name then ：— write "' + narrated[1] + '：", not "' + speaker + '："')
-    } else if (!allowed.has(speaker)) {
+    if (!speaker || allowed.has(speaker)) continue
+    // Everything else in the label position is a FORM problem, not a casting
+    // one. a3-final-7 was told 他走过去问 "is not in this beat's cast", which
+    // is true and useless: the writer had written ordinary narration and put
+    // it where the name goes. The fix is to split the line, so the message has
+    // to say that — and 李明问：, 他：, 她： are the same mistake, whatever the
+    // stem is.
+    const stem = speaker.match(/^(.*?)(说|问|回答|答|喊|叫|告诉|道|对)$/)
+    const pronoun = /^(他|她|它|我|你|您|他们|她们|我们|你们)$/.test(speaker)
+    if (pronoun) {
+      fail('narrated_speaker', 'a dialogue label is the character\'s NAME, not "' + speaker + '" — write "'
+        + (cast[0] || [...allowed][0] || '李明') + '：" and keep pronouns for narration')
+    } else if (stem || speaker.length > 4 || /[，,。？！]/.test(speaker)) {
+      fail('narrated_speaker', 'narration was put where the speaker name goes. Narration is its own line, and the name stands alone before the ：— write it as two lines: "'
+        + (stem && allowed.has(stem[1]) ? stem[1] : (cast[0] || [...allowed][0] || '李明')) + '走过去。" then "'
+        + (stem && allowed.has(stem[1]) ? stem[1] : (cast[0] || [...allowed][0] || '李明')) + '：…", not "' + speaker + '："')
+    } else {
       fail('unknown_speaker', 'speaker "' + speaker + '" is not in this beat\'s cast')
     }
   }
@@ -155,6 +164,8 @@ export async function realizeByBeat({
     const sketches = targetPlan.filter(t => Number(t.beat) === i + 1)
     let feedback = null
     let taken = null
+    let repair = null          // set after a failed first attempt
+    let firstAttempt = null
 
     for (let a = 1; a <= attemptsPerBeat && !taken; a += 1) {
       let lines = null
@@ -165,16 +176,26 @@ export async function realizeByBeat({
           prompt: buildBeatPrompt({
             manifest, blueprint, beat, alloc, meanings, cast, sketches, tail,
             next: blueprint.beats[i + 1] || null,
-            feedback,
+            feedback, repair,
           }),
           maxTokens,
         })
         lines = parseBeat(textOut, alloc.lines)
       } catch (err) { error = String((err && err.message) || err).slice(0, 160) }
 
-      const gate = lines
+      const base = lines
         ? validateBeat(lines, { beat, manifest, vocabMap, expectedLines: alloc.lines, cast, limits })
         : { ok: false, failures: [{ code: error ? 'provider_error' : 'unparseable', message: error || 'no usable ' + alloc.lines + '-line JSON' }], metrics: {} }
+      // A repair is judged against the beat it repairs, so the second attempt
+      // cannot quietly become a different scene.
+      const drift = lines && base.ok && repair
+        ? checkBeatDrift(firstAttempt, lines, { manifest, vocabMap, brief: repair })
+        : { ok: true, problems: [] }
+      const gate = drift.ok ? base : {
+        ok: false,
+        failures: [...base.failures, ...drift.problems.map(m => ({ code: 'repair_drift', message: m }))],
+        metrics: base.metrics,
+      }
 
       let score = null
       if (gate.ok && judge && buildBeatJudgePrompt && parseBeatJudgment) {
@@ -200,6 +221,10 @@ export async function realizeByBeat({
       })
 
       if (gate.ok && semanticOk) { taken = lines; break }
+      // Everything the one retry needs to MEND this beat rather than write a
+      // new one: its own lines, the exact failures, the story facts the plan
+      // froze, the approved sketches and anchors, and the decoration it may
+      // simply delete.
       feedback = [
         ...gate.failures.map(f => f.message),
         ...(gate.ok && !semanticOk
@@ -209,6 +234,14 @@ export async function realizeByBeat({
             : 'the writing could not be judged']
           : []),
       ]
+      // Everything the one retry needs to MEND this beat rather than write a
+      // new one: its own lines, every reason it was rejected — the judge's
+      // included — the story facts the plan froze, the approved sketches and
+      // anchors, and the decoration it may simply delete.
+      if (lines && !repair) {
+        firstAttempt = lines
+        repair = beatRepairBrief(classifyBeat(lines, { beat, blueprint, manifest, vocabMap, sketches, failures: feedback }))
+      }
     }
 
     if (!taken) {

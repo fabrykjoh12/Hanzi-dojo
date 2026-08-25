@@ -770,12 +770,55 @@ export function parseAnchors(text) {
 // writer holding 28 lines states the plan instead of performing it. A beat is
 // a closed task — this place, these people, this event, exactly these lines —
 // small enough that the model has nothing to do but write good sentences.
-export function beatPrompt({ manifest, blueprint, beat, alloc, meanings = {}, cast = [], sketches = [], tail = [], next = null, feedback = null }) {
+// The beat retry is a REPAIR. a3-final-7's first attempt decorated the scene
+// with a forehead and sweat — two words the reader does not have, for a detail
+// the plan never asked for — and the retry answered by writing a different
+// beat. So the second attempt gets its own lines back, the failures, the story
+// facts it may not touch, and permission to delete what only it invented.
+function beatRepairSection(repair, alloc) {
+  if (!repair) return ''
+  const out = []
+  out.push('REPAIR YOUR OWN BEAT. Do NOT write a new one.')
+  out.push('')
+  out.push('What you wrote:')
+  for (const l of repair.original) out.push('  ' + l)
+  out.push('')
+  out.push('Why it was rejected:')
+  for (const f of repair.failures) out.push('  - ' + f)
+  out.push('')
+  if (repair.remove && repair.remove.length) {
+    out.push('DELETE this detail. It is yours, not the story\'s — the plan never asked for it, so remove it entirely rather than looking for another way to say it: '
+      + repair.remove.join('、'))
+    out.push('')
+  }
+  if (repair.fix && repair.fix.length) {
+    out.push('These the story does need, but not in those words — say them with vocabulary the reader has: ' + repair.fix.join('、'))
+    out.push('')
+  }
+  out.push('These are FROZEN. Keep them exactly as they are:')
+  out.push('  What happens: ' + repair.frozen.what)
+  if (repair.frozen.because) out.push('  Why it follows: ' + repair.frozen.because)
+  out.push('  Where: ' + repair.frozen.where + (repair.frozen.arrivedHow ? '   How they got there: ' + repair.frozen.arrivedHow : ''))
+  if (repair.frozen.targets.length) out.push('  Words this beat must use: ' + repair.frozen.targets.join('、'))
+  out.push('  The people in it: ' + (repair.frozen.cast || []).join('、'))
+  out.push('')
+  if (repair.keep.length) {
+    out.push('These lines are already correct — keep them, word for word where you can:')
+    for (const l of repair.keep) out.push('  ' + l)
+    out.push('')
+  }
+  out.push('Change only what is listed above, and still write exactly ' + alloc.lines + ' lines. Do not add a person, an event, or an object that was not already there, and do not replace lines that were already correct.')
+  out.push('')
+  return out.join('\n')
+}
+
+export function beatPrompt({ manifest, blueprint, beat, alloc, meanings = {}, cast = [], sketches = [], tail = [], next = null, feedback = null, repair = null }) {
   const name = levelName(manifest)
   const lines = []
   lines.push('Write beat ' + beat.id + ' of a ' + name + ' Chinese graded-reader story: EXACTLY ' + alloc.lines + ' lines, and nothing beyond this beat.')
   lines.push('')
-  if (feedback && feedback.length) {
+  if (repair) lines.push(beatRepairSection(repair, alloc))
+  if (feedback && feedback.length && !repair) {
     lines.push('YOUR PREVIOUS ATTEMPT AT THIS BEAT WAS REJECTED:')
     lines.push(feedback.map(f => '- ' + f).join('\n'))
     lines.push('')
