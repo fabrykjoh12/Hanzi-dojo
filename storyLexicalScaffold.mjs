@@ -30,8 +30,9 @@
 import { checkAnchor, checkUsageSketch, hasLatin } from './storyBlueprint.mjs'
 import { analyzeStory } from './storyCorpusCalibration.mjs'
 import { retrieveCandidates } from './storyLexicalRetrieval.mjs'
+import { classifySketch, repairBrief, checkRepairDrift } from './storySketchRepair.mjs'
 
-export const SCAFFOLD_VERSION = 'fab9-scaffold@2'
+export const SCAFFOLD_VERSION = 'fab9-scaffold@3'
 
 // A beat's toolkit needs three usable words and has never needed more than
 // six. a3-final-2 threw away 后来、门口、女人、拿、不用 — five valid words — because
@@ -231,13 +232,15 @@ export async function buildLexicalScaffold({
       }
       let sketch = null
       let fb = null
+      let brief = null            // set after a failed first attempt
+      let firstAttempt = null
       for (let a = 1; a <= attempts && !sketch; a += 1) {
         let out = null
         let error = null
         try {
           out = parseSketch(await writer.send({
             kind: 'sketch',
-            prompt: buildSketchPrompt({ manifest, word: entry.word, meaning: meanings[entry.word] || null, beat, entry, pool, feedback: fb }),
+            prompt: buildSketchPrompt({ manifest, word: entry.word, meaning: meanings[entry.word] || null, beat, entry, pool, feedback: fb, repair: brief }),
             maxTokens,
           }))
         } catch (err) { error = String((err && err.message) || err).slice(0, 160) }
@@ -249,10 +252,31 @@ export async function buildLexicalScaffold({
         const castCheck = out && lexical.ok
           ? checkSketchCast(out, { word: entry.word, beat, blueprint, manifest, vocabMap })
           : { ok: true, problems: [] }
-        const check = { ok: lexical.ok && castCheck.ok, problems: [...lexical.problems, ...castCheck.problems] }
-        record({ piece: 'sketch', beat: beat.id, word: entry.word, attempt: a, output: out, ok: check.ok, problems: check.problems })
+        // A repair is judged against the sentence it repairs, so a second
+        // attempt cannot quietly become a different sentence.
+        const drift = out && lexical.ok && castCheck.ok && brief
+          ? checkRepairDrift(firstAttempt, out, { word: entry.word, manifest, vocabMap, brief })
+          : { ok: true, problems: [] }
+        const check = {
+          ok: lexical.ok && castCheck.ok && drift.ok,
+          problems: [...lexical.problems, ...castCheck.problems, ...drift.problems],
+        }
+        record({ piece: 'sketch', beat: beat.id, word: entry.word, attempt: a, output: out, ok: check.ok, problems: check.problems, repair: brief })
         if (check.ok) sketch = out
-        else fb = check.problems
+        else {
+          fb = check.problems
+          // Everything the next attempt needs to repair rather than rewrite:
+          // its own sentence, the exact tokens that failed, the canonical
+          // in-level words each one is a piece of, and which details are
+          // decoration the beat can lose.
+          if (out && !brief) {
+            firstAttempt = out
+            brief = repairBrief(classifySketch(out, {
+              word: entry.word, beat, blueprint, manifest, vocabMap, problems: check.problems,
+              candidates: (retrieve({ manifest, vocabMap, beat, entries: [entry], avoid: [] }).candidates || []),
+            }))
+          }
+        }
       }
       if (!sketch) {
         return {

@@ -683,10 +683,30 @@ export function titlePrompt({ manifest, blueprint, pool = null, feedback = null 
 // One target, one sentence. The single most constrained call in the pipeline:
 // blueprint-resume-1 drifted above level while writing five sketches and a
 // title in one response, so nothing here writes more than one utterance.
-export function targetSketchPrompt({ manifest, word, meaning, beat, entry, pool = null, feedback = null }) {
+// The retry is a REPAIR, not another go at the sentence. a3-final-3's writer
+// was told one token was bad and rewrote the whole thing, losing the words
+// that were fine and importing two new violations. So the second attempt gets
+// its own sentence back, the exact tokens that failed, the canonical in-level
+// words each bad token is a piece of, and permission to simply delete a
+// detail that was never central.
+function repairSection(brief) {
+  if (!brief) return ''
+  return 'REPAIR YOUR OWN SENTENCE. Do NOT write a new one.\n\n'
+    + 'Your sentence: ' + brief.original + '\n\n'
+    + 'What is wrong with it:\n'
+    + brief.fix.map(f => '- ' + f.token + ' — ' + f.why
+      + (f.use && f.use.length ? '. The word the reader actually knows is: ' + f.use.join(' or ') : '')
+      + (f.mayOmit ? '. This detail is not what the moment is about: you may simply delete it.' : '')).join('\n') + '\n\n'
+    + (brief.keep.length ? 'KEEP these, they are correct: ' + brief.keep.join('、') + '\n' : '')
+    + (brief.alsoAvailable && brief.alsoAvailable.length ? 'Also available: ' + brief.alsoAvailable.join('、') + '\n' : '')
+    + '\nChange ONLY what is listed above. Do not add a person, an object or an event that was not already in your sentence, and do not replace words that were already correct.\n\n'
+}
+
+export function targetSketchPrompt({ manifest, word, meaning, beat, entry, pool = null, feedback = null, repair = null }) {
   const name = levelName(manifest)
   return 'Write ONE short Chinese sentence for a ' + name + ' graded reader.\n\n'
-    + (feedback ? 'YOUR PREVIOUS SENTENCE WAS REJECTED:\n' + feedback.map(f => '- ' + f).join('\n') + '\n\n' : '')
+    + (repair ? repairSection(repair) : '')
+    + (feedback && !repair ? 'YOUR PREVIOUS SENTENCE WAS REJECTED:\n' + feedback.map(f => '- ' + f).join('\n') + '\n\n' : '')
     + 'It must use the word ' + word + (meaning ? ' (' + meaning + ')' : '') + '.\n\n'
     + 'The moment: ' + beat.what + '\n'
     + 'Who is speaking: ' + (entry.speaker || 'the narrator') + '\n'

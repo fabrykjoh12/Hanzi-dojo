@@ -136,7 +136,10 @@ describe('buildLexicalScaffold — smallest pieces, each gated', () => {
     const writer = gen('W', [
       J({ title: '重的护照' }),                       // 重 is HSK 4
       J({ title: '找护照' }),
-      J({ sentence: '我的护照在森林里。' }),            // 森林 is HSK 4
+      // The retry is a REPAIR now: this one deletes the offending modifier and
+      // changes nothing else. (It used to answer with a different sentence
+      // entirely, which the drift check no longer allows.)
+      J({ sentence: '我的森林护照在哪里？' }),          // 森林 is HSK 4
       J({ sentence: '我的护照在哪里？' }),
       J({ anchors: ['找', '护照', '家'] }),
       J({ sentence: '我们去问邻居吧。' }),
@@ -151,6 +154,7 @@ describe('buildLexicalScaffold — smallest pieces, each gated', () => {
     expect(writer.seen[1].prompt).toContain('YOUR PREVIOUS TITLE WAS REJECTED')
     expect(writer.seen[1].prompt).toContain('重')
     expect(writer.seen[3].prompt).toContain('森林')
+    expect(writer.seen[3].prompt).toContain('REPAIR YOUR OWN SENTENCE')
   })
 
   it('TARGET_SCAFFOLD_FAILED after the second attempt — and no later target is attempted', async () => {
@@ -241,7 +245,7 @@ describe('the shape is locked', () => {
     expect(checkTitle('Passport', { manifest: m, vocabMap }).problems.join(' ')).toContain('Latin')
     expect(checkTitle('森林的故事', { manifest: m, vocabMap }).problems.join(' ')).toContain('above-level')
     expect(checkTitle('找', { manifest: m, vocabMap }).problems.join(' ')).toContain('characters')
-    expect(SCAFFOLD_VERSION).toBe('fab9-scaffold@2')
+    expect(SCAFFOLD_VERSION).toBe('fab9-scaffold@3')
   })
 })
 
