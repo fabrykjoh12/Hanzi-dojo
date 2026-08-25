@@ -74,7 +74,9 @@ Apple returns `givenName`/`familyName`; nothing persists them —
 | `bvqvturqupbggxaeihvi.supabase.co` | auth, Postgres, public `audio` bucket | continuously |
 | `fonts.googleapis.com` + `fonts.gstatic.com` | Noto Sans SC, Inter, Poppins | **every cold launch, native included** (`index.html:22-28`) |
 | `cdn.jsdelivr.net` | `hanzi-writer-data@2.0.1` stroke JSON | any stroke-order view (`strokeData.js:19`) |
-| `discord.com/api/webhooks/…` | server-side relay on feedback insert | see F3 |
+| `img.youtube.com` | video thumbnails on Practice → Videos | whenever that screen opens (`YouTube.jsx:29`) |
+| `www.youtube-nocookie.com` | embedded player | on play (`YouTube.jsx:135`) |
+| `discord.com/api/webhooks/…` | server-side relay on feedback insert — **currently inert**, see F3 | never today |
 | Apple / Google OAuth endpoints | sign-in | on tap |
 
 The internal DojoHQ Cloudflare worker (`worker/index.js`) is **excluded from the
@@ -90,11 +92,18 @@ non-`VITE_` vars, never bundled (`.env.example`).
 `NSUserTrackingUsageDescription`, no install id, no fingerprinting anywhere in
 the repo or the shipped dependency set.
 
-Device storage is five localStorage keys — `hanzi-dojo-hq-local-v1`,
+Device storage is six localStorage keys — `hanzi-dojo-hq-local-v1`,
 `hanzi-dojo-hq-device-v1`, `hanzi-dojo-hq-online-v1` (all DojoHQ, stripped from
-the store build), `prelogin:prefs`, `srs:target-retention` — plus Supabase's own
-auth token, plus IndexedDB `hanzi-offline` with stores `cache`, `outbox`,
-`audio`, `prefs` (`offline.js:20-42`).
+the store build), `prelogin:prefs`, `srs:target-retention`, and
+**`dict:recent:<language>`** — the last 8 dictionary words the learner opened,
+with reading and meaning (`recentLookups.js:8-45`). Plus Supabase's own auth
+token, plus IndexedDB `hanzi-offline` with stores `cache`, `outbox`, `audio`,
+`prefs` (`offline.js:20-42`).
+
+`dict:recent:*` is a **search history**, but it never leaves the device, so it is
+not "collected" under Apple's definition. It still belongs in the policy's
+on-device paragraph, which currently describes only content caches and the review
+queue.
 
 Android declares `INTERNET` only. iOS declares no usage-description strings, and
 needs none: speech recognition is disabled in the native shell
@@ -168,8 +177,16 @@ both stores and describes a feature reviewers cannot find.
 
 **Fix:** scope the paragraph to the web until native push ships.
 
-#### F3 · MISSING · high — Discord is an undisclosed recipient of feedback content
-**Layer: policy text — or code/SQL to remove the relay**
+#### F3 · MISSING · medium (latent, not active) — Discord is an undisclosed recipient of feedback content
+**Layer: code/SQL to remove the relay — or policy text**
+
+> **Corrected 2026-08-25 after a live check.** The trigger is installed and
+> enabled (`tgenabled = 'O'`), but `vault.secrets` is **empty** — the
+> `discord_feedback_webhook` secret has never been created in production, so the
+> function returns on its first branch and **no feedback has ever left
+> Supabase**. This is a loaded gun, not a live leak: the moment anyone runs the
+> `vault.create_secret` line from the migration's own setup comment, every
+> feedback message starts flowing to Discord with no other change and no notice.
 
 `supabase/migrations/20260715230000_feedback_discord_webhook.sql:61-64` installs
 an `AFTER INSERT` trigger on `public.feedback` that `net.http_post`s the
@@ -182,10 +199,11 @@ The policy says only *"Feedback you send: the text of in-app feedback, so we can
 act on it."* Its Infrastructure list (`TrustPages.jsx:131-140`) names Supabase,
 Vercel, Cloudflare, Brevo, Google Fonts, APNs and FCM — **not Discord**.
 
-**Fix (recommended):** drop the trigger and read feedback in Supabase / DojoHQ.
-There are 2 feedback rows in total; the relay is not carrying real load, and
-removing it removes the disclosure entirely. Otherwise: name Discord in the
-policy *and* declare the sharing in Play Data Safety (see F12).
+**Fix (recommended):** drop the trigger and the function. It has never fired,
+there are 2 feedback rows in total, and removing it deletes this finding, F13 and
+F26 outright — while keeping the existing "no third-party sharing" answer true.
+Otherwise: name Discord in the policy *and* declare the sharing in Play Data
+Safety **before** the secret is ever set.
 
 #### F4 · MISMATCH · medium — Google Fonts is scoped "on the web" but loads natively too
 **Layer: code (preferred) or policy text**
@@ -291,16 +309,17 @@ Note on "Linked": Apple asks per data type, not per row. Signed-in events carry
 `user_id`, so Usage Data and Diagnostics must be declared Linked even though the
 pre-auth events are anonymous.
 
-#### F13 · MISMATCH · high — Play draft says "Data shared with third parties: No"
+#### F13 · PASS today, MISMATCH the moment the relay is enabled · high — "Data shared with third parties: No"
 **Layer: Play Console metadata — or code/SQL (see F3)**
 
-`docs/STORE-LISTING.md:184`. Feedback content plus the user id is transmitted to
-Discord (F3). That is a transfer to a third party, not a service-provider
-exception — Discord is a general communications platform, not a processor acting
-on your instructions.
+`docs/STORE-LISTING.md:184`. The answer is **true today**, because the Discord
+relay is inert (F3). It becomes false the instant the webhook secret is created:
+feedback content plus the user id would then be transferred to a third party, and
+Discord is a general communications platform, not a processor acting on your
+instructions.
 
-**Fix:** removing the trigger makes the existing answer true. Otherwise the
-answer has to change.
+**Fix:** drop the trigger (F3) and this answer stays true permanently. If the
+relay is ever wanted, this answer and the policy must change in the same commit.
 
 #### F14 · MISMATCH · medium — Play draft omits User IDs and user content
 `Name / phone / address | Not collected` is defensible (`display_name` is null
@@ -397,6 +416,139 @@ browser rather than navigating the webview away from a half-filled form.
 
 #### F24 · PASS — deletion is two taps from the tab bar, no support contact needed
 
+### 2.4b Additional findings from the cross-check pass
+
+These came out of an independent 14-agent sweep run after the first pass, and
+were each re-verified by hand before being written down.
+
+#### F25 · MISSING · medium — YouTube is an undisclosed runtime third party
+**Layer: policy text**
+
+Practice → Videos loads a thumbnail per card from `https://img.youtube.com/vi/…`
+(`src/YouTube.jsx:29`) and, on play, embeds
+`https://www.youtube-nocookie.com/embed/…` (`:135`). Three Chinese
+recommendations are live, so the screen is real, not dormant.
+
+The player deliberately uses the privacy-enhanced `nocookie` host — good — but
+**the thumbnails do not**: `img.youtube.com` is an ordinary Google host, and it
+is hit for every card as soon as the screen opens, before any deliberate act by
+the learner. Neither host appears in the policy's Infrastructure list.
+
+**Fix:** name YouTube in Infrastructure. Optionally route the thumbnails through
+`i.ytimg.com`/nocookie or cache them, so opening the screen isn't itself a
+disclosure.
+
+#### F26 · MISMATCH · medium — "we don't keep your data beyond that" has two exceptions
+**Layer: policy text**
+
+Policy (`TrustPages.jsx:146-149`) promises deletion removes everything "and we
+don't keep your data beyond that". Two things survive:
+
+- `dojo_*` rows and `tts_audio.approved_by` go `SET NULL` rather than being
+  deleted — admin-authored content, de-identified. Correct behaviour, but the
+  absolute wording doesn't cover it.
+- Any feedback already relayed to Discord would be outside Supabase and outside
+  the RPC's reach entirely. Inert today (F3); permanent if the relay is enabled.
+
+**Fix:** soften the absolute claim, or — better — drop the relay (F3) so only the
+de-identified admin rows need mentioning.
+
+#### F27 · MISMATCH · medium — the device timezone is captured silently
+**Layer: policy text**
+
+`src/App.jsx:103-112` writes `Intl.DateTimeFormat().resolvedOptions().timeZone`
+to `profiles.timezone` on load whenever it differs from what is stored. The
+learner never types or confirms it. The policy lists timezone among
+*"your preferences … timezone for reminders"* — framing an automatic capture as
+something the learner chose.
+
+**Fix:** say it is read from the device automatically.
+
+#### F28 · MISSING · medium — a feedback row holds more than "the text"
+**Layer: policy text**
+
+The policy says *"Feedback you send: the text of in-app feedback"*. The row also
+carries `email`, `page`, `language`, and a `context` jsonb with the open story's
+id and truncated title plus the build sha (`src/Feedback.jsx:73`,
+`src/feedbackContext.js`, `20260801120000_add_feedback_context.sql`).
+
+#### F29 · MISSING · low — on-device dictionary history is not described
+**Layer: policy text**
+
+`localStorage['dict:recent:<language>']` keeps the last 8 words the learner
+looked up, with reading and meaning (`src/recentLookups.js:8-45`). It never
+leaves the device — so it is not "collected" for store-declaration purposes —
+but the policy's "On your device" paragraph lists only content caches and the
+review queue.
+
+#### F30 · MISSING · low — the TTS vendor is unnamed while every other subprocessor is
+**Layer: policy text**
+
+The policy names Supabase, Vercel, Cloudflare, Brevo, Google Fonts, APNs and FCM,
+then says audio is *"generated in advance with text-to-speech services"* without
+naming them. Azure Speech (and Google TTS) are build-time only and never see
+learner data (`.env.example`, non-`VITE_` vars), so this is a consistency
+point rather than a risk — but the asymmetry is conspicuous.
+
+#### F31 · MISMATCH · low — the microphone section describes a flow the apps don't have
+**Layer: policy text**
+
+The policy (`:94-101`) explains what happens if you deny the microphone
+permission. In the store apps the Speaking drill is disabled outright
+(`speechSupport.js:22-27`) and no permission is ever requested — as the App
+Review notes already state (`docs/STORE-LISTING.md:156-158`). The policy covers
+"all three" surfaces, so it should say the drill is web-only.
+
+#### F32 · MISSING · medium — analytics run before any account exists, with no gate
+**Layer: policy text**
+
+`LANDING_VIEWED`, `PUBLIC_STORY_VIEWED` and `ASSESSMENT_*` fire pre-auth; 2,905
+of 5,334 live rows have `user_id IS NULL`. The policy frames all collection
+around the account ("we store your account and your learning progress"), and
+never mentions collection from visitors who never sign up, nor offers an opt-out.
+
+Because nothing is written to the device for analytics, this is not an ePrivacy
+consent problem — but it is an accuracy and transparency gap.
+
+#### F33 · MISMATCH · blocker — the Play data-deletion URL sits behind the sign-in gate
+**Layer: Play Console metadata (+ policy text)**
+
+`docs/STORE-LISTING.md:183` answers the deletion URL as
+`https://hanzi-dojo.com/profile`. `/profile` is not a trust page
+(`src/routes.js:117` covers only `/privacy` `/terms` `/support` `/methodology`),
+so `App.jsx:392` renders the sign-in screen to any signed-out visitor. Google
+Play requires the deletion URL to be reachable and to explain the process
+*without* first signing in.
+
+**Fix:** answer `https://hanzi-dojo.com/support`, which already explains deletion
+publicly (`TrustPages.jsx:262-271`) — a metadata change, no code needed.
+
+#### F34 · MISMATCH · medium — plugin SPM targets declare no `resources:` block
+**Layer: native project config**
+
+Even if a `PrivacyInfo.xcprivacy` were added to
+`@capacitor-community/apple-sign-in`, its `Package.swift` target declares no
+`resources:`, so SPM would not copy it into the bundle. This is why the
+declaration has to live in the **app** target (F18) rather than being fixed
+upstream in place.
+
+#### F35 · NEEDS DEVICE/ARCHIVE VERIFICATION · medium — Supabase platform logging
+**Layer: process/verification, policy text**
+
+Supabase's API gateway records request IP addresses and user agents as platform
+logs. The policy never mentions IP addresses at all. Confirm the retention window
+on your plan, then either disclose it or establish that it is out of scope.
+
+#### F36 · correction to a code comment · low — `profiles` *does* have an FK to `auth.users`
+**Layer: code (comment only)**
+
+`20260807130000_delete_my_account.sql:8-9` states *"public.profiles has NO
+foreign key to auth.users, so deleting the auth user would orphan the profile"*.
+A live constraint query shows `profiles.id → auth.users ON DELETE CASCADE`
+exists. The RPC deletes the profile explicitly anyway, so behaviour is correct
+and belt-and-braces — but the comment is wrong and would mislead the next person
+reasoning about deletion completeness.
+
 ### 2.5 Other PASS results worth recording
 
 - Analytics can never carry free text — 40-char cap, tested
@@ -436,48 +588,68 @@ Nothing below has been applied. Ordered by what blocks submission.
    CrashData, OtherDiagnosticData — all linked, none tracking). *(F17, F18)*
 2. **Add Privacy / Terms / Support rows to Settings** so a signed-in user can
    reach `/privacy` in the app. Route already works; this is a link. *(F22)*
+3. **Change the Play deletion URL** to `https://hanzi-dojo.com/support`. Pure
+   metadata, no code — but the currently drafted `/profile` answer is not
+   reachable signed-out. *(F33)*
 
 ### Stage 2 — make the published policy true (policy text)
 
-3. Rewrite the **"Analyze text"** paragraph to describe sentence mining. *(F1)*
-4. Scope the **push** paragraph to the web until native push ships. *(F2)*
-5. Add **Discord** to Infrastructure and say feedback text is relayed there —
+4. Rewrite the **"Analyze text"** paragraph to describe sentence mining. *(F1)*
+5. Scope the **push** paragraph to the web until native push ships. *(F2)*
+6. Add **Discord** to Infrastructure and say feedback text is relayed there —
    *or* drop the trigger (recommended; see stage 3). *(F3)*
-6. Drop **"on the web"** from Google Fonts, or self-host for native. *(F4)*
-7. Name **jsDelivr** in Infrastructure. *(F5)*
-8. Add one sentence on **error reporting**. *(F6)*
-9. Add a **retention** line covering anonymous usage events. *(F8)*
-10. Add a short **age / children** section. *(F9)*
-11. Bump **Last updated**. *(F10)*
+7. Drop **"on the web"** from Google Fonts, or self-host for native. *(F4)*
+8. Name **jsDelivr** in Infrastructure. *(F5)*
+9. Add one sentence on **error reporting**. *(F6)*
+10. Add a **retention** line covering anonymous usage events. *(F8)*
+11. Add a short **age / children** section. *(F9)*
+12. Add **YouTube** to Infrastructure. *(F25)*
+13. Say the **timezone** is read from the device automatically. *(F27)*
+14. Describe what a **feedback row** actually carries. *(F28)*
+15. Add **on-device dictionary history** to the "On your device" paragraph. *(F29)*
+16. Name the **TTS vendor**, or drop the other names for symmetry. *(F30)*
+17. Scope the **microphone** section to the web. *(F31)*
+18. Say analytics run **before sign-up**, and soften the absolute deletion claim.
+    *(F32, F26)*
+19. Bump **Last updated**. *(F10)*
 
 ### Stage 3 — reduce what has to be declared (code / SQL)
 
-12. **Drop the Discord feedback trigger.** Two feedback rows exist total; the
-    relay is not carrying load, and removing it makes "Data shared with third
-    parties: No" true again and deletes F3 and F13 outright. *(F3, F13)*
-13. **Self-host the three web fonts for the native build.** Removes a
+20. **Drop the Discord feedback trigger and its function.** It has never fired
+    (the Vault secret was never created), two feedback rows exist in total, and
+    removing it retires F3, F13 and half of F26 permanently — and stops anyone
+    enabling a silent third-party relay by pasting one line from a migration
+    comment. *(F3, F13, F26)*
+21. **Self-host the three web fonts for the native build.** Removes a
     third-party call from every cold launch and fixes offline first paint.
     *(F4)*
-14. Move `web-push` and `drizzle-orm` to `devDependencies` — neither is imported
+22. Move `web-push` and `drizzle-orm` to `devDependencies` — neither is imported
     by `src/`. *(F16 note)*
 
 ### Stage 4 — store metadata (consoles + docs)
 
-15. Write the **ASC App Privacy** answers into `docs/STORE-LISTING.md` using the
+23. Write the **ASC App Privacy** answers into `docs/STORE-LISTING.md` using the
     F12 table, then fill the console. *(F12)*
-16. Correct the **Play Data Safety** table: add User IDs, add user content, fix
-    the sharing answer if stage 3 item 12 is not done. *(F13, F14)*
-17. Add **privacy manifest** and **required-reason API** items to
+24. Correct the **Play Data Safety** table: add User IDs, add user content, fix
+    the sharing answer only if the Discord trigger is kept. *(F13, F14)*
+25. Add **privacy manifest** and **required-reason API** items to
     `docs/PRE-RELEASE-CHECKLIST.md` §0b. *(F21)*
 
 ### Stage 5 — needs a Mac / a real archive
 
-18. Resolve `capacitor-swift-pm` 8.5.0 and check its own manifest and
+26. Resolve `capacitor-swift-pm` 8.5.0 and check its own manifest and
     required-reason API usage. *(F20)*
-19. Archive and run **Xcode → Organizer → Generate Privacy Report**; compare the
+27. Archive and run **Xcode → Organizer → Generate Privacy Report**; compare the
     PDF against the manifest written in stage 1. *(F20)*
-20. Walk deletion end-to-end with a throwaway account on device
+28. Walk deletion end-to-end with a throwaway account on device
     (`PRE-RELEASE-CHECKLIST` §4).
+
+### Also needs an answer
+
+- **Supabase platform logs** — confirm whether IP addresses and user agents are
+  retained, and for how long, then disclose or scope out. *(F35)*
+- **`20260807130000` comment is wrong** about the `profiles → auth.users` FK;
+  fix the comment when the file is next touched. *(F36)*
 
 ### Open question for the owner
 
