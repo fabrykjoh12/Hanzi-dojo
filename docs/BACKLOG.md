@@ -154,6 +154,32 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### A gender word placed as a label has no natural sentence (open, found 2026-08-25)
+
+`a3-final-11` got beat 1 accepted on the first attempt (judged 6) and then lost
+beat 2 twice, both times to the same contradiction:
+
+```
+a1  那个男人就是小红。   judged 1 — "calling a woman a man makes the text nonsensical"
+a2  那个男人就是小红。   judged 1 — "fatal contradiction"
+```
+
+The beat gate is working. What it is enforcing is unwritable: plan C places
+男人 in beat 2 with `refersTo: Li Ming` and the reason *"to identify Li Ming's
+gender role when he enters the scene"*, in a beat whose only man is the
+viewpoint character. The honest realization is 李明是一个男人 — a sentence with
+no reason to exist — so the writer reached for a contrastive one and attached
+the label to the wrong person, twice.
+
+Both gender targets are placed this way; 女人 in beat 1 survives only because
+这个女人很累 happens to read naturally. **The plan-quality judge scored this
+plan targetFit 8 and overall 9.** A target with a real communicative purpose is
+exactly what `target_no_intent` and the judge's targetFit dimension exist to
+check, and "Description" passed both.
+
+That is a plan-selection question, not a beat-realization one, and nothing has
+been changed for it.
+
 ### Beat realization: a decorative detail and a narrated quote (open, found 2026-08-25)
 
 `a3-final-7` is the first run to clear the lexical scaffold end to end — title
