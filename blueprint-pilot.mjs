@@ -39,6 +39,7 @@ import {
 import { realizeByBeat, BEAT_LIMITS, BEAT_QUALITY, BEAT_VERSION } from './storyBeats.mjs'
 import { buildLexicalScaffold, applyScaffold, shapeChanges, SCAFFOLD_VERSION } from './storyLexicalScaffold.mjs'
 import { assessShapeRisk, validateGlossCorpus, RISK, RISK_VERSION } from './storyLexicalRisk.mjs'
+import { targetViabilityPrompt, parseTargetViability, assessTargetPlacements, VIABILITY_VERSION } from './storyTargetViability.mjs'
 import { judgePrompt, parseJudgment, JUDGE_VERSION } from './storyJudge.mjs'
 import { preRepairDecision, DRAFT_QUALITY } from './storyDraftQuality.mjs'
 import { planRepair, executeRepairPlan, LINE_QUALITY, REPAIR_PLANNER_VERSION } from './storyRepairPlanner.mjs'
@@ -166,6 +167,23 @@ if (preflightOnly) {
           + (r.highConcepts.join(', ') || '—').slice(0, 36).padEnd(38)
           + (r.eligible ? 'YES' : 'no'))
       }
+      // The fourth gate runs ONLY on the candidates that already pass the other
+      // three: their structural, lexical and quality results are the stored
+      // ones and nothing here re-judges them.
+      for (const r of rows.filter(x => x.eligible)) {
+        const c = stored.candidates.find(x => (x.label || '-') === r.label)
+        const blueprint = c.plan ? adaptShape(c.plan).blueprint : c.blueprint
+        const v = await judgeTargetPlacements(blueprint, { manifest: stored.manifest, required: stored.required, provider: writer })
+        r.viability = v
+        r.eligible = r.eligible && v.ok
+        console.log('\n  PLAN ' + r.label + ' — target placements (' + VIABILITY_VERSION + '): ' + (v.ok ? 'all writable' : 'REJECTED'))
+        if (v.error) console.log('    judge error: ' + v.error)
+        for (const row of v.rows) {
+          console.log('    ' + (row.verdict === 'PASS' ? '✓' : '✗') + ' ' + row.word + ' → beat ' + row.beat
+            + ' | ' + (row.referent || '—') + ' | ' + (row.function || '—') + (row.reason ? '  — ' + row.reason : ''))
+        }
+      }
+      console.log('')
       const eligible = rows.filter(r => r.eligible).sort((a, b) => (b.overall || 0) - (a.overall || 0))
       console.log('\nELIGIBLE, ranked by the already-recorded quality score: '
         + (eligible.length ? eligible.map(r => r.label + ' (' + r.overall + ')').join(', ') : 'NONE'))
@@ -223,6 +241,27 @@ if (preflightOnly) {
   writeFileSync(join(outDir, 'preflight.json'), JSON.stringify({ version: RISK_VERSION, generatedAt: new Date().toISOString(), reports }, null, 2) + '\n')
   console.log('wrote ' + join(outDir, 'preflight.json'))
   process.exit(0)
+}
+
+// The fourth eligibility gate: does every required word have a reason to be
+// said where the plan puts it? One call per plan, judged placement by
+// placement. A verdict that does not come back is not a pass.
+async function judgeTargetPlacements(blueprint, { manifest, required, provider: p }) {
+  const cfg = levelConfig(manifest.language, manifest.system, manifest.level)
+  const words = (blueprint.targetPlan || []).map(t => t.word)
+  let raw = null
+  let verdicts = null
+  try {
+    raw = await p.send({
+      kind: 'target-viability',
+      prompt: targetViabilityPrompt({ manifest, blueprint, levelName: (cfg && cfg.levelName) || ('HSK ' + manifest.level) }),
+      maxTokens: 1200,
+    })
+    verdicts = parseTargetViability(raw, words)
+  } catch (err) {
+    return { ...assessTargetPlacements(null, { blueprint, required }), error: String((err && err.message) || err).slice(0, 200), raw: null }
+  }
+  return { ...assessTargetPlacements(verdicts, { blueprint, required }), error: null, raw: String(raw || '').slice(0, 1500) }
 }
 
 // Either reuse a stored SHAPE (A3), resume one stored plan (retired path), or
@@ -547,6 +586,24 @@ for (const job of jobs) {
     results.push(record)
     continue
   }
+  // ── Target-placement viability: the fourth gate ───────────────────────────
+  // Structural, lexical and quality all passed on a plan whose 男人 had nowhere
+  // to go. Every required placement is judged on its own here, and one fatal
+  // placement makes the plan ineligible however good the rest of it is.
+  const viability = await judgeTargetPlacements(chosen.blueprint, { manifest, required, provider: writer })
+  console.log('\nTARGET PLACEMENT VIABILITY (' + VIABILITY_VERSION + '): ' + (viability.ok ? 'every required placement is writable' : 'REJECTED'))
+  for (const r of viability.rows) {
+    console.log('  ' + (r.verdict === 'PASS' ? '✓' : '✗') + ' ' + r.word + ' → beat ' + r.beat
+      + ' | ' + (r.referent || '—') + ' | ' + (r.function || '—') + (r.reason ? '  — ' + r.reason : ''))
+  }
+  record.viability = viability
+  if (!viability.ok) {
+    console.log('\nTARGET_PLACEMENT_NOT_VIABLE: ' + viability.failures.map(f => f.word + ' (beat ' + f.beat + ')').join(', '))
+    record.selection = { ...record.selection, code: 'TARGET_PLACEMENT_NOT_VIABLE', unviable: viability.failures }
+    results.push(record)
+    continue
+  }
+
   // The chosen plan's per-beat report. It cannot be HIGH — feasibility ran
   // before ranking — and the branch below stays only as a guard against a
   // future edit that reorders the two.
@@ -811,6 +868,7 @@ for (const r of results) {
       thresholds: { blueprint: BLUEPRINT_QUALITY, draft: DRAFT_QUALITY, line: LINE_QUALITY },
       resume: r.resume || null,
       risk: r.risk || null,
+      viability: r.viability || null,
       replanned: r.replanned || false,
       scaffold: r.scaffold || null,
       blueprints: r.blueprints,
