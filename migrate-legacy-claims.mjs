@@ -27,7 +27,7 @@
 // them even in principle.
 
 import { createClient } from '@supabase/supabase-js'
-import { buildMigrationPlan } from './src/migration/legacyClaimMigration.js'
+import { buildMigrationPlan, actionableCards, actionableBreakdown } from './src/migration/legacyClaimMigration.js'
 import { replayCard, describeReplay } from './src/migration/legacyClaimReplay.js'
 import { buildManifest, checkEntry, casPredicate, ACTION, ENTRY_STATUS, MANIFEST_VERSION } from './src/migration/legacyClaimManifest.js'
 import fs from 'node:fs'
@@ -105,8 +105,12 @@ const pad = (v, n) => String(v).padStart(n)
 // they are never mutated by this migration, and duplicating them would be
 // another copy of user data for no restorative benefit.
 async function makeSnapshot() {
-  const { cards } = await loadWorld()
-  const rows = cards.filter(isCandidate)
+  const { cards, logsByCardId, loggingEpoch } = await loadWorld()
+  // THE SAME provenance classification the manifest uses — not a second
+  // predicate. Snapshot coverage and manifest coverage cannot drift apart
+  // because they are literally the same function.
+  const rows = actionableCards({ cards, logsByCardId, loggingEpoch })
+  const breakdown = actionableBreakdown({ cards, logsByCardId, loggingEpoch })
   const generated_at = new Date().toISOString()
 
   // Canonical form: rows sorted by id, keys sorted, so the digest is
@@ -123,6 +127,9 @@ async function makeSnapshot() {
     version: 1,
     generated_at,
     row_count: rows.length,
+    convert_count: breakdown.convert,
+    replay_count: breakdown.replay,
+    logging_epoch: loggingEpoch,
     sha256,
     note: 'Complete original card rows that the legacy-claim migration could modify. '
       + 'Restoration must use these exact rows — never a reconstruction. '
@@ -137,19 +144,21 @@ async function makeSnapshot() {
   console.log('\n' + line())
   console.log('PRE-APPLY SNAPSHOT')
   console.log(line())
-  console.log('\n  file       ' + file)
-  console.log('  rows       ' + rows.length)
-  console.log('  sha256     ' + sha256)
-  console.log('  generated  ' + generated_at)
-  console.log('  mode       0600 (owner read/write only)')
+  console.log('\n  file          ' + file)
+  console.log('  convert rows  ' + pad(breakdown.convert, 6))
+  console.log('  replay rows   ' + pad(breakdown.replay, 6))
+  console.log('  ' + '-'.repeat(30))
+  console.log('  total rows    ' + pad(rows.length, 6)
+    + (rows.length === breakdown.total ? '' : '   !! disagrees with the breakdown'))
+  console.log('  sha256        ' + sha256)
+  console.log('  logging epoch ' + loggingEpoch)
+  console.log('  generated     ' + generated_at)
+  console.log('  mode          0600 (owner read/write only)')
+  console.log('\n  Coverage is the SAME provenance classification the manifest uses,')
+  console.log('  so every row that can enter the manifest is backed up here.')
   console.log('\nThis file contains complete original rows and is the ONLY sanctioned')
   console.log('restore source. Keep it off the repo — .gitignore covers it — and delete')
   console.log('it once the migration has been accepted.\n')
-}
-
-function isCandidate(c) {
-  return (c.state === 'review' && (c.reps || 0) === 0)
-    || (c.stability === 21 && (c.reps || 0) >= 1)
 }
 
 function sortKeys(o) {

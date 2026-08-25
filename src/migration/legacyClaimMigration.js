@@ -191,6 +191,44 @@ export function corroborateBatches(classified) {
 // created_at is coincidence rather than evidence of a batch.
 export const MIN_BULK_BATCH = 10
 
+// ── THE ONE ACTIONABLE SET ──────────────────────────────────────────────────
+//
+// Every consumer that needs "which cards could this migration touch?" asks
+// HERE. The pre-apply snapshot and the manifest must cover exactly the same
+// rows: a snapshot narrower than the manifest is a silent hole in the rollback
+// guarantee, because a row could be modified that was never backed up.
+//
+// That is not hypothetical. The snapshot originally carried its own
+// hand-written fingerprint (`state='review' AND reps=0` OR `stability=21 AND
+// reps>=1`). When the classifier moved to provenance, the snapshot did not, so
+// it would have omitted almost every reviewed seed the manifest correctly
+// identified — the exact rows most in need of a backup, since they are the ones
+// carrying real user grades. One shared function is the fix; a second predicate
+// is the bug.
+//
+// Returns the full card rows, in input order, for every card the classifier
+// calls actionable — UNTOUCHED_CLAIM or REVIEWED_SEED — and nothing else.
+export function actionableCards({ cards, logsByCardId, loggingEpoch } = {}) {
+  const logs = logsByCardId || {}
+  return (cards || []).filter(card => {
+    const klass = classifyCard(card, logs[card.id] || [], { loggingEpoch })
+    return klass === CLASS.UNTOUCHED_CLAIM || klass === CLASS.REVIEWED_SEED
+  })
+}
+
+// The same set, split by what would be done to each — for reporting.
+export function actionableBreakdown({ cards, logsByCardId, loggingEpoch } = {}) {
+  const logs = logsByCardId || {}
+  let convert = 0
+  let replay = 0
+  for (const card of cards || []) {
+    const klass = classifyCard(card, logs[card.id] || [], { loggingEpoch })
+    if (klass === CLASS.UNTOUCHED_CLAIM) convert += 1
+    else if (klass === CLASS.REVIEWED_SEED) replay += 1
+  }
+  return { convert, replay, total: convert + replay }
+}
+
 // The provenance to record when converting. The original source was never
 // persisted — it only ever reached an analytics event — so it can be
 // reconstructed only where the account's history makes it unambiguous.

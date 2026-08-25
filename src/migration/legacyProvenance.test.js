@@ -1,8 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
   CLASS, classifyCard, hasNewTransition, buildMigrationPlan, corroborateBatches, MIN_BULK_BATCH,
+  actionableCards, actionableBreakdown,
 } from './legacyClaimMigration'
 import { replayCard } from './legacyClaimReplay'
+import { buildManifest } from './legacyClaimManifest'
 
 // Regressions for the PROVENANCE classifier — the one that survives a legitimate
 // grade landing on a fabricated seed.
@@ -302,5 +304,95 @@ describe('batch corroboration flags anything outside a demonstrated cohort', () 
       { id: 'z', klass: CLASS.PRE_LOGGING, created_at: BEFORE },
     ])
     expect(c.batches).toHaveLength(0)
+  })
+})
+
+// ── SNAPSHOT COVERAGE ───────────────────────────────────────────────────────
+//
+// The pre-apply snapshot is the only sanctioned restore source. If it covers
+// fewer rows than the manifest, a row can be modified that was never backed up
+// — a silent hole in the rollback guarantee.
+//
+// This is not hypothetical. The snapshot originally carried its OWN predicate
+// (`state='review' AND reps=0` OR `stability=21 AND reps>=1`). When the
+// classifier moved to provenance the snapshot did not follow, so it would have
+// omitted almost every reviewed seed — precisely the rows carrying real user
+// grades, and so the ones most in need of a backup.
+describe('snapshot coverage comes from the one shared classification', () => {
+  const world = {
+    cards: [
+      seedRow({ id: 'untouched-1' }),
+      seedRow({ id: 'untouched-2' }),
+      // Escaped: mutated reps AND stability, invisible to both old fingerprints.
+      seedRow({ id: 'escaped-1', reps: 1, stability: 50.9865, difficulty: 6.666 }),
+      seedRow({ id: 'escaped-2', reps: 3, stability: 137.4, difficulty: 8.9 }),
+      // Import that the OLD replay fingerprint matched: stability 21, reps >= 1.
+      seedRow({ id: 'import-fp', reps: 3, stability: 21, difficulty: 5 }),
+      seedRow({ id: 'import-other', reps: 5, stability: 12.3, difficulty: 7.2 }),
+      seedRow({ id: 'genuine-1', reps: 2, stability: 44.2, difficulty: 5.1 }),
+      seedRow({ id: 'prelog-1', created_at: BEFORE }),
+      seedRow({
+        id: 'b2claim-1', state: 'new', reps: 0, stability: null, difficulty: null,
+        learned: false, last_review: null,
+        prior_known_at: '2026-08-25T10:00:00.000Z', prior_source: 'placement',
+      }),
+    ],
+    logsByCardId: {
+      'escaped-1': [log({ grade: 1 })],
+      'escaped-2': [
+        log({ id: 'a', grade: 2, reviewed_at: '2026-08-01T09:00:00.000Z' }),
+        log({ id: 'b', grade: 0, reviewed_at: '2026-08-09T09:00:00.000Z' }),
+        log({ id: 'c', grade: 3, reviewed_at: '2026-08-20T09:00:00.000Z' }),
+      ],
+      'genuine-1': [
+        log({ id: 'g1', previous_state: 'new', reviewed_at: '2026-08-01T09:00:00.000Z' }),
+        log({ id: 'g2', previous_state: 'review', reviewed_at: '2026-08-20T09:00:00.000Z' }),
+      ],
+    },
+    loggingEpoch: EPOCH,
+  }
+  const snapshotIds = actionableCards(world).map(c => c.id)
+
+  it('includes an escaped reviewed seed whose stability and reps both moved', () => {
+    // The bug: the old snapshot predicate matched neither of these.
+    const oldPredicate = c => (c.state === 'review' && (c.reps || 0) === 0)
+      || (c.stability === 21 && (c.reps || 0) >= 1)
+    expect(oldPredicate(world.cards.find(c => c.id === 'escaped-1'))).toBe(false)
+    expect(oldPredicate(world.cards.find(c => c.id === 'escaped-2'))).toBe(false)
+    expect(snapshotIds).toContain('escaped-1')
+    expect(snapshotIds).toContain('escaped-2')
+  })
+
+  it('includes untouched legacy seeds', () => {
+    expect(snapshotIds).toContain('untouched-1')
+    expect(snapshotIds).toContain('untouched-2')
+  })
+
+  it('excludes the imported old-fingerprint false positive', () => {
+    // The old predicate WOULD have snapshotted (and the old manifest replayed)
+    // this imported row. Provenance excludes it from both.
+    expect(snapshotIds).not.toContain('import-fp')
+    expect(snapshotIds).not.toContain('import-other')
+  })
+
+  it('excludes genuine, pre-logging and B2 claim rows', () => {
+    expect(snapshotIds).not.toContain('genuine-1')
+    expect(snapshotIds).not.toContain('prelog-1')
+    expect(snapshotIds).not.toContain('b2claim-1')
+  })
+
+  it('snapshot rows EQUAL the manifest actionable rows over one frozen world', () => {
+    const manifest = buildManifest({ ...world, replayFor: h => replayCard(h), generatedAt: 'frozen' })
+    const manifestIds = manifest.entries.map(e => e.card_id).sort()
+    expect(snapshotIds.slice().sort()).toEqual(manifestIds)
+    // And nothing actionable is missing from either side.
+    expect(manifestIds).toHaveLength(4)
+  })
+
+  it('the reported breakdown matches the rows actually captured', () => {
+    const b = actionableBreakdown(world)
+    expect(b.convert).toBe(2)
+    expect(b.replay).toBe(2)
+    expect(b.total).toBe(snapshotIds.length)
   })
 })
