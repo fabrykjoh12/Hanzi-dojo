@@ -29,7 +29,7 @@
 
 import { checkAnchor, checkUsageSketch, hasLatin } from './storyBlueprint.mjs'
 import { analyzeStory } from './storyCorpusCalibration.mjs'
-import { retrieveCandidates } from './storyLexicalRetrieval.mjs'
+import { retrieveCandidates, stem } from './storyLexicalRetrieval.mjs'
 import { classifySketch, repairBrief, checkRepairDrift } from './storySketchRepair.mjs'
 
 export const SCAFFOLD_VERSION = 'fab9-scaffold@3'
@@ -104,33 +104,37 @@ export function checkSketchCast(sketch, { word, beat = null, blueprint = null, m
   const text = String(sketch == null ? '' : sketch).trim()
   if (!text) return { ok: false, problems: ['no sketch'] }
   const cast = new Set((blueprint && blueprint.cast) || [])
-  const targets = new Set(((manifest && manifest.targets) || []).map(t => t && t.word).filter(Boolean))
   // The people the FROZEN beat already has, read off its own English text.
   // 女人 is fair game in a beat about a woman and an invention in one without
-  // her: teaching a word for a person is not a licence to add one.
+  // her, and 邻居 belongs in a beat that is ABOUT being neighbours — a3-final-4
+  // lost one on that, because the allowance was scoped to target words and
+  // 邻居 is not a target. Presence in the plan is the test, not what kind of
+  // word it is. Stems, because a beat says "neighbors" and a gloss says
+  // "neighbor".
   const beatWords = new Set(
     (String((beat && beat.what) || '') + ' ' + String((beat && beat.because) || ''))
-      .toLowerCase().split(/[^a-z]+/).filter(Boolean))
+      .toLowerCase().split(/[^a-z]+/).filter(Boolean).map(stem))
   const inFrozenBeat = (w) => {
     const meaning = String((vocabMap[w] && vocabMap[w].meaning) || '').toLowerCase()
-    return meaning.split(/[^a-z]+/).filter(t => t.length > 2).some(t => beatWords.has(t))
+    return meaning.split(/[^a-z]+/).filter(t => t.length > 2).some(t => beatWords.has(stem(t)))
   }
   const analysis = analyzeStory({ title: '', level: (manifest && manifest.level) || 1, content: text }, vocabMap)
   const intruders = []
   for (const w of analysis.counts.keys()) {
     if (w === word || cast.has(w) || PRONOUNS.has(w)) continue
-    if (targets.has(w) && inFrozenBeat(w)) continue
+    if (inFrozenBeat(w)) continue
     const meaning = vocabMap[w] && vocabMap[w].meaning
     if (meaning && PERSON_GLOSS.test(meaning)) intruders.push(w)
   }
   if (intruders.length) {
     return {
       ok: false,
+      intruders,
       problems: ['introduces ' + intruders.join('、') + ', who ' + (intruders.length > 1 ? 'are' : 'is')
         + ' not in this story. The people are: ' + [...cast].join('、')],
     }
   }
-  return { ok: true, problems: [] }
+  return { ok: true, intruders: [], problems: [] }
 }
 
 export function applyScaffold(blueprint, scaffold) {
@@ -272,7 +276,11 @@ export async function buildLexicalScaffold({
           if (out && !brief) {
             firstAttempt = out
             brief = repairBrief(classifySketch(out, {
-              word: entry.word, beat, blueprint, manifest, vocabMap, problems: check.problems,
+              word: entry.word, blueprint, manifest, vocabMap, problems: check.problems,
+              // A cast violation is not a lexical one, and without this the
+              // retry got a brief with nothing in it and returned the same
+              // sentence.
+              intruders: castCheck.intruders || [],
               candidates: (retrieve({ manifest, vocabMap, beat, entries: [entry], avoid: [] }).candidates || []),
             }))
           }

@@ -172,3 +172,42 @@ describe('the repair brief reaches the writer, and only on a retry', () => {
     expect(SKETCH_REPAIR_VERSION).toBe('fab9-sketch-repair@1')
   })
 })
+
+// ── a3-final-4: the cast gate's own false positive ──────────────────────────
+describe('a person the FROZEN BEAT already has is not an intruder', () => {
+  const vm = { ...vocabMap, 邻居: { word: '邻居', level: 3, meaning: 'neighbor; next door' }, 关系: { word: '关系', level: 3, meaning: 'relation; relationship' }, 我们: { word: '我们', level: 1, meaning: 'we; us' }, 和: { word: '和', level: 1, meaning: 'and; with' }, 好: { word: '好', level: 1, meaning: 'good' } }
+  const m = () => buildManifest({ batchId: 'c', seq: 1, level: 3, targets: ['关系', '女人'], defaults: { lines: [14, 38] } })
+  // Plan C's beat 6, verbatim.
+  const beat6 = { id: 6, when: 'later', where: 'hallway', what: 'They chat about how friendly neighbors are. Li Ming leaves.', because: 'the box is safe', targets: ['关系'], lines: 14 }
+
+  it('allows 邻居 in a beat that is about being neighbours', () => {
+    // a3-final-4 rejected this twice and lost the run on it.
+    const r = checkSketchCast('我们和邻居的关系很好。', { word: '关系', beat: beat6, blueprint: plan, manifest: m(), vocabMap: vm })
+    expect(r.ok).toBe(true)
+  })
+
+  it('still refuses a person the beat does not have', () => {
+    const r = checkSketchCast('我们和爸爸的关系很好。', { word: '关系', beat: beat6, blueprint: plan, manifest: m(), vocabMap: vm })
+    expect(r.ok).toBe(false)
+    expect(r.intruders).toEqual(['爸爸'])
+  })
+
+  it('the allowance is presence in the plan, not being a target word', () => {
+    // 邻居 is not one of this manifest's targets; the beat text is what counts.
+    expect(m().targets.map(t => t.word)).not.toContain('邻居')
+    const elsewhere = { id: 2, what: 'Li Ming walks into the lobby and sees the box.', because: 'he is coming home' }
+    expect(checkSketchCast('我们和邻居的关系很好。', { word: '关系', beat: elsewhere, blueprint: plan, manifest: m(), vocabMap: vm }).ok).toBe(false)
+  })
+
+  it('a cast violation reaches the retry as something to fix', () => {
+    // Without this the brief was empty and the writer returned the same
+    // sentence, burning the one retry for nothing.
+    const brief = repairBrief(classifySketch('我们和爸爸的关系很好。', {
+      word: '关系', blueprint: plan, manifest: m(), vocabMap: vm,
+      problems: ['introduces 爸爸'], intruders: ['爸爸'],
+    }))
+    expect(brief.fix.map(f => f.token)).toEqual(['爸爸'])
+    expect(brief.fix[0].why).toContain('not in the story')
+    expect(brief.keep).not.toContain('爸爸')
+  })
+})

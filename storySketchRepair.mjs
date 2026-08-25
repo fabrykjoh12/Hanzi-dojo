@@ -69,7 +69,7 @@ function contentWords(sketch, level, vocabMap) {
 
 // What the first attempt got right, what it got wrong, and what the language
 // offers instead. `problems` are the deterministic checker's own words.
-export function classifySketch(sketch, { word, blueprint = null, manifest, vocabMap, problems = [], candidates = [] } = {}) {
+export function classifySketch(sketch, { word, blueprint = null, manifest, vocabMap, problems = [], candidates = [], intruders = [] } = {}) {
   const level = manifest.level
   const a = analyzeStory({ title: '', level, content: text(sketch) }, vocabMap)
   const cast = new Set((blueprint && blueprint.cast) || [])
@@ -94,6 +94,15 @@ export function classifySketch(sketch, { word, blueprint = null, manifest, vocab
     return ![...b.counts.keys()].some(w => !targets.has(w) && vocabMap[w] && vocabMap[w].level > level)
   }
 
+  // A person the plan does not have is invalid material too: the retry has to
+  // be told to take them out, or it has nothing to repair.
+  const castProblems = intruders.map(token => ({
+    token,
+    reason: 'this person is not in the story',
+    candidates: [],
+    omittable: omittable(token),
+  }))
+
   const invalid = invalidTokens.map(token => ({
     token,
     reason: (problems.find(p => String(p).includes(token)) || (vocabMap[token] ? 'above the story level' : 'not a word in the vocabulary')),
@@ -101,14 +110,16 @@ export function classifySketch(sketch, { word, blueprint = null, manifest, vocab
     omittable: omittable(token),
   }))
 
-  const valid = [...a.counts.keys()].filter(w => !invalidTokens.includes(w) && !GRAMMAR.has(w))
+  const allInvalid = [...invalid, ...castProblems]
+  const blocked = new Set(allInvalid.map(i => i.token))
+  const valid = [...a.counts.keys()].filter(w => !blocked.has(w) && !GRAMMAR.has(w))
   return {
     sketch: text(sketch),
     target: word,
     hasTarget: (a.counts.get(word) || 0) > 0,
     castRefs: [...a.counts.keys()].filter(w => cast.has(w)),
     valid,
-    invalid,
+    invalid: allInvalid,
     retrieval: candidates,
   }
 }
