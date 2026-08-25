@@ -807,6 +807,11 @@ for (const r of results) {
       blueprints: r.blueprints,
       judgeRaw: r.judgeRaw || null,
       selection: r.selection,
+      // Beat realization is the stage most likely to fail and was the one
+      // stage the artifact did not keep: a3-final-5 cleared the scaffold, lost
+      // its story in the beats, and the file recorded neither the code nor a
+      // single attempt.
+      beats: r.beats || null,
       draft: r.draft,
       before: r.validation,
       preRepairCritique: r.preRepairCritique,
