@@ -1,0 +1,606 @@
+{
+  "version": "fab9-risk@2",
+  "generatedAt": "2026-08-25T22:44:49.330Z",
+  "reports": [
+    {
+      "source": "data/story-candidates/transition-1/bakeoff.json",
+      "kind": "bakeoff",
+      "manifestId": "bakeoff-L3-001",
+      "rows": [
+        {
+          "label": "C",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": true,
+          "overall": 9,
+          "risk": "MEDIUM",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"lobby\" has no in-level vocabulary, but the rest of the beat does"
+            },
+            {
+              "beat": 3,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 4,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (carried), but the beat's own event can be told"
+            },
+            {
+              "beat": 6,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (bonding), but the beat's own event can be told"
+            }
+          ],
+          "viability": {
+            "version": "fab9-target-viability@1",
+            "ok": false,
+            "rows": [
+              {
+                "word": "女人",
+                "beat": 1,
+                "referent": "Xiao Hong",
+                "function": "redundant label for established character",
+                "verdict": "FAIL",
+                "reason": "The reader already knows Li Ming is looking at Xiao Hong, so using the generic \"woman\" wastes space without adding new information.",
+                "requiredHere": true
+              },
+              {
+                "word": "男人",
+                "beat": 2,
+                "referent": "Li Ming",
+                "function": "redundant label for established character",
+                "verdict": "FAIL",
+                "reason": "The reader already knows Li Ming is walking in, so labeling him as a \"man\" adds no narrative value beyond satisfying the word list.",
+                "requiredHere": true
+              },
+              {
+                "word": "需要",
+                "beat": 3,
+                "referent": "The act of helping",
+                "function": "core component of the offer",
+                "verdict": "PASS",
+                "reason": "\"Need\" is essential to the syntax of offering assistance (\"do you need help\"), making the word structurally necessary for the dialogue.",
+                "requiredHere": true
+              },
+              {
+                "word": "帮助",
+                "beat": 3,
+                "referent": "Moving the box",
+                "function": "the specific aid being offered",
+                "verdict": "PASS",
+                "reason": "This word specifies the concrete action Li Ming is proposing, which is the main event of the beat and drives the plot forward.",
+                "requiredHere": true
+              },
+              {
+                "word": "关系",
+                "beat": 6,
+                "referent": "Neighborliness",
+                "function": "abstract label for obvious context",
+                "verdict": "FAIL",
+                "reason": "The characters are already interacting as helpful neighbors, so explicitly naming the \"relationship\" is a gratuitous meta-commentary rather than a natural dialogue piece.",
+                "requiredHere": true
+              }
+            ],
+            "failures": [
+              {
+                "word": "女人",
+                "beat": 1,
+                "referent": "Xiao Hong",
+                "function": "redundant label for established character",
+                "verdict": "FAIL",
+                "reason": "The reader already knows Li Ming is looking at Xiao Hong, so using the generic \"woman\" wastes space without adding new information.",
+                "requiredHere": true
+              },
+              {
+                "word": "男人",
+                "beat": 2,
+                "referent": "Li Ming",
+                "function": "redundant label for established character",
+                "verdict": "FAIL",
+                "reason": "The reader already knows Li Ming is walking in, so labeling him as a \"man\" adds no narrative value beyond satisfying the word list.",
+                "requiredHere": true
+              },
+              {
+                "word": "关系",
+                "beat": 6,
+                "referent": "Neighborliness",
+                "function": "abstract label for obvious context",
+                "verdict": "FAIL",
+                "reason": "The characters are already interacting as helpful neighbors, so explicitly naming the \"relationship\" is a gratuitous meta-commentary rather than a natural dialogue piece.",
+                "requiredHere": true
+              }
+            ],
+            "error": null,
+            "raw": "女人: FAIL | Xiao Hong | redundant label for established character | The reader already knows Li Ming is looking at Xiao Hong, so using the generic \"woman\" wastes space without adding new information.\n男人: FAIL | Li Ming | redundant label for established character | The reader already knows Li Ming is walking in, so labeling him as a \"man\" adds no narrative value beyond satisfying the word list.\n需要: PASS | The act of helping | core component of the offer | \"Need\" is essential to the syntax of offering assistance (\"do you need help\"), making the word structurally necessary for the dialogue.\n帮助: PASS | Moving the box | the specific aid being offered | This word specifies the concrete action Li Ming is proposing, which is the main event of the beat and drives the plot forward.\n关系: FAIL | Neighborliness | abstract label for obvious context | The characters are already interacting as helpful neighbors, so explicitly naming the \"relationship\" is a gratuitous meta-commentary rather than a natural dialogue piece."
+          }
+        },
+        {
+          "label": "A",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": true,
+          "overall": 7,
+          "risk": "MEDIUM",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (stuck), but the beat's own event can be told"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (hallway, trapped), but the beat's own event can be told"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (assesses), but the beat's own event can be told"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (strength, seeks, categorize), but the beat's own event can be told"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (focus, rescuer), but the beat's own event can be told"
+            },
+            {
+              "beat": 6,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"lock\" has no in-level vocabulary, but the rest of the beat does"
+            }
+          ],
+          "viability": {
+            "version": "fab9-target-viability@1",
+            "ok": false,
+            "rows": [
+              {
+                "word": "需要",
+                "beat": 1,
+                "referent": "being trapped inside",
+                "function": "expressing urgent need for assistance",
+                "verdict": "PASS",
+                "reason": "It drives Beat 2 by providing the motivation for 李明 to call out rather than just staring at the door.",
+                "requiredHere": true
+              },
+              {
+                "word": "必须",
+                "beat": 3,
+                "referent": "the locked door's status",
+                "function": "explaining mechanical impossibility",
+                "verdict": "PASS",
+                "reason": "It justifies 小红's refusal to force the door, establishing that skill/tools are required, not just effort.",
+                "requiredHere": false
+              },
+              {
+                "word": "男人",
+                "beat": 4,
+                "referent": "the passerby",
+                "function": "labeling an obvious visual element",
+                "verdict": "FAIL",
+                "reason": "The noun is unnecessary context-filler; a native writer would use a pronoun or simply say \"he\" as he is physically present and visible.",
+                "requiredHere": true
+              },
+              {
+                "word": "女人",
+                "beat": 5,
+                "referent": "the neighbor with the tool",
+                "function": "identifying the specific source of aid",
+                "verdict": "PASS",
+                "reason": "Unlike the passerby, this person is new to the scene, so a specific noun is required to distinguish her from 小红 and the previous 男人.",
+                "requiredHere": true
+              },
+              {
+                "word": "帮助",
+                "beat": 6,
+                "referent": "the act of fixing the door",
+                "function": "expressing gratitude for the service",
+                "verdict": "PASS",
+                "reason": "It connects the physical resolution (fixing) to the social conclusion (friendship), a natural linguistic bridge.",
+                "requiredHere": true
+              },
+              {
+                "word": "关系",
+                "beat": 6,
+                "referent": "the bond between neighbors",
+                "function": "contextualizing the moral of the story",
+                "verdict": "PASS",
+                "reason": "It elevates the specific instance of aid to a general truth about community, justifying the final dialogue.",
+                "requiredHere": true
+              }
+            ],
+            "failures": [
+              {
+                "word": "男人",
+                "beat": 4,
+                "referent": "the passerby",
+                "function": "labeling an obvious visual element",
+                "verdict": "FAIL",
+                "reason": "The noun is unnecessary context-filler; a native writer would use a pronoun or simply say \"he\" as he is physically present and visible.",
+                "requiredHere": true
+              }
+            ],
+            "error": null,
+            "raw": "需要: PASS | being trapped inside | expressing urgent need for assistance | It drives Beat 2 by providing the motivation for 李明 to call out rather than just staring at the door.\n必须: PASS | the locked door's status | explaining mechanical impossibility | It justifies 小红's refusal to force the door, establishing that skill/tools are required, not just effort.\n男人: FAIL | the passerby | labeling an obvious visual element | The noun is unnecessary context-filler; a native writer would use a pronoun or simply say \"he\" as he is physically present and visible.\n女人: PASS | the neighbor with the tool | identifying the specific source of aid | Unlike the passerby, this person is new to the scene, so a specific noun is required to distinguish her from 小红 and the previous 男人.\n帮助: PASS | the act of fixing the door | expressing gratitude for the service | It connects the physical resolution (fixing) to the social conclusion (friendship), a natural linguistic bridge.\n关系: PASS | the bond between neighbors | contextualizing the moral of the story | It elevates the specific instance of aid to a general truth about community, justifying the final dialogue."
+          }
+        },
+        {
+          "label": "D",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": true,
+          "overall": 9,
+          "risk": "HIGH",
+          "highBeats": [
+            2
+          ],
+          "highConcepts": [
+            "slips",
+            "falls"
+          ],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (sweating, grip, slipping, complain), but the beat's own event can be told"
+            },
+            {
+              "beat": 2,
+              "risk": "HIGH",
+              "reason": "the beat's own event needs 2 words the reader does not have: slips, falls"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (loud, thump, attracts, identification), but the beat's own event can be told"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (intervene), but the beat's own event can be told"
+            },
+            {
+              "beat": 5,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 6,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (bond), but the beat's own event can be told"
+            }
+          ]
+        },
+        {
+          "label": "F",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": false,
+          "overall": 5,
+          "risk": "MEDIUM",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (sweating, fill), but the beat's own event can be told"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (stuck, causing, visible, attracts), but the beat's own event can be told"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (trouble, logically, stress, necessity), but the beat's own event can be told"
+            },
+            {
+              "beat": 4,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"knocks\" has no in-level vocabulary, but the rest of the beat does"
+            }
+          ]
+        },
+        {
+          "label": "G",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": true,
+          "quality": true,
+          "overall": 6,
+          "risk": "HIGH",
+          "highBeats": [
+            4
+          ],
+          "highConcepts": [
+            "wrench",
+            "repair"
+          ],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"upset\" has no in-level vocabulary, but the rest of the beat does"
+            },
+            {
+              "beat": 3,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 4,
+              "risk": "HIGH",
+              "reason": "the beat's own event needs 2 words the reader does not have: wrench, repair"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (bond), but the beat's own event can be told"
+            }
+          ]
+        },
+        {
+          "label": "E",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": false,
+          "quality": true,
+          "overall": 8,
+          "risk": "LOW",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 2,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 3,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 4,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 5,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": false,
+          "quality": false,
+          "overall": 4,
+          "risk": "MEDIUM",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (gender), but the beat's own event can be told"
+            },
+            {
+              "beat": 3,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (neighbourly, bond, gender, describe), but the beat's own event can be told"
+            },
+            {
+              "beat": 5,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            }
+          ]
+        },
+        {
+          "label": "H",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": true,
+          "quality": true,
+          "overall": 9,
+          "risk": "MEDIUM",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": true,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"flat\" has no in-level vocabulary, but the rest of the beat does"
+            },
+            {
+              "beat": 2,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (wrench, necessity), but the beat's own event can be told"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (repair, gender, isn, volunteer), but the beat's own event can be told"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"stronger\" has no in-level vocabulary, but the rest of the beat does"
+            }
+          ],
+          "viability": {
+            "version": "fab9-target-viability@1",
+            "ok": true,
+            "rows": [
+              {
+                "word": "需要",
+                "beat": 1,
+                "referent": "李明's realization of need",
+                "function": "establishes the problem's urgency",
+                "verdict": "PASS",
+                "reason": "李明 genuinely feels the need for help, driving the plot forward.",
+                "requiredHere": true
+              },
+              {
+                "word": "帮助",
+                "beat": 1,
+                "referent": "李明's request for aid",
+                "function": "initiates the interaction",
+                "verdict": "PASS",
+                "reason": "李明 must ask for help to get the story moving.",
+                "requiredHere": true
+              },
+              {
+                "word": "帮助",
+                "beat": 2,
+                "referent": "李明's request for aid",
+                "function": "initiates the interaction",
+                "verdict": "PASS",
+                "reason": "李明 must ask for help to get the story moving.",
+                "requiredHere": true
+              },
+              {
+                "word": "必须",
+                "beat": 3,
+                "referent": "necessity of a tool",
+                "function": "forced emphasis on obvious task",
+                "verdict": "FAIL",
+                "reason": "The reader knows they need tools; stating it is \"necessary\" adds no new information.",
+                "requiredHere": false
+              },
+              {
+                "word": "需要",
+                "beat": 3,
+                "referent": "李明's realization of need",
+                "function": "establishes the problem's urgency",
+                "verdict": "PASS",
+                "reason": "李明 genuinely feels the need for help, driving the plot forward.",
+                "requiredHere": true
+              },
+              {
+                "word": "男人",
+                "beat": 4,
+                "referent": "example of male repairer",
+                "function": "sets up contrast",
+                "verdict": "PASS",
+                "reason": "妈妈 uses \"man\" to establish the first side of her gender comparison.",
+                "requiredHere": true
+              },
+              {
+                "word": "女人",
+                "beat": 4,
+                "referent": "example of female helper",
+                "function": "completes the moral point",
+                "verdict": "PASS",
+                "reason": "妈妈 uses \"woman\" to refute the idea that only men can fix bikes.",
+                "requiredHere": true
+              },
+              {
+                "word": "帮助",
+                "beat": 4,
+                "referent": "李明's request for aid",
+                "function": "initiates the interaction",
+                "verdict": "PASS",
+                "reason": "李明 must ask for help to get the story moving.",
+                "requiredHere": true
+              },
+              {
+                "word": "关系",
+                "beat": 5,
+                "referent": "their friendship",
+                "function": "thematic resolution",
+                "verdict": "PASS",
+                "reason": "The shared experience strengthens their bond, providing emotional closure.",
+                "requiredHere": true
+              }
+            ],
+            "failures": [],
+            "error": null,
+            "raw": "需要: PASS | 李明's realization of need | establishes the problem's urgency | 李明 genuinely feels the need for help, driving the plot forward.\n帮助: PASS | 李明's request for aid | initiates the interaction | 李明 must ask for help to get the story moving.\n帮助: PASS | 小红's offer | responds to the call | 小红 arrives specifically to provide help, making her presence useful.\n必须: FAIL | necessity of a tool | forced emphasis on obvious task | The reader knows they need tools; stating it is \"necessary\" adds no new information.\n需要: FAIL | the tool | redundant explanation | Since they are already going to find the toolbox, restating the need is repetitive.\n男人: PASS | example of male repairer | sets up contrast | 妈妈 uses \"man\" to establish the first side of her gender comparison.\n女人: PASS | example of female helper | completes the moral point | 妈妈 uses \"woman\" to refute the idea that only men can fix bikes.\n帮助: PASS | general assistance | reinforces the theme | 妈妈 concludes that women can also provide the help needed.\n关系: PASS | their friendship | thematic resolution | The shared experience strengthens their bond, providing emotional closure."
+          }
+        }
+      ],
+      "eligible": [
+        "H"
+      ],
+      "rates": {
+        "groq:qwen/qwen3.6-27b:none": {
+          "n": 4,
+          "structural": 4,
+          "quality": 3,
+          "feasible": 3,
+          "eligible": 0
+        },
+        "groq:openai/gpt-oss-120b:low": {
+          "n": 4,
+          "structural": 2,
+          "quality": 3,
+          "feasible": 3,
+          "eligible": 1
+        }
+      }
+    }
+  ]
+}
