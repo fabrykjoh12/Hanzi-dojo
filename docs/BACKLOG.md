@@ -154,6 +154,32 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### Beat realization: a decorative detail and a narrated quote (open, found 2026-08-25)
+
+`a3-final-7` is the first run to clear the lexical scaffold end to end — title
+李明帮忙, five valid target sketches, six valid anchor sets — and it stopped at
+`BEAT_REALIZATION_FAILED` on beat 1 after both attempts:
+
+```
+a1  ... 小红擦了擦额头上的汗。          unknown_words: 额头、汗 (2, max 1)
+a2  ... 他走过去问：小红，你需要帮忙吗？  unknown_speaker: "他走过去问"
+```
+
+**a1** is the writer decorating: wiping sweat from a forehead is not in the
+beat, and it costs two words the reader does not have. The limit is one and it
+did not move.
+
+**a2 was otherwise clean** — 5 lines, out-of-level 2.0%, zero unknown words,
+the target present. Its only fault is form: 他走过去问：… is a narration clause
+introducing a quote, and the house format is a bare name before the colon.
+
+Worth fixing together with it: **the message is wrong.** `narrated_speaker`
+only fires when the prefix is exactly a cast name (小明说), so a fuller clause
+falls through to `unknown_speaker` and the writer is told the speaker is not in
+the cast — which is not the problem and does not lead to the fix.
+
+Not touched: this is the next layer, reported rather than changed.
+
 ### A3.1 sketches: a bare character where the word is a compound, and a drifting retry (open, found 2026-08-24)
 
 `a3-final-3` re-ran frozen plan C through the corrected scaffold rules and
