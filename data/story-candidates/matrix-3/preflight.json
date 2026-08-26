@@ -1,0 +1,2426 @@
+{
+  "version": "fab9-risk@4",
+  "generatedAt": "2026-08-26T21:27:06.899Z",
+  "reports": [
+    {
+      "source": "data/story-candidates/bundle-plans-1/bakeoff.json",
+      "kind": "policy-matrix",
+      "manifestId": "bundle-L3-001",
+      "matrix": [
+        {
+          "label": "cost 12 / offList 2",
+          "policy": {
+            "version": "fab9-assist@1",
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "assistedWordsPreferred": 4,
+            "assistedWordsMax": 8,
+            "assistedPerBeatPreferred": 1,
+            "assistedPerBeatMax": 2,
+            "distanceCost": {
+              "1": 1,
+              "2": 2,
+              "3": 4
+            },
+            "farCost": 6,
+            "offListCost": 4,
+            "costBudget": 12,
+            "offListMax": 2,
+            "necessityWeight": {
+              "CENTRAL_NECESSARY": 0.75,
+              "NATURAL_SUPPORT": 1,
+              "OPTIONAL_COMPLEXITY": 1.5
+            },
+            "assistedPerSentencePreferred": 1,
+            "assistedPerSentenceMax": 2
+          },
+          "plans": [
+            {
+              "label": "D",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 9,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 5,
+              "cost": 16,
+              "offList": 2,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:provides",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "守",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "危险",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 2,
+                  "baseCost": 1
+                },
+                {
+                  "word": "劝",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [
+                "provides→off-list (6)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "A",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 8,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 7,
+              "cost": 29,
+              "offList": 5,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:prompting",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:hesitation",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "冲突",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 6,
+                  "distance": 3,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:anxiety",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:hesitant",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:perspective",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [
+                "prompting→off-list (6)",
+                "hesitation→off-list (6)",
+                "conflict→冲突 HSK6 (6)",
+                "anxiety→off-list (3)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "E",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 9,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 9,
+              "cost": 25,
+              "offList": 2,
+              "crowdedBeats": [
+                5
+              ],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:vs",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "薪水",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 6,
+                  "distance": 3,
+                  "cost": 4,
+                  "baseCost": 4
+                },
+                {
+                  "word": "矛盾",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "输入",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                },
+                {
+                  "word": "穷",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                },
+                {
+                  "word": "待",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                },
+                {
+                  "word": "赚",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                }
+              ],
+              "over": [
+                "vs→off-list (6)",
+                "salary→薪水 HSK6 (4)",
+                "conflicting→矛盾 HSK5 (3)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "B",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 6,
+              "qualityOk": true,
+              "classification": "ASSISTED_OOL",
+              "assistedWords": 4,
+              "cost": 12,
+              "offList": 2,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "明确",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                }
+              ],
+              "over": [],
+              "viability": true,
+              "eligible": true
+            },
+            {
+              "label": "F",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 6,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 4,
+              "cost": 17,
+              "offList": 3,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:offer",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:email",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [
+                "offer→off-list (6)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "C",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 4,
+              "qualityOk": false,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 11,
+              "cost": 38,
+              "offList": 8,
+              "crowdedBeats": [
+                4
+              ],
+              "clustered": [
+                {
+                  "beat": 4,
+                  "sentences": [
+                    1
+                  ]
+                }
+              ],
+              "necessity": [
+                {
+                  "word": "off:quieter",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:deeper",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:confident",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:pressure",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:balcony",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:pros",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:cons",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "客厅",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                },
+                {
+                  "word": "讨论",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                }
+              ],
+              "over": [
+                "quieter→off-list (6)",
+                "deeper→off-list (6)",
+                "confident→off-list (6)",
+                "offer→off-list (3)",
+                "pressure→off-list (3)",
+                "balcony→off-list (3)"
+              ],
+              "viability": null,
+              "eligible": false
+            }
+          ],
+          "eligible": [
+            "B"
+          ]
+        },
+        {
+          "label": "cost 12 / offList 3",
+          "policy": {
+            "version": "fab9-assist@1",
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "assistedWordsPreferred": 4,
+            "assistedWordsMax": 8,
+            "assistedPerBeatPreferred": 1,
+            "assistedPerBeatMax": 2,
+            "distanceCost": {
+              "1": 1,
+              "2": 2,
+              "3": 4
+            },
+            "farCost": 6,
+            "offListCost": 4,
+            "costBudget": 12,
+            "offListMax": 3,
+            "necessityWeight": {
+              "CENTRAL_NECESSARY": 0.75,
+              "NATURAL_SUPPORT": 1,
+              "OPTIONAL_COMPLEXITY": 1.5
+            },
+            "assistedPerSentencePreferred": 1,
+            "assistedPerSentenceMax": 2
+          },
+          "plans": [
+            {
+              "label": "D",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 9,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 5,
+              "cost": 16,
+              "offList": 2,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:provides",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "守",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "危险",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 2,
+                  "baseCost": 1
+                },
+                {
+                  "word": "劝",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [
+                "provides→off-list (6)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "A",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 8,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 7,
+              "cost": 29,
+              "offList": 5,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:prompting",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:hesitation",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "冲突",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 6,
+                  "distance": 3,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:anxiety",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:hesitant",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:perspective",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [
+                "prompting→off-list (6)",
+                "hesitation→off-list (6)",
+                "conflict→冲突 HSK6 (6)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "E",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 9,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 9,
+              "cost": 25,
+              "offList": 2,
+              "crowdedBeats": [
+                5
+              ],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:vs",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "薪水",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 6,
+                  "distance": 3,
+                  "cost": 4,
+                  "baseCost": 4
+                },
+                {
+                  "word": "矛盾",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "输入",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                },
+                {
+                  "word": "穷",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                },
+                {
+                  "word": "待",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                },
+                {
+                  "word": "赚",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                }
+              ],
+              "over": [
+                "vs→off-list (6)",
+                "salary→薪水 HSK6 (4)",
+                "conflicting→矛盾 HSK5 (3)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "B",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 6,
+              "qualityOk": true,
+              "classification": "ASSISTED_OOL",
+              "assistedWords": 4,
+              "cost": 12,
+              "offList": 2,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "明确",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                }
+              ],
+              "over": [],
+              "viability": true,
+              "eligible": true
+            },
+            {
+              "label": "F",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 6,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 4,
+              "cost": 17,
+              "offList": 3,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:offer",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:email",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [
+                "offer→off-list (6)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "C",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 4,
+              "qualityOk": false,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 11,
+              "cost": 38,
+              "offList": 8,
+              "crowdedBeats": [
+                4
+              ],
+              "clustered": [
+                {
+                  "beat": 4,
+                  "sentences": [
+                    1
+                  ]
+                }
+              ],
+              "necessity": [
+                {
+                  "word": "off:quieter",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:deeper",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:confident",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:pressure",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:balcony",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:pros",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:cons",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "客厅",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                },
+                {
+                  "word": "讨论",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                }
+              ],
+              "over": [
+                "quieter→off-list (6)",
+                "deeper→off-list (6)",
+                "confident→off-list (6)",
+                "offer→off-list (3)",
+                "pressure→off-list (3)",
+                "balcony→off-list (3)"
+              ],
+              "viability": null,
+              "eligible": false
+            }
+          ],
+          "eligible": [
+            "B"
+          ]
+        },
+        {
+          "label": "cost 15 / offList 3",
+          "policy": {
+            "version": "fab9-assist@1",
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "assistedWordsPreferred": 4,
+            "assistedWordsMax": 8,
+            "assistedPerBeatPreferred": 1,
+            "assistedPerBeatMax": 2,
+            "distanceCost": {
+              "1": 1,
+              "2": 2,
+              "3": 4
+            },
+            "farCost": 6,
+            "offListCost": 4,
+            "costBudget": 15,
+            "offListMax": 3,
+            "necessityWeight": {
+              "CENTRAL_NECESSARY": 0.75,
+              "NATURAL_SUPPORT": 1,
+              "OPTIONAL_COMPLEXITY": 1.5
+            },
+            "assistedPerSentencePreferred": 1,
+            "assistedPerSentenceMax": 2
+          },
+          "plans": [
+            {
+              "label": "D",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 9,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 5,
+              "cost": 16,
+              "offList": 2,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:provides",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "守",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "危险",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 2,
+                  "baseCost": 1
+                },
+                {
+                  "word": "劝",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [
+                "provides→off-list (6)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "A",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 8,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 7,
+              "cost": 29,
+              "offList": 5,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:prompting",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:hesitation",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "冲突",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 6,
+                  "distance": 3,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:anxiety",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:hesitant",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:perspective",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [
+                "prompting→off-list (6)",
+                "hesitation→off-list (6)",
+                "conflict→冲突 HSK6 (6)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "E",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 9,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 9,
+              "cost": 25,
+              "offList": 2,
+              "crowdedBeats": [
+                5
+              ],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:vs",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "薪水",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 6,
+                  "distance": 3,
+                  "cost": 4,
+                  "baseCost": 4
+                },
+                {
+                  "word": "矛盾",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "输入",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                },
+                {
+                  "word": "穷",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                },
+                {
+                  "word": "待",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                },
+                {
+                  "word": "赚",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                }
+              ],
+              "over": [
+                "vs→off-list (6)",
+                "salary→薪水 HSK6 (4)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "B",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 6,
+              "qualityOk": true,
+              "classification": "ASSISTED_OOL",
+              "assistedWords": 4,
+              "cost": 12,
+              "offList": 2,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "明确",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                }
+              ],
+              "over": [],
+              "viability": true,
+              "eligible": true
+            },
+            {
+              "label": "F",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 6,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 4,
+              "cost": 17,
+              "offList": 3,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:offer",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:email",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [
+                "offer→off-list (6)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "C",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 4,
+              "qualityOk": false,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 11,
+              "cost": 38,
+              "offList": 8,
+              "crowdedBeats": [
+                4
+              ],
+              "clustered": [
+                {
+                  "beat": 4,
+                  "sentences": [
+                    1
+                  ]
+                }
+              ],
+              "necessity": [
+                {
+                  "word": "off:quieter",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:deeper",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:confident",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:pressure",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:balcony",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:pros",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:cons",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "客厅",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                },
+                {
+                  "word": "讨论",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                }
+              ],
+              "over": [
+                "quieter→off-list (6)",
+                "deeper→off-list (6)",
+                "confident→off-list (6)",
+                "offer→off-list (3)",
+                "pressure→off-list (3)"
+              ],
+              "viability": null,
+              "eligible": false
+            }
+          ],
+          "eligible": [
+            "B"
+          ]
+        },
+        {
+          "label": "cost 18 / offList 3",
+          "policy": {
+            "version": "fab9-assist@1",
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "assistedWordsPreferred": 4,
+            "assistedWordsMax": 8,
+            "assistedPerBeatPreferred": 1,
+            "assistedPerBeatMax": 2,
+            "distanceCost": {
+              "1": 1,
+              "2": 2,
+              "3": 4
+            },
+            "farCost": 6,
+            "offListCost": 4,
+            "costBudget": 18,
+            "offListMax": 3,
+            "necessityWeight": {
+              "CENTRAL_NECESSARY": 0.75,
+              "NATURAL_SUPPORT": 1,
+              "OPTIONAL_COMPLEXITY": 1.5
+            },
+            "assistedPerSentencePreferred": 1,
+            "assistedPerSentenceMax": 2
+          },
+          "plans": [
+            {
+              "label": "D",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 9,
+              "qualityOk": true,
+              "classification": "ASSISTED_OOL",
+              "assistedWords": 5,
+              "cost": 16,
+              "offList": 2,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:provides",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "守",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "危险",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 2,
+                  "baseCost": 1
+                },
+                {
+                  "word": "劝",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [],
+              "viability": null,
+              "eligible": true
+            },
+            {
+              "label": "A",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 8,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 7,
+              "cost": 29,
+              "offList": 5,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:prompting",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:hesitation",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "冲突",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 6,
+                  "distance": 3,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:anxiety",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:hesitant",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:perspective",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [
+                "prompting→off-list (6)",
+                "hesitation→off-list (6)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "E",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 9,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 9,
+              "cost": 25,
+              "offList": 2,
+              "crowdedBeats": [
+                5
+              ],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:vs",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "薪水",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 6,
+                  "distance": 3,
+                  "cost": 4,
+                  "baseCost": 4
+                },
+                {
+                  "word": "矛盾",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "输入",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                },
+                {
+                  "word": "穷",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                },
+                {
+                  "word": "待",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                },
+                {
+                  "word": "赚",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                }
+              ],
+              "over": [
+                "vs→off-list (6)",
+                "salary→薪水 HSK6 (4)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "B",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 6,
+              "qualityOk": true,
+              "classification": "ASSISTED_OOL",
+              "assistedWords": 4,
+              "cost": 12,
+              "offList": 2,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "明确",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                }
+              ],
+              "over": [],
+              "viability": true,
+              "eligible": true
+            },
+            {
+              "label": "F",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 6,
+              "qualityOk": true,
+              "classification": "ASSISTED_OOL",
+              "assistedWords": 4,
+              "cost": 17,
+              "offList": 3,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:offer",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:email",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [],
+              "viability": null,
+              "eligible": true
+            },
+            {
+              "label": "C",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 4,
+              "qualityOk": false,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 11,
+              "cost": 38,
+              "offList": 8,
+              "crowdedBeats": [
+                4
+              ],
+              "clustered": [
+                {
+                  "beat": 4,
+                  "sentences": [
+                    1
+                  ]
+                }
+              ],
+              "necessity": [
+                {
+                  "word": "off:quieter",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:deeper",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:confident",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:pressure",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:balcony",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:pros",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:cons",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "客厅",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                },
+                {
+                  "word": "讨论",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                }
+              ],
+              "over": [
+                "quieter→off-list (6)",
+                "deeper→off-list (6)",
+                "confident→off-list (6)",
+                "offer→off-list (3)",
+                "pressure→off-list (3)"
+              ],
+              "viability": null,
+              "eligible": false
+            }
+          ],
+          "eligible": [
+            "D",
+            "B",
+            "F"
+          ]
+        },
+        {
+          "label": "cost 18 / offList 4",
+          "policy": {
+            "version": "fab9-assist@1",
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "assistedWordsPreferred": 4,
+            "assistedWordsMax": 8,
+            "assistedPerBeatPreferred": 1,
+            "assistedPerBeatMax": 2,
+            "distanceCost": {
+              "1": 1,
+              "2": 2,
+              "3": 4
+            },
+            "farCost": 6,
+            "offListCost": 4,
+            "costBudget": 18,
+            "offListMax": 4,
+            "necessityWeight": {
+              "CENTRAL_NECESSARY": 0.75,
+              "NATURAL_SUPPORT": 1,
+              "OPTIONAL_COMPLEXITY": 1.5
+            },
+            "assistedPerSentencePreferred": 1,
+            "assistedPerSentenceMax": 2
+          },
+          "plans": [
+            {
+              "label": "D",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 9,
+              "qualityOk": true,
+              "classification": "ASSISTED_OOL",
+              "assistedWords": 5,
+              "cost": 16,
+              "offList": 2,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:provides",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "守",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "危险",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 2,
+                  "baseCost": 1
+                },
+                {
+                  "word": "劝",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [],
+              "viability": null,
+              "eligible": true
+            },
+            {
+              "label": "A",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 8,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 7,
+              "cost": 29,
+              "offList": 5,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:prompting",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:hesitation",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "冲突",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 6,
+                  "distance": 3,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:anxiety",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:hesitant",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:perspective",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [
+                "prompting→off-list (6)",
+                "hesitation→off-list (6)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "E",
+              "model": "groq:qwen/qwen3.6-27b:none",
+              "quality": 9,
+              "qualityOk": true,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 9,
+              "cost": 25,
+              "offList": 2,
+              "crowdedBeats": [
+                5
+              ],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:vs",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "薪水",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 6,
+                  "distance": 3,
+                  "cost": 4,
+                  "baseCost": 4
+                },
+                {
+                  "word": "矛盾",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "输入",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                },
+                {
+                  "word": "穷",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                },
+                {
+                  "word": "待",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                },
+                {
+                  "word": "赚",
+                  "necessity": "NATURAL_SUPPORT",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                }
+              ],
+              "over": [
+                "vs→off-list (6)",
+                "salary→薪水 HSK6 (4)"
+              ],
+              "viability": null,
+              "eligible": false
+            },
+            {
+              "label": "B",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 6,
+              "qualityOk": true,
+              "classification": "ASSISTED_OOL",
+              "assistedWords": 4,
+              "cost": 12,
+              "offList": 2,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "明确",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                }
+              ],
+              "over": [],
+              "viability": true,
+              "eligible": true
+            },
+            {
+              "label": "F",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 6,
+              "qualityOk": true,
+              "classification": "ASSISTED_OOL",
+              "assistedWords": 4,
+              "cost": 17,
+              "offList": 3,
+              "crowdedBeats": [],
+              "clustered": [],
+              "necessity": [
+                {
+                  "word": "off:offer",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:conditional",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:email",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 2,
+                  "baseCost": 2
+                }
+              ],
+              "over": [],
+              "viability": null,
+              "eligible": true
+            },
+            {
+              "label": "C",
+              "model": "groq:openai/gpt-oss-120b:low",
+              "quality": 4,
+              "qualityOk": false,
+              "classification": "LEXICALLY_UNSAFE",
+              "assistedWords": 11,
+              "cost": 38,
+              "offList": 8,
+              "crowdedBeats": [
+                4
+              ],
+              "clustered": [
+                {
+                  "beat": 4,
+                  "sentences": [
+                    1
+                  ]
+                }
+              ],
+              "necessity": [
+                {
+                  "word": "off:quieter",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:deeper",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:confident",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 6,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:offer",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:pressure",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:balcony",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:pros",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "off:cons",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": null,
+                  "distance": null,
+                  "cost": 3,
+                  "baseCost": 4
+                },
+                {
+                  "word": "咨询",
+                  "necessity": "OPTIONAL_COMPLEXITY",
+                  "hsk": 5,
+                  "distance": 2,
+                  "cost": 3,
+                  "baseCost": 2
+                },
+                {
+                  "word": "客厅",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                },
+                {
+                  "word": "讨论",
+                  "necessity": "CENTRAL_NECESSARY",
+                  "hsk": 4,
+                  "distance": 1,
+                  "cost": 1,
+                  "baseCost": 1
+                }
+              ],
+              "over": [
+                "quieter→off-list (6)",
+                "deeper→off-list (6)",
+                "confident→off-list (6)",
+                "offer→off-list (3)"
+              ],
+              "viability": null,
+              "eligible": false
+            }
+          ],
+          "eligible": [
+            "D",
+            "B",
+            "F"
+          ]
+        }
+      ]
+    }
+  ]
+}
