@@ -154,6 +154,59 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### A3.2 is now comprehensibility, not purity (`fab9-risk@4`, 2026-08-26)
+
+The product decision changed: a learner can tap any word, so a little
+above-level vocabulary is desirable when it buys natural Chinese. Concepts are
+classified IN_LEVEL or ASSISTED_OOL, and a plan is IN_LEVEL, ASSISTED_OOL or
+LEXICALLY_UNSAFE. `ASSISTED_POLICY` holds the provisional budget — 4 assisted
+words preferred / 8 max, 1 per beat preferred / 2 max, distance charged (+1=1,
++2=2, +3 or off-list=4, beyond=6), cost budget 12, and a 90–95%
+at-or-below-level target for the finished text, which the deterministic
+validator measures because there is no Chinese at plan time. Every number is
+configurable per call and reported next to the verdict it produced.
+
+**Three bugs of my own that the census caught, in order:**
+
+1. **`-s` read as a verb.** 邻居 (HSK 3) and 谢谢 (HSK 1) were charged as
+   off-list because "neighbors" and "thanks" end in -s. In beat prose that is a
+   plural far more often than a verb; -ing and -ed stay.
+2. **A substring coincidence counted as in-level.** "downstairs" was IN_LEVEL
+   because 楼梯 is glossed "stair; staircase" — an out-of-level concept
+   disguised as an in-level one, the one thing this must never do. A weak match
+   is now assisted, pays the off-list price, and records the near miss.
+3. **A plural gloss token collides.** "flat" (deflated) matches 公寓 "apartment
+   building; block of **flats**". Still ASSISTED, so the gate is right; the
+   attributed word and its cost (2 instead of 4) are wrong. **Open.**
+
+**Known false-negative class, left deliberately.** An English noun whose Chinese
+entry glosses only the verb reads as assisted: "go for a **walk**" does not
+reach 走 (HSK 2, "to walk"), exactly as "the **help**" did not reach 帮助 before
+the target exemption. Nothing in this dataset separates that from "a **tire**"
+vs 累 "to tire", which is the bug the POS rule exists to stop. Under the new
+model the cost is bounded — a false negative charges the budget instead of
+declaring a plan infeasible.
+
+**Census (`census-6/preflight.json`), original → assisted model:**
+
+| plan | quality | before | after | assisted | cost |
+|---|---|---|---|---|---|
+| H | 9 | MEDIUM | **LEXICALLY_UNSAFE** | 6 | 20/12 |
+| C | 9 | MEDIUM | ASSISTED_OOL | 3 | 12/12 |
+| A | 7 | MEDIUM | LEXICALLY_UNSAFE | 8 | 24/12 |
+| G | 6 | HIGH | **ASSISTED_OOL** | 3 | 7/12 |
+| D | 9 | HIGH | LEXICALLY_UNSAFE | 7 | 26/12 |
+| F | 5 | MEDIUM | ASSISTED_OOL | 3 | 10/12 |
+| E, B | 8, 4 | LOW, MEDIUM | IN_LEVEL | 0 | 0/12 |
+
+**轮胎 is recognised honestly**: off-list, cost 4 of 12 — comfortably affordable
+on its own. H fails on accumulation (tire, downstairs, friendship, stronger,
+flat, tool), not on one central noun. G improved from HIGH to ASSISTED, which
+is the methodology change working as intended: a wrench and a repair are worth
+tapping.
+
+**Eligible set is still empty.**
+
 ### A3.2 matches a noun to a verb of the same spelling (open, found 2026-08-25)
 
 `a3-H-2` ran frozen plan H — a bike-tire repair story — and stopped at the
