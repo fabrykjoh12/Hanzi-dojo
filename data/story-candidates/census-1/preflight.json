@@ -1,0 +1,449 @@
+{
+  "version": "fab9-risk@3",
+  "generatedAt": "2026-08-26T13:06:21.703Z",
+  "reports": [
+    {
+      "source": "data/story-candidates/transition-1/bakeoff.json",
+      "kind": "bakeoff",
+      "manifestId": "bakeoff-L3-001",
+      "rows": [
+        {
+          "label": "C",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": true,
+          "overall": 9,
+          "risk": "HIGH",
+          "highBeats": [
+            4
+          ],
+          "highConcepts": [
+            "help",
+            "thanks"
+          ],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"lobby\" has no in-level vocabulary, but the rest of the beat does"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (struggle), but the beat's own event can be told"
+            },
+            {
+              "beat": 4,
+              "risk": "HIGH",
+              "reason": "the beat's own event needs 2 words the reader does not have: help, thanks"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (carried), but the beat's own event can be told"
+            },
+            {
+              "beat": 6,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"neighbors\" has no in-level vocabulary, but the rest of the beat does"
+            }
+          ]
+        },
+        {
+          "label": "A",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": true,
+          "overall": 7,
+          "risk": "MEDIUM",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"walk\" has no in-level vocabulary, but the rest of the beat does"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (hallway, trapped), but the beat's own event can be told"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (without, assesses), but the beat's own event can be told"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (lacks, strength, seeks, categorize, potential), but the beat's own event can be told"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (lives, tool, focus, rescuer), but the beat's own event can be told"
+            },
+            {
+              "beat": 6,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"lock\" has no in-level vocabulary, but the rest of the beat does"
+            }
+          ],
+          "viability": {
+            "version": "fab9-target-viability@1",
+            "ok": false,
+            "rows": [
+              {
+                "word": "需要",
+                "beat": 1,
+                "referent": "The situation of being trapped",
+                "function": "Expresses internal dilemma",
+                "verdict": "PASS",
+                "reason": "It captures 李明's specific realization that he is physically stuck and lacks agency, which motivates his cry for help.",
+                "requiredHere": true
+              },
+              {
+                "word": "必须",
+                "beat": 3,
+                "referent": "The necessity of a key",
+                "function": "Explains physical limitation",
+                "verdict": "PASS",
+                "reason": "It logically clarifies why 小红 cannot forcibly open the locked door, grounding her assessment in physical reality.",
+                "requiredHere": false
+              },
+              {
+                "word": "男人",
+                "beat": 4,
+                "referent": "The passerby",
+                "function": "Identifies potential helper",
+                "verdict": "PASS",
+                "reason": "It distinguishes the new male character from 小红 (female) to ensure the reader understands who 小红 is addressing for strength.",
+                "requiredHere": true
+              },
+              {
+                "word": "女人",
+                "beat": 5,
+                "referent": "The neighbor with the tool",
+                "function": "Identifies the rescuer",
+                "verdict": "PASS",
+                "reason": "It differentiates the next-door neighbor from the previous male passerby, marking a shift in who can provide aid.",
+                "requiredHere": true
+              },
+              {
+                "word": "帮助",
+                "beat": 6,
+                "referent": "The act of fixing the door",
+                "function": "Expresses the core action",
+                "verdict": "PASS",
+                "reason": "It is the direct verb describing the relief of the conflict, making it causal to 李明 opening the door.",
+                "requiredHere": true
+              },
+              {
+                "word": "关系",
+                "beat": 6,
+                "referent": "Friendship/Neighborliness",
+                "function": "Abstract labeling",
+                "verdict": "FAIL",
+                "reason": "It adds an abstract moral summary that does not advance the plot or reveal new information about the characters' internal states.",
+                "requiredHere": true
+              }
+            ],
+            "failures": [
+              {
+                "word": "关系",
+                "beat": 6,
+                "referent": "Friendship/Neighborliness",
+                "function": "Abstract labeling",
+                "verdict": "FAIL",
+                "reason": "It adds an abstract moral summary that does not advance the plot or reveal new information about the characters' internal states.",
+                "requiredHere": true
+              }
+            ],
+            "error": null,
+            "raw": "需要: PASS | The situation of being trapped | Expresses internal dilemma | It captures 李明's specific realization that he is physically stuck and lacks agency, which motivates his cry for help.\n必须: PASS | The necessity of a key | Explains physical limitation | It logically clarifies why 小红 cannot forcibly open the locked door, grounding her assessment in physical reality.\n男人: PASS | The passerby | Identifies potential helper | It distinguishes the new male character from 小红 (female) to ensure the reader understands who 小红 is addressing for strength.\n女人: PASS | The neighbor with the tool | Identifies the rescuer | It differentiates the next-door neighbor from the previous male passerby, marking a shift in who can provide aid.\n帮助: PASS | The act of fixing the door | Expresses the core action | It is the direct verb describing the relief of the conflict, making it causal to 李明 opening the door.\n关系: FAIL | Friendship/Neighborliness | Abstract labeling | It adds an abstract moral summary that does not advance the plot or reveal new information about the characters' internal states."
+          }
+        },
+        {
+          "label": "D",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": true,
+          "overall": 9,
+          "risk": "HIGH",
+          "highBeats": [
+            2
+          ],
+          "highConcepts": [
+            "slips",
+            "hands",
+            "falls"
+          ],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (sweating, grip, slipping, complain), but the beat's own event can be told"
+            },
+            {
+              "beat": 2,
+              "risk": "HIGH",
+              "reason": "the beat's own event needs 3 words the reader does not have: slips, hands, falls"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (loud, thump, falling, attracts, identification), but the beat's own event can be told"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"introduces\" has no in-level vocabulary, but the rest of the beat does"
+            },
+            {
+              "beat": 5,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 6,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"thanks\" has no in-level vocabulary, but the rest of the beat does"
+            }
+          ]
+        },
+        {
+          "label": "F",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": false,
+          "overall": 5,
+          "risk": "MEDIUM",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (sweating, fill), but the beat's own event can be told"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (stuck, causing, visible, attracts), but the beat's own event can be told"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (trouble, prompts, logically, stress, necessity), but the beat's own event can be told"
+            },
+            {
+              "beat": 4,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"knocks\" has no in-level vocabulary, but the rest of the beat does"
+            }
+          ]
+        },
+        {
+          "label": "G",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": true,
+          "quality": true,
+          "overall": 6,
+          "risk": "HIGH",
+          "highBeats": [
+            4,
+            5
+          ],
+          "highConcepts": [
+            "wrench",
+            "repair",
+            "thanks",
+            "help"
+          ],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"upset\" has no in-level vocabulary, but the rest of the beat does"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (tool), but the beat's own event can be told"
+            },
+            {
+              "beat": 4,
+              "risk": "HIGH",
+              "reason": "the beat's own event needs 2 words the reader does not have: wrench, repair"
+            },
+            {
+              "beat": 5,
+              "risk": "HIGH",
+              "reason": "the beat's own event needs 2 words the reader does not have: thanks, help"
+            }
+          ]
+        },
+        {
+          "label": "E",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": false,
+          "quality": true,
+          "overall": 8,
+          "risk": "LOW",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 2,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 3,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 4,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 5,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": false,
+          "quality": false,
+          "overall": 4,
+          "risk": "MEDIUM",
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (gender), but the beat's own event can be told"
+            },
+            {
+              "beat": 3,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (neighbourly, bond, gender, describe), but the beat's own event can be told"
+            },
+            {
+              "beat": 5,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            }
+          ]
+        },
+        {
+          "label": "H",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": true,
+          "quality": true,
+          "overall": 9,
+          "risk": "HIGH",
+          "highBeats": [
+            1,
+            3
+          ],
+          "highConcepts": [
+            "flat",
+            "tire",
+            "downstairs",
+            "tool"
+          ],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "HIGH",
+              "reason": "the beat's own event needs 2 words the reader does not have: flat, tire"
+            },
+            {
+              "beat": 2,
+              "risk": "LOW",
+              "reason": "every central concept has in-level vocabulary"
+            },
+            {
+              "beat": 3,
+              "risk": "HIGH",
+              "reason": "the beat's own event needs 2 words the reader does not have: downstairs, tool"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "detail without in-level vocabulary (repair, bikes, gender, isn, volunteer), but the beat's own event can be told"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "the central concept \"stronger\" has no in-level vocabulary, but the rest of the beat does"
+            }
+          ]
+        }
+      ],
+      "eligible": [],
+      "rates": {
+        "groq:qwen/qwen3.6-27b:none": {
+          "n": 4,
+          "structural": 4,
+          "quality": 3,
+          "feasible": 2,
+          "eligible": 0
+        },
+        "groq:openai/gpt-oss-120b:low": {
+          "n": 4,
+          "structural": 2,
+          "quality": 3,
+          "feasible": 2,
+          "eligible": 0
+        }
+      }
+    }
+  ]
+}
