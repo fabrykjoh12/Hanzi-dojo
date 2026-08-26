@@ -485,10 +485,17 @@ jobs:
                 (scaffold) SRC="--resume-scaffold $MANIFEST";;
                 (preflight) SRC="--preflight-only $MANIFEST";;
                 # "shape:G" reuses one labelled plan out of a planner bakeoff.
+                # manifest_path may be "<bakeoff.json>,<viability.json>" to
+                # reuse that plan's stored placement verdicts instead of
+                # re-judging them.
                 (shape:*)
                   LBL="${STAGE#shape:}"
                   case "$LBL" in (*[!A-Za-z0-9_-]*|"") echo "bad shape label"; exit 1;; esac
-                  SRC="--shape-from $MANIFEST --shape-label $LBL"
+                  SHAPE_SRC="${MANIFEST%%,*}"
+                  SRC="--shape-from $SHAPE_SRC --shape-label $LBL"
+                  case "$MANIFEST" in
+                    (*,*) SRC="$SRC --viability-from ${MANIFEST#*,}";;
+                  esac
                 ;;
                 (*) SRC="--shape-from $MANIFEST";;
               esac
