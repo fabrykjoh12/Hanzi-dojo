@@ -1,0 +1,242 @@
+{
+  "version": "fab9-bundle@1",
+  "generatedAt": "2026-08-26T18:17:53.394Z",
+  "level": 3,
+  "levelName": "HSK 3",
+  "model": "groq:qwen/qwen3.6-27b:none",
+  "policy": {
+    "version": "fab9-bundle-policy@1",
+    "requiredMin": 2,
+    "requiredMax": 4,
+    "opportunityMax": 3,
+    "deferralsBeforePriority": 2
+  },
+  "pool": [
+    {
+      "word": "被",
+      "timesDeferred": 0,
+      "lastDeferredAt": null,
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "中",
+      "timesDeferred": 0,
+      "lastDeferredAt": null,
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "如果",
+      "timesDeferred": 0,
+      "lastDeferredAt": null,
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "该",
+      "timesDeferred": 0,
+      "lastDeferredAt": null,
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "需要",
+      "timesDeferred": 0,
+      "lastDeferredAt": null,
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "像",
+      "timesDeferred": 0,
+      "lastDeferredAt": null,
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "认为",
+      "timesDeferred": 0,
+      "lastDeferredAt": null,
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "生活",
+      "timesDeferred": 0,
+      "lastDeferredAt": null,
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    }
+  ],
+  "judgement": {
+    "roles": [
+      {
+        "word": "被",
+        "hasRole": false,
+        "reason": "\"Quilt\" is a concrete noun unrelated to the abstract/social themes of other words; using the passive voice marker requires supporting verb structures that would clutter this specific bundle."
+      },
+      {
+        "word": "中",
+        "hasRole": false,
+        "reason": "As a proper noun/adjective, it sets the background but doesn't drive the plot's conflict or decision-making process."
+      },
+      {
+        "word": "如果",
+        "hasRole": true,
+        "reason": "Essential for presenting the dilemma or conditional outcome that drives the narrative tension."
+      },
+      {
+        "word": "该",
+        "hasRole": false,
+        "reason": "Redundant with \"need\" (需要) in this specific context of practical advice/necessity; choosing one yields a cleaner lesson."
+      },
+      {
+        "word": "需要",
+        "hasRole": true,
+        "reason": "Drives the action by establishing the protagonist's requirement or goal."
+      },
+      {
+        "word": "像",
+        "hasRole": false,
+        "reason": "Descriptive comparisons are decorative here and do not advance the plot of solving a problem."
+      },
+      {
+        "word": "认为",
+        "hasRole": true,
+        "reason": "Provides the internal perspective or opinion that motivates the character's reasoning."
+      },
+      {
+        "word": "生活",
+        "hasRole": false,
+        "reason": "Too broad as a setting; the story needs a specific problem (like housing or finance) rather than the general concept of \"life\"."
+      }
+    ],
+    "bundle": [
+      "如果",
+      "需要",
+      "认为"
+    ],
+    "situation": "A friend asking for advice on a conditional life choice, such as whether to accept a new job."
+  },
+  "raw": "被: NO_ROLE | \"Quilt\" is a concrete noun unrelated to the abstract/social themes of other words; using the passive voice marker requires supporting verb structures that would clutter this specific bundle.\n中: NO_ROLE | As a proper noun/adjective, it sets the background but doesn't drive the plot's conflict or decision-making process.\n如果: ROLE | Essential for presenting the dilemma or conditional outcome that drives the narrative tension.\n该: NO_ROLE | Redundant with \"need\" (需要) in this specific context of practical advice/necessity; choosing one yields a cleaner lesson.\n需要: ROLE | Drives the action by establishing the protagonist's requirement or goal.\n像: NO_ROLE | Descriptive comparisons are decorative here and do not advance the plot of solving a problem.\n认为: ROLE | Provides the internal perspective or opinion that motivates the character's reasoning.\n生活: NO_ROLE | Too broad as a setting; the story needs a specific problem (like housing or finance) rather than the general concept of \"life\".\n\nBUNDLE: 如果, 需要, 认为\nSITUATION: A friend asking for advice on a conditional life choice, such as whether to accept a new job.",
+  "error": null,
+  "selection": {
+    "version": "fab9-bundle@1",
+    "policy": {
+      "version": "fab9-bundle-policy@1",
+      "requiredMin": 2,
+      "requiredMax": 4,
+      "opportunityMax": 3,
+      "deferralsBeforePriority": 2
+    },
+    "situation": "A friend asking for advice on a conditional life choice, such as whether to accept a new job.",
+    "required": [
+      "如果",
+      "需要",
+      "认为"
+    ],
+    "opportunity": [],
+    "deferred": [
+      "被",
+      "中",
+      "该",
+      "像",
+      "生活"
+    ],
+    "toppedUp": [],
+    "enough": true,
+    "rows": [
+      {
+        "word": "被",
+        "hasRole": false,
+        "reason": "\"Quilt\" is a concrete noun unrelated to the abstract/social themes of other words; using the passive voice marker requires supporting verb structures that would clutter this specific bundle.",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "DEFERRED"
+      },
+      {
+        "word": "中",
+        "hasRole": false,
+        "reason": "As a proper noun/adjective, it sets the background but doesn't drive the plot's conflict or decision-making process.",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "DEFERRED"
+      },
+      {
+        "word": "如果",
+        "hasRole": true,
+        "reason": "Essential for presenting the dilemma or conditional outcome that drives the narrative tension.",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "REQUIRED"
+      },
+      {
+        "word": "该",
+        "hasRole": false,
+        "reason": "Redundant with \"need\" (需要) in this specific context of practical advice/necessity; choosing one yields a cleaner lesson.",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "DEFERRED"
+      },
+      {
+        "word": "需要",
+        "hasRole": true,
+        "reason": "Drives the action by establishing the protagonist's requirement or goal.",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "REQUIRED"
+      },
+      {
+        "word": "像",
+        "hasRole": false,
+        "reason": "Descriptive comparisons are decorative here and do not advance the plot of solving a problem.",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "DEFERRED"
+      },
+      {
+        "word": "认为",
+        "hasRole": true,
+        "reason": "Provides the internal perspective or opinion that motivates the character's reasoning.",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "REQUIRED"
+      },
+      {
+        "word": "生活",
+        "hasRole": false,
+        "reason": "Too broad as a setting; the story needs a specific problem (like housing or finance) rather than the general concept of \"life\".",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "DEFERRED"
+      }
+    ]
+  },
+  "meanings": {
+    "被": "quilt; to cover (with)",
+    "中": "China; Chinese",
+    "如果": "if; in case",
+    "该": "should; ought to",
+    "需要": "to need; to want; to demand; to require; needs",
+    "像": "to resemble; to be like",
+    "认为": "to believe; to think; to consider; to feel",
+    "生活": "to live; life"
+  }
+}
