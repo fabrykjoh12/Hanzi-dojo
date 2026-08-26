@@ -7,6 +7,9 @@ import {
 import { replayCard } from './legacyClaimReplay'
 
 const CREATED = '2026-07-28T10:00:00.000Z'
+// The oldest review_log in the database. Provenance can only be proven for
+// cards born after it, so the classifier now requires it explicitly.
+const EPOCH = '2026-07-01T00:00:00.000Z'
 const replayFor = (history) => replayCard(history)
 
 const seeded = (over = {}) => ({
@@ -19,14 +22,20 @@ const seeded = (over = {}) => ({
 })
 const reviewedSeed = (over = {}) => seeded({ id: 'c-rev', reps: 1, difficulty: 6.666, ...over })
 const genuine = (over = {}) => seeded({
-  id: 'c-real', reps: 6, lapses: 1, stability: 44.2, difficulty: 5.1, elapsed_days: 30, ...over,
+  id: 'c-real', reps: 2, lapses: 1, stability: 44.2, difficulty: 5.1, elapsed_days: 30, ...over,
 })
+// A genuine card's history opens with a `new ->` transition — the permanent
+// evidence the provenance classifier reads.
+const genuineHistory = () => [
+  { grade: 2, previous_state: 'new', reviewed_at: '2026-08-01T10:00:00.000Z' },
+  { grade: 2, previous_state: 'review', reviewed_at: '2026-08-20T10:00:00.000Z' },
+]
 const log = (grade, day) => ({ grade, reviewed_at: '2026-08-' + String(day).padStart(2, '0') + 'T10:00:00.000Z' })
 
 describe('buildManifest', () => {
-  const cards = [seeded(), reviewedSeed(), genuine(), reviewedSeed({ id: 'AMBIG-1', reps: 2 })]
-  const logsByCardId = { 'c-rev': [log(1, 1)], 'c-real': [log(2, 1), log(2, 20)] }
-  const m = buildManifest({ cards, logsByCardId, replayFor, generatedAt: '2026-08-22T18:00:00.000Z' })
+  const cards = [seeded(), reviewedSeed(), genuine(), seeded({ id: 'AMBIG-1', stability: 9.4, difficulty: 6.1 })]
+  const logsByCardId = { 'c-rev': [log(1, 1)], 'c-real': genuineHistory() }
+  const m = buildManifest({ cards, logsByCardId, replayFor, generatedAt: '2026-08-22T18:00:00.000Z' , loggingEpoch: EPOCH })
 
   it('is versioned and stamped', () => {
     expect(m.version).toBe(MANIFEST_VERSION)
@@ -79,12 +88,12 @@ describe('buildManifest', () => {
   })
 
   it('is deterministic — same input, byte-identical manifest', () => {
-    const again = buildManifest({ cards, logsByCardId, replayFor, generatedAt: '2026-08-22T18:00:00.000Z' })
+    const again = buildManifest({ cards, logsByCardId, replayFor, generatedAt: '2026-08-22T18:00:00.000Z' , loggingEpoch: EPOCH })
     expect(JSON.stringify(again)).toBe(JSON.stringify(m))
   })
 
   it('handles an empty database', () => {
-    const empty = buildManifest({ cards: [], logsByCardId: {}, replayFor, generatedAt: 'x' })
+    const empty = buildManifest({ cards: [], logsByCardId: {}, replayFor, generatedAt: 'x', loggingEpoch: EPOCH })
     expect(empty.entries).toEqual([])
     expect(empty.counts.actionable).toBe(0)
   })
@@ -124,7 +133,7 @@ describe('replayInputHash', () => {
 // contain only columns that are exactly comparable between Postgres and JSON.
 describe('casPredicate', () => {
   const cards = [seeded()]
-  const m = buildManifest({ cards, logsByCardId: {}, replayFor, generatedAt: 'g' })
+  const m = buildManifest({ cards, logsByCardId: {}, replayFor, generatedAt: 'g', loggingEpoch: EPOCH })
   const cas = casPredicate(m.entries[0])
 
   it('matches on the exactly-representable columns', () => {
@@ -155,6 +164,7 @@ describe('casPredicate', () => {
 
   it('a row already carrying claim metadata produces no entry at all', () => {
     const already = buildManifest({
+      loggingEpoch: EPOCH,
       cards: [seeded({ id: 'x', prior_known_at: CREATED, prior_source: 'legacy_claim' })],
       logsByCardId: {}, replayFor, generatedAt: 'g',
     })
@@ -170,7 +180,7 @@ describe('casPredicate', () => {
 describe('checkEntry — the staleness gate', () => {
   const cards = [seeded(), reviewedSeed()]
   const logsByCardId = { 'c-rev': [log(1, 1)] }
-  const m = buildManifest({ cards, logsByCardId, replayFor, generatedAt: 'g' })
+  const m = buildManifest({ cards, logsByCardId, replayFor, generatedAt: 'g' , loggingEpoch: EPOCH })
   const convertEntry = m.entries.find(e => e.action === ACTION.CONVERT)
   const replayEntry = m.entries.find(e => e.action === ACTION.REPLAY)
 
@@ -273,12 +283,12 @@ describe('a production-shaped manifest', () => {
   const cards = [
     ...Array.from({ length: 594 }, (_, i) => seeded({ id: 's' + i, vocab_id: 'v' + i })),
     ...Array.from({ length: 51 }, (_, i) => reviewedSeed({ id: 'r' + i, vocab_id: 'w' + i })),
-    reviewedSeed({ id: 'AMBIG-1', reps: 2 }),
-    reviewedSeed({ id: 'AMBIG-2', reps: 3, difficulty: 4.6 }),
+    seeded({ id: 'AMBIG-1', stability: 9.4, difficulty: 6.1 }),
+    seeded({ id: 'AMBIG-2', stability: 3.3, difficulty: 4.6 }),
   ]
   const logsByCardId = {}
   for (let i = 0; i < 51; i += 1) logsByCardId['r' + i] = [log(1, 1)]
-  const m = buildManifest({ cards, logsByCardId, replayFor, generatedAt: 'g' })
+  const m = buildManifest({ cards, logsByCardId, replayFor, generatedAt: 'g' , loggingEpoch: EPOCH })
 
   it('matches the reviewed classification', () => {
     expect(m.counts.convert_legacy_claim).toBe(594)

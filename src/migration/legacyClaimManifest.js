@@ -138,15 +138,16 @@ export function matchesExpectedPost(card, expected) {
 // `replayFor(history)` returns the replay result for a history — injected so
 // this module needs no scheduler and stays pure. Entries are emitted ONLY for
 // rows the classifier calls actionable; ambiguous rows contribute a count.
-export function buildManifest({ cards, logsByCardId, replayFor, generatedAt, source = 'production' } = {}) {
+export function buildManifest({ cards, logsByCardId, replayFor, generatedAt, loggingEpoch, source = 'production' } = {}) {
   const logs = logsByCardId || {}
   const entries = []
   let ambiguousCount = 0
   let genuineCount = 0
+  const excluded = { pre_logging: 0, foreign_written: 0, claims: 0, unstarted: 0 }
 
   for (const card of cards || []) {
     const history = logs[card.id] || []
-    const klass = classifyCard(card, history)
+    const klass = classifyCard(card, history, { loggingEpoch })
 
     if (klass === CLASS.UNTOUCHED_CLAIM) {
       entries.push({
@@ -154,6 +155,9 @@ export function buildManifest({ cards, logsByCardId, replayFor, generatedAt, sou
         user_id: card.user_id,
         vocab_id: card.vocab_id,
         action: ACTION.CONVERT,
+        classification: klass,
+        classification_reason: 'no `new ->` transition; created after the logging epoch; '
+          + 'zero review logs; matches the fabricated insert shape exactly',
         precondition: preconditionOf(card),
         // The UNTRUNCATED created_at, used verbatim when writing
         // prior_known_at so the claim keeps its microsecond precision. The
@@ -172,6 +176,9 @@ export function buildManifest({ cards, logsByCardId, replayFor, generatedAt, sou
         user_id: card.user_id,
         vocab_id: card.vocab_id,
         action: ACTION.REPLAY,
+        classification: klass,
+        classification_reason: 'no `new ->` transition; created after the logging epoch; '
+          + 'reps === review_log_count >= 1, so the sequence is complete and replayable',
         precondition: preconditionOf(card),
         created_at_raw: card.created_at,
         review_log_count: ordered.length,
@@ -183,6 +190,14 @@ export function buildManifest({ cards, logsByCardId, replayFor, generatedAt, sou
       })
     } else if (klass === CLASS.GENUINE) {
       genuineCount += 1
+    } else if (klass === CLASS.PRE_LOGGING) {
+      excluded.pre_logging += 1
+    } else if (klass === CLASS.FOREIGN_WRITTEN) {
+      excluded.foreign_written += 1
+    } else if (klass === CLASS.CLAIM) {
+      excluded.claims += 1
+    } else if (klass === CLASS.UNSTARTED) {
+      excluded.unstarted += 1
     } else {
       ambiguousCount += 1
     }
@@ -204,7 +219,14 @@ export function buildManifest({ cards, logsByCardId, replayFor, generatedAt, sou
       // them is still sitting there untouched.
       excluded_ambiguous: ambiguousCount,
       untouched_genuine: genuineCount,
+      // Each excluded on a proven boundary, not a guess. Recorded so post-apply
+      // verification can confirm every one of them is still untouched.
+      excluded_pre_logging: excluded.pre_logging,
+      excluded_foreign_written: excluded.foreign_written,
+      excluded_prior_known_claims: excluded.claims,
+      untouched_unstarted: excluded.unstarted,
     },
+    logging_epoch: loggingEpoch || null,
     entries,
   }
 }

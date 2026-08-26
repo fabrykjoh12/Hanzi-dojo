@@ -154,6 +154,173 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### A3.2 is now comprehensibility, not purity (`fab9-risk@4`, 2026-08-26)
+
+The product decision changed: a learner can tap any word, so a little
+above-level vocabulary is desirable when it buys natural Chinese. Concepts are
+classified IN_LEVEL or ASSISTED_OOL, and a plan is IN_LEVEL, ASSISTED_OOL or
+LEXICALLY_UNSAFE. `ASSISTED_POLICY` holds the provisional budget — 4 assisted
+words preferred / 8 max, 1 per beat preferred / 2 max, distance charged (+1=1,
++2=2, +3 or off-list=4, beyond=6), cost budget 12, and a 90–95%
+at-or-below-level target for the finished text, which the deterministic
+validator measures because there is no Chinese at plan time. Every number is
+configurable per call and reported next to the verdict it produced.
+
+**Three bugs of my own that the census caught, in order:**
+
+1. **`-s` read as a verb.** 邻居 (HSK 3) and 谢谢 (HSK 1) were charged as
+   off-list because "neighbors" and "thanks" end in -s. In beat prose that is a
+   plural far more often than a verb; -ing and -ed stay.
+2. **A substring coincidence counted as in-level.** "downstairs" was IN_LEVEL
+   because 楼梯 is glossed "stair; staircase" — an out-of-level concept
+   disguised as an in-level one, the one thing this must never do. A weak match
+   is now assisted, pays the off-list price, and records the near miss.
+3. **A plural gloss token collides.** "flat" (deflated) matches 公寓 "apartment
+   building; block of **flats**". Still ASSISTED, so the gate is right; the
+   attributed word and its cost (2 instead of 4) are wrong. **Open.**
+
+**Known false-negative class, left deliberately.** An English noun whose Chinese
+entry glosses only the verb reads as assisted: "go for a **walk**" does not
+reach 走 (HSK 2, "to walk"), exactly as "the **help**" did not reach 帮助 before
+the target exemption. Nothing in this dataset separates that from "a **tire**"
+vs 累 "to tire", which is the bug the POS rule exists to stop. Under the new
+model the cost is bounded — a false negative charges the budget instead of
+declaring a plan infeasible.
+
+**Census (`census-6/preflight.json`), original → assisted model:**
+
+| plan | quality | before | after | assisted | cost |
+|---|---|---|---|---|---|
+| H | 9 | MEDIUM | **LEXICALLY_UNSAFE** | 6 | 20/12 |
+| C | 9 | MEDIUM | ASSISTED_OOL | 3 | 12/12 |
+| A | 7 | MEDIUM | LEXICALLY_UNSAFE | 8 | 24/12 |
+| G | 6 | HIGH | **ASSISTED_OOL** | 3 | 7/12 |
+| D | 9 | HIGH | LEXICALLY_UNSAFE | 7 | 26/12 |
+| F | 5 | MEDIUM | ASSISTED_OOL | 3 | 10/12 |
+| E, B | 8, 4 | LOW, MEDIUM | IN_LEVEL | 0 | 0/12 |
+
+**轮胎 is recognised honestly**: off-list, cost 4 of 12 — comfortably affordable
+on its own. H fails on accumulation (tire, downstairs, friendship, stronger,
+flat, tool), not on one central noun. G improved from HIGH to ASSISTED, which
+is the methodology change working as intended: a wrench and a repair are worth
+tapping.
+
+**Eligible set is still empty.**
+
+### The adversarial review, and what it changed (2026-08-26)
+
+Six reviewers went at `fab9-risk@4`; 28 of 55 claims were verified before the
+run hit a session limit and 12 survived refutation. Confirmed and fixed in
+`fab9-risk@5`:
+
+- **A stem collision reopened the tire bug on the plural.** "tired" and "tires"
+  both stem to `tir`, so 轮胎's plural reached 累 through the *adjective* sense
+  while the verb sense was correctly blocked. Inflections may now only meet
+  across a participle through a sense the gloss marks verbal.
+- **The dearest word was charged, not the nearest** — cost depended on corpus
+  row order, and the artifact named the wrong word.
+- **A subordinate clause was a free channel** for the entire budget.
+  Incidental material is charged at half: droppable, not free.
+- **An UNSAFE verdict named no words**, so the one permitted replan re-ran the
+  planner on identical input.
+- **Off-list words outran the validator** — they arrive downstream as UNKNOWN
+  words, where the gate is strict. `offListMax` (2) makes the plan-time promise
+  answerable to it.
+- **A partial policy override crashed** (`{costBudget: 40}` threw).
+
+Charging incidental material then opened three smaller holes, all caught in the
+next census: target **intents** ("Description", "Social bonding") were billed as
+story vocabulary; legitimate inflections ("heard" vs 听见) were punished by the
+weak-match rule; and `isn't` was charged as the word "isn".
+
+**Process note.** Commit `67d58ef` swept in an `assistKey()` helper written into
+the working tree by a review agent while `git add -A` ran. The code is sound and
+is now read, extended and specced — but it entered under a message describing
+only the `-s` fix.
+
+### Census (`census-8`), original → assisted model
+
+| plan | quality | before | after | assisted | cost | off-list |
+|---|---|---|---|---|---|---|
+| H | 9 | MEDIUM | LEXICALLY_UNSAFE | 7 | 17/12 | 4/2 |
+| C | 9 | MEDIUM | LEXICALLY_UNSAFE | 5 | 16/12 | 4/2 |
+| A | 7 | MEDIUM | LEXICALLY_UNSAFE | 19 | 39/12 | 10/2 |
+| D | 9 | HIGH | LEXICALLY_UNSAFE | 15 | 38/12 | 12/2 |
+| F | 5 | MEDIUM | LEXICALLY_UNSAFE | 11 | 23/12 | 6/2 |
+| **G** | 6 | **HIGH** | **ASSISTED_OOL** | 4 | 8/12 | 1/2 |
+| E | 8 | LOW | IN_LEVEL | 0 | 0/12 | 0/2 |
+| B | 4 | MEDIUM | ASSISTED_OOL | 1 | 2/12 | 1/2 |
+
+轮胎 costs **2 of 12** — affordable on its own, exactly as intended. H fails on
+accumulation (downstairs, stronger, flat, tire, tool, wrench, repair) and on
+carrying four words the learner list does not have at all.
+
+**Eligible set: still empty.** G, the plan the methodology change rescued, was
+judged on placement viability for the first time and failed on 女人, 男人 AND
+关系 — *"a generic label for a character already established by name"* — the
+same reason C failed, from the other model. **Four of the eight plans have now
+been through the viability gate and every one fails on at least one of those
+three words.** The required target set itself may be the thing that cannot be
+placed naturally in a five-beat story.
+
+### A3.2 matches a noun to a verb of the same spelling (open, found 2026-08-25)
+
+`a3-H-2` ran frozen plan H — a bike-tire repair story — and stopped at the
+lexical scaffold: the sketch for 帮助 in beat 1 needs to name the tire, and
+**轮胎 is absent from the vocabulary at every level** (so is 修).
+
+A3.2 had rated that beat MEDIUM, reporting `tire=supported`. Reproduced with
+the real glosses:
+
+```
+tire   → supported via gloss → 累
+```
+
+累 is glossed **"tired, to tire"**. The gate matched the noun *tire* to the
+verb *to tire*, concluded the object was sayable, and let a plan whose central
+object cannot be named through the feasibility gate. The same collision put 累
+at the top of the retrieval suggestions offered to the writer, where 自行车
+(HSK 3, and the obvious way to talk around it) never appeared.
+
+The fix is the part-of-speech agreement the synonym bridge already uses: the
+glosses mark verbs with a leading "to", and a direct gloss hit should respect
+that just as `buildSenseSynonyms` does. **Re-run feasibility over the stored
+candidates afterwards** — H's MEDIUM may become HIGH, which would change the
+eligible set.
+
+Secondary, and real: given a correct repair brief naming 轮胎, permission to
+delete it, and eight alternatives, the writer returned the identical sentence
+on its retry.
+
+**Fixed 2026-08-25 (`fab9-risk@3`).** `glossSenses()` reads each gloss sense
+and its part of speech once, the index is built sense by sense, and
+`senseCompatible()` gates every match. On the English side the sentence marks
+the concept: a determiner in front makes a noun, an inflection without one
+makes a verb, anything else stays unknown and never blocks. A word the story
+TEACHES is exempt — 帮助 is glossed "assistance; aid; to help", and calling a
+story's own target missing is never right.
+
+Corrected census over all eight stored plans (`census-3/preflight.json`,
+nothing re-planned, no dimension re-judged):
+
+| | A3.2 before → after | eligible |
+|---|---|---|
+| H | MEDIUM → **HIGH** (flat, tire, downstairs, tool) | YES → no |
+| C | MEDIUM → MEDIUM | no (viability) |
+| A | MEDIUM → MEDIUM | no (viability) |
+| D, G | HIGH → HIGH | no |
+| F, B, E | unchanged | no |
+
+**No candidate's verdict improved**, which is what removing false support
+should look like. **Eligible set is now empty.**
+
+**Residual false negative, in the verb direction.** C beat 4 reads "…and
+thanks him", tagged a verb by its inflection; 谢谢 is glossed **"thank you"**,
+which carries no "to" and so reads as non-verbal, and 谢谢 is not a target. The
+beat is MEDIUM either way so nothing turned on it here. Worth noting that the
+noun→verbal direction is what caught the tire, while the verb→noun direction
+has so far produced one false negative and no catches.
+
 ### Target-placement viability is now a gate — and it changed the selection (2026-08-25)
 
 `storyTargetViability.mjs` judges every target→beat placement on its own:
