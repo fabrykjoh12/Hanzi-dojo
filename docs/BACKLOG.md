@@ -154,6 +154,61 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### 被 is a vocabulary content defect, not a pipeline one (open, found 2026-08-26)
+
+**Do not compensate for this inside the story pipeline.** Deferring 被 is
+currently the correct behaviour: the source row does not carry the sense a
+learner needs, and the published corpus offers no contrary evidence.
+
+| | |
+|---|---|
+| current gloss | `quilt; to cover (with)` |
+| `part_of_speech` | null |
+| example sentence | 折被子。 / "Fold the quilt." — the noun sense again |
+| corpus uses | **0** in published stories |
+| missing | the primary HSK 3 learner sense: **passive marker**, the 被 construction (被 + agent + verb) |
+
+The pipeline now says so explicitly rather than dismissing a quilt: the bundle
+judge reported *"the primary HSK 3 use is the passive marker, which is a
+grammatical structure not listed in the senses provided; teaching it here with
+the given definition is misleading."*
+
+**Repair belongs in the vocabulary row**, with provenance and tests — a
+migration that adds the passive sense and an example sentence showing the
+construction. Until then, nothing downstream can teach 被 correctly, and the
+`storyWordSenses` role detector cannot help because it needs corpus evidence
+that does not exist yet.
+
+### Matcher repaired, and the threshold trade-off finally appears (2026-08-26)
+
+Three classes fixed generically (`fab9-risk@6`), plus two more the audit of
+those fixes turned up:
+
+| class | before → after | guard that holds |
+|---|---|---|
+| irregular inflection | `gave` off-list → **给** (HSK 1) | an English irregular lexicon: ablaut, -ought/-aught, suppletion, irregular plurals |
+| derivation changing POS | `helpful` off-list → **帮/帮助** | each suffix states its base's POS — agentive -er needs a VERB, so `corner` ≠ `corn` |
+| parenthetical evidence | `suggested` off-list → **最好** | only phrases about doing something; 养's "(animals)"/"(children)" and 外卖's "(of a restaurant)" gain nothing |
+| comparatives *(found by the audit)* | `quieter` off-list → **安静** | recognised by sentence frame ("is quieter", "than"), not by -er |
+| gloss-side derivation *(audit)* | `peace` off-list → **安静** ("peaceful") | indexed separately, stays derivational evidence |
+
+Costs fell where the matcher was wrong: D 22→16, F 29→17. B unchanged at 12.
+
+**Corrected matrix over the same six frozen plans (`matrix-3`):**
+
+| cost / off-list | eligible |
+|---|---|
+| 12/2 · 12/3 · 15/3 | B (q6) |
+| **18/3 · 18/4** | **D (q9)**, B (q6), F (q6) |
+
+**The threshold is now doing real work** — and the decisive dimension is COST,
+not off-list: D carries only 2 off-list words and is blocked purely by cost 16
+against a budget of 12–15.
+
+Residual noise, honestly: C (q4, fails quality anyway) still shows `quieter`
+and `deeper` as off-list — its phrasing is outside the comparative frame list,
+which is finite by design.
+
 ### Sense-aware targets, and why the lexical thresholds cannot be calibrated yet (2026-08-26)
 
 **被 was deferred as a quilt.** The vocabulary row glosses it *"quilt; to cover
