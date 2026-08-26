@@ -1,0 +1,1612 @@
+{
+  "version": "fab9-risk@4",
+  "generatedAt": "2026-08-26T17:38:16.201Z",
+  "reports": [
+    {
+      "source": "data/story-candidates/transition-1/bakeoff.json",
+      "kind": "bakeoff",
+      "manifestId": "bakeoff-L3-001",
+      "rows": [
+        {
+          "label": "C",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": true,
+          "overall": 9,
+          "risk": "HIGH",
+          "classification": "LEXICALLY_UNSAFE",
+          "assisted": [
+            {
+              "concept": "unsure",
+              "concepts": [
+                "unsure"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "nearest": "一定",
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                1
+              ]
+            },
+            {
+              "concept": "lobby",
+              "concepts": [
+                "lobby"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "apartment",
+              "concepts": [
+                "apartment"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "nearest": "参加",
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "struggle",
+              "concepts": [
+                "struggle"
+              ],
+              "word": "斗争",
+              "hsk": 6,
+              "distance": 3,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "carried",
+              "concepts": [
+                "carried"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                5
+              ]
+            }
+          ],
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 5,
+            "cost": 16,
+            "costBudget": 12,
+            "crowdedBeats": [],
+            "offListWords": 4,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [
+              "an assisted-vocabulary cost of 16 (budget 12) — distance above the level is charged, so a few far words cost more than several near ones",
+              "4 words the learner list does not carry at all (max 2) — those reach the deterministic validator as UNKNOWN words, and it is strict about them"
+            ],
+            "notes": []
+          },
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "1 assisted word(s) the reader taps: unsure (no word in the list)"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "1 assisted word(s) the reader taps: lobby (no word in the list)"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "only incidental detail is out of level (struggle (斗争 HSK6)), and the beat does not need it"
+            },
+            {
+              "beat": 4,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "1 assisted word(s) the reader taps: apartment (no word in the list)"
+            },
+            {
+              "beat": 6,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            }
+          ]
+        },
+        {
+          "label": "A",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": true,
+          "overall": 7,
+          "risk": "HIGH",
+          "classification": "LEXICALLY_UNSAFE",
+          "assisted": [
+            {
+              "concept": "walk",
+              "concepts": [
+                "walk"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                1
+              ]
+            },
+            {
+              "concept": "stuck",
+              "concepts": [
+                "stuck"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                1
+              ]
+            },
+            {
+              "concept": "locked",
+              "concepts": [
+                "locked"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "nearest": "卡",
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "fixes",
+              "concepts": [
+                "fixes"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "nearest": "边",
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                6
+              ]
+            },
+            {
+              "concept": "hallway",
+              "concepts": [
+                "hallway"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "asking",
+              "concepts": [
+                "asking"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "trapped",
+              "concepts": [
+                "trapped"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "lacks",
+              "concepts": [
+                "lacks"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "nearest": "黑色",
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                4
+              ]
+            },
+            {
+              "concept": "context",
+              "concepts": [
+                "context"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "nearest": "课文",
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "lock",
+              "concepts": [
+                "lock"
+              ],
+              "word": "锁",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                6
+              ]
+            },
+            {
+              "concept": "resolving",
+              "concepts": [
+                "resolving"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                6
+              ]
+            },
+            {
+              "concept": "barrier",
+              "concepts": [
+                "barrier"
+              ],
+              "word": "障碍",
+              "hsk": 6,
+              "distance": 3,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                6
+              ]
+            },
+            {
+              "concept": "without",
+              "concepts": [
+                "without"
+              ],
+              "word": "及时",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "assesses",
+              "concepts": [
+                "assesses"
+              ],
+              "word": "评价",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "strength",
+              "concepts": [
+                "strength"
+              ],
+              "word": "力气",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                4
+              ]
+            },
+            {
+              "concept": "seeks",
+              "concepts": [
+                "seeks"
+              ],
+              "word": "咨询",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                4
+              ]
+            },
+            {
+              "concept": "tool",
+              "concepts": [
+                "tool"
+              ],
+              "word": "工具",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                5,
+                6
+              ]
+            },
+            {
+              "concept": "focus",
+              "concepts": [
+                "focus"
+              ],
+              "word": "专心",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "discuss",
+              "concepts": [
+                "discuss"
+              ],
+              "word": "讨论",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                6
+              ]
+            }
+          ],
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 19,
+            "cost": 39,
+            "costBudget": 12,
+            "crowdedBeats": [
+              6
+            ],
+            "offListWords": 10,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [
+              "19 words above the level (max 8)",
+              "an assisted-vocabulary cost of 39 (budget 12) — distance above the level is charged, so a few far words cost more than several near ones",
+              "beat(s) 6 carry more than 2 assisted words",
+              "10 words the learner list does not carry at all (max 2) — those reach the deterministic validator as UNKNOWN words, and it is strict about them"
+            ],
+            "notes": [
+              "beat 1 carries 2 assisted words; one per sentence reads more easily",
+              "beat 3 carries 2 assisted words; one per sentence reads more easily"
+            ]
+          },
+          "highBeats": [
+            6
+          ],
+          "highConcepts": [
+            "fixes",
+            "lock",
+            "discuss"
+          ],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "2 assisted word(s) the reader taps: walk (no word in the list), stuck (no word in the list)"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "only incidental detail is out of level (hallway (no word in the list), asking (no word in the list), trapped (no word in the list)), and the beat does not need it"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "2 assisted word(s) the reader taps: locked (no word in the list), without (及时 HSK4)"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "only incidental detail is out of level (lacks (no word in the list), strength (力气 HSK4), seeks (咨询 HSK5)), and the beat does not need it"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "only incidental detail is out of level (tool (工具 HSK5), context (no word in the list), focus (专心 HSK5)), and the beat does not need it"
+            },
+            {
+              "beat": 6,
+              "risk": "HIGH",
+              "reason": "this one beat needs 3 words above the level (max 2): fixes (no word in the list), lock (锁 HSK5), discuss (讨论 HSK4)"
+            }
+          ]
+        },
+        {
+          "label": "D",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": true,
+          "overall": 9,
+          "risk": "HIGH",
+          "classification": "LEXICALLY_UNSAFE",
+          "assisted": [
+            {
+              "concept": "sweating",
+              "concepts": [
+                "sweating"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                1
+              ]
+            },
+            {
+              "concept": "slipping",
+              "concepts": [
+                "slipping"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                1
+              ]
+            },
+            {
+              "concept": "slips",
+              "concepts": [
+                "slips"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "introduces",
+              "concepts": [
+                "introduces"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                4
+              ]
+            },
+            {
+              "concept": "offers",
+              "concepts": [
+                "offers"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                4
+              ]
+            },
+            {
+              "concept": "grip",
+              "concepts": [
+                "grip"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                1,
+                2
+              ]
+            },
+            {
+              "concept": "falls",
+              "concepts": [
+                "falls"
+              ],
+              "word": "傍晚",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "loud",
+              "concepts": [
+                "loud"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "thump",
+              "concepts": [
+                "thump"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "falling",
+              "concepts": [
+                "falling"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "intervene",
+              "concepts": [
+                "intervene"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                4
+              ]
+            },
+            {
+              "concept": "destination",
+              "concepts": [
+                "destination"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "nearest": "国家",
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "closure",
+              "concepts": [
+                "closure"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "nearest": "一定",
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                6
+              ]
+            },
+            {
+              "concept": "attracts",
+              "concepts": [
+                "attracts"
+              ],
+              "word": "吸引",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "attention",
+              "concepts": [
+                "attention"
+              ],
+              "word": "目光",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                3
+              ]
+            }
+          ],
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 15,
+            "cost": 38,
+            "costBudget": 12,
+            "crowdedBeats": [
+              1
+            ],
+            "offListWords": 12,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [
+              "15 words above the level (max 8)",
+              "an assisted-vocabulary cost of 38 (budget 12) — distance above the level is charged, so a few far words cost more than several near ones",
+              "beat(s) 1 carry more than 2 assisted words",
+              "12 words the learner list does not carry at all (max 2) — those reach the deterministic validator as UNKNOWN words, and it is strict about them"
+            ],
+            "notes": [
+              "beat 2 carries 2 assisted words; one per sentence reads more easily",
+              "beat 4 carries 2 assisted words; one per sentence reads more easily"
+            ]
+          },
+          "highBeats": [
+            1
+          ],
+          "highConcepts": [
+            "sweating",
+            "grip",
+            "slipping"
+          ],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "HIGH",
+              "reason": "this one beat needs 3 words above the level (max 2): sweating (no word in the list), grip (no word in the list), slipping (no word in the list)"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "2 assisted word(s) the reader taps: slips (no word in the list), falls (傍晚 HSK5)"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "only incidental detail is out of level (loud (no word in the list), thump (no word in the list), falling (no word in the list), attracts (吸引 HSK4), attention (目光 HSK5)), and the beat does not need it"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "2 assisted word(s) the reader taps: introduces (no word in the list), offers (no word in the list)"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "only incidental detail is out of level (destination (no word in the list)), and the beat does not need it"
+            },
+            {
+              "beat": 6,
+              "risk": "MEDIUM",
+              "reason": "only incidental detail is out of level (closure (no word in the list)), and the beat does not need it"
+            }
+          ]
+        },
+        {
+          "label": "F",
+          "model": "groq:qwen/qwen3.6-27b:none",
+          "structural": true,
+          "quality": false,
+          "overall": 5,
+          "risk": "HIGH",
+          "classification": "LEXICALLY_UNSAFE",
+          "assisted": [
+            {
+              "concept": "sweating",
+              "concepts": [
+                "sweating"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                1
+              ]
+            },
+            {
+              "concept": "apartment",
+              "concepts": [
+                "apartment"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "nearest": "南方",
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                2,
+                4
+              ]
+            },
+            {
+              "concept": "stuck",
+              "concepts": [
+                "stuck"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "visible",
+              "concepts": [
+                "visible"
+              ],
+              "word": "显",
+              "hsk": 6,
+              "distance": 3,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "attracts",
+              "concepts": [
+                "attracts"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "knocks",
+              "concepts": [
+                "knocks"
+              ],
+              "word": "抢",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "came",
+              "concepts": [
+                "came"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "preoccupied",
+              "concepts": [
+                "preoccupied"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "causing",
+              "concepts": [
+                "causing"
+              ],
+              "word": "使",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "trouble",
+              "concepts": [
+                "trouble"
+              ],
+              "word": "麻烦",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "free",
+              "concepts": [
+                "free"
+              ],
+              "word": "免费",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                5
+              ]
+            }
+          ],
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 11,
+            "cost": 23,
+            "costBudget": 12,
+            "crowdedBeats": [],
+            "offListWords": 6,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [
+              "11 words above the level (max 8)",
+              "an assisted-vocabulary cost of 23 (budget 12) — distance above the level is charged, so a few far words cost more than several near ones",
+              "6 words the learner list does not carry at all (max 2) — those reach the deterministic validator as UNKNOWN words, and it is strict about them"
+            ],
+            "notes": []
+          },
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "1 assisted word(s) the reader taps: sweating (no word in the list)"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "1 assisted word(s) the reader taps: apartment (no word in the list)"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "only incidental detail is out of level (trouble (麻烦 HSK4)), and the beat does not need it"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "1 assisted word(s) the reader taps: apartment (no word in the list)"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "1 assisted word(s) the reader taps: knocks (抢 HSK5)"
+            }
+          ]
+        },
+        {
+          "label": "G",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": true,
+          "quality": true,
+          "overall": 6,
+          "risk": "MEDIUM",
+          "classification": "ASSISTED_OOL",
+          "assisted": [
+            {
+              "concept": "wrench",
+              "concepts": [
+                "wrench"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                4
+              ]
+            },
+            {
+              "concept": "upset",
+              "concepts": [
+                "upset"
+              ],
+              "word": "刺激",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "tool",
+              "concepts": [
+                "tool"
+              ],
+              "word": "工具",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "repair",
+              "concepts": [
+                "repair"
+              ],
+              "word": "修理",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                4
+              ]
+            }
+          ],
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 4,
+            "cost": 8,
+            "costBudget": 12,
+            "crowdedBeats": [],
+            "offListWords": 1,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [],
+            "notes": [
+              "beat 4 carries 2 assisted words; one per sentence reads more easily"
+            ]
+          },
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            },
+            {
+              "beat": 2,
+              "risk": "MEDIUM",
+              "reason": "1 assisted word(s) the reader taps: upset (刺激 HSK5)"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "only incidental detail is out of level (tool (工具 HSK5)), and the beat does not need it"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "2 assisted word(s) the reader taps: wrench (no word in the list), repair (修理 HSK4)"
+            },
+            {
+              "beat": 5,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            }
+          ],
+          "viability": {
+            "version": "fab9-target-viability@1",
+            "ok": false,
+            "rows": [
+              {
+                "word": "关系",
+                "beat": 5,
+                "referent": "the friendship",
+                "function": "acknowledging the bond",
+                "verdict": "FAIL",
+                "reason": "Closes the scene with thematic fluff rather than advancing the action or resolving the immediate need.",
+                "requiredHere": true
+              },
+              {
+                "word": "女人",
+                "beat": 3,
+                "referent": "妈妈",
+                "function": "identifying the helper",
+                "verdict": "FAIL",
+                "reason": "Uses a generic label for a character already established as \"Mom,\" which is unnatural and redundant.",
+                "requiredHere": true
+              },
+              {
+                "word": "男人",
+                "beat": 2,
+                "referent": "李明",
+                "function": "pointing out the helper",
+                "verdict": "FAIL",
+                "reason": "Uses a generic label for a character already established by name, which is socially awkward and redundant.",
+                "requiredHere": true
+              },
+              {
+                "word": "帮助",
+                "beat": 2,
+                "referent": "the bike repair",
+                "function": "proposing assistance",
+                "verdict": "PASS",
+                "reason": "Naturally expresses the core action of offering aid in response to a problem.",
+                "requiredHere": true
+              },
+              {
+                "word": "需要",
+                "beat": 1,
+                "referent": "the broken bike",
+                "function": "expressing a need",
+                "verdict": "PASS",
+                "reason": "Naturally defines the state of the situation that triggers the interaction.",
+                "requiredHere": true
+              }
+            ],
+            "failures": [
+              {
+                "word": "关系",
+                "beat": 5,
+                "referent": "the friendship",
+                "function": "acknowledging the bond",
+                "verdict": "FAIL",
+                "reason": "Closes the scene with thematic fluff rather than advancing the action or resolving the immediate need.",
+                "requiredHere": true
+              },
+              {
+                "word": "女人",
+                "beat": 3,
+                "referent": "妈妈",
+                "function": "identifying the helper",
+                "verdict": "FAIL",
+                "reason": "Uses a generic label for a character already established as \"Mom,\" which is unnatural and redundant.",
+                "requiredHere": true
+              },
+              {
+                "word": "男人",
+                "beat": 2,
+                "referent": "李明",
+                "function": "pointing out the helper",
+                "verdict": "FAIL",
+                "reason": "Uses a generic label for a character already established by name, which is socially awkward and redundant.",
+                "requiredHere": true
+              }
+            ],
+            "error": null,
+            "raw": "关系: FAIL | the friendship | acknowledging the bond | Closes the scene with thematic fluff rather than advancing the action or resolving the immediate need.\n女人: FAIL | 妈妈 | identifying the helper | Uses a generic label for a character already established as \"Mom,\" which is unnatural and redundant.\n男人: FAIL | 李明 | pointing out the helper | Uses a generic label for a character already established by name, which is socially awkward and redundant.\n帮助: PASS | the bike repair | proposing assistance | Naturally expresses the core action of offering aid in response to a problem.\n需要: PASS | the broken bike | expressing a need | Naturally defines the state of the situation that triggers the interaction."
+          }
+        },
+        {
+          "label": "E",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": false,
+          "quality": true,
+          "overall": 8,
+          "risk": "LOW",
+          "classification": "IN_LEVEL",
+          "assisted": [],
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 0,
+            "cost": 0,
+            "costBudget": 12,
+            "crowdedBeats": [],
+            "offListWords": 0,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [],
+            "notes": []
+          },
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            },
+            {
+              "beat": 2,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            },
+            {
+              "beat": 3,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            },
+            {
+              "beat": 4,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            },
+            {
+              "beat": 5,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": false,
+          "quality": false,
+          "overall": 4,
+          "risk": "MEDIUM",
+          "classification": "ASSISTED_OOL",
+          "assisted": [
+            {
+              "concept": "screwdriver",
+              "concepts": [
+                "screwdriver"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "nearest": "司机",
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                3
+              ]
+            }
+          ],
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 1,
+            "cost": 2,
+            "costBudget": 12,
+            "crowdedBeats": [],
+            "offListWords": 1,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [],
+            "notes": []
+          },
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            },
+            {
+              "beat": 2,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "only incidental detail is out of level (screwdriver (no word in the list)), and the beat does not need it"
+            },
+            {
+              "beat": 4,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            },
+            {
+              "beat": 5,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            }
+          ]
+        },
+        {
+          "label": "H",
+          "model": "groq:openai/gpt-oss-120b:low",
+          "structural": true,
+          "quality": true,
+          "overall": 9,
+          "risk": "HIGH",
+          "classification": "LEXICALLY_UNSAFE",
+          "assisted": [
+            {
+              "concept": "downstairs",
+              "concepts": [
+                "downstairs"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "nearest": "楼梯",
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "stronger",
+              "concepts": [
+                "stronger"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 4,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "flat",
+              "concepts": [
+                "flat"
+              ],
+              "word": "公寓",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                1
+              ]
+            },
+            {
+              "concept": "tire",
+              "concepts": [
+                "tire"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                1,
+                3,
+                5
+              ]
+            },
+            {
+              "concept": "tool",
+              "concepts": [
+                "tool"
+              ],
+              "word": "工具",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "wrench",
+              "concepts": [
+                "wrench"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "nearest": null,
+              "offList": true,
+              "cost": 2,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "repair",
+              "concepts": [
+                "repair",
+                "repaired"
+              ],
+              "word": "修理",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                4,
+                5
+              ]
+            }
+          ],
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 7,
+            "cost": 17,
+            "costBudget": 12,
+            "crowdedBeats": [],
+            "offListWords": 4,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [
+              "an assisted-vocabulary cost of 17 (budget 12) — distance above the level is charged, so a few far words cost more than several near ones",
+              "4 words the learner list does not carry at all (max 2) — those reach the deterministic validator as UNKNOWN words, and it is strict about them"
+            ],
+            "notes": [
+              "beat 1 carries 2 assisted words; one per sentence reads more easily",
+              "beat 3 carries 2 assisted words; one per sentence reads more easily"
+            ]
+          },
+          "highBeats": [],
+          "highConcepts": [],
+          "eligible": false,
+          "beats": [
+            {
+              "beat": 1,
+              "risk": "MEDIUM",
+              "reason": "2 assisted word(s) the reader taps: flat (公寓 HSK5), tire (no word in the list)"
+            },
+            {
+              "beat": 2,
+              "risk": "LOW",
+              "reason": "every concept in this beat is in level"
+            },
+            {
+              "beat": 3,
+              "risk": "MEDIUM",
+              "reason": "2 assisted word(s) the reader taps: downstairs (no word in the list), tool (工具 HSK5)"
+            },
+            {
+              "beat": 4,
+              "risk": "MEDIUM",
+              "reason": "only incidental detail is out of level (repair (修理 HSK4)), and the beat does not need it"
+            },
+            {
+              "beat": 5,
+              "risk": "MEDIUM",
+              "reason": "1 assisted word(s) the reader taps: stronger (no word in the list)"
+            }
+          ]
+        }
+      ],
+      "eligible": [],
+      "rates": {
+        "groq:qwen/qwen3.6-27b:none": {
+          "n": 4,
+          "structural": 4,
+          "quality": 3,
+          "feasible": 0,
+          "eligible": 0
+        },
+        "groq:openai/gpt-oss-120b:low": {
+          "n": 4,
+          "structural": 2,
+          "quality": 3,
+          "feasible": 3,
+          "eligible": 0
+        }
+      }
+    }
+  ]
+}
