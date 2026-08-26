@@ -7,6 +7,9 @@ import { replayCard, describeReplay } from './legacyClaimReplay'
 import { isPriorKnown, isMastered, isLearned, MASTERY_STABILITY_DAYS } from '../knowledgeState'
 
 const CREATED = '2026-07-28T10:00:00.000Z'
+// The oldest review_log in the database. Provenance can only be proven for
+// cards born after it, so the classifier now requires it explicitly.
+const EPOCH = '2026-07-01T00:00:00.000Z'
 
 // The exact shape production holds 594 of.
 const seeded = (over = {}) => ({
@@ -25,13 +28,20 @@ const reviewedSeed = (over = {}) => seeded({
 
 const genuine = (over = {}) => ({
   id: 'c-real', user_id: 'u1', vocab_id: 'v9', created_at: CREATED,
-  state: 'review', reps: 6, lapses: 1, stability: 44.2, difficulty: 5.1,
+  state: 'review', reps: 2, lapses: 1, stability: 44.2, difficulty: 5.1,
   learned: true, is_easy: false, elapsed_days: 30, scheduled_days: 30,
   last_review: '2026-08-01T10:00:00.000Z', due_at: '2026-09-01T10:00:00.000Z',
   ...over,
 })
 
-const log = (grade, day) => ({ grade, reviewed_at: '2026-08-' + String(day).padStart(2, '0') + 'T10:00:00.000Z' })
+const log = (grade, day, previous_state = 'review') => ({
+  grade, previous_state,
+  reviewed_at: '2026-08-' + String(day).padStart(2, '0') + 'T10:00:00.000Z',
+})
+// A genuine card's history ALWAYS opens with a `new ->` transition, and its
+// reps match its log count. Both are what the provenance rule reads.
+const genuineHistory = n => Array.from({ length: n }, (_, i) =>
+  log(2, i + 1, i === 0 ? 'new' : 'review'))
 
 describe('the seed fingerprint is the full shape, not a loose stability check', () => {
   it('matches the production shape exactly', () => {
@@ -65,25 +75,29 @@ describe('the seed fingerprint is the full shape, not a loose stability check', 
 
 describe('classifyCard', () => {
   it('an untouched claim with no history converts', () => {
-    expect(classifyCard(seeded(), [])).toBe(CLASS.UNTOUCHED_CLAIM)
-    expect(classifyCard(seeded(), undefined)).toBe(CLASS.UNTOUCHED_CLAIM)
+    expect(classifyCard(seeded(), [], { loggingEpoch: EPOCH })).toBe(CLASS.UNTOUCHED_CLAIM)
+    expect(classifyCard(seeded(), undefined, { loggingEpoch: EPOCH })).toBe(CLASS.UNTOUCHED_CLAIM)
   })
 
   it('a reviewed seed with history is replayed', () => {
-    expect(classifyCard(reviewedSeed(), [log(2, 1)])).toBe(CLASS.REVIEWED_SEED)
+    expect(classifyCard(reviewedSeed(), [log(2, 1)], { loggingEpoch: EPOCH })).toBe(CLASS.REVIEWED_SEED)
   })
 
-  it('a reviewed seed with NO history is ambiguous, never guessed at', () => {
-    expect(classifyCard(reviewedSeed(), [])).toBe(CLASS.AMBIGUOUS)
+  it('a reviewed seed with NO history is excluded, never guessed at', () => {
+    // reps that no logged grade wrote: excluded as foreign-written rather than
+    // guessed at. Conservative in the safe direction — we never rebuild it.
+    expect(classifyCard(reviewedSeed(), [], { loggingEpoch: EPOCH })).toBe(CLASS.FOREIGN_WRITTEN)
   })
 
   it('the untouched fingerprint WITH history is a contradiction, so ambiguous', () => {
-    expect(classifyCard(seeded(), [log(2, 1)])).toBe(CLASS.AMBIGUOUS)
+    expect(classifyCard(seeded(), [log(2, 1)], { loggingEpoch: EPOCH })).toBe(CLASS.AMBIGUOUS)
   })
 
   it('leaves genuine cards alone', () => {
-    expect(classifyCard(genuine(), [log(2, 1)])).toBe(CLASS.GENUINE)
-    expect(classifyCard(genuine(), [])).toBe(CLASS.GENUINE)
+    expect(classifyCard(genuine(), genuineHistory(2), { loggingEpoch: EPOCH })).toBe(CLASS.GENUINE)
+    // Even with its stability sitting exactly on the mastery threshold — the
+    // old fingerprint's false positive — a recorded `new ->` start wins.
+    expect(classifyCard(genuine({ stability: 21 }), genuineHistory(2), { loggingEpoch: EPOCH })).toBe(CLASS.GENUINE)
     expect(looksLikeInheritedStability(genuine())).toBe(false)
   })
 })
@@ -199,34 +213,62 @@ describe('replayCard rebuilds honest state from real reviews', () => {
 })
 
 describe('buildMigrationPlan over a production-shaped fixture', () => {
-  // Mirrors what the live database holds: 594 untouched claims, 51 reviewed
-  // seeds, 2 ambiguous rows, and genuine cards that must not be touched.
+  // Mirrors the live census taken 2026-08-25 under the provenance classifier:
+  // 588 untouched seeds, 207 reviewed seeds (158 of which the OLD fingerprints
+  // had already lost), 37 foreign-written import rows, pre-logging strays, and
+  // genuine cards that must not be touched.
   const cards = [
-    ...Array.from({ length: 594 }, (_, i) => seeded({ id: 'seed-' + i, vocab_id: 'v' + i })),
-    ...Array.from({ length: 51 }, (_, i) => reviewedSeed({ id: 'rev-' + i, vocab_id: 'r' + i })),
-    reviewedSeed({ id: 'amb-1', reps: 2 }),
-    reviewedSeed({ id: 'amb-2', reps: 3, difficulty: 4.6 }),
+    ...Array.from({ length: 588 }, (_, i) => seeded({ id: 'seed-' + i, vocab_id: 'v' + i })),
+    // Reviewed seeds, with current stability scattered anywhere a real grade
+    // could have taken it — the classifier must not care.
+    ...Array.from({ length: 207 }, (_, i) => seeded({
+      id: 'rev-' + i, vocab_id: 'r' + i, reps: 1,
+      stability: [21, 50.9865, 137.4, 2.1][i % 4], difficulty: 6.666,
+    })),
+    // Import/restore: reps written by something other than grading.
+    ...Array.from({ length: 37 }, (_, i) => seeded({
+      id: 'imp-' + i, vocab_id: 'i' + i, reps: 3, stability: 12.3 + i, difficulty: 7.2,
+    })),
+    // Born before review_logs existed — unprovable either way.
+    ...Array.from({ length: 68 }, (_, i) => seeded({
+      id: 'old-' + i, vocab_id: 'o' + i, created_at: '2026-06-09T13:10:47.417Z',
+    })),
+    // In a scheduler state, no history, but not the fabricated shape.
+    seeded({ id: 'amb-1', stability: 9.4, difficulty: 6.1 }),
+    seeded({ id: 'amb-2', stability: 3.3, difficulty: 4.6 }),
     ...Array.from({ length: 100 }, (_, i) => genuine({ id: 'real-' + i, vocab_id: 'g' + i })),
   ]
   const logsByCardId = {}
-  for (let i = 0; i < 51; i += 1) logsByCardId['rev-' + i] = [log(2, 1)]
-  for (let i = 0; i < 100; i += 1) logsByCardId['real-' + i] = [log(2, 1), log(2, 20)]
-  // amb-1 and amb-2 deliberately have NO logs.
+  for (let i = 0; i < 207; i += 1) logsByCardId['rev-' + i] = [log(1, 25)]
+  for (let i = 0; i < 100; i += 1) logsByCardId['real-' + i] = genuineHistory(2)
 
-  const plan = buildMigrationPlan({ cards, logsByCardId })
+  const plan = buildMigrationPlan({ cards, logsByCardId, loggingEpoch: EPOCH })
 
   it('classifies every row into exactly one class', () => {
-    expect(plan.counts.conversions).toBe(594)
-    expect(plan.counts.replays).toBe(51)
+    expect(plan.counts.conversions).toBe(588)
+    expect(plan.counts.replays).toBe(207)
+    expect(plan.counts.foreign_written).toBe(37)
+    expect(plan.counts.pre_logging).toBe(68)
     expect(plan.counts.ambiguous).toBe(2)
     expect(plan.counts.genuine).toBe(100)
-    const sum = plan.counts.conversions + plan.counts.replays + plan.counts.ambiguous + plan.counts.genuine
+    const sum = plan.counts.conversions + plan.counts.replays + plan.counts.ambiguous
+      + plan.counts.genuine + plan.counts.unstarted + plan.counts.pre_logging
+      + plan.counts.foreign_written + plan.counts.claims
     expect(sum).toBe(plan.counts.total)
   })
 
-  it('never touches a genuine card', () => {
+  it('finds every reviewed seed regardless of where its stability drifted', () => {
+    // The whole point: 3 of every 4 of these are invisible to `stability = 21`.
+    const byOldFingerprint = cards.filter(c => c.stability === 21 && (c.reps || 0) >= 1).length
+    expect(byOldFingerprint).toBeLessThan(plan.counts.replays)
+    expect(plan.replays).toHaveLength(207)
+  })
+
+  it('never touches a genuine, imported or pre-logging card', () => {
     const touched = new Set([...plan.conversions, ...plan.replays].map(r => r.id))
     for (let i = 0; i < 100; i += 1) expect(touched.has('real-' + i)).toBe(false)
+    for (let i = 0; i < 37; i += 1) expect(touched.has('imp-' + i)).toBe(false)
+    for (let i = 0; i < 68; i += 1) expect(touched.has('old-' + i)).toBe(false)
   })
 
   it('reports why each ambiguous row could not be classified', () => {
@@ -234,17 +276,27 @@ describe('buildMigrationPlan over a production-shaped fixture', () => {
     plan.ambiguous.forEach(a => expect(a.reason).toBeTruthy())
   })
 
+  it('corroborates the actionable rows against bulk creation cohorts', () => {
+    // Every seed in this fixture shares one created_at, so it forms a single
+    // demonstrated cohort with no unexplained stragglers.
+    expect(plan.corroboration.demonstrated).toHaveLength(1)
+    expect(plan.corroboration.outlierCards).toBe(0)
+  })
+
   it('is idempotent: re-running over already-converted rows plans nothing', () => {
     const converted = plan.conversions.map(c => ({ ...seeded({ id: c.id }), ...c.patch }))
-    const second = buildMigrationPlan({ cards: converted, logsByCardId: {} })
+    const second = buildMigrationPlan({ cards: converted, logsByCardId: {}, loggingEpoch: EPOCH })
     expect(second.counts.conversions).toBe(0)
     expect(second.counts.replays).toBe(0)
     expect(second.counts.ambiguous).toBe(0)
-    expect(second.counts.genuine).toBe(594)
+    // Converted rows carry prior_known_at, so they are B2 claims now — out of
+    // scope by construction, not merely "not selected".
+    expect(second.counts.claims).toBe(588)
   })
 
   it('handles an empty database', () => {
-    const empty = buildMigrationPlan({ cards: [], logsByCardId: {} })
-    expect(empty.counts).toEqual({ total: 0, conversions: 0, replays: 0, ambiguous: 0, genuine: 0 })
+    const empty = buildMigrationPlan({ cards: [], logsByCardId: {}, loggingEpoch: EPOCH })
+    expect(empty.counts.total).toBe(0)
+    expect(Object.values(empty.counts).every(v => v === 0)).toBe(true)
   })
 })

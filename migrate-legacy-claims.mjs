@@ -27,7 +27,7 @@
 // them even in principle.
 
 import { createClient } from '@supabase/supabase-js'
-import { buildMigrationPlan } from './src/migration/legacyClaimMigration.js'
+import { buildMigrationPlan, actionableCards, actionableBreakdown } from './src/migration/legacyClaimMigration.js'
 import { replayCard, describeReplay } from './src/migration/legacyClaimReplay.js'
 import { buildManifest, checkEntry, casPredicate, ACTION, ENTRY_STATUS, MANIFEST_VERSION } from './src/migration/legacyClaimManifest.js'
 import fs from 'node:fs'
@@ -36,6 +36,14 @@ import { createHash } from 'node:crypto'
 const argv = process.argv.slice(2)
 const APPLY = argv.includes('--apply')
 const SNAPSHOT = argv.includes('--snapshot')
+// --redact: replace account and card identifiers in CONSOLE OUTPUT with stable
+// per-run labels. The manifest and snapshot files are unaffected — they still
+// carry real ids, because the apply path needs them.
+//
+// This exists because Hanzi-dojo is a PUBLIC repository: GitHub Actions job
+// logs are readable by anyone on the internet, and an unredacted dry run prints
+// every affected account's UUID. Always pass --redact in CI.
+const REDACT = argv.includes('--redact')
 const MANIFEST_PATH = (() => {
   const i = argv.indexOf('--manifest')
   return i >= 0 && argv[i + 1] ? argv[i + 1] : null
@@ -78,8 +86,28 @@ async function loadWorld() {
     if (!l.card_id) continue
     ;(logsByCardId[l.card_id] || (logsByCardId[l.card_id] = [])).push(l)
   }
-  return { cards, logs, logsByCardId }
+  // The oldest review_log in the database. Provenance is only provable for
+  // cards born after it — derived, never hardcoded.
+  let loggingEpoch = null
+  for (const l of logs) {
+    if (!l.reviewed_at) continue
+    if (loggingEpoch === null || new Date(l.reviewed_at) < new Date(loggingEpoch)) loggingEpoch = l.reviewed_at
+  }
+  return { cards, logs, logsByCardId, loggingEpoch }
 }
+
+// Stable within a run, meaningless outside it: the same id always gets the same
+// label so the report stays readable, but nothing identifies a real account.
+const redactionLabels = new Map()
+function label(kind, id) {
+  if (!REDACT) return id
+  if (id == null) return String(id)
+  const key = kind + ':' + id
+  if (!redactionLabels.has(key)) redactionLabels.set(key, kind + '#' + (redactionLabels.size + 1))
+  return redactionLabels.get(key)
+}
+const acct = id => label('account', id)
+const cardRef = id => (REDACT ? label('card', id) : String(id).slice(0, 8) + '…')
 
 const line = (n = 70) => '='.repeat(n)
 const pad = (v, n) => String(v).padStart(n)
@@ -98,8 +126,12 @@ const pad = (v, n) => String(v).padStart(n)
 // they are never mutated by this migration, and duplicating them would be
 // another copy of user data for no restorative benefit.
 async function makeSnapshot() {
-  const { cards } = await loadWorld()
-  const rows = cards.filter(isCandidate)
+  const { cards, logsByCardId, loggingEpoch } = await loadWorld()
+  // THE SAME provenance classification the manifest uses — not a second
+  // predicate. Snapshot coverage and manifest coverage cannot drift apart
+  // because they are literally the same function.
+  const rows = actionableCards({ cards, logsByCardId, loggingEpoch })
+  const breakdown = actionableBreakdown({ cards, logsByCardId, loggingEpoch })
   const generated_at = new Date().toISOString()
 
   // Canonical form: rows sorted by id, keys sorted, so the digest is
@@ -116,6 +148,9 @@ async function makeSnapshot() {
     version: 1,
     generated_at,
     row_count: rows.length,
+    convert_count: breakdown.convert,
+    replay_count: breakdown.replay,
+    logging_epoch: loggingEpoch,
     sha256,
     note: 'Complete original card rows that the legacy-claim migration could modify. '
       + 'Restoration must use these exact rows — never a reconstruction. '
@@ -130,19 +165,21 @@ async function makeSnapshot() {
   console.log('\n' + line())
   console.log('PRE-APPLY SNAPSHOT')
   console.log(line())
-  console.log('\n  file       ' + file)
-  console.log('  rows       ' + rows.length)
-  console.log('  sha256     ' + sha256)
-  console.log('  generated  ' + generated_at)
-  console.log('  mode       0600 (owner read/write only)')
+  console.log('\n  file          ' + file)
+  console.log('  convert rows  ' + pad(breakdown.convert, 6))
+  console.log('  replay rows   ' + pad(breakdown.replay, 6))
+  console.log('  ' + '-'.repeat(30))
+  console.log('  total rows    ' + pad(rows.length, 6)
+    + (rows.length === breakdown.total ? '' : '   !! disagrees with the breakdown'))
+  console.log('  sha256        ' + sha256)
+  console.log('  logging epoch ' + loggingEpoch)
+  console.log('  generated     ' + generated_at)
+  console.log('  mode          0600 (owner read/write only)')
+  console.log('\n  Coverage is the SAME provenance classification the manifest uses,')
+  console.log('  so every row that can enter the manifest is backed up here.')
   console.log('\nThis file contains complete original rows and is the ONLY sanctioned')
   console.log('restore source. Keep it off the repo — .gitignore covers it — and delete')
   console.log('it once the migration has been accepted.\n')
-}
-
-function isCandidate(c) {
-  return (c.state === 'review' && (c.reps || 0) === 0)
-    || (c.stability === 21 && (c.reps || 0) >= 1)
 }
 
 function sortKeys(o) {
@@ -157,17 +194,51 @@ async function dryRun() {
   console.log('LEGACY CLAIM MIGRATION — FRESH DRY RUN (nothing is written)')
   console.log(line())
 
-  const { cards, logs, logsByCardId } = await loadWorld()
+  const { cards, logs, logsByCardId, loggingEpoch } = await loadWorld()
   console.log('\nRead ' + cards.length + ' cards and ' + logs.length + ' review logs at ' + new Date().toISOString())
 
-  const plan = buildMigrationPlan({ cards, logsByCardId })
-  const manifest = buildManifest({ cards, logsByCardId, replayFor: (h) => replayCard(h) })
+  const plan = buildMigrationPlan({ cards, logsByCardId, loggingEpoch })
+  const manifest = buildManifest({ cards, logsByCardId, replayFor: (h) => replayCard(h), loggingEpoch })
+
+  console.log('\n  logging epoch (oldest review_log): ' + loggingEpoch)
+  console.log('  Provenance rule: a genuine card\'s history opens with a `new ->`')
+  console.log('  transition. A fabricated seed has none, and no later grade can')
+  console.log('  create one — so classification survives legitimate grading.')
 
   console.log('\nCLASSIFICATION')
   console.log('  convert_legacy_claim   ' + pad(manifest.counts.convert_legacy_claim, 6))
   console.log('  replay_reviewed_seed   ' + pad(manifest.counts.replay_reviewed_seed, 6))
   console.log('  excluded_ambiguous     ' + pad(manifest.counts.excluded_ambiguous, 6) + '   (never actionable)')
+  console.log('  excluded_foreign       ' + pad(manifest.counts.excluded_foreign_written, 6) + '   (reps no grade wrote — import/restore)')
+  console.log('  excluded_pre_logging   ' + pad(manifest.counts.excluded_pre_logging, 6) + '   (born before complete history)')
+  console.log('  excluded_b2_claims     ' + pad(manifest.counts.excluded_prior_known_claims, 6) + '   (already modelled)')
   console.log('  untouched_genuine      ' + pad(manifest.counts.untouched_genuine, 6))
+  console.log('  untouched_unstarted    ' + pad(manifest.counts.untouched_unstarted, 6))
+  const partition = manifest.counts.convert_legacy_claim + manifest.counts.replay_reviewed_seed
+    + manifest.counts.excluded_ambiguous + manifest.counts.excluded_foreign_written
+    + manifest.counts.excluded_pre_logging + manifest.counts.excluded_prior_known_claims
+    + manifest.counts.untouched_genuine + manifest.counts.untouched_unstarted
+  console.log('  ' + '-'.repeat(40))
+  console.log('  partition total        ' + pad(partition, 6)
+    + (partition === cards.length ? '   == cards table (' + cards.length + ')'
+                                  : '   !! MISMATCH, cards table has ' + cards.length))
+
+  // Independent corroboration: the fabricated rows were bulk INSERTs, so they
+  // share an exact created_at. This is a CHECK on the provenance rule, never an
+  // input to it. Anything actionable outside a demonstrated cohort is a stop.
+  console.log('\nBATCH CORROBORATION (independent check, not a classifier input)')
+  for (const b of plan.corroboration.demonstrated) {
+    console.log('  ' + b.created_at + '  untouched ' + pad(b.untouched, 5) + '  reviewed ' + pad(b.reviewed, 5))
+  }
+  if (plan.corroboration.outlierCards > 0) {
+    console.log('\n  !! ' + plan.corroboration.outlierCards + ' actionable row(s) fall OUTSIDE any demonstrated bulk cohort:')
+    for (const b of plan.corroboration.outliers) {
+      console.log('     ' + b.created_at + '  untouched ' + b.untouched + '  reviewed ' + b.reviewed)
+    }
+    console.log('  These are unexplained. STOP and account for them before applying.')
+  } else {
+    console.log('  every actionable row sits inside a demonstrated bulk cohort')
+  }
   console.log('  ' + '-'.repeat(40))
   console.log('  actionable entries     ' + pad(manifest.counts.actionable, 6))
 
@@ -178,7 +249,7 @@ async function dryRun() {
   }
   console.log('\nAFFECTED ACCOUNTS (' + Object.keys(byUser).length + ')')
   for (const [u, v] of Object.entries(byUser)) {
-    console.log('  ' + u + '   convert ' + pad(v.convert, 4) + '   replay ' + pad(v.replay, 3))
+    console.log('  ' + acct(u) + '   convert ' + pad(v.convert, 4) + '   replay ' + pad(v.replay, 3))
   }
 
   const replays = manifest.entries.filter(e => e.action === ACTION.REPLAY)
@@ -186,13 +257,13 @@ async function dryRun() {
     console.log('\nREPLAY PREVIEW (first 5 of ' + replays.length + ')')
     for (const e of replays.slice(0, 5)) {
       const before = cards.find(c => c.id === e.card_id)
-      console.log('  ' + e.card_id.slice(0, 8) + '…  ' + describeReplay(before, replayCard(e.review_log_input)))
+      console.log('  ' + cardRef(e.card_id) + '  ' + describeReplay(before, replayCard(e.review_log_input)))
     }
   }
 
   if (plan.ambiguous.length) {
     console.log('\nAMBIGUOUS — excluded from the manifest, never touched')
-    for (const a of plan.ambiguous) console.log('  ' + a.id + '\n      ' + a.reason)
+    for (const a of plan.ambiguous) console.log('  ' + cardRef(a.id) + '\n      ' + a.reason)
   }
 
   if (MANIFEST_PATH) {
@@ -225,7 +296,7 @@ async function apply() {
     console.log('  ⚠ older than an hour — expect stale rows; a fresher manifest is safer.')
   }
 
-  const { cards, logsByCardId } = await loadWorld()
+  const { cards, logsByCardId, loggingEpoch } = await loadWorld()
   const byId = new Map(cards.map(c => [c.id, c]))
 
   const report = {
@@ -322,21 +393,21 @@ async function printPostApply(report, manifest) {
   if (report.stale.length) {
     console.log('\nSTALE — SKIPPED, NOT APPLIED. Re-run a fresh dry run to reclassify these.')
     for (const s of report.stale) {
-      console.log('  ' + s.id + '  ' + s.status + '  (' + s.action + ')')
+      console.log('  ' + cardRef(s.id) + '  ' + s.status + '  (' + s.action + ')')
       console.log('      ' + s.reason)
     }
   }
   if (report.failed.length) {
     console.log('\nFAILED')
-    for (const f of report.failed) console.log('  ' + f.id + '  ' + f.error)
+    for (const f of report.failed) console.log('  ' + cardRef(f.id) + '  ' + f.error)
   }
 
   console.log('\n' + line())
   console.log('INVARIANT VERIFICATION (fresh read)')
   console.log(line())
-  const { cards, logsByCardId } = await loadWorld()
+  const { cards, logsByCardId, loggingEpoch } = await loadWorld()
 
-  const remaining = buildMigrationPlan({ cards, logsByCardId })
+  const remaining = buildMigrationPlan({ cards, logsByCardId, loggingEpoch })
   const stillActionable = remaining.counts.conversions + remaining.counts.replays
   // Rows deliberately skipped as stale are legitimately still actionable, so
   // they are subtracted before this is called a problem.

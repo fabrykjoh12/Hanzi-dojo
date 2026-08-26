@@ -23,6 +23,52 @@ export const CLASS = {
   AMBIGUOUS: 'ambiguous',
   // Not claim-derived. Untouched.
   GENUINE: 'genuine',
+  // Never studied and never claimed. Untouched.
+  UNSTARTED: 'genuine_unstarted',
+  // Born before review_logs existed, so its history cannot be proven either
+  // way. Excluded on principle, never guessed at.
+  PRE_LOGGING: 'ambiguous_pre_logging',
+  // Carries `reps` that no grade in this database ever wrote — an import or
+  // restore put FSRS state there directly. Real scheduling we must not touch.
+  FOREIGN_WRITTEN: 'excluded_foreign_written',
+  // Already modelled by B2: an inert claim, a verified claim, or a row this
+  // migration already converted. Out of scope by construction.
+  CLAIM: 'prior_known_claim',
+}
+
+// ── THE PROVENANCE INVARIANT ────────────────────────────────────────────────
+//
+// Every GENUINE card's history begins with a `new -> …` transition. A card can
+// only leave state 'new' by being graded, and grade_card writes exactly one
+// review_logs row per grade. A fabricated seed was INSERTed straight into
+// state 'review', so it has NO `new ->` log — and never will, however many
+// legitimate grades it later receives.
+//
+// That is what makes this classifier monotonic where the old one was not. The
+// old fingerprint keyed on `state='review' AND reps=0` (and a second one on
+// `stability=21 AND reps>=1`); a single honest grade moved a seed out of BOTH,
+// leaving it corrupted and unreachable. Production proved it: 6 rows escaped in
+// one 35-second session, and a census found 152 more that had escaped earlier
+// and were silently invisible to the migration.
+//
+// THIS IS A ONE-TIME HISTORICAL CLASSIFIER, not a general rule that "no `new ->`
+// means legacy". It is only sound because of boundaries that hold for THIS
+// database at THIS moment, every one of which is checked explicitly below:
+//
+//   * the card lives entirely inside the era where review_logs are complete
+//     (anything older cannot be proven and is excluded);
+//   * no `new ->` transition exists anywhere in its history;
+//   * its `reps` were written by grading, not by an import (`reps <= logs`);
+//   * an untouched seed still carries the exact fabricated insert shape;
+//   * a reviewed seed has a coherent real sequence (`reps === logs >= 1`).
+//
+// Outside those boundaries the answer is "cannot prove it", which is reported,
+// never applied.
+
+// Does this history contain a genuine start? One `new ->` anywhere is enough,
+// and it is permanent — no later grade can remove it.
+export function hasNewTransition(logs) {
+  return (logs || []).some(l => l && l.previous_state === 'new')
 }
 
 // The FULL fingerprint, deliberately not a loose `stability = 21`.
@@ -57,26 +103,130 @@ export function looksLikeInheritedStability(card) {
   return card.stability === MASTERY_STABILITY_DAYS && (card.reps || 0) >= 1
 }
 
-// classifyCard(card, logs) → one of CLASS.
+// classifyCard(card, logs, { loggingEpoch }) → one of CLASS.
+//
 // `logs` is that card's review_logs rows (may be empty or undefined).
-export function classifyCard(card, logs) {
+// `loggingEpoch` is the timestamp of the OLDEST review_log in the database —
+// derived from the data, never hardcoded. Before it, history is incomplete and
+// no positive legacy classification is possible. It is REQUIRED: without it
+// this function refuses to classify anything as legacy, because the "no `new ->`
+// transition" evidence is only meaningful inside the complete-history era.
+//
+// Rules are ordered, first match wins. Note that NOTHING here reads the card's
+// current stability or difficulty to decide legacy status — that is exactly the
+// mutable evidence a legitimate grade destroys.
+export function classifyCard(card, logs, { loggingEpoch } = {}) {
   if (!card) return CLASS.GENUINE
-  const history = logs || []
+  const history = orderedHistory(logs)
+  const logCount = history.length
+  const reps = card.reps || 0
 
-  if (matchesSeedFingerprint(card)) {
-    // A row carrying the untouched fingerprint but WITH review history is a
-    // contradiction — reps says never reviewed, the log says otherwise. Never
-    // guess; hand it to a human.
-    return history.length === 0 ? CLASS.UNTOUCHED_CLAIM : CLASS.AMBIGUOUS
+  // 0. Already modelled by B2 — an inert claim, a verified claim, or a row a
+  //    previous run of this migration converted. Never legacy, never re-touched.
+  if (card.prior_known_at != null || card.verified_at != null) return CLASS.CLAIM
+
+  // 1. A genuine start, recorded. Permanent, and decisive regardless of what
+  //    the card's FSRS state looks like today.
+  if (hasNewTransition(history)) return CLASS.GENUINE
+
+  // 2. Never started and never claimed.
+  if (card.state === 'new' && reps === 0 && logCount === 0) return CLASS.UNSTARTED
+
+  // 3. Outside the complete-history era — or no era supplied. Cannot prove
+  //    provenance, so refuse rather than guess.
+  if (!loggingEpoch) return CLASS.AMBIGUOUS
+  if (!card.created_at) return CLASS.AMBIGUOUS
+  if (new Date(card.created_at) <= new Date(loggingEpoch)) return CLASS.PRE_LOGGING
+
+  // 4. `reps` that no grade in this database wrote. An import or restore put
+  //    that state there; it is real scheduling and must not be rebuilt.
+  if (reps > logCount) return CLASS.FOREIGN_WRITTEN
+
+  // 5. Untouched fabricated seed — must still carry the exact insert shape.
+  if (logCount === 0 && reps === 0) {
+    return matchesSeedFingerprint(card) ? CLASS.UNTOUCHED_CLAIM : CLASS.AMBIGUOUS
   }
 
-  if (looksLikeInheritedStability(card)) {
-    // Replay needs real grades and timestamps. Without them the honest answer
-    // is "cannot be reconstructed safely", not a fabricated repair.
-    return history.length > 0 ? CLASS.REVIEWED_SEED : CLASS.AMBIGUOUS
-  }
+  // 6. Seeded, then genuinely reviewed. The sequence must be coherent: one log
+  //    per rep, every entry replayable. Current stability is irrelevant — it may
+  //    be 21, or anything a real grade moved it to.
+  if (logCount === reps && reps >= 1 && isReplayable(history)) return CLASS.REVIEWED_SEED
 
-  return CLASS.GENUINE
+  return CLASS.AMBIGUOUS
+}
+
+// ── CORROBORATION (reporting only, never a classifier input) ────────────────
+//
+// The fabricated rows were written by bulk INSERTs, so they share an exact
+// created_at to the microsecond. Grouping the classified legacy rows by that
+// timestamp gives an independent check on the provenance rule: if the rule is
+// sound, every legacy card should fall inside a handful of demonstrated
+// cohorts. A legacy card OUTSIDE them is not automatically wrong — but it is
+// unexplained, and the dry run must stop and surface it rather than apply.
+export function corroborateBatches(classified) {
+  const batches = new Map()
+  for (const row of classified || []) {
+    if (row.klass !== CLASS.UNTOUCHED_CLAIM && row.klass !== CLASS.REVIEWED_SEED) continue
+    const key = row.created_at ? new Date(row.created_at).toISOString() : 'unknown'
+    if (!batches.has(key)) batches.set(key, { created_at: key, untouched: 0, reviewed: 0, total: 0 })
+    const b = batches.get(key)
+    if (row.klass === CLASS.UNTOUCHED_CLAIM) b.untouched += 1
+    else b.reviewed += 1
+    b.total += 1
+  }
+  const list = [...batches.values()].sort((a, b) => b.total - a.total)
+  // A demonstrated seed cohort is a bulk write: many rows sharing one instant.
+  // Singletons are exactly what an unexplained capture would look like.
+  const demonstrated = list.filter(b => b.total >= MIN_BULK_BATCH)
+  const outliers = list.filter(b => b.total < MIN_BULK_BATCH)
+  return {
+    batches: list,
+    demonstrated,
+    outliers,
+    outlierCards: outliers.reduce((n, b) => n + b.total, 0),
+  }
+}
+
+// A bulk INSERT writes many rows in one instant. Below this, a shared
+// created_at is coincidence rather than evidence of a batch.
+export const MIN_BULK_BATCH = 10
+
+// ── THE ONE ACTIONABLE SET ──────────────────────────────────────────────────
+//
+// Every consumer that needs "which cards could this migration touch?" asks
+// HERE. The pre-apply snapshot and the manifest must cover exactly the same
+// rows: a snapshot narrower than the manifest is a silent hole in the rollback
+// guarantee, because a row could be modified that was never backed up.
+//
+// That is not hypothetical. The snapshot originally carried its own
+// hand-written fingerprint (`state='review' AND reps=0` OR `stability=21 AND
+// reps>=1`). When the classifier moved to provenance, the snapshot did not, so
+// it would have omitted almost every reviewed seed the manifest correctly
+// identified — the exact rows most in need of a backup, since they are the ones
+// carrying real user grades. One shared function is the fix; a second predicate
+// is the bug.
+//
+// Returns the full card rows, in input order, for every card the classifier
+// calls actionable — UNTOUCHED_CLAIM or REVIEWED_SEED — and nothing else.
+export function actionableCards({ cards, logsByCardId, loggingEpoch } = {}) {
+  const logs = logsByCardId || {}
+  return (cards || []).filter(card => {
+    const klass = classifyCard(card, logs[card.id] || [], { loggingEpoch })
+    return klass === CLASS.UNTOUCHED_CLAIM || klass === CLASS.REVIEWED_SEED
+  })
+}
+
+// The same set, split by what would be done to each — for reporting.
+export function actionableBreakdown({ cards, logsByCardId, loggingEpoch } = {}) {
+  const logs = logsByCardId || {}
+  let convert = 0
+  let replay = 0
+  for (const card of cards || []) {
+    const klass = classifyCard(card, logs[card.id] || [], { loggingEpoch })
+    if (klass === CLASS.UNTOUCHED_CLAIM) convert += 1
+    else if (klass === CLASS.REVIEWED_SEED) replay += 1
+  }
+  return { convert, replay, total: convert + replay }
 }
 
 // The provenance to record when converting. The original source was never
@@ -138,48 +288,76 @@ export function isReplayable(logs) {
 // Returns { counts, conversions, replays, ambiguous, genuine } where
 // `conversions` and `replays` carry everything the writer needs and nothing it
 // has to re-derive.
-export function buildMigrationPlan({ cards, logsByCardId, knownSources } = {}) {
+export function buildMigrationPlan({ cards, logsByCardId, knownSources, loggingEpoch } = {}) {
   const logs = logsByCardId || {}
   const conversions = []
   const replays = []
   const ambiguous = []
-  let genuine = 0
+  const classified = []
+  const counts = {
+    total: (cards || []).length,
+    conversions: 0,
+    replays: 0,
+    ambiguous: 0,
+    genuine: 0,
+    unstarted: 0,
+    pre_logging: 0,
+    foreign_written: 0,
+    claims: 0,
+  }
 
   for (const card of cards || []) {
     const history = logs[card.id] || []
-    const klass = classifyCard(card, history)
+    const klass = classifyCard(card, history, { loggingEpoch })
+    classified.push({ id: card.id, klass, created_at: card.created_at })
 
     if (klass === CLASS.UNTOUCHED_CLAIM) {
-      conversions.push({ id: card.id, user_id: card.user_id, vocab_id: card.vocab_id, patch: conversionPatch(card, knownSources) })
-    } else if (klass === CLASS.REVIEWED_SEED) {
-      if (isReplayable(history)) {
-        replays.push({ id: card.id, user_id: card.user_id, vocab_id: card.vocab_id, history: orderedHistory(history), before: card })
-      } else {
-        ambiguous.push({ id: card.id, user_id: card.user_id, reason: 'reviewed seed whose history cannot be replayed safely' })
-      }
-    } else if (klass === CLASS.AMBIGUOUS) {
-      ambiguous.push({
-        id: card.id,
-        user_id: card.user_id,
-        reason: matchesSeedFingerprint(card)
-          ? 'carries the untouched seed fingerprint but has review history'
-          : 'stability sits exactly on the mastery threshold with no review history to explain it',
+      counts.conversions += 1
+      conversions.push({
+        id: card.id, user_id: card.user_id, vocab_id: card.vocab_id,
+        reason: 'no `new ->` transition, born inside the complete-history era, '
+          + 'zero review logs, and still carries the exact fabricated insert shape',
+        patch: conversionPatch(card, knownSources),
       })
+    } else if (klass === CLASS.REVIEWED_SEED) {
+      counts.replays += 1
+      replays.push({
+        id: card.id, user_id: card.user_id, vocab_id: card.vocab_id,
+        reason: 'no `new ->` transition, born inside the complete-history era, and '
+          + (history.length) + ' real review log(s) matching reps — replayed from a neutral card',
+        history: orderedHistory(history),
+        before: card,
+      })
+    } else if (klass === CLASS.PRE_LOGGING) {
+      counts.pre_logging += 1
+    } else if (klass === CLASS.FOREIGN_WRITTEN) {
+      counts.foreign_written += 1
+    } else if (klass === CLASS.CLAIM) {
+      counts.claims += 1
+    } else if (klass === CLASS.UNSTARTED) {
+      counts.unstarted += 1
+    } else if (klass === CLASS.AMBIGUOUS) {
+      counts.ambiguous += 1
+      ambiguous.push({ id: card.id, user_id: card.user_id, reason: ambiguityReason(card, history, loggingEpoch) })
     } else {
-      genuine += 1
+      counts.genuine += 1
     }
   }
 
-  return {
-    counts: {
-      total: (cards || []).length,
-      conversions: conversions.length,
-      replays: replays.length,
-      ambiguous: ambiguous.length,
-      genuine,
-    },
-    conversions,
-    replays,
-    ambiguous,
+  return { counts, conversions, replays, ambiguous, corroboration: corroborateBatches(classified) }
+}
+
+// Why a row could not be proven either way — specific enough to act on.
+function ambiguityReason(card, history, loggingEpoch) {
+  if (!loggingEpoch) return 'no logging epoch supplied, so provenance cannot be established'
+  if (!card.created_at) return 'no created_at, so the complete-history era cannot be checked'
+  const reps = card.reps || 0
+  const logCount = orderedHistory(history).length
+  if (logCount === 0 && reps === 0) {
+    return 'entered a scheduler state with no history, but does not match the fabricated insert shape'
   }
+  if (logCount !== reps) {
+    return 'reps (' + reps + ') and review logs (' + logCount + ') disagree, so the sequence is incomplete'
+  }
+  return 'review history is present but not safely replayable (a grade or timestamp is unusable)'
 }
