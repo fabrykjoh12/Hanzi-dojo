@@ -483,7 +483,14 @@ jobs:
               done
               case "$STAGE" in
                 (scaffold) SRC="--resume-scaffold $MANIFEST";;
-                (preflight) SRC="--preflight-only $MANIFEST";;
+                # preflight also accepts "<artifact>,<viability.json>" so stored
+                # placement verdicts are reused instead of re-judged.
+                (preflight)
+                  SRC="--preflight-only ${MANIFEST%%,*}"
+                  case "$MANIFEST" in
+                    (*,*) SRC="$SRC --viability-from ${MANIFEST#*,}";;
+                  esac
+                ;;
                 # "shape:G" reuses one labelled plan out of a planner bakeoff.
                 # manifest_path may be "<bakeoff.json>,<viability.json>" to
                 # reuse that plan's stored placement verdicts instead of
