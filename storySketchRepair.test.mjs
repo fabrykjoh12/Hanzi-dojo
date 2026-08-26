@@ -244,3 +244,23 @@ describe('a repair site with nothing to approve', () => {
     expect(r.problems.join(' ')).toContain('盒子')
   })
 })
+
+// ── a3-H-1: an indefinite reference is nobody ───────────────────────────────
+describe('indefinite references are not new characters', () => {
+  const vm = { ...vocabMap, 别人: { word: '别人', level: 3, meaning: 'other people; others; other person' }, 需要: { word: '需要', level: 3, meaning: 'to need' }, 我: { word: '我', level: 1, meaning: 'I; me' }, 有人: { word: '有人', level: 2, meaning: 'someone; somebody' } }
+  const m = () => buildManifest({ batchId: 'h', seq: 1, level: 3, targets: ['需要'], defaults: { lines: [14, 38] } })
+  const beat1 = { id: 1, what: 'Li Ming sees the flat tire and realizes he needs help', because: 'the story opens' }
+
+  it('accepts 我需要别人的帮助', () => {
+    // Verbatim from a3-H-1: refused as "introduces 别人", who is nobody.
+    expect(checkSketchCast('我需要别人的帮助', { word: '需要', beat: beat1, blueprint: plan, manifest: m(), vocabMap: vm }).ok).toBe(true)
+  })
+
+  it('accepts 有人 too, for the same reason', () => {
+    expect(checkSketchCast('我需要有人帮助', { word: '需要', beat: beat1, blueprint: plan, manifest: m(), vocabMap: vm }).ok).toBe(true)
+  })
+
+  it('still refuses a named relation who is not in the story', () => {
+    expect(checkSketchCast('我需要爸爸的帮助', { word: '需要', beat: beat1, blueprint: plan, manifest: m(), vocabMap: vm }).ok).toBe(false)
+  })
+})

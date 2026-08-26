@@ -100,6 +100,13 @@ const PERSON_GLOSS = /\b(person|people|man|men|woman|women|boy|girl|child|childr
 // already there.
 const PRONOUNS = new Set(['我', '你', '您', '他', '她', '它', '我们', '你们', '他们', '她们', '大家', '自己'])
 
+// An INDEFINITE reference is not a character. 别人 is glossed "other people;
+// others; other person", which reads as a person to the check above and is
+// nobody at all: 我需要别人的帮助 is what someone says when they need help, and
+// a3-H-1 lost a plan to it. A3.2 has known this since its own FUNCTIONAL list —
+// "someone" and "somebody" are grammar, not cast.
+const INDEFINITE_GLOSS = /\b(other people|others|other person|someone|somebody|anyone|anybody|everyone|everybody|no one|nobody|people in general|else)\b/i
+
 export function checkSketchCast(sketch, { word, beat = null, blueprint = null, manifest = null, vocabMap = {} } = {}) {
   const text = String(sketch == null ? '' : sketch).trim()
   if (!text) return { ok: false, problems: ['no sketch'] }
@@ -124,7 +131,7 @@ export function checkSketchCast(sketch, { word, beat = null, blueprint = null, m
     if (w === word || cast.has(w) || PRONOUNS.has(w)) continue
     if (inFrozenBeat(w)) continue
     const meaning = vocabMap[w] && vocabMap[w].meaning
-    if (meaning && PERSON_GLOSS.test(meaning)) intruders.push(w)
+    if (meaning && PERSON_GLOSS.test(meaning) && !INDEFINITE_GLOSS.test(meaning)) intruders.push(w)
   }
   if (intruders.length) {
     return {

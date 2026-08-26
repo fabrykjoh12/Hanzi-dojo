@@ -37,6 +37,9 @@ const PERSON_GLOSS = /\b(person|people|man|men|woman|women|boy|girl|child|childr
 // likely to catch.
 const ANIMAL_GLOSS = /\b(dog|cat|bird|fish|horse|pig|chicken|duck|rabbit|mouse|rat|cow|sheep|goat|monkey|tiger|snake|insect|bee|puppy|kitten)\b/i
 
+// Same exemption as the sketch cast gate: an indefinite reference names nobody.
+const INDEFINITE_GLOSS = /\b(other people|others|other person|someone|somebody|anyone|anybody|everyone|everybody|no one|nobody|people in general|else)\b/i
+
 function words(line, level, vocabMap) {
   const a = analyzeStory({ title: '', level, content: text(line) }, vocabMap)
   return { all: [...a.counts.keys()], unknown: a.unknownRuns, analysis: a }
@@ -179,6 +182,7 @@ export function checkBeatDrift(before, after, { manifest, vocabMap, brief } = {}
   // does not claim otherwise.
   const animate = (w) => {
     const meaning = String((vocabMap[w] && vocabMap[w].meaning) || '')
+    if (INDEFINITE_GLOSS.test(meaning)) return false
     return PERSON_GLOSS.test(meaning) || ANIMAL_GLOSS.test(meaning)
   }
   const unapproved = added.filter(w => !approved.has(w) && !describedByBeat(w)
