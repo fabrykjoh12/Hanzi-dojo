@@ -4,27 +4,29 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "dojo": "node tools/dojo-run.mjs",
-    "dojo:bridge": "node tools/dojo-bridge.mjs",
-    "db:generate": "drizzle-kit generate",
+    "audit:stories": "node --env-file=.env.script audit-story-coverage.mjs",
     "build": "vite build",
+    "build:native": "cross-env DOJO_PUBLIC_BUILD=1 DOJO_NATIVE_BUILD=1 vite build",
     "build:public": "cross-env DOJO_PUBLIC_BUILD=1 vite build",
-    "verify:public-bundle": "node tools/verify-public-bundle.mjs",
-    "cap:sync": "npm run build:public && cap sync",
     "cap:android": "npm run cap:sync && cap open android",
     "cap:ios": "npm run cap:sync && cap open ios",
-    "lint": "eslint .",
-    "test": "vitest run",
-    "preview": "vite preview",
+    "cap:sync": "npm run build:native && cap sync",
+    "db:generate": "drizzle-kit generate",
+    "dev": "vite",
+    "dev:e2e": "vite --mode e2e",
+    "dojo": "node tools/dojo-run.mjs",
+    "dojo:bridge": "node tools/dojo-bridge.mjs",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
-    "dev:e2e": "vite --mode e2e",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "test": "vitest run",
     "tts:dry-run": "node --env-file=.env.script tts-generate.mjs",
     "tts:generate": "node --env-file=.env.script tts-generate.mjs",
-    "tts:retry-failed": "node --env-file=.env.script tts-generate.mjs --retry-failed",
     "tts:integration": "node --env-file=.env.script tts-integration-check.mjs",
-    "audit:stories": "node --env-file=.env.script audit-story-coverage.mjs"
+    "tts:retry-failed": "node --env-file=.env.script tts-generate.mjs --retry-failed",
+    "verify:native-fonts": "node tools/verify-native-fonts.mjs",
+    "verify:public-bundle": "node tools/verify-public-bundle.mjs"
   },
   "dependencies": {
     "@capacitor-community/apple-sign-in": "^7.1.0",
@@ -34,15 +36,13 @@
     "@capacitor/keyboard": "^8.0.5",
     "@capacitor/status-bar": "^8.0.3",
     "@supabase/supabase-js": "^2.107.0",
-    "drizzle-orm": "^0.45.2",
     "hanzi-writer": "^3.7.3",
     "lucide-react": "^1.17.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.17.0",
     "ts-fsrs": "^5.4.1",
-    "wanakana": "^5.3.1",
-    "web-push": "^3.6.7"
+    "wanakana": "^5.3.1"
   },
   "devDependencies": {
     "@capacitor/android": "^8.5.0",
@@ -57,6 +57,7 @@
     "autoprefixer": "^10.5.0",
     "cross-env": "^10.1.0",
     "drizzle-kit": "^0.31.10",
+    "drizzle-orm": "^0.45.2",
     "eslint": "^10.3.0",
     "eslint-plugin-react-hooks": "^7.1.1",
     "eslint-plugin-react-refresh": "^0.5.2",
@@ -69,6 +70,7 @@
     "tailwindcss": "^3.4.19",
     "typescript": "^5.9.3",
     "vite": "^8.0.12",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.9",
+    "web-push": "^3.6.7"
   }
 }

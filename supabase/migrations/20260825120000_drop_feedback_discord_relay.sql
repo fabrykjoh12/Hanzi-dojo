@@ -1,0 +1,68 @@
+-- Remove the in-app feedback → Discord relay (FAB-19 F3/F13, Stage 3).
+--
+-- WHAT THIS REMOVES, AND WHY IT IS A PRIVACY FIX RATHER THAN A CLEANUP.
+--
+-- 20260715230000 added an AFTER INSERT trigger on public.feedback that POSTed
+-- the learner's feedback message (up to 3,900 characters of free text), the
+-- screen they were on, their language and — after 20260715234500 replaced the
+-- email with the id — their user_id, to a Discord webhook. Discord is a
+-- third-party communications platform, not a processor acting on our
+-- instructions, so that is a transfer of user content outside Supabase.
+--
+-- It has NEVER fired in production. The function reads its webhook URL from
+-- Vault, and returns early when the secret is missing:
+--
+--     if webhook is null or webhook = '' then
+--       return new;  -- not configured yet; do nothing
+--     end if;
+--
+-- vault.secrets is empty (verified 2026-08-25), so no feedback has ever left
+-- the database. The problem was never a live leak — it was that the capability
+-- sat armed behind a single line, and 20260715230000's own setup comment tells
+-- the reader exactly which line to run:
+--
+--     select vault.create_secret('https://discord.com/api/webhooks/…',
+--                                'discord_feedback_webhook');
+--
+-- Anyone following that comment would have silently started relaying user
+-- content to a third party, with no code change, no review, and no notice in
+-- the privacy policy. Dropping the consumer is what makes that line inert
+-- forever: creating the secret afterwards does nothing, because nothing reads
+-- it. Feedback is read where it already lives — in Supabase, and on the Dojo HQ
+-- board.
+--
+-- WHAT THIS DELIBERATELY DOES NOT TOUCH:
+--
+--   * public.feedback rows. Existing feedback is untouched; only the trigger
+--     that fired on INSERT is removed. Inserts keep working exactly as before.
+--   * The feedback table's RLS policies, its FK to profiles, or the ON DELETE
+--     CASCADE that carries feedback away with delete_my_account(). Account
+--     deletion behaviour is unchanged.
+--   * vault.secrets. No secret is created, read or deleted here. The vault is
+--     empty and stays that way; a migration has no business editing secrets.
+--   * The pg_net extension. notify_discord_feedback is the only function in
+--     `public` that calls net.http (verified 2026-08-25), so after this
+--     migration nothing in our schema makes outbound HTTP — but pg_net is a
+--     platform-managed extension that Supabase's own features can use, and
+--     dropping it is a wider blast radius than this change is entitled to.
+--     Removing the caller is the fix; removing the engine is a separate
+--     decision with its own risks.
+--
+-- Historical migrations are left exactly as they are. This is a forward
+-- migration: on a fresh database 20260715230000 creates the function,
+-- 20260715234500 replaces its body, and this file drops it. The end state is
+-- the same either way.
+--
+-- Verification: supabase/tests/feedback_relay_removal_verification.sql — runs
+-- in one transaction, ends in ROLLBACK, safe against production.
+--
+-- Idempotent: both statements use IF EXISTS and can be re-run.
+
+-- The trigger first: while it exists it depends on the function, and dropping
+-- the function without CASCADE would fail. Doing it in this order means we
+-- never need CASCADE, so nothing else can be swept up by accident.
+drop trigger if exists on_feedback_notify_discord on public.feedback;
+
+drop function if exists public.notify_discord_feedback();
+
+notify pgrst, 'reload schema';
