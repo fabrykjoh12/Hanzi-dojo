@@ -1,0 +1,521 @@
+{
+  "version": "fab9-bundle@2",
+  "senses": {
+    "version": "fab9-senses@1",
+    "words": [
+      {
+        "word": "被",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "quilt",
+            "verb": false,
+            "tokens": [
+              "quilt"
+            ]
+          },
+          {
+            "text": "cover",
+            "verb": true,
+            "tokens": [
+              "cover"
+            ]
+          }
+        ],
+        "senseCount": 2,
+        "gloss": "quilt; to cover (with)",
+        "example": "折被子。",
+        "exampleTranslation": "Fold the quilt.",
+        "corpusExamples": [],
+        "corpusUses": 0,
+        "role": null
+      },
+      {
+        "word": "中",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "china",
+            "verb": false,
+            "tokens": [
+              "china"
+            ]
+          },
+          {
+            "text": "chinese",
+            "verb": false,
+            "tokens": [
+              "chinese"
+            ]
+          }
+        ],
+        "senseCount": 2,
+        "gloss": "China; Chinese",
+        "example": "进行中。",
+        "exampleTranslation": "In Progress.",
+        "corpusExamples": [
+          "现在是中午了。",
+          "妈妈：去年，你的姐姐也找不到她的中文课。"
+        ],
+        "corpusUses": 28,
+        "role": null
+      },
+      {
+        "word": "如果",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "if",
+            "verb": false,
+            "tokens": []
+          },
+          {
+            "text": "in case",
+            "verb": false,
+            "tokens": [
+              "case"
+            ]
+          }
+        ],
+        "senseCount": 2,
+        "gloss": "if; in case",
+        "example": "如果你喜欢。",
+        "exampleTranslation": "If you like.",
+        "corpusExamples": [
+          "老王：如果我放弃，我今年还能剩下一点儿钱。",
+          "老王：如果我再做一年，可能一分也不剩。"
+        ],
+        "corpusUses": 4,
+        "role": null
+      },
+      {
+        "word": "该",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "should",
+            "verb": false,
+            "tokens": []
+          },
+          {
+            "text": "ought to",
+            "verb": false,
+            "tokens": [
+              "ought"
+            ]
+          }
+        ],
+        "senseCount": 2,
+        "gloss": "should; ought to",
+        "example": "活该。",
+        "exampleTranslation": "Serves you right.",
+        "corpusExamples": [
+          "阿山：这块地应该给谁，我说了不算。",
+          "学生：说对不起的应该是我。"
+        ],
+        "corpusUses": 9,
+        "role": {
+          "role": "grammatical",
+          "detail": "stands between a noun and a verb in 8 of 9 uses in the published corpus — in this position it is doing grammatical work, whatever its noun gloss says",
+          "framed": 8,
+          "uses": 9
+        }
+      },
+      {
+        "word": "需要",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "need",
+            "verb": true,
+            "tokens": [
+              "need"
+            ]
+          },
+          {
+            "text": "want",
+            "verb": true,
+            "tokens": [
+              "want"
+            ]
+          },
+          {
+            "text": "demand",
+            "verb": true,
+            "tokens": [
+              "demand"
+            ]
+          },
+          {
+            "text": "require",
+            "verb": true,
+            "tokens": [
+              "require"
+            ]
+          },
+          {
+            "text": "needs",
+            "verb": false,
+            "tokens": [
+              "needs"
+            ]
+          }
+        ],
+        "senseCount": 5,
+        "gloss": "to need; to want; to demand; to require; needs",
+        "example": "不需要。",
+        "exampleTranslation": "No need.",
+        "corpusExamples": [
+          "他不需要从楼里走。",
+          "小红：说你不需要她回来。"
+        ],
+        "corpusUses": 4,
+        "role": null
+      },
+      {
+        "word": "像",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "resemble",
+            "verb": true,
+            "tokens": [
+              "resemble"
+            ]
+          },
+          {
+            "text": "be like",
+            "verb": true,
+            "tokens": [
+              "like"
+            ]
+          }
+        ],
+        "senseCount": 2,
+        "gloss": "to resemble; to be like",
+        "example": "忠告像盐。",
+        "exampleTranslation": "Advice is like salt.",
+        "corpusExamples": [
+          "李明：好像是，可是不太一样。",
+          "他们好像知道一些事情。"
+        ],
+        "corpusUses": 11,
+        "role": null
+      },
+      {
+        "word": "认为",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "believe",
+            "verb": true,
+            "tokens": [
+              "believe"
+            ]
+          },
+          {
+            "text": "think",
+            "verb": true,
+            "tokens": [
+              "think"
+            ]
+          },
+          {
+            "text": "consider",
+            "verb": true,
+            "tokens": [
+              "consider"
+            ]
+          },
+          {
+            "text": "feel",
+            "verb": true,
+            "tokens": [
+              "feel"
+            ]
+          }
+        ],
+        "senseCount": 4,
+        "gloss": "to believe; to think; to consider; to feel",
+        "example": "妳认为？",
+        "exampleTranslation": "Do you think?",
+        "corpusExamples": [],
+        "corpusUses": 0,
+        "role": null
+      },
+      {
+        "word": "生活",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "live",
+            "verb": true,
+            "tokens": [
+              "live"
+            ]
+          },
+          {
+            "text": "life",
+            "verb": false,
+            "tokens": [
+              "life"
+            ]
+          }
+        ],
+        "senseCount": 2,
+        "gloss": "to live; life",
+        "example": "生活。",
+        "exampleTranslation": "My life.",
+        "corpusExamples": [],
+        "corpusUses": 0,
+        "role": null
+      }
+    ]
+  },
+  "generatedAt": "2026-08-26T19:48:08.451Z",
+  "level": 3,
+  "levelName": "HSK 3",
+  "model": "groq:qwen/qwen3.6-27b:none",
+  "policy": {
+    "version": "fab9-bundle-policy@1",
+    "requiredMin": 2,
+    "requiredMax": 4,
+    "opportunityMax": 3,
+    "deferralsBeforePriority": 2
+  },
+  "pool": [
+    {
+      "word": "被",
+      "timesDeferred": 1,
+      "lastDeferredAt": "2026-08-26",
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "中",
+      "timesDeferred": 1,
+      "lastDeferredAt": "2026-08-26",
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "如果",
+      "timesDeferred": 0,
+      "lastDeferredAt": null,
+      "lastContextualExposure": "2026-08-26",
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "该",
+      "timesDeferred": 1,
+      "lastDeferredAt": "2026-08-26",
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "需要",
+      "timesDeferred": 0,
+      "lastDeferredAt": null,
+      "lastContextualExposure": "2026-08-26",
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "像",
+      "timesDeferred": 1,
+      "lastDeferredAt": "2026-08-26",
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "认为",
+      "timesDeferred": 0,
+      "lastDeferredAt": null,
+      "lastContextualExposure": "2026-08-26",
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "生活",
+      "timesDeferred": 1,
+      "lastDeferredAt": "2026-08-26",
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    }
+  ],
+  "judgement": {
+    "roles": [
+      {
+        "word": "被",
+        "hasRole": false,
+        "reason": "The provided example and sense \"to cover/defend\" are HSK 4/5 or specific dialectal; the primary HSK 3 use is the passive marker, which is a grammatical structure not listed in the senses provided. Teaching it here with the given definition is misleading."
+      },
+      {
+        "word": "中",
+        "hasRole": false,
+        "reason": "The senses \"china/chinese\" are nouns/adjectives already known or irrelevant to the grammatical function. The example \"In Progress\" uses a different sense not listed. \"Now it is noon\" is a time marker, not a core lexical item requiring a dedicated story slot when other grammatical heavier lifters exist."
+      },
+      {
+        "word": "如果",
+        "hasRole": true,
+        "reason": "Essential for establishing hypothetical conditions, driving plot twists, or expressing hesitation (\"If I do this...\"), which creates narrative tension."
+      },
+      {
+        "word": "该",
+        "hasRole": false,
+        "reason": "The example \"Serves you right\" is an idiom, not the modal verb \"should\". While it functions as a modal in the corpus notes, it is often better taught later as it can be ambiguous with \"must/need\". It is less distinct than \"需要\" for a single story."
+      },
+      {
+        "word": "需要",
+        "hasRole": true,
+        "reason": "Crucial for defining characters' motivations and constraints (\"I need to...\", \"We need...\"), providing the logical foundation for actions in a dialogue."
+      },
+      {
+        "word": "像",
+        "hasRole": false,
+        "reason": "\"Seem to/As if\" (好像) is often an aspect or perception marker. Using \"像\" for comparison (\"like\") is often descriptive fluff in short stories unless it's a riddle format, which is less natural than condition/need driven plots."
+      },
+      {
+        "word": "认为",
+        "hasRole": false,
+        "reason": "\"Think/believe\" is often redundant with the subject's speech or actions. In beginner stories, stating what someone thinks is often less dynamic than stating what they *need* or what *would happen if*."
+      },
+      {
+        "word": "生活",
+        "hasRole": false,
+        "reason": "As a theme, it is too broad. As a verb/noun, it is often passive background (\"my life is...\") rather than an active plot driver in a single short scene."
+      }
+    ],
+    "bundle": [
+      "如果",
+      "需要"
+    ],
+    "situation": "A conversation where one person expresses a strong need and the other proposes a conditional solution or consequence if that need is not met."
+  },
+  "raw": "被: NO_ROLE | The provided example and sense \"to cover/defend\" are HSK 4/5 or specific dialectal; the primary HSK 3 use is the passive marker, which is a grammatical structure not listed in the senses provided. Teaching it here with the given definition is misleading.\n中: NO_ROLE | The senses \"china/chinese\" are nouns/adjectives already known or irrelevant to the grammatical function. The example \"In Progress\" uses a different sense not listed. \"Now it is noon\" is a time marker, not a core lexical item requiring a dedicated story slot when other grammatical heavier lifters exist.\n如果: ROLE | Essential for establishing hypothetical conditions, driving plot twists, or expressing hesitation (\"If I do this...\"), which creates narrative tension.\n该: NO_ROLE | The example \"Serves you right\" is an idiom, not the modal verb \"should\". While it functions as a modal in the corpus notes, it is often better taught later as it can be ambiguous with \"must/need\". It is less distinct than \"需要\" for a single story.\n需要: ROLE | Crucial for defining characters' motivations and constraints (\"I need to...\", \"We need...\"), providing the logical foundation for actions in a dialogue.\n像: NO_ROLE | \"Seem to/As if\" (好像) is often an aspect or perception marker. Using \"像\" for comparison (\"like\") is often descriptive fluff in short stories unless it's a riddle format, which is less natural than condition/need driven plots.\n认为: NO_ROLE | \"Think/believe\" is often redundant with the subject's speech or actions. In beginner stories, stating what someone thinks is often less dynamic than stating what they *need* or what *would happen if*.\n生活: NO_ROLE | As a theme, it is too broad. As a verb/noun, it is often passive background (\"my life is...\") rather than an active plot driver in a single short scene.\n\nBUNDLE: 如果，需要\nSITUATION: A conversation where one person expresses a strong need and the other proposes a conditional solution or consequence if that need is not met.",
+  "error": null,
+  "selection": {
+    "version": "fab9-bundle@2",
+    "policy": {
+      "version": "fab9-bundle-policy@1",
+      "requiredMin": 2,
+      "requiredMax": 4,
+      "opportunityMax": 3,
+      "deferralsBeforePriority": 2
+    },
+    "situation": "A conversation where one person expresses a strong need and the other proposes a conditional solution or consequence if that need is not met.",
+    "required": [
+      "如果",
+      "需要"
+    ],
+    "opportunity": [],
+    "deferred": [
+      "被",
+      "中",
+      "该",
+      "像",
+      "认为",
+      "生活"
+    ],
+    "toppedUp": [],
+    "enough": true,
+    "rows": [
+      {
+        "word": "被",
+        "hasRole": false,
+        "reason": "The provided example and sense \"to cover/defend\" are HSK 4/5 or specific dialectal; the primary HSK 3 use is the passive marker, which is a grammatical structure not listed in the senses provided. Teaching it here with the given definition is misleading.",
+        "judged": true,
+        "priority": 102,
+        "timesDeferred": 1,
+        "bundle": "DEFERRED"
+      },
+      {
+        "word": "中",
+        "hasRole": false,
+        "reason": "The senses \"china/chinese\" are nouns/adjectives already known or irrelevant to the grammatical function. The example \"In Progress\" uses a different sense not listed. \"Now it is noon\" is a time marker, not a core lexical item requiring a dedicated story slot when other grammatical heavier lifters exist.",
+        "judged": true,
+        "priority": 102,
+        "timesDeferred": 1,
+        "bundle": "DEFERRED"
+      },
+      {
+        "word": "如果",
+        "hasRole": true,
+        "reason": "Essential for establishing hypothetical conditions, driving plot twists, or expressing hesitation (\"If I do this...\"), which creates narrative tension.",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "REQUIRED"
+      },
+      {
+        "word": "该",
+        "hasRole": false,
+        "reason": "The example \"Serves you right\" is an idiom, not the modal verb \"should\". While it functions as a modal in the corpus notes, it is often better taught later as it can be ambiguous with \"must/need\". It is less distinct than \"需要\" for a single story.",
+        "judged": true,
+        "priority": 102,
+        "timesDeferred": 1,
+        "bundle": "DEFERRED"
+      },
+      {
+        "word": "需要",
+        "hasRole": true,
+        "reason": "Crucial for defining characters' motivations and constraints (\"I need to...\", \"We need...\"), providing the logical foundation for actions in a dialogue.",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "REQUIRED"
+      },
+      {
+        "word": "像",
+        "hasRole": false,
+        "reason": "\"Seem to/As if\" (好像) is often an aspect or perception marker. Using \"像\" for comparison (\"like\") is often descriptive fluff in short stories unless it's a riddle format, which is less natural than condition/need driven plots.",
+        "judged": true,
+        "priority": 102,
+        "timesDeferred": 1,
+        "bundle": "DEFERRED"
+      },
+      {
+        "word": "认为",
+        "hasRole": false,
+        "reason": "\"Think/believe\" is often redundant with the subject's speech or actions. In beginner stories, stating what someone thinks is often less dynamic than stating what they *need* or what *would happen if*.",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "DEFERRED"
+      },
+      {
+        "word": "生活",
+        "hasRole": false,
+        "reason": "As a theme, it is too broad. As a verb/noun, it is often passive background (\"my life is...\") rather than an active plot driver in a single short scene.",
+        "judged": true,
+        "priority": 102,
+        "timesDeferred": 1,
+        "bundle": "DEFERRED"
+      }
+    ]
+  },
+  "meanings": {
+    "被": "quilt; to cover (with)",
+    "中": "China; Chinese",
+    "如果": "if; in case",
+    "该": "should; ought to",
+    "需要": "to need; to want; to demand; to require; needs",
+    "像": "to resemble; to be like",
+    "认为": "to believe; to think; to consider; to feel",
+    "生活": "to live; life"
+  }
+}
