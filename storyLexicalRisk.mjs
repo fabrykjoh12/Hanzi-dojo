@@ -27,6 +27,7 @@
 // No LLM call, no network, no curated list of forbidden scenes.
 
 import { tokenize, stem } from './storyLexicalRetrieval.mjs'
+import { lemma, derivations } from './storyEnglishMorphology.mjs'
 import { BIBLE_CHINESE } from './storyLevels.mjs'
 
 // The shape is English, so its people are "Li Ming" and "Xiao Hong". Without
@@ -78,7 +79,9 @@ function riskStem(word) {
 function forms(word) {
   const w = String(word || '').toLowerCase()
   const r = riskStem(w)
-  return [...new Set([w, stem(w), r, r + 'e'])].filter(Boolean)
+  // The lemma is what catches what suffix-stripping cannot: gave → give,
+  // children → child, went → go.
+  return [...new Set([w, lemma(w), stem(w), r, r + 'e'])].filter(Boolean)
 }
 
 // Clause markers that introduce detail rather than the event itself.
@@ -188,12 +191,23 @@ export function conceptsFromBeat(beat, entries = [], { names = [] } = {}) {
 //                         counting it would make every beat look impossible
 export function buildGlossIndex(vocabMap, level) {
   const index = new Map()
+  const notes = new Map()
+  index.notes = notes
   for (const word of Object.keys(vocabMap)) {
     const v = vocabMap[word]
     if (!v || !Number.isFinite(v.level) || v.level > level || !v.meaning) continue
     // Indexed sense by sense, so a token remembers whether the reading it came
     // from was verbal. Flattening the gloss first is what let "tire" (noun)
     // be answered by "to tire".
+    for (const note of glossNotes(v.meaning)) {
+      for (const t of note.tokens) {
+        const key = lemma(t)
+        if (!notes.has(key)) notes.set(key, [])
+        if (notes.get(key).length < 6 && !notes.get(key).some(x => x.word === word)) {
+          notes.get(key).push({ word, phrase: note.phrase })
+        }
+      }
+    }
     for (const sense of glossSenses(v.meaning)) {
       for (const t of sense.tokens) {
         for (const key of [t, stem(t), riskStem(t)]) {
@@ -246,6 +260,26 @@ const SENSE_STOP = new Set(['the', 'and', 'for', 'with', 'that', 'this', 'sth', 
 // means and what part of speech it is. The glosses mark verbs themselves with
 // a leading "to", and that mark is the only part-of-speech signal in the
 // dataset — so it is read once, here, rather than re-guessed per feature.
+// The text inside parentheses is a usage note, an example or a domain — not a
+// translation. It is kept SEPARATE and consulted only after everything else,
+// and only when it reads as a phrase about doing something: 最好's "(do what we
+// suggest)" is evidence that 最好 can carry a suggestion, while 养's "(animals)"
+// is not evidence that 养 means animals.
+const NOTE_MARKERS = /\b(to|do|does|doing|when|if|what|sb|sth)\b/i
+export function glossNotes(meaning) {
+  const out = []
+  for (const m of String(meaning || '').matchAll(/\(([^)]*)\)/g)) {
+    const phrase = String(m[1] || '').trim()
+    const words = phrase.split(/[^A-Za-z]+/).filter(Boolean)
+    const tokens = tokenize(phrase)
+    // A phrase, not a bare label: "(do what we suggest)" qualifies, "(coll.)"
+    // and "(animals)" do not.
+    if (words.length < 3 || !tokens.length || !NOTE_MARKERS.test(phrase)) continue
+    out.push({ phrase, tokens })
+  }
+  return out
+}
+
 export function glossSenses(meaning) {
   const out = []
   for (const raw of String(meaning || '').split(/[;,]/)) {
@@ -394,6 +428,41 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
   }
 
   // A longer concept that is a piece of some gloss token, or vice versa.
+  // Bridge 3 — a DERIVATION that changes part of speech. helpful is an
+  // adjective and 帮 glosses a verb, so the part-of-speech filter above is
+  // exactly wrong here: derivation changes the class by definition. It is
+  // separate, weaker evidence — recorded as such — and each suffix states what
+  // it needs its base to be, which is what keeps corner away from corn.
+  for (const d of derivations(concept)) {
+    for (const form of [...new Set([d.base, stem(d.base), riskStem(d.base)])]) {
+      const hits = (index.get(form) || []).filter(h =>
+        (d.expects !== 'verb' || h.verb)
+        && inflectionCompatible(d.base, h.token || d.base, h))
+      if (hits.length) {
+        return {
+          support: 'supported',
+          via: 'derivation',
+          confidence: 'derivational',
+          derivedFrom: d.base,
+          suffix: d.suffix,
+          words: names(hits),
+        }
+      }
+    }
+  }
+
+  // Bridge 4 — a usage note inside parentheses. Weakest evidence there is:
+  // consulted last, and only for a phrase that reads as being about doing
+  // something.
+  if (index.notes) {
+    for (const form of [...new Set([concept, lemma(concept)])]) {
+      const hit = (index.notes.get(form) || [])[0]
+      if (hit) {
+        return { support: 'supported', via: 'gloss-note', confidence: 'note', note: hit.phrase, words: [hit.word] }
+      }
+    }
+  }
+
   // English inflects at the END, so a legitimate variant the stemmer missed
   // shares the PREFIX: "heard"/"hear", "carried"/"carry". A compound that
   // merely ends with another word does not: "downstairs" is not "stair". The
@@ -401,7 +470,11 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
   for (const [key, hits] of index) {
     if (key.length < 4 || concept.length < 5) continue
     const stemmed = riskStem(concept)
-    const prefix = stemmed.startsWith(key) || key.startsWith(stemmed)
+    // A prefix relation is only an inflection when what remains IS an
+    // inflectional ending. corner is not a form of corn.
+    const tail = (a, b) => (a.startsWith(b) ? a.slice(b.length) : null)
+    const extra = tail(stemmed, key) != null ? tail(stemmed, key) : tail(key, stemmed)
+    const prefix = extra != null && /^(s|es|ed|d|ing|en|n|ies|ied|)$/.test(extra)
     const overlap = key.includes(stemmed) || stemmed.includes(key)
     if (!overlap) continue
     const usable = (hits || []).filter(ok)

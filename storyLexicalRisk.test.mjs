@@ -643,7 +643,10 @@ describe('noise the budget must not bill as vocabulary', () => {
 
   it('an inflection the stemmer missed is support; a compound ending is not', () => {
     // English inflects at the end, so a real variant shares the prefix.
-    expect(support('heard')).toMatchObject({ support: 'supported', via: 'inflection' })
+    // Which bridge carries it is not the point — the lemma now gets there
+    // first — but it must be supported, and 楼梯 must still not be downstairs.
+    expect(support('heard').support).toBe('supported')
+    expect(support('heard').words).toContain('听见')
     expect(support('downstairs')).toMatchObject({ support: 'weak' })
   })
 
@@ -667,5 +670,69 @@ describe('noise the budget must not bill as vocabulary', () => {
   it('a contraction fragment is not a concept', () => {
     const c = conceptsFromBeat({ what: "It isn't working", because: 'the story opens' }, [])
     expect([...c.core, ...c.supporting, ...c.incidental]).not.toContain('isn')
+  })
+})
+
+// ── The three matcher classes the sensitivity matrix exposed ────────────────
+describe('matcher accuracy: inflection, derivation, parenthetical', () => {
+  // Glosses verbatim from the vocabulary table.
+  const ROWS = [
+    ['给', 1, 'to give, for'], ['帮', 2, 'to help'], ['帮助', 3, 'assistance; aid; to help; to assist'],
+    ['最好', 3, 'best; (you) had better (do what we suggest)'],
+    ['养', 3, 'to raise (animals); to bring up (children)'],
+    ['玉米', 3, 'corn'], ['教', 3, 'to teach'], ['听见', 1, 'to hear'],
+    ['楼梯', 3, 'stair; staircase'], ['外卖', 3, '(of a restaurant) to provide a takeout or home delivery meal'],
+  ]
+  const vm = Object.fromEntries(ROWS.map(([word, level, meaning]) => [word, { word, level, meaning }]))
+  const index = buildGlossIndex(vm, 3)
+  const full = buildFullGlossIndex(vm)
+  const support = (c, pos) => conceptSupport(c, index, full, {
+    synonyms: buildSenseSynonyms(vm), inLevelWords: buildInLevelWords(vm, 3), pos,
+  })
+
+  it('1. an irregular past tense reaches its lemma', () => {
+    expect(support('gave', null).words).toContain('给')
+    expect(support('heard', null).words).toContain('听见')
+    // and the class, not the case: several unrelated families
+    expect(support('taught', null).words).toContain('教')
+  })
+
+  it('2. a derivation that changes part of speech is separate, weaker evidence', () => {
+    const r = support('helpful', 'noun')
+    expect(r).toMatchObject({ support: 'supported', via: 'derivation', derivedFrom: 'help', confidence: 'derivational' })
+    expect(r.words).toContain('帮')
+    const t = support('teacher', 'noun')
+    expect(t).toMatchObject({ via: 'derivation', derivedFrom: 'teach' })
+  })
+
+  it('2b. a surface suffix collision gains nothing', () => {
+    // corner does not derive from corn: an agentive -er needs a VERB base, and
+    // 玉米 is a noun. It must not read as in level.
+    const r = support('corner', 'noun')
+    expect(r.support).not.toBe('supported')
+    expect(r.via).not.toBe('derivation')
+  })
+
+  it('3. a parenthetical can rescue a match', () => {
+    const r = support('suggested', 'verb')
+    expect(r).toMatchObject({ support: 'supported', via: 'gloss-note', confidence: 'note' })
+    expect(r.note).toContain('suggest')
+    expect(r.words).toContain('最好')
+  })
+
+  it('3b. a parenthetical does not make an explanatory word a synonym', () => {
+    // 养 is "to raise (animals); to bring up (children)" — it does not mean
+    // animals or children, and a bare label is not a usage note.
+    for (const c of ['animals', 'children']) {
+      const r = support(c, 'noun')
+      expect(r.support, c).not.toBe('supported')
+    }
+    // "(of a restaurant)" is a domain, not an action note
+    expect(support('restaurant', 'noun').support).not.toBe('supported')
+  })
+
+  it('the earlier guards still hold after all three bridges', () => {
+    expect(support('downstairs', null).support).not.toBe('supported')   // 楼梯 is not downstairs
+    expect(support('tire', 'noun').support).toBe('none')                 // still not 累
   })
 })
