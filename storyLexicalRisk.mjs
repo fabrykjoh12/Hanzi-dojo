@@ -642,6 +642,7 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
       hsk: a.wordLevel,
       distance: a.distance,
       source: a.source,
+      nearest: a.nearest || null,
       offList: a.offList,
       cost: a.cost,
       beats: a.beats,
