@@ -627,3 +627,44 @@ describe('defects the review reproduced', () => {
     expect(r.policy.costBudget).toBe(40)
   })
 })
+
+// ── What the first post-review census exposed ───────────────────────────────
+describe('noise the budget must not bill as vocabulary', () => {
+  const vm = {
+    听见: { word: '听见', level: 1, meaning: 'to hear' },
+    楼梯: { word: '楼梯', level: 3, meaning: 'stair; staircase' },
+    性别: { word: '性别', level: 4, meaning: 'gender' },
+  }
+  const manifest = () => buildManifest({ batchId: 'n', seq: 1, level: 3, targets: ['帮助'], defaults: { lines: [14, 38] } })
+  const index = buildGlossIndex(vm, 3)
+  const full = buildFullGlossIndex(vm)
+  const support = (c) => conceptSupport(c, index, full, { synonyms: buildSenseSynonyms(vm), inLevelWords: buildInLevelWords(vm, 3) })
+
+  it('an inflection the stemmer missed is support; a compound ending is not', () => {
+    // English inflects at the end, so a real variant shares the prefix.
+    expect(support('heard')).toMatchObject({ support: 'supported', via: 'inflection' })
+    expect(support('downstairs')).toMatchObject({ support: 'weak' })
+  })
+
+  it('a target’s stated intent is a note about the plan, not story vocabulary', () => {
+    // census-7 billed "Description", "Social bonding" and "Gender comparison"
+    // as words the story has to say.
+    const c = conceptsFromBeat({ what: 'They fix it together', because: 'it follows' }, [{ intent: 'Gender comparison' }])
+    expect(c.meta).toContain('gender')
+    expect(c.incidental).not.toContain('gender')
+    const r = assessShape({
+      blueprint: { cast: ['李明'], beats: [{ id: 1, what: 'They fix it together', because: 'the story opens' }], targetPlan: [{ word: '帮助', beat: 1, intent: 'Gender comparison' }] },
+      manifest: manifest(), vocabMap: vm,
+    })
+    // "fix" is a real concept of the beat and may well be assisted; the point
+    // is that nothing from the INTENT reaches the budget.
+    const billed = r.assisted.flatMap(a => a.concepts || [a.concept])
+    expect(billed).not.toContain('gender')
+    expect(billed).not.toContain('comparison')
+  })
+
+  it('a contraction fragment is not a concept', () => {
+    const c = conceptsFromBeat({ what: "It isn't working", because: 'the story opens' }, [])
+    expect([...c.core, ...c.supporting, ...c.incidental]).not.toContain('isn')
+  })
+})

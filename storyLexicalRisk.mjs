@@ -53,6 +53,8 @@ const FUNCTIONAL = new Set([
   'cannot', 'someone', 'somebody', 'something', 'anyone', 'anything', 'everyone',
   'everything', 'nobody', 'nothing', 'alone', 'able', 'unable', 'each', 'other',
   'another', 'both', 'either', 'neither', 'himself', 'herself', 'themselves',
+  // Fragments left by contractions: "isn't" tokenizes to "isn".
+  'isn', 'doesn', 'didn', 'wasn', 'aren', 'won', 'don', 'can', 'couldn', 'wouldn', 'shouldn',
   'itself', 'myself', 'yourself', 'much', 'many', 'few', 'little', 'own',
 ])
 
@@ -153,13 +155,18 @@ export function conceptsFromBeat(beat, entries = [], { names = [] } = {}) {
     ;(i === 0 ? core : supporting).push(...clean(main))
     incidental.push(...clean(sub))
   })
-  // The causal link and the target intents are context, never the event.
+  // The causal link is story content and appears in the prose, so it is
+  // incidental (charged at half). A target's INTENT is not: "Description",
+  // "Social bonding", "Gender comparison" are notes about the plan, and once
+  // incidental material started being charged they were being billed as
+  // vocabulary the story has to say.
   incidental.push(...clean(beat && beat.because))
-  for (const e of entries) incidental.push(...clean(e && e.intent))
+  const meta = []
+  for (const e of entries) meta.push(...clean(e && e.intent))
   const seen = new Set()
   const dedupe = (list) => list.filter(t => (seen.has(t) ? false : (seen.add(t), true)))
   const pos = beatConceptPos(String((beat && beat.what) || '') + ' ' + String((beat && beat.because) || ''))
-  return { core: dedupe(core), supporting: dedupe(supporting), incidental: dedupe(incidental), pos }
+  return { core: dedupe(core), supporting: dedupe(supporting), incidental: dedupe(incidental), meta: dedupe(meta), pos }
 }
 
 // token → the words whose gloss uses it. Two indexes get built: one over the
@@ -380,11 +387,21 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
   }
 
   // A longer concept that is a piece of some gloss token, or vice versa.
+  // English inflects at the END, so a legitimate variant the stemmer missed
+  // shares the PREFIX: "heard"/"hear", "carried"/"carry". A compound that
+  // merely ends with another word does not: "downstairs" is not "stair". The
+  // first is support; the second was disguising an out-of-level concept.
   for (const [key, hits] of index) {
+    if (key.length < 4 || concept.length < 5) continue
+    const stemmed = riskStem(concept)
+    const prefix = stemmed.startsWith(key) || key.startsWith(stemmed)
+    const overlap = key.includes(stemmed) || stemmed.includes(key)
+    if (!overlap) continue
     const usable = (hits || []).filter(ok)
-    if (usable.length && concept.length >= 5 && (key.includes(riskStem(concept)) || riskStem(concept).includes(key)) && key.length >= 4) {
-      return { support: 'weak', via: 'substring', words: names(usable).slice(0, 3) }
-    }
+    if (!usable.length) continue
+    return prefix
+      ? { support: 'supported', via: 'inflection', words: names(usable).slice(0, 3) }
+      : { support: 'weak', via: 'substring', words: names(usable).slice(0, 3) }
   }
   // Only now is the concept unsupported, and the full index says which kind:
   // a word the language has and the reader does not, or nothing at all.
@@ -557,6 +574,9 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
   const core = classify(rate(concepts.core))
   const supporting = classify(rate(concepts.supporting))
   const incidental = classify(rate(concepts.incidental))
+  // Reported so the artifact can show it, never charged: it is a note about
+  // the plan, not a word the story has to say.
+  const meta = classify(rate(concepts.meta || []))
 
   // Incidental detail is decoration the writer may drop, so it is charged at
   // HALF rate rather than free. Free was a hole: "he holds the wheel while he
@@ -594,6 +614,7 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
     incidental,
     assisted: assisted.map(c => ({ concept: c.concept, ...c.assist })),
     incidentalAssisted: incidentalAssisted.map(c => ({ concept: c.concept, ...c.assist })),
+    metaAssisted: meta.filter(c => c.assist.kind === ASSIST.ASSISTED).map(c => ({ concept: c.concept, ...c.assist })),
     cost,
     crowded,
     // Kept for the reports and specs that read them: what is NOT in level.
