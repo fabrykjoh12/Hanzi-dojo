@@ -20,7 +20,7 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import { publishedChineseStories, buildCoverageReport } from './storyCoverage.mjs'
 import { buildCoveragePlan, pendingTargets, useTargets } from './storyCoveragePlanner.mjs'
-import { composeSemanticManifests, manifestDefaults } from './storyManifestPlanner.mjs'
+import { composeSemanticManifests, manifestDefaults, buildManifest } from './storyManifestPlanner.mjs'
 import { storyShapePrompt, parseBlueprint, blueprintJudgePrompt, parseBlueprintJudgment } from './storyGenPrompts.mjs'
 import {
   validateBlueprint, renderBlueprint, anonymiseBlueprints, acceptableBlueprint,
@@ -66,15 +66,44 @@ const provider = (spec) => {
 const planners = modelSpecs.map(provider)
 const judge = judgeSpec ? provider(judgeSpec) : null
 
-// ONE manifest, used by every model.
+// ONE manifest, used by every model. --bundle points at a target-bundle
+// artifact: the story is then asked to teach the words that stage selected,
+// and only those, instead of whatever the coverage plan happened to queue.
+const bundlePath = arg('bundle', null)
 const report = buildCoverageReport({ stories, vocab })
 const plan0 = buildCoveragePlan({ words: report.words, level, goal: 2, batchCap: 2 })
-const composed = composeSemanticManifests({
-  batchId: 'bakeoff', level, plan: plan0, pending: pendingTargets, use: useTargets, meanings, count: 1,
-  defaults: manifestDefaults(level),
-})
-const manifest = composed.manifests[0]
-const required = ((manifest.composition && manifest.composition.hard) || manifest.targets.filter(t => t.min >= 2)).map(t => t.word)
+let manifest = null
+let required = []
+if (bundlePath) {
+  const bundle = JSON.parse(readFileSync(bundlePath, 'utf8'))
+  const req = bundle.selection.required
+  const opp = bundle.selection.opportunity || []
+  const d = manifestDefaults(level)
+  manifest = buildManifest({
+    batchId: 'bundle', seq: 1, level, defaults: d,
+    theme: bundle.selection.situation || null,
+    targets: [
+      ...req.map(w => ({ word: w, min: 2, max: 4 })),
+      // Opportunity words may appear and may be left out; nothing fails when
+      // they do not, so they carry the loosest bound the manifest allows.
+      ...opp.map(w => ({ word: w, min: 1, max: 4 })),
+    ],
+    composition: { bucket: 'bundle', reason: bundle.selection.situation, hard: req.map(w => ({ word: w })), soft: opp.map(w => ({ word: w })) },
+  })
+  required = req
+  console.log('Target bundle from ' + bundlePath)
+  console.log('  situation:  ' + (bundle.selection.situation || '(none)'))
+  console.log('  required:   ' + req.join('、'))
+  console.log('  opportunity:' + (opp.join('、') || ' (none)'))
+  console.log('  deferred:   ' + (bundle.selection.deferred.join('、') || '(none)') + '\n')
+} else {
+  const composed = composeSemanticManifests({
+    batchId: 'bakeoff', level, plan: plan0, pending: pendingTargets, use: useTargets, meanings, count: 1,
+    defaults: manifestDefaults(level),
+  })
+  manifest = composed.manifests[0]
+  required = ((manifest.composition && manifest.composition.hard) || manifest.targets.filter(t => t.min >= 2)).map(t => t.word)
+}
 console.log('Manifest ' + manifest.id + ' — targets ' + manifest.targets.map(t => t.word).join('、'))
 console.log('  required: ' + required.join('、'))
 console.log('  cast: ' + manifest.speakers.join('、') + '\n')
