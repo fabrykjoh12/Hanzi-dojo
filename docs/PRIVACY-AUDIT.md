@@ -271,7 +271,7 @@ questionnaires and Play's Families policy look for this.
 `TrustPages.jsx:358`. It predates the account-deletion RPC (2026-08-07) and
 everything since. Bump it in the same commit as the fixes.
 
-#### F11 · NEEDS DEVICE/ARCHIVE VERIFICATION · low — `bodyos_app_state`
+#### F11 · **RESOLVED 2026-08-26** · low — `bodyos_app_state`
 A user-keyed table with a `data` jsonb, RLS and four owner policies, sharing this
 project's `auth.users` tenant, and referenced **nowhere in this repo** except the
 deletion RPC. 0 rows today.
@@ -532,7 +532,7 @@ Even if a `PrivacyInfo.xcprivacy` were added to
 declaration has to live in the **app** target (F18) rather than being fixed
 upstream in place.
 
-#### F35 · NEEDS DEVICE/ARCHIVE VERIFICATION · medium — Supabase platform logging
+#### F35 · **RESOLVED 2026-08-26** · medium — Supabase platform logging
 **Layer: process/verification, policy text**
 
 Supabase's API gateway records request IP addresses and user agents as platform
@@ -853,6 +853,156 @@ behaviour moved.
 - **Stage 4** — the App Store Connect answers (F12) and the Play Data Safety
   corrections (F14) are not written.
 - **The App Store privacy work is not complete.**
+
+### 2.9 Pre-sign-off investigation (2026-08-26)
+
+Four things were run down before owner sign-off. All read-only; nothing was
+deleted or altered.
+
+#### F35 — RESOLVED. What the platform actually logs, and for how long
+
+The project is `Hanzi-Dojo` in org `Learning Org`, region **`eu-west-3`
+(AWS Paris — inside the EEA)**, on the **Pro** plan. Supabase's documented Logs
+Explorer retention for Pro is **7 days**.
+
+What those logs contain, measured over a 24-hour window rather than assumed
+(field *presence and population*, never values):
+
+| source | rows | with IP | with user-agent | with account id | with sign-in identifier |
+|---|---|---|---|---|---|
+| `edge_logs` | 1,216 | **1,216** | **1,216** | **726** | 0 |
+| `storage_logs` | 251 | **251** | **125** | 0 | 0 |
+| `auth_logs` | 24 | **18** | 0 | **6** | 0 |
+| `auth_audit_logs` | 9 | 0 | **9** | **9** | **9** |
+| `pgbouncer` / `postgres` / `postgrest` / `realtime` | 539 | 0 | 0 | 0 | 0 |
+
+A first pass reported zero for `storage_logs` and `auth_audit_logs`. That was
+wrong — each service names its fields differently (`req.headers.*` and
+`auth_audit_event.*` rather than `request.headers.*`), so the query missed them.
+The table above uses the per-source names. Worth recording because the
+under-count would have produced a policy that understated collection.
+
+`edge_logs` carries more than IP and user-agent: `request.cf.city`,
+`request.cf.region`, `request.cf.postalCode`, `request.cf.country` (coarse
+location resolved from the IP), `request.cf.asOrganization` (network operator),
+and `request.cf.botManagement.ja3Hash` / `ja4` (a TLS fingerprint) — on every
+row. On 726 of 1,216 rows `request.sb.auth_user` carries the signed-in account
+id **alongside** those, so for a signed-in learner the IP, device string, coarse
+location and account are correlated in one line, for 7 days.
+
+**A second, larger finding came out of this — and it is not a log.**
+
+`auth.sessions` stores `ip inet` and `user_agent text` **in the database**, one
+row per signed-in device: **54 rows, all 54 populated with both, across 36
+distinct users, oldest 2026-06-30, and `not_after` is NULL on all of them** — so
+they have no expiry, and 35 have been idle for over 30 days. This is Supabase
+Auth's normal behaviour, not a defect, but it means IP addresses and device
+strings tied to an account persist **indefinitely** in the database, not for
+7 days. Nothing in the audit or the policy had mentioned it.
+
+It is covered by account deletion — `auth.sessions.user_id → auth.users ON DELETE
+CASCADE`, already verified in §1.6 — so deleting the account removes it.
+`auth.audit_log_entries` is empty (0 rows), so there is no second persistent copy.
+
+Both are now disclosed in the policy: a "Server logs" section for the 7-day
+platform logs, and a sign-in-sessions entry under "What we store".
+
+#### F11 — RESOLVED. The project is **not** shared with BodyOS
+
+`list_projects` returns exactly **one** project for the organisation:
+`Hanzi-Dojo`. There is no separate BodyOS project, so the question was never
+"are two products sharing a tenant" but "what is this table doing here".
+
+Evidence gathered read-only:
+
+| | |
+|---|---|
+| owner | `postgres` (the default; no separate role) |
+| columns | `user_id uuid, data jsonb, app_version integer, updated_at timestamptz` |
+| rows | **0** |
+| distinct users | **0** |
+| oldest / newest `updated_at` | **none — the table has never held a row** |
+| size on disk | 16 kB (an empty heap) |
+| RLS | enabled, 4 owner-only policies |
+| trigger | `bodyos_app_state_touch` → `public.bodyos_touch_updated_at()` |
+| provenance | applied `20260716233821 bodyos_app_state` and `20260716234138 bodyos_touch_updated_at_search_path` |
+| in this repo? | **No.** Neither migration exists in `supabase/migrations/`; both were applied directly to the database, outside this repo's history |
+| referenced by app code? | **No.** The only mentions are the deletion RPC's guard and two audit docs |
+
+**Answer: abandoned scaffolding, not shared production data.** Someone created a
+generic per-user key-value table for a different idea on 2026-07-16, outside the
+repo's migration flow, and nothing ever wrote to it. It holds no personal data
+and never has. `docs/PRE-RELEASE-READINESS-AUDIT.md:241` had already flagged it
+as a "dead guard… never created by any migration" and listed its production
+existence as unknown — it does exist, and it is empty.
+
+No policy change is needed. It is left in place, as instructed. Dropping it
+would be reasonable housekeeping later, but it is not a privacy matter, and the
+deletion RPC's `to_regclass` guard means it costs nothing to leave.
+
+#### Retention recommendation — account-unlinked usage events
+
+**Recommendation: a 12-month rolling window. Not implemented.**
+
+The rows in question are the 2,905 of 5,334 `analytics_events` with
+`user_id IS NULL` — landing views, the public reading check, shared story links.
+Their only product use is funnel measurement: how many people who see the
+landing page start the reading check, and how many of those sign up.
+
+That question is answered by a *rolling window*, not by an archive. Nothing in
+`dashboardMetrics.js` or the admin RPCs reads beyond a recent period, and the
+oldest row is 2026-07-15 — so today, indefinite retention and 12-month retention
+would return identical numbers. There is no demonstrated need.
+
+Twelve months rather than something shorter for one reason: a learning app has
+real seasonality (January and September are not August), and a year lets a
+future funnel change be compared against the same month a year earlier. Six
+months would be leaner and still cover every current use; the trade-off is
+losing year-on-year comparison permanently, since deleted rows cannot be
+recovered. Anything beyond twelve months is storage without a stated purpose,
+which is exactly what a regulator asks about.
+
+The policy currently says these are kept without a fixed end date, and says
+plainly that we intend to set one — rather than implying a policy that does not
+exist yet.
+
+#### Controller identity — **NOT ESTABLISHED. This blocks sign-off**
+
+Searched: `LICENSE`, `NOTICE.md`, `package.json`, `src/brand.js`, every `.md` in
+the repo, and the git history. What exists:
+
+- `LICENSE`: "Copyright (c) 2026 **Hanzi Dojo**. All rights reserved." — a
+  trading name, not a legal person.
+- `package.json`: no `author`, no `license`, no `homepage`.
+- `src/brand.js`: the name, `hanzi-dojo.com`, and `support@hanzi-dojo.com`.
+- Supabase organisation: "Learning Org" — an internal label.
+- Git commits: a personal name and a personal Gmail address — which
+  `tools/verify-public-bundle.mjs` explicitly **bans** from the shipped bundle
+  as a "personal-identifier" violation, so it is plainly not intended as the
+  public contact.
+
+Nowhere is there a registered company name, an organisation number, a country of
+establishment, or a postal address. **No controller identity was invented.** The
+policy names {BRAND_NAME} as the controller and gives the support address, which
+is true and is the real contact channel — but GDPR Article 13(1)(a) wants the
+controller's *identity* to be ascertainable, and a trading name alone is not.
+
+Three facts are needed from the owner:
+
+1. **Is there a registered legal entity** (e.g. a Norwegian AS or
+   enkeltpersonforetak)? If so, its exact registered name and organisation
+   number.
+2. **If not** — i.e. the controller is a natural person operating under the
+   Hanzi Dojo name — the full legal name that should appear.
+3. **A contact address.** An email alone is thin for Article 13; a postal
+   address is the norm, and it becomes the address a supervisory authority
+   writes to.
+
+One related fact also needs owner confirmation, and is not discoverable from the
+repo or the database: **whether data-processing agreements are actually in place**
+with Supabase, Vercel, Cloudflare and Brevo. Article 28 requires a processor
+contract. All four publish standard DPAs; whether they have been accepted for
+this account is an owner fact.
 
 ### 2.5 Other PASS results worth recording
 

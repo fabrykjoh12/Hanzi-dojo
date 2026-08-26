@@ -74,6 +74,15 @@ function Privacy() {
         below.
       </P>
 
+      <H2>Who is responsible for your data</H2>
+      <P>
+        {BRAND_NAME} decides what data is collected and why — in data-protection terms, it is
+        the <strong>controller</strong> for everything described on this page. The way to
+        reach us about any of it, including the requests listed under “Your rights” below, is{' '}
+        <a href={'mailto:' + SUPPORT_EMAIL} style={{ color: 'var(--text)', fontWeight: 600 }}>{SUPPORT_EMAIL}</a>.
+        We answer data requests at that address within one month.
+      </P>
+
       <H2>What we store</H2>
       <ul style={{ paddingLeft: '20px', margin: '0 0 12px' }}>
         <Li><strong>Account:</strong> your email address and a password (stored hashed by our
@@ -91,6 +100,11 @@ function Privacy() {
         <Li><strong>Feedback you send:</strong> the message text, your account email, which
           screen you were on, your active language, the app version, and — if you sent it
           from a story — which story. It stays in our database; it is not forwarded anywhere.</Li>
+        <Li><strong>Your sign-in sessions:</strong> for each device you are signed in on, our
+          authentication provider records the IP address and browser/app description that
+          session was created from. This is how you stay signed in, and how a session can be
+          recognised. These records last as long as the session does, and are deleted with
+          your account.</Li>
       </ul>
 
       <H2>Product analytics</H2>
@@ -103,10 +117,13 @@ function Privacy() {
       </P>
       <P>
         Some of these events happen <em>before</em> you have an account — opening the landing
-        page, trying the reading check, reading a shared story link. Those are not connected
-        to any account, because there isn’t one yet. There is currently no way to opt out of
-        this basic usage measurement; if that matters to you, <A href="/support">Support</A>{' '}
-        will tell you what we can do.
+        page, trying the reading check, reading a shared story link. Those event rows are{' '}
+        <strong>not linked to a {BRAND_NAME} account</strong>, because there isn’t one yet.
+        We avoid calling them anonymous, because that would overstate it: the server logs
+        described below record the IP address of the same requests separately, and we would
+        rather say so than imply an anonymity we cannot guarantee. There is currently no way
+        to opt out of this basic usage measurement; if that matters to you,{' '}
+        <A href="/support">Support</A> will tell you what we can do.
       </P>
 
       <H2>Crash and error reports</H2>
@@ -189,13 +206,34 @@ function Privacy() {
         services never see your data.
       </P>
 
-      <H2>How long we keep things</H2>
+      <H2>Server logs</H2>
       <P>
-        Your account data — progress, cards, review history, feedback — is kept for as long as
-        you have an account, so your progress is there when you come back, and is deleted when
-        you delete the account. The anonymous usage events described above are not tied to an
-        account and are currently kept indefinitely; they contain no text you wrote.
+        Separately from the usage events above, the platform our backend runs on keeps
+        ordinary operational logs of the requests your device makes. These are produced by
+        the infrastructure rather than by our code, and we do not control their contents. On
+        our current plan they are retained for <strong>7 days</strong> and then discarded.
       </P>
+      <P>
+        Each request log line can contain your IP address, your browser or app’s
+        user-agent string, the coarse location your network resolves to (city, region and
+        country), your network operator, a technical fingerprint of the connection, and —
+        when you are signed in — your account id alongside them. We use these only to keep
+        the service running and secure: diagnosing errors, and spotting abuse. Sign-in
+        events additionally record the address you signed in with.
+      </P>
+
+      <H2>How long we keep things</H2>
+      <ul style={{ paddingLeft: '20px', margin: '0 0 12px' }}>
+        <Li><strong>Your account and everything attached to it</strong> — progress, cards,
+          review history, feedback, sign-in sessions — for as long as you have an account, so
+          your progress is there when you come back. All of it is deleted when you delete the
+          account.</Li>
+        <Li><strong>Server logs</strong> — 7 days, then discarded automatically.</Li>
+        <Li><strong>Usage events not linked to an account</strong> — currently kept without a
+          fixed end date. We are not comfortable with that as a permanent answer and intend
+          to set a limit; until we do, this page will keep saying so rather than implying a
+          policy we don’t have.</Li>
+      </ul>
 
       <H2>Age</H2>
       <P>
@@ -205,17 +243,76 @@ function Privacy() {
         If you believe a child has created an account, email us and we will delete it.
       </P>
 
-      <H2>Your rights and choices</H2>
+      <H2>Why we are allowed to process it</H2>
+      <P>
+        If you are in the EEA or the UK, the law asks us to name a legal basis for each kind
+        of processing. Ours are:
+      </P>
       <ul style={{ paddingLeft: '20px', margin: '0 0 12px' }}>
-        <Li>You can reset your learning progress for your language from Profile at any time.</Li>
-        <Li>You can delete your account and everything in it yourself, at any time, on the
-          website or in the apps: Profile → Delete account. Deletion is immediate and
-          permanent — flashcards, review history, story progress, test results, feedback and
-          the login itself all go. If you’d rather we do it, ask via{' '}
-          <A href="/support">Support</A> and we’ll delete the account for you.</Li>
-        <Li>You can ask for a copy of your data, or ask us to correct it — email us and we
-          will put it together by hand; there is no self-service export button yet. See{' '}
-          <A href="/support">Support</A>.</Li>
+        <Li><strong>Your account and your learning data</strong> — to perform our agreement
+          with you. Without this there is no app: the whole product is your progress.</Li>
+        <Li><strong>Usage events, crash reports and server logs</strong> — our legitimate
+          interest in understanding where learning breaks down, keeping the service working,
+          and keeping it secure. We have kept these deliberately thin (counts and short
+          labels, never your text) so that interest does not override yours. You can object —
+          see below.</Li>
+        <Li><strong>Feedback you send</strong> — our legitimate interest in answering you and
+          fixing what you report.</Li>
+        <Li><strong>Reminders</strong> — your consent, given by turning them on, and
+          withdrawable at any time by turning them off.</Li>
+      </ul>
+
+      <H2>Where your data is stored</H2>
+      <P>
+        The database holding your account and learning data is hosted <strong>inside the
+        EEA</strong>, in Paris, France. It is not copied outside the EEA as part of normal
+        operation.
+      </P>
+      <P>
+        Some of the companies listed under Infrastructure are established outside the EEA,
+        mainly in the United States, and their staff or systems may access data from there
+        for support and operation. Where that happens, the transfer relies on the European
+        Commission’s standard contractual clauses and, where the provider is certified, the
+        EU–US Data Privacy Framework. If you want to know exactly which mechanism applies to
+        a particular provider, ask us and we will tell you.
+      </P>
+
+      <H2>Your rights</H2>
+      <P>
+        Wherever you live, you can email us and we will do these. If you are in the EEA or
+        the UK, they are rights you hold under the GDPR, and they are free.
+      </P>
+      <ul style={{ paddingLeft: '20px', margin: '0 0 12px' }}>
+        <Li><strong>Access</strong> — ask what we hold about you and get a copy. There is no
+          self-service export button yet, so we put it together by hand; that is why we ask
+          for up to a month.</Li>
+        <Li><strong>Rectification</strong> — have anything wrong about you corrected. Most of
+          it you can already edit yourself in the app.</Li>
+        <Li><strong>Erasure</strong> — delete your account and everything in it, yourself, at
+          any time: Profile → Delete account. Deletion is immediate and permanent —
+          flashcards, review history, story progress, test results, feedback, sign-in
+          sessions and the login itself. If you would rather we did it, ask us.</Li>
+        <Li><strong>Restriction</strong> — ask us to pause processing while something is
+          disputed, instead of deleting it.</Li>
+        <Li><strong>Portability</strong> — receive the data you gave us, and your learning
+          history, in a structured machine-readable file you can take elsewhere.</Li>
+        <Li><strong>Objection</strong> — object to the processing we base on legitimate
+          interests, which in practice means the usage events, crash reports and logs. Tell
+          us and we will stop measuring you rather than argue about it.</Li>
+        <Li><strong>Withdraw consent</strong> — turn reminders off, in the app or in your
+          browser’s settings. Withdrawing does not undo what was already sent.</Li>
+      </ul>
+      <P>
+        You can also <strong>complain to a data-protection authority</strong>. In Norway that
+        is Datatilsynet; elsewhere in the EEA it is your country’s equivalent, and you may
+        complain to the one where you live or work. We would rather you came to us first, but
+        you are not required to.
+      </P>
+
+      <H2>Other choices in the app</H2>
+      <ul style={{ paddingLeft: '20px', margin: '0 0 12px' }}>
+        <Li>You can reset your learning progress for your language from Profile at any time,
+          without deleting your account.</Li>
         <Li>Reminders and audio autoplay are opt-in preferences you control in the app.</Li>
       </ul>
 
