@@ -55,7 +55,7 @@ concurrency:
 env:
   # The ONLY commit this migration may run. Set in a reviewed commit; never an
   # input. See ops/README-gate3-snapshot-key.md.
-  APPROVED_MIGRATION_SHA: 'REPLACE_WITH_APPROVED_COMMIT_SHA'
+  APPROVED_MIGRATION_SHA: 'd0dcc5171d048b603b8e9a5c05d1cebcef273870'
 
 jobs:
   prepare:

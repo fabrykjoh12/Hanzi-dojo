@@ -106,6 +106,12 @@ equal the same pin.
 Changing it is a reviewed commit to the default branch, and it must be changed
 in both files together.
 
+Currently pinned: `d0dcc5171d048b603b8e9a5c05d1cebcef273870`
+
+That commit contains the migration script, the provenance classifier, the leak
+guard and their tests. The workflow FILES live on the default branch and may
+move on; the production-sensitive CODE is always this one commit.
+
 ## No output reaches a public log unguarded
 
 Every command that touches production data runs through `ops/run-guarded.sh`:
