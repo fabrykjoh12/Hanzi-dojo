@@ -150,6 +150,9 @@ if (preflightOnly) {
           quality: Boolean(c.qualityOk),
           overall: c.score ? c.score.overall : null,
           risk: report.risk,
+          classification: report.classification,
+          assisted: report.assisted,
+          budget: report.budget,
           highBeats: highBeats.map(b => b.beat),
           highConcepts: [...new Set(highBeats.flatMap(b => [...b.coreMissing, ...b.supportingMissing]))],
           eligible: Boolean(c.structural && c.structural.ok) && Boolean(c.qualityOk) && report.risk !== RISK.HIGH,
@@ -226,7 +229,11 @@ if (preflightOnly) {
     console.log('=' .repeat(72))
     console.log(path)
     console.log('problem: ' + entry.blueprint.problem)
-    console.log('SHAPE RISK: ' + report.risk + (report.highBeats.length ? '  (HIGH beats: ' + report.highBeats.join(', ') + ')' : ''))
+    console.log('LEXICAL FEASIBILITY: ' + report.classification + '  |  ' + report.budget.assistedWords
+      + ' assisted, cost ' + report.budget.cost + '/' + report.budget.costBudget)
+    for (const a of report.assisted) {
+      console.log('  assisted: ' + a.concept + ' → ' + (a.word || '(off-list)') + (a.hsk ? ' HSK' + a.hsk : '') + ' cost ' + a.cost)
+    }
     for (const b of report.beats) {
       const beat = entry.blueprint.beats.find(x => x.id === b.beat)
       console.log('\n  beat ' + b.beat + ' — ' + b.risk)
@@ -646,8 +653,15 @@ for (const job of jobs) {
   // before ranking — and the branch below stays only as a guard against a
   // future edit that reorders the two.
   const risk = assessShapeRisk({ blueprint: chosen.blueprint, manifest, vocabMap })
-  console.log('\nLEXICAL RISK PREFLIGHT (' + RISK_VERSION + '): ' + risk.risk)
+  console.log('\nLEXICAL FEASIBILITY (' + RISK_VERSION + '): ' + risk.classification
+    + '  |  ' + risk.budget.assistedWords + ' assisted word(s), cost ' + risk.budget.cost + '/' + risk.budget.costBudget
+    + ', target ' + Math.round(risk.budget.inLevelShareTarget * 100) + '% at or below HSK ' + risk.budget.nominalLevel)
   for (const b of risk.beats) console.log('  beat ' + b.beat + ' — ' + b.risk + ': ' + b.reason)
+  for (const a of risk.assisted) {
+    console.log('    assisted: ' + a.concept + ' → ' + (a.word || '(no word in the learner list)')
+      + (a.hsk ? ' HSK' + a.hsk + ' (+' + a.distance + ')' : ' (off-list)') + '  cost ' + a.cost + '  beats ' + a.beats.join(','))
+  }
+  for (const n of risk.budget.notes) console.log('    note: ' + n)
   record.risk = risk
   if (risk.risk === RISK.HIGH) {
     console.log('\nSHAPE_LEXICAL_FEASIBILITY_FAILURE — beats ' + risk.highBeats.join(', ') + ' cannot be told at this level')

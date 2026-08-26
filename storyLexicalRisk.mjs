@@ -41,7 +41,7 @@ const ROMANIZED = (() => {
   return out
 })()
 
-export const RISK_VERSION = 'fab9-risk@3'
+export const RISK_VERSION = 'fab9-risk@4'
 
 export const RISK = { LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH' }
 
@@ -388,9 +388,83 @@ export function validateGlossCorpus(vocabMap) {
 
 export class GlossCorpusError extends Error {}
 
+// ── Assisted vocabulary (2026-08-26) ────────────────────────────────────────
+// The goal changed: level-appropriate COMPREHENSIBILITY, not level purity. A
+// learner can tap any word to see what it means, so a small amount of
+// above-level vocabulary is not a defect — it is often the difference between
+// natural Chinese and a paraphrase nobody would write. 轮胎 in a story about a
+// bicycle is worth more than a vague sentence that avoids naming the tire.
+//
+// So a concept is classified, not merely accepted or rejected:
+//
+//   IN_LEVEL      the reader can already read it
+//   ASSISTED_OOL  it needs a word above the level (or one the learner list does
+//                 not carry at all), which the reader taps once
+//
+// and a PLAN is IN_LEVEL, ASSISTED_OOL, or LEXICALLY_UNSAFE — the last only
+// when the assisted vocabulary is too much, too advanced, or too crowded for
+// the story to still belong at its nominal level.
+export const ASSIST = { IN_LEVEL: 'IN_LEVEL', ASSISTED: 'ASSISTED_OOL' }
+export const FEASIBILITY = { IN_LEVEL: 'IN_LEVEL', ASSISTED: 'ASSISTED_OOL', UNSAFE: 'LEXICALLY_UNSAFE' }
+
+// PROVISIONAL and configurable, not methodology carved into the code. Every
+// number here is passed through, overridable per call, and reported in the
+// artifact next to the verdict it produced.
+export const ASSISTED_POLICY = {
+  version: 'fab9-assist@1',
+  // Measured on the FINISHED text by the deterministic validator, not here:
+  // at plan time there is no Chinese to count. Carried so the artifact can
+  // state the target the story is being held to.
+  inLevelShareTarget: 0.90,
+  inLevelSharePreferred: 0.95,
+  // Unique assisted words across the whole story.
+  assistedWordsPreferred: 4,
+  assistedWordsMax: 8,
+  // Crowding: one assisted word in a sentence is comfortable, two is the most
+  // an otherwise easy sentence should carry.
+  assistedPerBeatPreferred: 1,
+  assistedPerBeatMax: 2,
+  // Distance costs: HSK+1 is cheap, HSK+3 is not, and a word the learner list
+  // does not contain at all is charged like the far end.
+  distanceCost: { 1: 1, 2: 2, 3: 4 },
+  farCost: 6,
+  offListCost: 4,
+  costBudget: 12,
+}
+
+export function assistCost(entry, policy = ASSISTED_POLICY) {
+  if (!entry || entry.kind === ASSIST.IN_LEVEL) return 0
+  if (entry.offList) return policy.offListCost
+  const d = Number(entry.distance)
+  if (!Number.isFinite(d) || d < 1) return policy.offListCost
+  return policy.distanceCost[d] != null ? policy.distanceCost[d] : policy.farCost
+}
+
+// One concept's lexical standing: in level, or assisted by a named word.
+export function classifyConcept(support, { vocabMap = {}, level = 1, policy = ASSISTED_POLICY } = {}) {
+  if (support && (support.support === 'supported' || support.support === 'weak')) {
+    return { kind: ASSIST.IN_LEVEL, cost: 0 }
+  }
+  // The dictionary has a word for it, above the level: the reader taps it.
+  const above = (support && support.words) || []
+  const word = above.find(w => vocabMap[w] && Number.isFinite(vocabMap[w].level))
+  if (word) {
+    const wordLevel = vocabMap[word].level
+    const distance = Math.max(1, wordLevel - level)
+    const entry = { kind: ASSIST.ASSISTED, word, wordLevel, distance, offList: false, source: 'above-level' }
+    return { ...entry, cost: assistCost(entry, policy) }
+  }
+  // Nothing in the learner list at all. The language still has a word for a
+  // tire; this dataset is a course vocabulary, not a dictionary. It is
+  // assisted, and charged like the far end because nothing here can vouch for
+  // how ordinary it is.
+  const entry = { kind: ASSIST.ASSISTED, word: null, wordLevel: null, distance: null, offList: true, source: 'off-list' }
+  return { ...entry, cost: assistCost(entry, policy) }
+}
+
 // HIGH means the beat cannot be told at this level: its own subject matter is
 // missing, not a detail of it.
-export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index = null, fullIndex = null, names = [], synonyms = null, inLevelWords = null } = {}) {
+export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index = null, fullIndex = null, names = [], synonyms = null, inLevelWords = null, policy = ASSISTED_POLICY } = {}) {
   const idx = index || buildGlossIndex(vocabMap, manifest.level)
   const full = fullIndex || buildFullGlossIndex(vocabMap)
   const syn = synonyms || buildSenseSynonyms(vocabMap)
@@ -402,35 +476,54 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
     pos: concepts.pos.get(c) || 'unknown',
     ...conceptSupport(c, idx, full, { synonyms: syn, inLevelWords: inLevel, pos: concepts.pos.get(c) || null, targets: targetWords }),
   }))
-  const core = rate(concepts.core)
-  const supporting = rate(concepts.supporting)
-  const incidental = rate(concepts.incidental)
-  const missing = (list) => list.filter(c => c.support === 'none').map(c => c.concept)
-  const coreMissing = missing(core)
-  const supportingMissing = missing(supporting)
-  const incidentalMissing = missing(incidental)
+  const classify = (list) => list.map(c => ({ ...c, assist: classifyConcept(c, { vocabMap, level: manifest.level, policy }) }))
+  const core = classify(rate(concepts.core))
+  const supporting = classify(rate(concepts.supporting))
+  const incidental = classify(rate(concepts.incidental))
 
-  let risk = RISK.LOW
-  let reason = 'every central concept has in-level vocabulary'
-  if (coreMissing.length >= 2) {
-    risk = RISK.HIGH
-    reason = 'the beat\'s own event needs ' + coreMissing.length + ' words the reader does not have: ' + coreMissing.join(', ')
-  } else if (coreMissing.length === 1 && supportingMissing.length >= 2) {
-    risk = RISK.HIGH
-    reason = 'the central action (' + coreMissing[0] + ') and ' + supportingMissing.length
-      + ' more of what happens here (' + supportingMissing.join(', ') + ') have no in-level vocabulary'
-  } else if (coreMissing.length === 1) {
-    risk = RISK.MEDIUM
-    reason = 'the central concept "' + coreMissing[0] + '" has no in-level vocabulary, but the rest of the beat does'
-  } else if (supportingMissing.length || incidentalMissing.length) {
-    risk = RISK.MEDIUM
-    reason = 'detail without in-level vocabulary (' + [...supportingMissing, ...incidentalMissing].join(', ')
-      + '), but the beat\'s own event can be told'
+  // Incidental detail is decoration the writer may simply drop (A3.2 has said
+  // so since it was built), so it is reported but never charged: paying for a
+  // word nobody has to write would make every beat look expensive.
+  const charged = [...core, ...supporting]
+  const assisted = charged.filter(c => c.assist.kind === ASSIST.ASSISTED)
+  const incidentalAssisted = incidental.filter(c => c.assist.kind === ASSIST.ASSISTED)
+  const cost = assisted.reduce((n, c) => n + c.assist.cost, 0)
+
+  // A beat is only unsafe on its own account when it is CROWDED — the budget
+  // for the story as a whole is settled by assessShapeRisk.
+  const crowded = assisted.length > policy.assistedPerBeatMax
+  const risk = crowded
+    ? RISK.HIGH
+    : (assisted.length ? RISK.MEDIUM : (incidentalAssisted.length ? RISK.MEDIUM : RISK.LOW))
+  const describe = (list) => list.map(c => c.concept + (c.assist.word ? ' (' + c.assist.word + ' HSK' + c.assist.wordLevel + ')' : ' (no word in the list)')).join(', ')
+  let reason = 'every concept in this beat is in level'
+  if (crowded) {
+    reason = 'this one beat needs ' + assisted.length + ' words above the level (max ' + policy.assistedPerBeatMax + '): ' + describe(assisted)
+  } else if (assisted.length) {
+    reason = assisted.length + ' assisted word(s) the reader taps: ' + describe(assisted)
+  } else if (incidentalAssisted.length) {
+    reason = 'only incidental detail is out of level (' + describe(incidentalAssisted) + '), and the beat does not need it'
   }
-  return { beat: beat.id, risk, reason, core, supporting, incidental, coreMissing, supportingMissing, incidentalMissing }
+
+  return {
+    beat: beat.id,
+    risk,
+    reason,
+    core,
+    supporting,
+    incidental,
+    assisted: assisted.map(c => ({ concept: c.concept, ...c.assist })),
+    incidentalAssisted: incidentalAssisted.map(c => ({ concept: c.concept, ...c.assist })),
+    cost,
+    crowded,
+    // Kept for the reports and specs that read them: what is NOT in level.
+    coreMissing: core.filter(c => c.assist.kind === ASSIST.ASSISTED).map(c => c.concept),
+    supportingMissing: supporting.filter(c => c.assist.kind === ASSIST.ASSISTED).map(c => c.concept),
+    incidentalMissing: incidentalAssisted.map(c => c.concept),
+  }
 }
 
-export function assessShapeRisk({ blueprint, manifest, vocabMap } = {}) {
+export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSISTED_POLICY } = {}) {
   // Refuse rather than guess: a corpus without glosses makes every concept
   // look impossible, which is indistinguishable from a story that is.
   const corpus = validateGlossCorpus(vocabMap)
@@ -443,11 +536,96 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap } = {}) {
   const beats = (blueprint.beats || []).map(beat => assessBeatRisk({
     beat,
     entries: (blueprint.targetPlan || []).filter(t => Number(t.beat) === beat.id),
-    manifest, vocabMap, index, fullIndex, names, synonyms, inLevelWords,
+    manifest, vocabMap, index, fullIndex, names, synonyms, inLevelWords, policy,
   }))
+  // ── The assisted-vocabulary budget, over the whole story ──────────────────
+  // Unique CONCEPTS, so a word the story leans on twice is paid for once —
+  // the reader taps it once too.
+  const byConcept = new Map()
+  for (const b of beats) {
+    for (const a of b.assisted) {
+      if (!byConcept.has(a.concept)) byConcept.set(a.concept, { ...a, beats: [] })
+      byConcept.get(a.concept).beats.push(b.beat)
+    }
+  }
+  const assisted = [...byConcept.values()].sort((a, b) => (b.cost || 0) - (a.cost || 0))
+  const cost = assisted.reduce((n, a) => n + (a.cost || 0), 0)
+  const crowdedBeats = beats.filter(b => b.crowded).map(b => b.beat)
+
+  const breaches = []
+  if (assisted.length > policy.assistedWordsMax) {
+    breaches.push(assisted.length + ' words above the level (max ' + policy.assistedWordsMax + ')')
+  }
+  if (cost > policy.costBudget) {
+    breaches.push('an assisted-vocabulary cost of ' + cost + ' (budget ' + policy.costBudget
+      + ') — distance above the level is charged, so a few far words cost more than several near ones')
+  }
+  if (crowdedBeats.length) {
+    breaches.push('beat(s) ' + crowdedBeats.join(', ') + ' carry more than ' + policy.assistedPerBeatMax + ' assisted words')
+  }
+
+  const classification = breaches.length
+    ? FEASIBILITY.UNSAFE
+    : (assisted.length ? FEASIBILITY.ASSISTED : FEASIBILITY.IN_LEVEL)
+  // The existing three-state gate is kept so everything downstream still reads
+  // one vocabulary: UNSAFE is what used to be HIGH and is the only verdict
+  // that makes a plan ineligible.
+  const risk = classification === FEASIBILITY.UNSAFE
+    ? RISK.HIGH
+    : (classification === FEASIBILITY.ASSISTED ? RISK.MEDIUM : RISK.LOW)
+
+  const notes = []
+  if (assisted.length > policy.assistedWordsPreferred && classification !== FEASIBILITY.UNSAFE) {
+    notes.push('above the comfortable ' + policy.assistedWordsPreferred + ' assisted words, still inside the ' + policy.assistedWordsMax + ' allowed')
+  }
+  for (const b of beats) {
+    if (!b.crowded && b.assisted.length > policy.assistedPerBeatPreferred) {
+      notes.push('beat ' + b.beat + ' carries ' + b.assisted.length + ' assisted words; one per sentence reads more easily')
+    }
+  }
+
   const high = beats.filter(b => b.risk === RISK.HIGH)
-  const risk = high.length ? RISK.HIGH : (beats.some(b => b.risk === RISK.MEDIUM) ? RISK.MEDIUM : RISK.LOW)
-  // What the planner has to avoid next time, in its own English.
-  const blocking = [...new Set(high.flatMap(b => [...b.coreMissing, ...b.supportingMissing]))]
-  return { version: RISK_VERSION, risk, beats, highBeats: high.map(b => b.beat), blocking, corpus }
+  // What the planner has to avoid next time, in its own English — now only the
+  // words that actually broke the budget, not every word above the level.
+  const blocking = classification === FEASIBILITY.UNSAFE
+    ? [...new Set([...high.flatMap(b => b.assisted.map(a => a.concept)), ...assisted.filter(a => a.offList).map(a => a.concept)])]
+    : []
+
+  return {
+    version: RISK_VERSION,
+    risk,
+    classification,
+    beats,
+    highBeats: high.map(b => b.beat),
+    blocking,
+    corpus,
+    policy,
+    // Everything the artifact, the UI and the analytics need to explain the
+    // level of the finished story: what was assisted, where it came from, and
+    // how far above the level it sits.
+    assisted: assisted.map(a => ({
+      concept: a.concept,
+      word: a.word,
+      hsk: a.wordLevel,
+      distance: a.distance,
+      source: a.source,
+      offList: a.offList,
+      cost: a.cost,
+      beats: a.beats,
+    })),
+    budget: {
+      nominalLevel: manifest.level,
+      assistedWords: assisted.length,
+      cost,
+      costBudget: policy.costBudget,
+      crowdedBeats,
+      inLevelShareTarget: policy.inLevelShareTarget,
+      inLevelSharePreferred: policy.inLevelSharePreferred,
+      // Stated, not measured here: there is no Chinese at plan time. The
+      // deterministic validator counts it on the finished story.
+      measuredOn: 'the finished draft, by the deterministic validator',
+      breaches,
+      notes,
+    },
+  }
 }

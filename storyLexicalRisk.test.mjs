@@ -3,6 +3,7 @@ import {
   assessShapeRisk, assessBeatRisk, conceptsFromBeat, buildGlossIndex, buildFullGlossIndex,
   conceptSupport, buildSenseSynonyms, buildInLevelWords, componentHead,
   validateGlossCorpus, GlossCorpusError, glossSenses, senseCompatible, beatConceptPos,
+  assessShapeRisk as assessShape, classifyConcept, assistCost, ASSIST, FEASIBILITY, ASSISTED_POLICY,
   RISK, RISK_VERSION,
 } from './storyLexicalRisk.mjs'
 import { buildManifest } from './storyManifestPlanner.mjs'
@@ -44,7 +45,9 @@ describe('lexical risk — what a beat IS versus what it mentions', () => {
     expect(r.risk).toBe(RISK.MEDIUM)
     expect(r.coreMissing).toEqual([])
     expect(r.incidentalMissing).toContain('dark')
-    expect(r.reason).toContain('the beat\'s own event can be told')
+    // Wording changed with the assisted-vocabulary model; the substance is the
+    // same — the beat itself is sayable and only decoration is out of level.
+    expect(r.reason).toContain('the beat does not need it')
   })
 
   // The exact beat that ran out of words after two attempts.
@@ -356,13 +359,128 @@ describe('direct gloss support agrees on part of speech', () => {
     expect(conceptSupport('tire', index, full, asTarget)).toMatchObject({ support: 'none' })
   })
 
-  it('the beat that started this now sees the object as missing', () => {
+  it('the beat that started this treats the tire as ASSISTED, not in level', () => {
     const beat = { id: 1, what: '李明 sees the flat tire and realizes he needs help', because: 'the story opens' }
     const r = assessBeatRisk({
       beat, manifest: buildManifest({ batchId: 'h', seq: 1, level: 3, targets: ['帮助'], defaults: { lines: [14, 38] } }),
       vocabMap: vm, index, fullIndex: full, names: ['李明'],
     })
-    expect(r.coreMissing).toContain('tire')
-    expect(r.risk).toBe(RISK.HIGH)
+    const tire = r.core.find(c => c.concept === 'tire')
+    expect(tire.assist.kind).toBe('ASSISTED_OOL')
+    expect(tire.assist.word).toBeNull()          // 轮胎 is not in the learner list
+    // and one natural central noun does not make the beat unwritable
+    expect(r.risk).not.toBe(RISK.HIGH)
+  })
+})
+
+// ── Comprehensibility, not purity (2026-08-26) ──────────────────────────────
+describe('assisted vocabulary — a tapped word is not a defect', () => {
+  const ROWS = [
+    ['自行车', 3, 'bicycle; bike'], ['车', 1, 'vehicle, car'], ['坏', 2, 'bad, broken'],
+    ['帮助', 3, 'assistance; aid; to help; to assist'], ['修理', 4, 'to repair; to fix'],
+    ['工具', 4, 'tool'], ['楼下', 3, 'downstairs'], ['轮子', 6, 'wheel'],
+    ['朋友', 1, 'friend'], ['看', 1, 'to see, to look'], ['大', 1, 'big'],
+  ]
+  const vm = Object.fromEntries(ROWS.map(([word, level, meaning]) => [word, { word, level, meaning }]))
+  const manifest = () => buildManifest({ batchId: 'x', seq: 1, level: 3, targets: ['帮助'], defaults: { lines: [14, 38] } })
+  const shape = (beats) => ({ cast: ['李明'], beats, targetPlan: [] })
+
+  it('classifies a word above the level as assisted, with its distance', () => {
+    const r = classifyConcept({ support: 'none', via: 'above-level', words: ['修理'] }, { vocabMap: vm, level: 3 })
+    expect(r).toMatchObject({ kind: ASSIST.ASSISTED, word: '修理', wordLevel: 4, distance: 1, offList: false, cost: 1 })
+    const far = classifyConcept({ support: 'none', via: 'above-level', words: ['轮子'] }, { vocabMap: vm, level: 3 })
+    expect(far).toMatchObject({ distance: 3, cost: 4 })
+  })
+
+  it('charges distance: HSK+1 costs less than HSK+3', () => {
+    expect(assistCost({ kind: ASSIST.ASSISTED, distance: 1 })).toBeLessThan(assistCost({ kind: ASSIST.ASSISTED, distance: 3 }))
+    expect(assistCost({ kind: ASSIST.IN_LEVEL })).toBe(0)
+  })
+
+  it('a word the learner list does not carry at all is assisted, and charged like the far end', () => {
+    // 轮胎 is not in HSK at any level; the language still has the word.
+    const r = classifyConcept({ support: 'none', via: 'absent', words: [] }, { vocabMap: vm, level: 3 })
+    expect(r).toMatchObject({ kind: ASSIST.ASSISTED, offList: true, word: null, cost: ASSISTED_POLICY.offListCost })
+  })
+
+  it('one natural central noun above the level keeps the plan usable', () => {
+    const r = assessShape({
+      blueprint: shape([{ id: 1, what: '李明 sees the broken bike and needs help', because: 'the story opens' }]),
+      manifest: manifest(), vocabMap: vm,
+    })
+    expect(r.classification).not.toBe(FEASIBILITY.UNSAFE)
+    expect(r.risk).not.toBe(RISK.HIGH)
+  })
+
+  it('too many assisted words in ONE beat is unsafe, however cheap they are', () => {
+    const r = assessShape({
+      blueprint: shape([{ id: 1, what: 'He repairs the wheel with a tool and a wrench and a pump', because: 'the story opens' }]),
+      manifest: manifest(), vocabMap: vm,
+    })
+    expect(r.classification).toBe(FEASIBILITY.UNSAFE)
+    expect(r.budget.breaches.join(' ')).toMatch(/assisted words/)
+  })
+
+  it('the whole-story cost budget is what stops a too-advanced story', () => {
+    // Five beats, each with one off-list concept: within the per-beat rule,
+    // over the cost budget.
+    const beats = ['thud', 'sweat', 'grip', 'ladder', 'wrench'].map((w, i) => ({
+      id: i + 1, what: 'Li Ming notices the ' + w, because: i ? 'it follows' : 'the story opens',
+    }))
+    const r = assessShape({ blueprint: shape(beats), manifest: manifest(), vocabMap: vm })
+    expect(r.classification).toBe(FEASIBILITY.UNSAFE)
+    expect(r.budget.cost).toBeGreaterThan(ASSISTED_POLICY.costBudget)
+  })
+
+  it('the policy is configurable, not carved in', () => {
+    const beats = ['thud', 'sweat', 'grip', 'ladder', 'wrench'].map((w, i) => ({
+      id: i + 1, what: 'Li Ming notices the ' + w, because: i ? 'it follows' : 'the story opens',
+    }))
+    const generous = { ...ASSISTED_POLICY, costBudget: 40, assistedWordsMax: 20 }
+    const r = assessShape({ blueprint: shape(beats), manifest: manifest(), vocabMap: vm, policy: generous })
+    expect(r.classification).toBe(FEASIBILITY.ASSISTED)
+    expect(r.policy.costBudget).toBe(40)
+  })
+
+  it('incidental decoration is reported but never charged', () => {
+    const r = assessShape({
+      blueprint: shape([{ id: 1, what: '李明 looks at the bike', because: 'it is dark and the wrench is heavy' }]),
+      manifest: manifest(), vocabMap: vm,
+    })
+    expect(r.budget.cost).toBe(0)
+    expect(r.classification).toBe(FEASIBILITY.IN_LEVEL)
+  })
+
+  it('records every assisted word for the artifact and the UI', () => {
+    const r = assessShape({
+      blueprint: shape([{ id: 1, what: '李明 needs a tool to repair the bike', because: 'the story opens' }]),
+      manifest: manifest(), vocabMap: vm,
+    })
+    expect(r.budget.nominalLevel).toBe(3)
+    expect(r.budget.inLevelShareTarget).toBe(ASSISTED_POLICY.inLevelShareTarget)
+    const tool = r.assisted.find(a => a.concept === 'tool')
+    expect(tool).toMatchObject({ word: '工具', hsk: 4, distance: 1, source: 'above-level' })
+    expect(tool.beats).toEqual([1])
+  })
+
+  it('an assisted word never becomes a learning target', () => {
+    const m = manifest()
+    const r = assessShape({
+      blueprint: shape([{ id: 1, what: '李明 needs a tool to repair the bike', because: 'the story opens' }]),
+      manifest: m, vocabMap: vm,
+    })
+    expect(r.assisted.length).toBeGreaterThan(0)
+    // the manifest is untouched, and no assisted word appears among its targets
+    expect(m.targets.map(t => t.word)).toEqual(['帮助'])
+    for (const a of r.assisted) expect(m.targets.map(t => t.word)).not.toContain(a.word)
+  })
+
+  it('an in-level concept is never assisted — no advanced synonym for a simple word', () => {
+    const r = assessShape({
+      blueprint: shape([{ id: 1, what: '李明 looks at his friend', because: 'the story opens' }]),
+      manifest: manifest(), vocabMap: vm,
+    })
+    expect(r.assisted).toEqual([])
+    expect(r.classification).toBe(FEASIBILITY.IN_LEVEL)
   })
 })
