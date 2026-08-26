@@ -136,7 +136,7 @@ claim · **medium** = should fix before submission · **low** = tidy-up.
 
 ### 2.1 Privacy Policy vs reality
 
-#### F1 · MISMATCH · high — "Analyze text" pasted text *is* stored on the server
+#### F1 · FIXED in Stage 2 · high — "Analyze text" pasted text *is* stored on the server
 **Layer: policy text (or code)**
 
 Policy (`src/TrustPages.jsx:103-108`):
@@ -158,7 +158,7 @@ with the card so reviews can show the context." The feature is worth keeping;
 the sentence in the policy is what needs to change. Removing `source_sentence`
 from the Analyzer path is the alternative, but it costs a genuinely good feature.
 
-#### F2 · MISMATCH · medium — the push section describes an unbuilt feature
+#### F2 · FIXED in Stage 2 · medium — the push section described an unbuilt feature
 **Layer: policy text (code later, when §0b lands)**
 
 Policy (`TrustPages.jsx:119-129`) says that in the iPhone and Android apps a push
@@ -177,7 +177,7 @@ both stores and describes a feature reviewers cannot find.
 
 **Fix:** scope the paragraph to the web until native push ships.
 
-#### F3 · FIXED in Stage 3 (migration written, NOT yet applied) · medium — Discord as an undisclosed recipient of feedback content
+#### F3 · **CLOSED IN PRODUCTION 2026-08-26** · medium — Discord as an undisclosed recipient of feedback content
 **Layer: code/SQL to remove the relay — or policy text**
 
 > **Corrected 2026-08-25 after a live check.** The trigger is installed and
@@ -218,7 +218,7 @@ Every cold launch of the iOS and Android app requests `fonts.googleapis.com` and
 fix on its own merits — an offline-first app should not need a CDN round-trip to
 render its first paint. Minimum viable fix: delete "on the web" from the policy.
 
-#### F5 · MISSING · medium — jsDelivr is an undisclosed runtime third party
+#### F5 · FIXED in Stage 2 · medium — jsDelivr was an undisclosed runtime third party
 **Layer: policy text or code**
 
 `src/strokeData.js:19` — `STROKE_CDN = 'https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1'`,
@@ -229,7 +229,7 @@ The Infrastructure list does not name it.
 **Fix:** name it in the policy, or bundle/proxy the stroke data (which also
 removes a runtime network dependency from an offline-first app).
 
-#### F6 · MISSING · medium — error/crash reporting is not described in the policy
+#### F6 · FIXED in Stage 2 · medium — error/crash reporting was not described in the policy
 **Layer: policy text**
 
 `errorMonitor.js` sends `client_error` events. The policy's "Product analytics"
@@ -240,7 +240,7 @@ as distinct declarable types; the policy has to match what you declare.
 
 **Fix:** one sentence in the analytics section.
 
-#### F7 · MISMATCH · low — "ask for a copy of your data" with no export path
+#### F7 · FIXED in Stage 2 (wording) · low — "ask for a copy of your data" with no export path
 **Layer: process/verification (code optional)**
 
 Policy `:150-151`. There is no export feature anywhere in `src/`; fulfilment is
@@ -250,7 +250,7 @@ unstaffed, untested, and GDPR gives you one month to answer.
 **Fix:** decide and document the manual procedure now; a `Profile → Download my
 data` button is roughly a day's work and closes it properly.
 
-#### F8 · MISSING · low–medium — no retention statement, and anonymous events are immortal
+#### F8 · FIXED in Stage 2 · low–medium — no retention statement, and anonymous events are immortal
 **Layer: policy text (+ optional SQL)**
 
 Policy `:152-153` says data is kept "as long as you have an account" — true for
@@ -260,14 +260,14 @@ they belong to no account, and nothing ever deletes them.
 **Fix:** state a retention window for anonymous usage events, and optionally add
 a purge.
 
-#### F9 · MISSING · medium — no children's-data section
+#### F9 · FIXED in Stage 2 · medium — no children's-data section
 **Layer: policy text (+ store metadata alignment)**
 
 The 13+ age requirement lives only in the Terms (`TrustPages.jsx:187`). The
 Privacy Policy says nothing about age or children. Both stores' age
 questionnaires and Play's Families policy look for this.
 
-#### F10 · MISMATCH · low — "Last updated 1 August 2026" is stale
+#### F10 · FIXED in Stage 2 · low — "Last updated 1 August 2026" was stale
 `TrustPages.jsx:358`. It predates the account-deletion RPC (2026-08-07) and
 everything since. Bump it in the same commit as the fixes.
 
@@ -309,7 +309,7 @@ Note on "Linked": Apple asks per data type, not per row. Signed-in events carry
 `user_id`, so Usage Data and Diagnostics must be declared Linked even though the
 pre-auth events are anonymous.
 
-#### F13 · PASS, permanently once the migration is applied · high — "Data shared with third parties: No"
+#### F13 · **CLOSED IN PRODUCTION 2026-08-26** · high — "Data shared with third parties: No"
 **Layer: Play Console metadata — or code/SQL (see F3)**
 
 `docs/STORE-LISTING.md:184`. The answer is **true today**, because the Discord
@@ -421,7 +421,7 @@ browser rather than navigating the webview away from a half-filled form.
 These came out of an independent 14-agent sweep run after the first pass, and
 were each re-verified by hand before being written down.
 
-#### F25 · MISSING · medium — YouTube is an undisclosed runtime third party
+#### F25 · FIXED in Stage 2 · medium — YouTube was an undisclosed runtime third party
 **Layer: policy text**
 
 Practice → Videos loads a thumbnail per card from `https://img.youtube.com/vi/…`
@@ -453,7 +453,7 @@ don't keep your data beyond that". Two things survive:
 **Fix:** soften the absolute claim, or — better — drop the relay (F3) so only the
 de-identified admin rows need mentioning.
 
-#### F27 · MISMATCH · medium — the device timezone is captured silently
+#### F27 · FIXED in Stage 2 · medium — the device timezone is captured silently
 **Layer: policy text**
 
 `src/App.jsx:103-112` writes `Intl.DateTimeFormat().resolvedOptions().timeZone`
@@ -464,7 +464,7 @@ something the learner chose.
 
 **Fix:** say it is read from the device automatically.
 
-#### F28 · MISSING · medium — a feedback row holds more than "the text"
+#### F28 · FIXED in Stage 2 · medium — a feedback row holds more than "the text"
 **Layer: policy text**
 
 The policy says *"Feedback you send: the text of in-app feedback"*. The row also
@@ -472,7 +472,7 @@ carries `email`, `page`, `language`, and a `context` jsonb with the open story's
 id and truncated title plus the build sha (`src/Feedback.jsx:73`,
 `src/feedbackContext.js`, `20260801120000_add_feedback_context.sql`).
 
-#### F29 · MISSING · low — on-device dictionary history is not described
+#### F29 · FIXED in Stage 2 · low — on-device dictionary history was not described
 **Layer: policy text**
 
 `localStorage['dict:recent:<language>']` keeps the last 8 words the learner
@@ -481,7 +481,7 @@ leaves the device — so it is not "collected" for store-declaration purposes �
 but the policy's "On your device" paragraph lists only content caches and the
 review queue.
 
-#### F30 · MISSING · low — the TTS vendor is unnamed while every other subprocessor is
+#### F30 · FIXED in Stage 2 · low — the TTS vendor was unnamed while every other subprocessor was named
 **Layer: policy text**
 
 The policy names Supabase, Vercel, Cloudflare, Brevo, Google Fonts, APNs and FCM,
@@ -499,7 +499,7 @@ permission. In the store apps the Speaking drill is disabled outright
 Review notes already state (`docs/STORE-LISTING.md:156-158`). The policy covers
 "all three" surfaces, so it should say the drill is web-only.
 
-#### F32 · MISSING · medium — analytics run before any account exists, with no gate
+#### F32 · FIXED in Stage 2 (disclosure only) · medium — analytics run before any account exists, with no gate
 **Layer: policy text**
 
 `LANDING_VIEWED`, `PUBLIC_STORY_VIEWED` and `ASSESSMENT_*` fire pre-auth; 2,905
@@ -766,6 +766,94 @@ makes the result trustworthy.
   privacy-policy wording fix are Stage 2 and Stage 4, deliberately untouched.
 - **The App Store privacy work as a whole is not complete.**
 
+### 2.8 Production state and Stage 2 (2026-08-26)
+
+**The Discord relay is gone from production.** PR #217 merged (`ed2dffe`) with CI
+green — `check` and `playwright` both passed, confirming that the two visual
+snapshot failures seen in the sandbox were environmental. Migration
+`20260825120000_drop_feedback_discord_relay.sql` was then applied to
+`bvqvturqupbggxaeihvi` as `20260826123336 drop_feedback_discord_relay`, and
+nothing else was applied — Claude B's `20260822180000` is deliberately still
+unapplied.
+
+`supabase/tests/feedback_relay_removal_verification.sql` was run against
+production in its rollback-safe mode: **13/13 PASS**. An independent read-only
+sweep then confirmed twelve invariants, comparing against a snapshot taken
+immediately before the apply:
+
+| invariant | expected | got |
+|---|---|---|
+| `on_feedback_notify_discord` triggers | 0 | **0** |
+| `notify_discord_feedback` functions (any schema) | 0 | **0** |
+| public functions reading `discord_feedback_webhook` | 0 | **0** |
+| feedback triggers calling `net.http` | 0 | **0** |
+| public functions calling `net.http` | 0 | **0** |
+| *any* trigger left on `public.feedback` | 0 | **0** |
+| feedback row count | 2 | **2** |
+| feedback id fingerprint | `d458a5d7…` | **`d458a5d7…`** |
+| RLS enabled on feedback | 1 | **1** |
+| feedback RLS policies | 2 | **2** |
+| vault secrets total | 0 | **0** |
+| `pg_net` still installed (deliberately) | 1 | **1** |
+
+The row-id fingerprint is the part worth keeping: it is the same before and
+after, so existing feedback was not merely counted but confirmed unaltered. A
+feedback insert still succeeds under RLS (checked inside the rolled-back
+transaction), and `delete_my_account` is untouched.
+
+**F3 and F13 are closed in production**, not merely in the repo.
+
+#### Stage 2 — the policy now describes what actually happens
+
+`src/TrustPages.jsx` was rewritten to match the post-Stage-3 live product rather
+than the architecture it had before. Every change is a disclosure change; no
+behaviour moved.
+
+- **"Analyze text"** no longer claims the pasted text is never stored. It says
+  plainly that saving a word from the passage keeps that one sentence with the
+  card, which is what the code does. *(F1)*
+- **Reminders** are described as web-only, and the section states outright that
+  the apps send no reminders and collect no push token — replacing an APNs/FCM
+  paragraph describing a feature that was never built. *(F2)*
+- **Discord is not mentioned as a feedback recipient**, because after Stage 3 it
+  isn't one. Feedback "stays in our database; it is not forwarded anywhere" is
+  now a true sentence. *(F3)*
+- **Google Fonts** is scoped to the website, with the apps' bundled copies
+  stated. *(F4)* **jsDelivr** and **YouTube** are named as services contacted
+  directly by your device, with what each can see. *(F5, F25)*
+- **Crash and error reports** get their own section: error name, 40-character
+  message, screen, no stack traces, no typed text. *(F6)*
+- **Retention** is stated honestly, including that anonymous usage events are
+  currently kept indefinitely. *(F8)*
+- **Age** gets its own section at 13+, pointing at the Terms. *(F9)*
+- **Timezone** is described as read automatically from the device, not chosen.
+  *(F27)*
+- A **feedback row's real contents** are listed. *(F28)*
+- **On-device dictionary history** is described, and that it never leaves the
+  device. *(F29)*
+- The **TTS vendors** are named, with the point that they never see learner
+  data. *(F30)*
+- The **microphone** section is scoped to the web, stating the drill is off in
+  the apps and no permission is ever requested. *(F31)*
+- **Pre-account analytics** are disclosed, including the absence of an opt-out.
+  *(F32)*
+- **Data export** is described as manual on request rather than implied to be
+  self-service. *(F7)*
+- The **absolute deletion claim** is softened to list what goes, without the
+  unqualified "we don't keep your data beyond that". *(F26)*
+- **Last updated** bumped to 26 August 2026. *(F10)*
+
+#### Still open after Stage 2
+
+- **F18 — NEEDS ARCHIVE VERIFICATION.** Untouched by Stages 2 and 3.
+- **F11** — the `bodyos_app_state` owner question.
+- **F35** — whether Supabase's platform layer retains IPs and user agents, and
+  for how long. The policy now says which services can see your IP, but the
+  retention window on the platform's own logs still needs an answer.
+- **Stage 4** — the App Store Connect answers (F12) and the Play Data Safety
+  corrections (F14) are not written.
+- **The App Store privacy work is not complete.**
+
 ### 2.5 Other PASS results worth recording
 
 - Analytics can never carry free text — 40-char cap, tested
@@ -878,8 +966,10 @@ Nothing below has been applied. Ordered by what blocks submission.
 
 ## 4 · Applying the Stage 3 migration to production
 
-**Not yet applied.** The migration is committed and locally verified; running it
-is a deliberate, separate step.
+**APPLIED 2026-08-26** as `20260826123336 drop_feedback_discord_relay`, after PR
+#217 merged with CI green. Verification results are in §2.8 — 13/13 on the
+committed test plus twelve independent read-only invariants. The steps below are
+retained as the record of what was run.
 
 ```
 supabase/migrations/20260825120000_drop_feedback_discord_relay.sql
