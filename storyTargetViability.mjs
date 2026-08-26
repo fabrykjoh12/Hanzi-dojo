@@ -110,3 +110,65 @@ export function assessTargetPlacements(verdicts, { blueprint, required = null } 
   const failures = rows.filter(r => r.requiredHere && r.verdict !== 'PASS')
   return { version: VIABILITY_VERSION, ok: failures.length === 0, rows, failures }
 }
+
+// ── The effective target map ────────────────────────────────────────────────
+// A verdict that is only recorded changes nothing: the writer is still told to
+// use the word. So viability produces a DERIVED plan, and everything
+// downstream reads that — scaffold, sketches, anchors, beat realization, the
+// retry briefs and target-presence validation alike.
+//
+// The frozen plan itself is never modified. It stays exactly as the planner
+// wrote it, so the artifact can still explain why 必须 was in H at all and
+// why it never reached the writer.
+//
+// A failed optional is DROPPED, never moved. Reassigning it to another beat
+// would be a new planning decision, made by the wrong component, after plan
+// validation had already run.
+export const DISPOSITION = {
+  requiredKept: 'retained_required',
+  optionalKept: 'retained_optional',
+  optionalDropped: 'dropped_optional',
+}
+
+export function effectiveTargets(blueprint, assessment, { manifest = null, required = null } = {}) {
+  const plan = (blueprint && blueprint.targetPlan) || []
+  const need = new Set(required || plan.map(t => t.word))
+  const byWord = new Map((assessment && assessment.rows ? assessment.rows : []).map(r => [r.word, r]))
+
+  const dispositions = plan.map(t => {
+    const verdict = byWord.has(t.word) ? byWord.get(t.word).verdict : 'UNJUDGED'
+    const isRequired = need.has(t.word)
+    const disposition = isRequired
+      ? DISPOSITION.requiredKept
+      : (verdict === 'PASS' ? DISPOSITION.optionalKept : DISPOSITION.optionalDropped)
+    return {
+      word: t.word,
+      beat: Number(t.beat),
+      required: isRequired,
+      verdict,
+      reason: byWord.has(t.word) ? byWord.get(t.word).reason : '',
+      disposition,
+    }
+  })
+
+  const dropped = new Set(dispositions.filter(d => d.disposition === DISPOSITION.optionalDropped).map(d => d.word))
+  const derived = {
+    ...blueprint,
+    targetPlan: plan.filter(t => !dropped.has(t.word)),
+    beats: ((blueprint && blueprint.beats) || []).map(b => ({
+      ...b,
+      targets: ((b && b.targets) || []).filter(w => !dropped.has(w)),
+    })),
+  }
+
+  // The deterministic validator counts every manifest target against its
+  // minimum, so a dropped word has to stop being a target of this story — or
+  // the finished draft fails for a word the gate deliberately removed. It is
+  // removed rather than zeroed: a manifest target with min 0 is not a valid
+  // manifest, and "not a target here" is what actually happened.
+  const effectiveManifest = manifest
+    ? { ...manifest, targets: (manifest.targets || []).filter(t => !dropped.has(t.word)) }
+    : null
+
+  return { blueprint: derived, manifest: effectiveManifest, dispositions, dropped: [...dropped] }
+}

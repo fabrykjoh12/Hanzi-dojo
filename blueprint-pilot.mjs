@@ -39,7 +39,7 @@ import {
 import { realizeByBeat, BEAT_LIMITS, BEAT_QUALITY, BEAT_VERSION } from './storyBeats.mjs'
 import { buildLexicalScaffold, applyScaffold, shapeChanges, SCAFFOLD_VERSION } from './storyLexicalScaffold.mjs'
 import { assessShapeRisk, validateGlossCorpus, RISK, RISK_VERSION } from './storyLexicalRisk.mjs'
-import { targetViabilityPrompt, parseTargetViability, assessTargetPlacements, VIABILITY_VERSION } from './storyTargetViability.mjs'
+import { targetViabilityPrompt, parseTargetViability, assessTargetPlacements, effectiveTargets, VIABILITY_VERSION } from './storyTargetViability.mjs'
 import { judgePrompt, parseJudgment, JUDGE_VERSION } from './storyJudge.mjs'
 import { preRepairDecision, DRAFT_QUALITY } from './storyDraftQuality.mjs'
 import { planRepair, executeRepairPlan, LINE_QUALITY, REPAIR_PLANNER_VERSION } from './storyRepairPlanner.mjs'
@@ -77,6 +77,9 @@ const resumePlanPath = arg('resume-plan', null)
 const shapeFromPath = arg('shape-from', null)
 // Which plan, when the stored artifact is a planner bakeoff holding several.
 const shapeLabel = arg('shape-label', null)
+// Stored placement verdicts, so a selected plan is not re-judged on a
+// dimension it has already passed.
+const viabilityFromPath = arg('viability-from', null)
 // A3.1 pilot: resume a stored run's scaffold, keeping every piece it already
 // validated and retrying only the one that failed.
 const resumeScaffoldPath = arg('resume-scaffold', null)
@@ -328,7 +331,15 @@ if (shapeFromPath) {
     // The plan is FROZEN: it already passed structural validation and the
     // plan-quality judge in the bakeoff, and re-judging a frozen plan would
     // put an authorised run at the mercy of judge variance.
-    jobs.push({ manifest: stored.manifest, required: stored.required, shape, resume: null, frozen: entry.score || null, frozenLabel: entry.label })
+    let storedViability = null
+    if (viabilityFromPath) {
+      const v = JSON.parse(readFileSync(viabilityFromPath, 'utf8'))
+      const row = (((v.reports || [])[0] || {}).rows || []).find(x => (x.label || '-') === entry.label)
+      storedViability = (row && row.viability) || null
+      console.log('Placement viability reused from ' + viabilityFromPath + ': '
+        + (storedViability ? (storedViability.ok ? 'all required placements writable' : 'REJECTED') : 'NOT FOUND for ' + entry.label))
+    }
+    jobs.push({ manifest: stored.manifest, required: stored.required, shape, resume: null, frozen: entry.score || null, frozenLabel: entry.label, viability: storedViability })
     console.log('A3: reusing bakeoff plan ' + entry.label + ' (' + entry.model + ') from ' + shapeFromPath
       + (entry.score ? ' — frozen score: overall ' + entry.score.overall : '') + '\n')
   }
@@ -369,7 +380,7 @@ if (!jobs.length) {
 const results = []
 
 for (const job of jobs) {
-  const manifest = job.manifest
+  let manifest = job.manifest
   // The exact length is enforced beat by beat (each beat returns exactly its
   // allocated lines or is rejected) — NOT by narrowing the manifest. blueprint-2 set
   // minLines = maxLines = 28 and every draft came back "invalid_manifest",
@@ -578,7 +589,7 @@ for (const job of jobs) {
 
   const acceptable = scored.filter(c => acceptableBlueprint(c.score))
   acceptable.sort((a, b) => (b.score.overall - a.score.overall) || (b.score.causal - a.score.causal) || (a.label < b.label ? -1 : 1))
-  const chosen = acceptable[0]
+  let chosen = acceptable[0]
   if (!chosen) {
     console.log('\nNO ACCEPTABLE PLAN — manifest rejected before any prose call.')
     record.judgeRaw = String(judgeRaw || '').slice(0, 2000)
@@ -590,7 +601,8 @@ for (const job of jobs) {
   // Structural, lexical and quality all passed on a plan whose 男人 had nowhere
   // to go. Every required placement is judged on its own here, and one fatal
   // placement makes the plan ineligible however good the rest of it is.
-  const viability = await judgeTargetPlacements(chosen.blueprint, { manifest, required, provider: writer })
+  const viability = job.viability || await judgeTargetPlacements(chosen.blueprint, { manifest, required, provider: writer })
+  if (job.viability) console.log('\n(placement verdicts reused — not re-judged)')
   console.log('\nTARGET PLACEMENT VIABILITY (' + VIABILITY_VERSION + '): ' + (viability.ok ? 'every required placement is writable' : 'REJECTED'))
   for (const r of viability.rows) {
     console.log('  ' + (r.verdict === 'PASS' ? '✓' : '✗') + ' ' + r.word + ' → beat ' + r.beat
@@ -603,6 +615,20 @@ for (const job of jobs) {
     results.push(record)
     continue
   }
+
+  // ── The effective target map ──────────────────────────────────────────────
+  // A verdict that is only recorded changes nothing: the writer would still be
+  // told to use the word. Everything downstream reads the DERIVED plan, while
+  // the frozen one stays exactly as the planner wrote it.
+  const effective = effectiveTargets(chosen.blueprint, viability, { manifest, required })
+  const dropped = effective.dropped
+  if (dropped.length) {
+    console.log('\nEFFECTIVE TARGETS: dropping ' + dropped.join('、') + ' — optional, and judged unwritable where the plan put it')
+    for (const d of effective.dispositions) console.log('  ' + d.word + ' → beat ' + d.beat + ': ' + d.disposition)
+  }
+  record.viability = { ...viability, dispositions: effective.dispositions, dropped }
+  chosen = { ...chosen, blueprint: effective.blueprint }
+  if (effective.manifest) manifest = effective.manifest
 
   // The chosen plan's per-beat report. It cannot be HIGH — feasibility ran
   // before ranking — and the branch below stays only as a guard against a
