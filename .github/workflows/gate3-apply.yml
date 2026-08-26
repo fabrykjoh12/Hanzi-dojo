@@ -130,7 +130,11 @@ jobs:
       # reported STALE_ROW and skipped, never forced.
       - name: Apply the approved manifest
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          # Reuses the repository's existing secrets — Gate 3 introduces no
+          # duplicate copy of the Supabase credentials. This mapping
+          # (VITE_SUPABASE_URL -> SUPABASE_URL) is the same one
+          # content-utils.yml and regen-content.yml already use.
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           node migrate-legacy-claims.mjs \
@@ -138,7 +142,11 @@ jobs:
 
       - name: Post-apply invariants
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          # Reuses the repository's existing secrets — Gate 3 introduces no
+          # duplicate copy of the Supabase credentials. This mapping
+          # (VITE_SUPABASE_URL -> SUPABASE_URL) is the same one
+          # content-utils.yml and regen-content.yml already use.
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           node migrate-legacy-claims.mjs --redact | tee /tmp/gate3/post.log

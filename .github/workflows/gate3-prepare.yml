@@ -101,7 +101,11 @@ jobs:
 
       - name: Create the pre-apply snapshot (no production writes)
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          # Reuses the repository's existing secrets — Gate 3 introduces no
+          # duplicate copy of the Supabase credentials. This mapping
+          # (VITE_SUPABASE_URL -> SUPABASE_URL) is the same one
+          # content-utils.yml and regen-content.yml already use.
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           mkdir -p /tmp/gate3 && chmod 700 /tmp/gate3
@@ -128,7 +132,11 @@ jobs:
 
       - name: Fresh dry run and manifest (no production writes)
         env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          # Reuses the repository's existing secrets — Gate 3 introduces no
+          # duplicate copy of the Supabase credentials. This mapping
+          # (VITE_SUPABASE_URL -> SUPABASE_URL) is the same one
+          # content-utils.yml and regen-content.yml already use.
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           cd /tmp/gate3
