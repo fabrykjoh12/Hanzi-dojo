@@ -56,6 +56,19 @@ env:
   # The ONLY commit this migration may run. Set in a reviewed commit; never an
   # input. See ops/README-gate3-snapshot-key.md.
   APPROVED_MIGRATION_SHA: 'd0dcc5171d048b603b8e9a5c05d1cebcef273870'
+  # The snapshot recipient key is CONTROL-PLANE data, not migration code, so it
+  # is taken from the dispatch revision of the default branch rather than from
+  # the pinned commit — it was committed after that commit was frozen, and
+  # moving the pin to make a key appear would defeat the pin.
+  #
+  # What replaces the pin as the trust anchor here is this fingerprint: the key
+  # is only accepted if it hashes to exactly this, so substituting a different
+  # key (or an attacker adding one) fails closed rather than silently
+  # encrypting the snapshot to a recipient we do not control.
+  GATE3_SNAPSHOT_FINGERPRINT: 'F1BAEB3D8E327B506E95E11F8DC40418467B259A'
+  # Runner-local, deliberately OUTSIDE the workspace, so the pinned checkout
+  # cannot overwrite or remove it.
+  GATE3_RECIPIENT_KEY: '/tmp/gate3-snapshot-recipient.asc'
 
 jobs:
   prepare:
@@ -82,6 +95,61 @@ jobs:
             exit 1
           fi
           echo "approved migration commit: $APPROVED_MIGRATION_SHA"
+
+      # ── CONTROL PLANE, fetched BEFORE the pinned checkout ───────────────
+      # actions/checkout REPLACES the workspace, so anything read from the
+      # pinned commit must exist in that commit. The recipient public key does
+      # not: it was committed to main after d0dcc51 was frozen. Reading it from
+      # the pinned tree therefore fails deterministically, and moving the pin to
+      # make it appear would hand production credentials to newer code — exactly
+      # what the pin exists to prevent.
+      #
+      # So the key comes from the dispatch revision of the default branch (which
+      # the environment already restricts to main), is verified by fingerprint,
+      # and is copied outside the workspace before the pinned checkout runs.
+      - name: Check out the control-plane revision (key only)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          path: control-plane
+          persist-credentials: false
+
+      - name: Verify and stage the snapshot recipient key
+        run: |
+          src=control-plane/ops/gate3-snapshot-recipient.asc
+          if [ ! -s "$src" ]; then
+            echo "::error::$src is missing on the control-plane revision."
+            echo "::error::See ops/README-gate3-snapshot-key.md."
+            exit 1
+          fi
+
+          # A recipient file must be PUBLIC key material only. A private key
+          # here would mean CI could decrypt its own backups, which is the one
+          # property this whole design exists to deny.
+          if grep -q "PRIVATE KEY BLOCK" "$src"; then
+            echo "::error::the recipient file contains PRIVATE key material — refusing"
+            exit 1
+          fi
+
+          # show-only never imports into the keyring; it just parses.
+          actual="$(gpg --batch --import-options show-only --import --with-colons "$src" \
+                     | awk -F: '$1=="fpr"{print $10; exit}')"
+          if [ -z "$actual" ]; then
+            echo "::error::could not read a fingerprint from the recipient file"
+            exit 1
+          fi
+          if [ "$actual" != "$GATE3_SNAPSHOT_FINGERPRINT" ]; then
+            echo "::error::recipient key fingerprint mismatch — refusing to encrypt"
+            echo "::error::expected $GATE3_SNAPSHOT_FINGERPRINT"
+            echo "::error::got      $actual"
+            exit 1
+          fi
+
+          install -m 0600 "$src" "$GATE3_RECIPIENT_KEY"
+          # Remove the control-plane tree so nothing downstream can read code
+          # from it — only the verified key survives, and it lives outside the
+          # workspace where the pinned checkout cannot touch it.
+          rm -rf control-plane
+          echo "recipient key verified: $actual"
 
       - name: Check out the approved migration commit
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -112,15 +180,12 @@ jobs:
       - name: Migration and leak-guard tests
         run: npx vitest run src/migration/ leak-guard.test.mjs
 
-      - name: Verify the snapshot recipient key is present
+      - name: Re-confirm the verified recipient key survived the pinned checkout
         run: |
-          if [ ! -s ops/gate3-snapshot-recipient.asc ]; then
-            echo "::error::ops/gate3-snapshot-recipient.asc is missing."
-            echo "::error::Generate a keypair locally and commit ONLY the public half —"
-            echo "::error::see ops/README-gate3-snapshot-key.md."
-            exit 1
-          fi
-          gpg --import-options show-only --import ops/gate3-snapshot-recipient.asc
+          test -s "$GATE3_RECIPIENT_KEY" \
+            || { echo "::error::verified recipient key vanished before encryption"; exit 1; }
+          test ! -e control-plane \
+            || { echo "::error::control-plane tree still present after the pinned checkout"; exit 1; }
 
       # ── Production reads start here. Every one is guarded. ──────────────
       - name: Create the pre-apply snapshot (no production writes)
@@ -142,7 +207,7 @@ jobs:
           cd /tmp/gate3
           mkdir -p out
           gpg --batch --yes --trust-model always \
-              --recipient-file "$GITHUB_WORKSPACE/ops/gate3-snapshot-recipient.asc" \
+              --recipient-file "$GATE3_RECIPIENT_KEY" \
               --output "out/${SNAPSHOT_PLAIN}.gpg" --encrypt "$SNAPSHOT_PLAIN"
           # Digest of the PLAINTEXT, so the maintainer can prove what they
           # decrypt is byte-identical to what was captured. Not sensitive.
