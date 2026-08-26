@@ -154,6 +154,35 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### A3.2 matches a noun to a verb of the same spelling (open, found 2026-08-25)
+
+`a3-H-2` ran frozen plan H — a bike-tire repair story — and stopped at the
+lexical scaffold: the sketch for 帮助 in beat 1 needs to name the tire, and
+**轮胎 is absent from the vocabulary at every level** (so is 修).
+
+A3.2 had rated that beat MEDIUM, reporting `tire=supported`. Reproduced with
+the real glosses:
+
+```
+tire   → supported via gloss → 累
+```
+
+累 is glossed **"tired, to tire"**. The gate matched the noun *tire* to the
+verb *to tire*, concluded the object was sayable, and let a plan whose central
+object cannot be named through the feasibility gate. The same collision put 累
+at the top of the retrieval suggestions offered to the writer, where 自行车
+(HSK 3, and the obvious way to talk around it) never appeared.
+
+The fix is the part-of-speech agreement the synonym bridge already uses: the
+glosses mark verbs with a leading "to", and a direct gloss hit should respect
+that just as `buildSenseSynonyms` does. **Re-run feasibility over the stored
+candidates afterwards** — H's MEDIUM may become HIGH, which would change the
+eligible set.
+
+Secondary, and real: given a correct repair brief naming 轮胎, permission to
+delete it, and eight alternatives, the writer returned the identical sentence
+on its retry.
+
 ### Target-placement viability is now a gate — and it changed the selection (2026-08-25)
 
 `storyTargetViability.mjs` judges every target→beat placement on its own:
