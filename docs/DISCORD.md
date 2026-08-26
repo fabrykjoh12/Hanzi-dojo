@@ -264,3 +264,61 @@ DISCORD_BOT_TOKEN=your_token DISCORD_GUILD_ID=your_server_id node scripts/setup-
 > The bot token is a password for your server — never commit it. Pass it as an
 > environment variable as shown, and reset it in the Developer Portal if it
 > ever leaks.
+
+---
+
+## 8. What posts to Discord automatically
+
+Two workflows, one channel each, and **both fire only on a push to `main`.**
+Nothing on a feature branch reaches Discord — the docs go through
+branch → PR → merge like every other file.
+
+| Workflow | Channel | Trigger | What it does |
+| --- | --- | --- | --- |
+| `discord-notify.yml` | `#announcements` | any push to `main` | Posts a new "🚀 Update shipped" card listing that push's non-merge commit titles. This is why commit and PR titles get written for a reader. |
+| `roadmap-live-sync.yml` | `#roadmap`, `#backlog` | a push to `main` touching `ROADMAP.md` or `docs/BACKLOG.md` (plus manual re-run) | **Edits one pinned message per channel in place**, so each channel stays a single current post rather than a wall of history. |
+
+**Secrets** (each step skips if its secret is absent, so they can be added one at
+a time): `DISCORD_ANNOUNCE_WEBHOOK`, `DISCORD_ROADMAP_WEBHOOK`,
+`DISCORD_BACKLOG_WEBHOOK`. Use a **private** channel for `#backlog` — it carries
+internal bug and ops detail.
+
+### The pinned messages are addressed by a committed id
+
+`roadmap-live-sync.yml` edits an existing message; it never creates one. The
+message ids live in `.github/roadmap-message.id` and `.github/backlog-message.id`
+and are read as **configuration** — the workflow has `contents: read` and cannot
+write them back.
+
+If an id file is missing or Discord rejects the edit (usually: someone deleted
+the message), **the run fails with instructions instead of quietly posting a
+replacement.** Getting a new id is a deliberate maintenance step:
+
+```bash
+DISCORD_ROADMAP_WEBHOOK=<the webhook URL> \
+  node .github/scripts/roadmap-sync.mjs --bootstrap=roadmap
+```
+
+That posts one new message and prints its id; commit the id to the matching
+`.id` file in a normal PR. `--dry-run` renders both documents and sends nothing,
+which is the fastest way to see what a roadmap edit will actually look like.
+
+> `.github/backlog-message.id` does not exist yet, so the `#backlog` sync fails
+> loudly whenever `DISCORD_BACKLOG_WEBHOOK` is set. Bootstrap it as above. The
+> `#roadmap` sync is unaffected — every target is attempted before a run fails.
+
+### Why nothing syncs from a branch
+
+Until 2026-08-26, `roadmap-live-sync.yml` ran on **branch** pushes and copied
+that branch's `ROADMAP.md` and `docs/BACKLOG.md` directly onto `main`. It bought
+a few hours of Discord latency and cost correctness: the copy was a whole-file
+replacement, so whichever branch pushed last silently reverted the other's work
+on `main`. It happened repeatedly — commit `42e367a` deleted 83 lines of
+`docs/BACKLOG.md` that another branch had added an hour earlier.
+
+The rendering (`.github/scripts/roadmap-render.mjs`) is a condensed view —
+headings and item titles, descriptions dropped after the ` — `, long Shipped
+lists capped — because a Discord embed description stops at 4096 characters and
+both documents are several times that. It is covered by `roadmap-render.test.mjs`,
+and the workflow's own invariants by `roadmap-sync.test.mjs`; both run in
+`npm test`.

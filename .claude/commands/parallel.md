@@ -19,9 +19,11 @@ parallelism saved. Before dispatching, confirm no two tasks touch the same file.
   One agent may own one of them; two agents must never share one.
 - The shared core — `srs.js`, `mastery.js`, `storyReading.js`, `syncQueue.js`,
   `languageTheme.js`, `utils.js`, `navConfig.js`. Half the app imports these.
-- `ROADMAP.md` / `docs/BACKLOG.md`. `roadmap-live-sync.yml` copies these to
-  `main` from any branch, so two agents editing them race and one edit is lost
-  silently. **One agent makes the roadmap edit, at the end.**
+- `ROADMAP.md` / `docs/BACKLOG.md`. Two agents editing the same list conflict on
+  merge, and the resolution is always guesswork about which item belongs where.
+  **One agent makes the roadmap edit, at the end**, covering everything that
+  landed. (These reach Discord when the PR merges to `main` — nothing syncs from
+  a branch, so there is no rush to get the edit in early.)
 - Migrations in `supabase/migrations/`. Ordering is load-bearing — see
   `docs/BACKLOG.md`. Run these sequentially, never in parallel.
 

@@ -1,10 +1,10 @@
 # 📋 PM Board — milestone, tasks, parallel execution
 
 **Internal. Not synced to Discord.** (`roadmap-live-sync.yml` only mirrors
-`ROADMAP.md` → `#roadmap` and `docs/BACKLOG.md` → `#backlog`. This file is the
-task board: ownership, branches, acceptance criteria, merge order. Keeping it
-out of the sync path is deliberate — Discord stays a product view, not a
-sprint board.)
+`ROADMAP.md` → `#roadmap` and `docs/BACKLOG.md` → `#backlog`, and only from
+`main`. This file is the task board: ownership, branches, acceptance criteria,
+merge order. Keeping it out of the sync path is deliberate — Discord stays a
+product view, not a sprint board.)
 
 Companion docs: [`ROADMAP.md`](../ROADMAP.md) (what users see) ·
 [`docs/BACKLOG.md`](BACKLOG.md) (engineering backlog) · [`TASKS.md`](../TASKS.md)
@@ -1135,9 +1135,9 @@ milestone decision. Full detail lives in [`docs/BACKLOG.md`](BACKLOG.md).
   content the stories were written against, and no existing learner may lose
   access.
 - **AD-3 — The PM task board lives in `docs/PM-BOARD.md`, not `ROADMAP.md`.**
-  `roadmap-live-sync.yml` mirrors `ROADMAP.md` to the community `#roadmap`
-  channel; task IDs, branches and acceptance checklists would turn a product view
-  into a sprint board. `ROADMAP.md` stays user-facing, `docs/BACKLOG.md`
+  `roadmap-live-sync.yml` mirrors `ROADMAP.md` (as merged to `main`) to the
+  community `#roadmap` channel; task IDs, branches and acceptance checklists
+  would turn a product view into a sprint board. `ROADMAP.md` stays user-facing, `docs/BACKLOG.md`
   engineering-facing, this file syncs nowhere.
 - **AD-4 — The authored lane is the content path of record when quota is
   uncertain.** `Claude.md` already calls hand-authored seasons the preferred
