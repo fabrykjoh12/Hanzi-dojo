@@ -66,3 +66,6 @@ store-screenshots/
 
 # Pre-apply migration snapshots — complete copies of user card rows.
 legacy-claim-snapshot-*.json
+
+# Gate 3 snapshots are user data — never commit one.
+legacy-claim-snapshot-*.json.gpg

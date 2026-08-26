@@ -36,6 +36,14 @@ import { createHash } from 'node:crypto'
 const argv = process.argv.slice(2)
 const APPLY = argv.includes('--apply')
 const SNAPSHOT = argv.includes('--snapshot')
+// --redact: replace account and card identifiers in CONSOLE OUTPUT with stable
+// per-run labels. The manifest and snapshot files are unaffected — they still
+// carry real ids, because the apply path needs them.
+//
+// This exists because Hanzi-dojo is a PUBLIC repository: GitHub Actions job
+// logs are readable by anyone on the internet, and an unredacted dry run prints
+// every affected account's UUID. Always pass --redact in CI.
+const REDACT = argv.includes('--redact')
 const MANIFEST_PATH = (() => {
   const i = argv.indexOf('--manifest')
   return i >= 0 && argv[i + 1] ? argv[i + 1] : null
@@ -87,6 +95,19 @@ async function loadWorld() {
   }
   return { cards, logs, logsByCardId, loggingEpoch }
 }
+
+// Stable within a run, meaningless outside it: the same id always gets the same
+// label so the report stays readable, but nothing identifies a real account.
+const redactionLabels = new Map()
+function label(kind, id) {
+  if (!REDACT) return id
+  if (id == null) return String(id)
+  const key = kind + ':' + id
+  if (!redactionLabels.has(key)) redactionLabels.set(key, kind + '#' + (redactionLabels.size + 1))
+  return redactionLabels.get(key)
+}
+const acct = id => label('account', id)
+const cardRef = id => (REDACT ? label('card', id) : String(id).slice(0, 8) + '…')
 
 const line = (n = 70) => '='.repeat(n)
 const pad = (v, n) => String(v).padStart(n)
@@ -228,7 +249,7 @@ async function dryRun() {
   }
   console.log('\nAFFECTED ACCOUNTS (' + Object.keys(byUser).length + ')')
   for (const [u, v] of Object.entries(byUser)) {
-    console.log('  ' + u + '   convert ' + pad(v.convert, 4) + '   replay ' + pad(v.replay, 3))
+    console.log('  ' + acct(u) + '   convert ' + pad(v.convert, 4) + '   replay ' + pad(v.replay, 3))
   }
 
   const replays = manifest.entries.filter(e => e.action === ACTION.REPLAY)
@@ -236,13 +257,13 @@ async function dryRun() {
     console.log('\nREPLAY PREVIEW (first 5 of ' + replays.length + ')')
     for (const e of replays.slice(0, 5)) {
       const before = cards.find(c => c.id === e.card_id)
-      console.log('  ' + e.card_id.slice(0, 8) + '…  ' + describeReplay(before, replayCard(e.review_log_input)))
+      console.log('  ' + cardRef(e.card_id) + '  ' + describeReplay(before, replayCard(e.review_log_input)))
     }
   }
 
   if (plan.ambiguous.length) {
     console.log('\nAMBIGUOUS — excluded from the manifest, never touched')
-    for (const a of plan.ambiguous) console.log('  ' + a.id + '\n      ' + a.reason)
+    for (const a of plan.ambiguous) console.log('  ' + cardRef(a.id) + '\n      ' + a.reason)
   }
 
   if (MANIFEST_PATH) {
@@ -372,13 +393,13 @@ async function printPostApply(report, manifest) {
   if (report.stale.length) {
     console.log('\nSTALE — SKIPPED, NOT APPLIED. Re-run a fresh dry run to reclassify these.')
     for (const s of report.stale) {
-      console.log('  ' + s.id + '  ' + s.status + '  (' + s.action + ')')
+      console.log('  ' + cardRef(s.id) + '  ' + s.status + '  (' + s.action + ')')
       console.log('      ' + s.reason)
     }
   }
   if (report.failed.length) {
     console.log('\nFAILED')
-    for (const f of report.failed) console.log('  ' + f.id + '  ' + f.error)
+    for (const f of report.failed) console.log('  ' + cardRef(f.id) + '  ' + f.error)
   }
 
   console.log('\n' + line())
