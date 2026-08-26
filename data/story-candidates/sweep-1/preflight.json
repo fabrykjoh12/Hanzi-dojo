@@ -1,0 +1,2762 @@
+{
+  "version": "fab9-risk@4",
+  "generatedAt": "2026-08-26T21:58:41.809Z",
+  "reports": [
+    {
+      "source": "data/story-candidates/bundle-plans-1/bakeoff.json",
+      "kind": "policy-sweep",
+      "manifestId": "bundle-L3-001",
+      "detail": [
+        {
+          "label": "D",
+          "quality": 9,
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 5,
+            "cost": 16,
+            "costBudget": 12,
+            "byNecessity": {
+              "OPTIONAL_COMPLEXITY": {
+                "count": 3,
+                "cost": 11,
+                "words": [
+                  "off:provides",
+                  "守",
+                  "危险"
+                ]
+              },
+              "CENTRAL_NECESSARY": {
+                "count": 2,
+                "cost": 5,
+                "words": [
+                  "off:offer",
+                  "劝"
+                ]
+              }
+            },
+            "maxPerSentence": 2,
+            "crowdedBeats": [],
+            "clusteredSentences": [],
+            "offListWords": 2,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [
+              "an assisted-vocabulary cost of 16 (budget 12) — distance above the level is charged, so a few far words cost more than several near ones"
+            ],
+            "notes": [
+              "beat 5 carries 2 assisted words; one per sentence reads more easily"
+            ]
+          },
+          "assisted": [
+            {
+              "concept": "provides",
+              "concepts": [
+                "provides"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 6,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "guards",
+              "concepts": [
+                "guards"
+              ],
+              "word": "守",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 2,
+              "nearest": null,
+              "offList": false,
+              "cost": 3,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "offer",
+              "concepts": [
+                "offer"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 3,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "dangerous",
+              "concepts": [
+                "dangerous"
+              ],
+              "word": "危险",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 1,
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                2,
+                3
+              ]
+            },
+            {
+              "concept": "advises",
+              "concepts": [
+                "advises"
+              ],
+              "word": "劝",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 2,
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                5
+              ]
+            }
+          ],
+          "routes": [
+            {
+              "concept": "job",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "沙发",
+                "邮件",
+                "邮箱"
+              ],
+              "beat": 2
+            },
+            {
+              "concept": "night",
+              "route": "component",
+              "confidence": null,
+              "words": [
+                "晚"
+              ],
+              "beat": 2
+            },
+            {
+              "concept": "mentioned",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "起",
+                "养",
+                "提高"
+              ],
+              "beat": 3
+            },
+            {
+              "concept": "adds",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "提高"
+              ],
+              "beat": 4
+            },
+            {
+              "concept": "peace",
+              "route": "derivation",
+              "confidence": "derivational",
+              "words": [
+                "安静"
+              ],
+              "beat": 4
+            },
+            {
+              "concept": "reject",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "回"
+              ],
+              "beat": 5
+            },
+            {
+              "concept": "priority",
+              "route": "component",
+              "confidence": null,
+              "words": [
+                "先"
+              ],
+              "beat": 5
+            },
+            {
+              "concept": "night",
+              "route": "component",
+              "confidence": null,
+              "words": [
+                "晚"
+              ],
+              "beat": 6
+            },
+            {
+              "concept": "suggested",
+              "route": "gloss-note",
+              "confidence": "note",
+              "words": [
+                "最好"
+              ],
+              "beat": 6
+            },
+            {
+              "concept": "rejecting",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "回"
+              ],
+              "beat": 6
+            }
+          ]
+        },
+        {
+          "label": "A",
+          "quality": 8,
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 7,
+            "cost": 29,
+            "costBudget": 12,
+            "byNecessity": {
+              "OPTIONAL_COMPLEXITY": {
+                "count": 3,
+                "cost": 18,
+                "words": [
+                  "off:prompting",
+                  "off:hesitation",
+                  "冲突"
+                ]
+              },
+              "CENTRAL_NECESSARY": {
+                "count": 4,
+                "cost": 11,
+                "words": [
+                  "off:anxiety",
+                  "off:hesitant",
+                  "off:perspective",
+                  "咨询"
+                ]
+              }
+            },
+            "maxPerSentence": 2,
+            "crowdedBeats": [],
+            "clusteredSentences": [],
+            "offListWords": 5,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [
+              "an assisted-vocabulary cost of 29 (budget 12) — distance above the level is charged, so a few far words cost more than several near ones",
+              "5 words the learner list does not carry at all (max 2) — those reach the deterministic validator as UNKNOWN words, and it is strict about them"
+            ],
+            "notes": []
+          },
+          "assisted": [
+            {
+              "concept": "prompting",
+              "concepts": [
+                "prompting"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 6,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "hesitation",
+              "concepts": [
+                "hesitation"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 6,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "conflict",
+              "concepts": [
+                "conflict"
+              ],
+              "word": "冲突",
+              "hsk": 6,
+              "distance": 3,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": false,
+              "cost": 6,
+              "beats": [
+                4
+              ]
+            },
+            {
+              "concept": "anxiety",
+              "concepts": [
+                "anxiety"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 3,
+              "beats": [
+                1,
+                2
+              ]
+            },
+            {
+              "concept": "hesitant",
+              "concepts": [
+                "hesitant"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 3,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "perspective",
+              "concepts": [
+                "perspective"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 3,
+              "beats": [
+                4,
+                5
+              ]
+            },
+            {
+              "concept": "advice",
+              "concepts": [
+                "advice"
+              ],
+              "word": "咨询",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 2,
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                5
+              ]
+            }
+          ],
+          "routes": [
+            {
+              "concept": "expresses",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "发",
+                "表演",
+                "照顾"
+              ],
+              "beat": 1
+            },
+            {
+              "concept": "job",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "沙发",
+                "邮件",
+                "邮箱"
+              ],
+              "beat": 1
+            },
+            {
+              "concept": "offer",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "开",
+                "打开",
+                "开花"
+              ],
+              "beat": 1
+            },
+            {
+              "concept": "details",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "特别"
+              ],
+              "beat": 2
+            },
+            {
+              "concept": "job",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "沙发",
+                "邮件",
+                "邮箱"
+              ],
+              "beat": 2
+            },
+            {
+              "concept": "expressed",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "发",
+                "照顾"
+              ],
+              "beat": 2
+            },
+            {
+              "concept": "misses",
+              "route": "component",
+              "confidence": null,
+              "words": [
+                "错"
+              ],
+              "beat": 3
+            },
+            {
+              "concept": "current",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "礼物"
+              ],
+              "beat": 3
+            },
+            {
+              "concept": "details",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "特别"
+              ],
+              "beat": 3
+            },
+            {
+              "concept": "shares",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "参加",
+                "南方",
+                "分开",
+                "北方"
+              ],
+              "beat": 4
+            },
+            {
+              "concept": "factor",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "词",
+                "学期"
+              ],
+              "beat": 4
+            },
+            {
+              "concept": "happiness",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "高兴",
+                "快乐",
+                "开心"
+              ],
+              "beat": 4
+            },
+            {
+              "concept": "feelings",
+              "route": "inflection",
+              "confidence": null,
+              "words": [
+                "认为"
+              ],
+              "beat": 5
+            },
+            {
+              "concept": "job",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "沙发",
+                "邮件",
+                "邮箱"
+              ],
+              "beat": 5
+            },
+            {
+              "concept": "shared",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "参加",
+                "分开"
+              ],
+              "beat": 5
+            },
+            {
+              "concept": "happiness",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "高兴",
+                "快乐",
+                "开心"
+              ],
+              "beat": 5
+            }
+          ]
+        },
+        {
+          "label": "E",
+          "quality": 9,
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 9,
+            "cost": 25,
+            "costBudget": 12,
+            "byNecessity": {
+              "OPTIONAL_COMPLEXITY": {
+                "count": 3,
+                "cost": 12,
+                "words": [
+                  "off:vs",
+                  "矛盾",
+                  "输入"
+                ]
+              },
+              "NATURAL_SUPPORT": {
+                "count": 4,
+                "cost": 8,
+                "words": [
+                  "薪水",
+                  "穷",
+                  "待",
+                  "赚"
+                ]
+              },
+              "CENTRAL_NECESSARY": {
+                "count": 2,
+                "cost": 5,
+                "words": [
+                  "off:conditional",
+                  "咨询"
+                ]
+              }
+            },
+            "maxPerSentence": 2,
+            "crowdedBeats": [
+              5
+            ],
+            "clusteredSentences": [],
+            "offListWords": 2,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [
+              "9 words above the level (max 8)",
+              "an assisted-vocabulary cost of 25 (budget 12) — distance above the level is charged, so a few far words cost more than several near ones",
+              "beat(s) 5 carry more than 2 assisted words"
+            ],
+            "notes": [
+              "beat 3 carries 2 assisted words; one per sentence reads more easily"
+            ]
+          },
+          "assisted": [
+            {
+              "concept": "vs",
+              "concepts": [
+                "vs"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 6,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "salary",
+              "concepts": [
+                "salary"
+              ],
+              "word": "薪水",
+              "hsk": 6,
+              "distance": 3,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "NATURAL_SUPPORT",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": false,
+              "cost": 4,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "conflicting",
+              "concepts": [
+                "conflicting"
+              ],
+              "word": "矛盾",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 2,
+              "nearest": null,
+              "offList": false,
+              "cost": 3,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "conditional",
+              "concepts": [
+                "conditional"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 3,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "input",
+              "concepts": [
+                "input"
+              ],
+              "word": "输入",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 2,
+              "nearest": null,
+              "offList": false,
+              "cost": 3,
+              "beats": [
+                6
+              ]
+            },
+            {
+              "concept": "advice",
+              "concepts": [
+                "advice"
+              ],
+              "word": "咨询",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 2,
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "poor",
+              "concepts": [
+                "poor"
+              ],
+              "word": "穷",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "NATURAL_SUPPORT",
+              "baseCost": 2,
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "stay",
+              "concepts": [
+                "stay",
+                "stays"
+              ],
+              "word": "待",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "NATURAL_SUPPORT",
+              "baseCost": 1,
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                3,
+                5
+              ]
+            },
+            {
+              "concept": "earn",
+              "concepts": [
+                "earn"
+              ],
+              "word": "赚",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "NATURAL_SUPPORT",
+              "baseCost": 1,
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                5
+              ]
+            }
+          ],
+          "routes": [
+            {
+              "concept": "paper",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "报纸"
+              ],
+              "beat": 1
+            },
+            {
+              "concept": "job",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "把"
+              ],
+              "beat": 1
+            },
+            {
+              "concept": "details",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "特别"
+              ],
+              "beat": 1
+            },
+            {
+              "concept": "stated",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "讲"
+              ],
+              "beat": 3
+            },
+            {
+              "concept": "options",
+              "route": "component",
+              "confidence": null,
+              "words": [
+                "不"
+              ],
+              "beat": 3
+            },
+            {
+              "concept": "choice",
+              "route": "component",
+              "confidence": null,
+              "words": [
+                "不"
+              ],
+              "beat": 4
+            },
+            {
+              "concept": "opinion",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "意思"
+              ],
+              "beat": 4
+            },
+            {
+              "concept": "consequences",
+              "route": "component",
+              "confidence": null,
+              "words": [
+                "后"
+              ],
+              "beat": 5
+            },
+            {
+              "concept": "choice",
+              "route": "component",
+              "confidence": null,
+              "words": [
+                "不"
+              ],
+              "beat": 5
+            },
+            {
+              "concept": "nods",
+              "route": "component",
+              "confidence": null,
+              "words": [
+                "点"
+              ],
+              "beat": 6
+            },
+            {
+              "concept": "opinion",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "意思"
+              ],
+              "beat": 6
+            },
+            {
+              "concept": "analysis",
+              "route": "component",
+              "confidence": null,
+              "words": [
+                "分"
+              ],
+              "beat": 6
+            }
+          ]
+        },
+        {
+          "label": "B",
+          "quality": 6,
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 4,
+            "cost": 12,
+            "costBudget": 12,
+            "byNecessity": {
+              "CENTRAL_NECESSARY": {
+                "count": 2,
+                "cost": 6,
+                "words": [
+                  "off:offer",
+                  "off:conditional"
+                ]
+              },
+              "OPTIONAL_COMPLEXITY": {
+                "count": 2,
+                "cost": 6,
+                "words": [
+                  "咨询",
+                  "明确"
+                ]
+              }
+            },
+            "maxPerSentence": 1,
+            "crowdedBeats": [],
+            "clusteredSentences": [],
+            "offListWords": 2,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [],
+            "notes": []
+          },
+          "assisted": [
+            {
+              "concept": "offer",
+              "concepts": [
+                "offer"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 3,
+              "beats": [
+                1
+              ]
+            },
+            {
+              "concept": "conditional",
+              "concepts": [
+                "conditional"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 3,
+              "beats": [
+                3
+              ]
+            },
+            {
+              "concept": "advice",
+              "concepts": [
+                "advice"
+              ],
+              "word": "咨询",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 2,
+              "nearest": null,
+              "offList": false,
+              "cost": 3,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "clarifies",
+              "concepts": [
+                "clarifies"
+              ],
+              "word": "明确",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 2,
+              "nearest": null,
+              "offList": false,
+              "cost": 3,
+              "beats": [
+                5
+              ]
+            }
+          ],
+          "routes": [
+            {
+              "concept": "reading",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "留学生"
+              ],
+              "beat": 1
+            },
+            {
+              "concept": "job",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "沙发",
+                "邮件",
+                "邮箱"
+              ],
+              "beat": 1
+            },
+            {
+              "concept": "expression",
+              "route": "component",
+              "confidence": null,
+              "words": [
+                "笑"
+              ],
+              "beat": 2
+            },
+            {
+              "concept": "situation",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "环境"
+              ],
+              "beat": 3
+            },
+            {
+              "concept": "details",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "特别"
+              ],
+              "beat": 3
+            },
+            {
+              "concept": "opinion",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "意思"
+              ],
+              "beat": 4
+            },
+            {
+              "concept": "choice",
+              "route": "component",
+              "confidence": null,
+              "words": [
+                "不"
+              ],
+              "beat": 4
+            },
+            {
+              "concept": "job",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "沙发",
+                "邮件",
+                "邮箱"
+              ],
+              "beat": 5
+            }
+          ]
+        },
+        {
+          "label": "F",
+          "quality": 6,
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 4,
+            "cost": 17,
+            "costBudget": 12,
+            "byNecessity": {
+              "OPTIONAL_COMPLEXITY": {
+                "count": 2,
+                "cost": 12,
+                "words": [
+                  "off:offer",
+                  "off:conditional"
+                ]
+              },
+              "CENTRAL_NECESSARY": {
+                "count": 2,
+                "cost": 5,
+                "words": [
+                  "off:email",
+                  "咨询"
+                ]
+              }
+            },
+            "maxPerSentence": 1,
+            "crowdedBeats": [],
+            "clusteredSentences": [],
+            "offListWords": 3,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [
+              "an assisted-vocabulary cost of 17 (budget 12) — distance above the level is charged, so a few far words cost more than several near ones",
+              "3 words the learner list does not carry at all (max 2) — those reach the deterministic validator as UNKNOWN words, and it is strict about them"
+            ],
+            "notes": []
+          },
+          "assisted": [
+            {
+              "concept": "offer",
+              "concepts": [
+                "offer"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 6,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "conditional",
+              "concepts": [
+                "conditional"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 6,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "email",
+              "concepts": [
+                "email"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "route": null,
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 4,
+              "nearest": "信",
+              "offList": true,
+              "cost": 3,
+              "beats": [
+                1
+              ]
+            },
+            {
+              "concept": "advice",
+              "concepts": [
+                "advice"
+              ],
+              "word": "咨询",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 2,
+              "nearest": null,
+              "offList": false,
+              "cost": 2,
+              "beats": [
+                4
+              ]
+            }
+          ],
+          "routes": [
+            {
+              "concept": "mentioned",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "起",
+                "养",
+                "提高"
+              ],
+              "beat": 2
+            },
+            {
+              "concept": "job",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "沙发",
+                "邮件",
+                "邮箱"
+              ],
+              "beat": 2
+            },
+            {
+              "concept": "information",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "新闻",
+                "风"
+              ],
+              "beat": 3
+            },
+            {
+              "concept": "opinion",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "意思"
+              ],
+              "beat": 3
+            },
+            {
+              "concept": "offers",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "开",
+                "打开",
+                "开花"
+              ],
+              "beat": 4
+            },
+            {
+              "concept": "expressed",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "发",
+                "照顾"
+              ],
+              "beat": 4
+            },
+            {
+              "concept": "guidance",
+              "route": "component",
+              "confidence": null,
+              "words": [
+                "请"
+              ],
+              "beat": 4
+            },
+            {
+              "concept": "job",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "沙发",
+                "邮件",
+                "邮箱"
+              ],
+              "beat": 5
+            },
+            {
+              "concept": "thoughts",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "想",
+                "觉得",
+                "认为",
+                "以为"
+              ],
+              "beat": 5
+            },
+            {
+              "concept": "helpful",
+              "route": "derivation",
+              "confidence": "derivational",
+              "words": [
+                "帮",
+                "帮忙",
+                "把",
+                "帮助"
+              ],
+              "beat": 5
+            }
+          ]
+        },
+        {
+          "label": "C",
+          "quality": 4,
+          "budget": {
+            "nominalLevel": 3,
+            "assistedWords": 11,
+            "cost": 38,
+            "costBudget": 12,
+            "byNecessity": {
+              "OPTIONAL_COMPLEXITY": {
+                "count": 4,
+                "cost": 21,
+                "words": [
+                  "off:quieter",
+                  "off:deeper",
+                  "off:confident",
+                  "咨询"
+                ]
+              },
+              "CENTRAL_NECESSARY": {
+                "count": 7,
+                "cost": 17,
+                "words": [
+                  "off:offer",
+                  "off:pressure",
+                  "off:balcony",
+                  "off:pros",
+                  "off:cons",
+                  "客厅",
+                  "讨论"
+                ]
+              }
+            },
+            "maxPerSentence": 4,
+            "crowdedBeats": [
+              4
+            ],
+            "clusteredSentences": [
+              {
+                "beat": 4,
+                "sentences": [
+                  1
+                ]
+              }
+            ],
+            "offListWords": 8,
+            "offListMax": 2,
+            "inLevelShareTarget": 0.9,
+            "inLevelSharePreferred": 0.95,
+            "measuredOn": "the finished draft, by the deterministic validator",
+            "breaches": [
+              "11 words above the level (max 8)",
+              "an assisted-vocabulary cost of 38 (budget 12) — distance above the level is charged, so a few far words cost more than several near ones",
+              "beat(s) 4 carry more than 2 assisted words",
+              "8 words the learner list does not carry at all (max 2) — those reach the deterministic validator as UNKNOWN words, and it is strict about them"
+            ],
+            "notes": [
+              "beat 1 carries 2 assisted words; one per sentence reads more easily"
+            ]
+          },
+          "assisted": [
+            {
+              "concept": "quieter",
+              "concepts": [
+                "quieter"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "route": null,
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 4,
+              "nearest": "安静",
+              "offList": true,
+              "cost": 6,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "deeper",
+              "concepts": [
+                "deeper"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 6,
+              "beats": [
+                4
+              ]
+            },
+            {
+              "concept": "confident",
+              "concepts": [
+                "confident"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 6,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "offer",
+              "concepts": [
+                "offer"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 3,
+              "beats": [
+                1,
+                2
+              ]
+            },
+            {
+              "concept": "pressure",
+              "concepts": [
+                "pressure"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "weak-match",
+              "route": null,
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 4,
+              "nearest": "一定",
+              "offList": true,
+              "cost": 3,
+              "beats": [
+                1
+              ]
+            },
+            {
+              "concept": "balcony",
+              "concepts": [
+                "balcony"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 3,
+              "beats": [
+                4
+              ]
+            },
+            {
+              "concept": "pros",
+              "concepts": [
+                "pros"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 3,
+              "beats": [
+                4
+              ]
+            },
+            {
+              "concept": "cons",
+              "concepts": [
+                "cons"
+              ],
+              "word": null,
+              "hsk": null,
+              "distance": null,
+              "source": "off-list",
+              "route": "absent",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 4,
+              "nearest": null,
+              "offList": true,
+              "cost": 3,
+              "beats": [
+                4
+              ]
+            },
+            {
+              "concept": "advice",
+              "concepts": [
+                "advice"
+              ],
+              "word": "咨询",
+              "hsk": 5,
+              "distance": 2,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "OPTIONAL_COMPLEXITY",
+              "baseCost": 2,
+              "nearest": null,
+              "offList": false,
+              "cost": 3,
+              "beats": [
+                5
+              ]
+            },
+            {
+              "concept": "living",
+              "concepts": [
+                "living"
+              ],
+              "word": "客厅",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 1,
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                2
+              ]
+            },
+            {
+              "concept": "discuss",
+              "concepts": [
+                "discuss"
+              ],
+              "word": "讨论",
+              "hsk": 4,
+              "distance": 1,
+              "source": "above-level",
+              "route": "above-level",
+              "necessity": "CENTRAL_NECESSARY",
+              "baseCost": 1,
+              "nearest": null,
+              "offList": false,
+              "cost": 1,
+              "beats": [
+                4
+              ]
+            }
+          ],
+          "routes": [
+            {
+              "concept": "job",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "沙发",
+                "邮件",
+                "邮箱"
+              ],
+              "beat": 1
+            },
+            {
+              "concept": "opinion",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "意思"
+              ],
+              "beat": 3
+            },
+            {
+              "concept": "view",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "手表"
+              ],
+              "beat": 3
+            },
+            {
+              "concept": "job",
+              "route": "synonym",
+              "confidence": null,
+              "words": [
+                "沙发",
+                "邮件",
+                "邮箱"
+              ],
+              "beat": 5
+            }
+          ]
+        }
+      ],
+      "results": [
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": null,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 6,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 9,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 12,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": null,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 6,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 9,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 13,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": null,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 6,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 9,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 14,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": null,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 6,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 9,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 15,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": null,
+          "eligible": [
+            "D",
+            "B"
+          ],
+          "signature": "BD"
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": null,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 6,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 9,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": null,
+          "eligible": [
+            "D",
+            "B"
+          ],
+          "signature": "BD"
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 16,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": null,
+          "eligible": [
+            "D",
+            "B"
+          ],
+          "signature": "BD"
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": null,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 6,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 9,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": null,
+          "eligible": [
+            "D",
+            "B"
+          ],
+          "signature": "BD"
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 17,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": null,
+          "eligible": [
+            "D",
+            "B"
+          ],
+          "signature": "BD"
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": null,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": null,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 6,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": 1,
+          "optionalCostMax": 9,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": null,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": 2,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": null,
+          "eligible": [
+            "D",
+            "B"
+          ],
+          "signature": "BD"
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 3,
+          "eligible": [],
+          "signature": ""
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 6,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        },
+        {
+          "cost": 18,
+          "offListMax": 2,
+          "optionalMax": 3,
+          "optionalCostMax": 9,
+          "eligible": [
+            "B"
+          ],
+          "signature": "B"
+        }
+      ],
+      "frontier": [
+        {
+          "signature": "BD",
+          "admits": [
+            "B",
+            "D"
+          ],
+          "policies": 6,
+          "minimal": [
+            {
+              "cost": 16,
+              "offListMax": 2,
+              "optionalMax": 3,
+              "optionalCostMax": null,
+              "eligible": [
+                "D",
+                "B"
+              ],
+              "signature": "BD"
+            }
+          ]
+        },
+        {
+          "signature": "B",
+          "admits": [
+            "B"
+          ],
+          "policies": 57,
+          "minimal": [
+            {
+              "cost": 12,
+              "offListMax": 2,
+              "optionalMax": 2,
+              "optionalCostMax": 6,
+              "eligible": [
+                "B"
+              ],
+              "signature": "B"
+            }
+          ]
+        },
+        {
+          "signature": "",
+          "admits": [],
+          "policies": 49,
+          "minimal": [
+            {
+              "cost": 12,
+              "offListMax": 2,
+              "optionalMax": 1,
+              "optionalCostMax": 3,
+              "eligible": [],
+              "signature": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
