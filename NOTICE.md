@@ -79,9 +79,13 @@ own. None is renamed, and no Reserved Font Name is used for a modified version â
 the files are byte-identical to what Google Fonts serves.
 
 The **web** build still loads all of them from the Google Fonts CDN
-(`index.html`), and Noto Sans JP for the paused Japanese track is CDN-only on
-both surfaces (`src/fontLoader.js`, which returns null inside the native shell).
-Mona Sans has been bundled all along (`src/assets/fonts/`).
+(`index.html`). Noto Sans JP is not bundled at all, and the two surfaces differ:
+on the **web** it may be fetched from the Google Fonts CDN on demand, when a
+grandfathered learner activates the paused Japanese track; in the **native**
+apps no such request is ever made â€” `fontHrefFor` returns null inside the shell
+(`src/fontLoader.js`), so that track renders in the platform's own CJK font
+instead. Nothing is redistributed for it either way. Mona Sans has been bundled
+all along (`src/assets/fonts/`).
 
 | Font | License |
 |---|---|
