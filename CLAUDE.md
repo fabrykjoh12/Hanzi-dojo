@@ -387,6 +387,27 @@ delete vocabulary, never delete cards outside the reset RPC, never write
 `is_easy = true` or `ease_factor`), is what keeps the power safe. Apply the
 migration you committed — do not improvise DDL at the prompt.
 
+**A review agent never writes to the working tree, and `git add -A` never runs
+while one is alive.** *(Added 2026-08-26, after it happened.)* A parallel review
+pass had its agents read the code and run it — and one of them also *fixed* what
+it found, directly in the working tree. A `git add -A` in the main session then
+swept that edit into a commit whose message described something else entirely,
+so unreviewed code entered the branch under a false description and the author
+never saw it.
+
+Two rules, either of which would have prevented it:
+
+- **Reviewers are read-only, or they get their own worktree.** Spawn review
+  agents with a read-only tool set, or with `isolation: "worktree"` so their
+  edits land somewhere you have to merge deliberately. A reviewer's job is to
+  produce findings, not patches.
+- **Stage explicit paths while any agent is running.** `git add <path> …`, never
+  `git add -A`. If a commit is prepared while background work is in flight,
+  `git diff --cached` before committing and confirm every hunk is yours.
+
+If unreviewed work does get swept in, say so in the next commit message and in
+the report — a quiet fix is how it becomes permanent.
+
 **Run the GitHub Actions yourself — don't hand them back.** The content
 workflows (`content-utils.yml` → `story-images-apply`, `publish-held`,
 `fix-collisions`, …; `regen-content.yml` → the audio/examples/story tasks) are
