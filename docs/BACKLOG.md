@@ -154,6 +154,52 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### Target-bundle selection moved upstream, and the eligible set is finally non-empty (2026-08-26)
+
+Four stored plans had been through placement viability and every one failed on
+at least one of 男人 / 女人 / 关系 — always the same reason: the manifest
+demanded the word and the story had no reason to say it. The fix is not in the
+planner or the writer. It is that the manifest asked for five specific words at
+once and left the planner to invent a reason for each.
+
+`storyTargetBundle.mjs` chooses the words BEFORE the story is planned:
+**REQUIRED** (a real communicative role, and they cohere as one story),
+**OPPORTUNITY** (worth reinforcing if they fit; omitting them fails nothing),
+**DEFERRED** (no compatible context yet — later, not never). The judgement asks
+two separate questions, because individually storyable words can still be a bad
+bundle when each needs its own subplot; selection from those answers is
+deterministic. No word is blacklisted: 男人 passes the same machinery when it
+tells two people at the door apart.
+
+Deferral is recorded — times deferred, when, last real contextual exposure — and
+two deferrals promote a word above anything fresher as soon as a context
+appears, so difficult words are not silently starved. FSRS weakness has a field
+and is left for the app side.
+
+**First run (`bundle-1`).** Pool of 8; selected 如果 / 需要 / 认为 for *"a friend
+asking for advice on a conditional life choice"*; deferred 被, 中, 该, 像, 生活
+with reasons (被 was glossed "quilt" — the single-character gloss issue above).
+
+**Candidates from that bundle (`bundle-plans-1`), same prompt and gates:**
+
+| | structural | quality | JOINT |
+|---|---|---|---|
+| Qwen | 3/3 | 3/3 | **3/3** |
+| gpt-oss | 3/3 | 2/3 | **2/3** |
+
+against 0/6 and 0/6 for the original target set. **5 of 6 plans clear both bars.**
+
+**Eligibility (`bundle-eligible-1`): plan B passes all four gates** — structural,
+quality 6, A3.2 ASSISTED_OOL (4 assisted, cost 10/12), and placement viability
+PASS on all three targets, each with a real role (*"marks the speaker's
+subjective view, distinguishing advice from fact"*). Nothing was relaxed.
+
+**The binding constraint has moved to lexical feasibility.** The three
+highest-quality plans (qwen, 8–9) are all LEXICALLY_UNSAFE: D on 3 off-list
+words against a cap of 2, E on cost 18/12 for a salary-and-advice story. The
+gates are now trading quality against vocabulary — worth watching, because the
+plan that survived is the one scoring 6, not the ones scoring 9.
+
 ### A3.2 is now comprehensibility, not purity (`fab9-risk@4`, 2026-08-26)
 
 The product decision changed: a learner can tap any word, so a little
