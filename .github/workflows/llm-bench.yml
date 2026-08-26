@@ -22,7 +22,7 @@ on:
       mode:
         description: "smoke = probe; bench = benchmark; select = K-draft selection (production flow); duo = retired edit flow (diagnostic); writer-test = one draft"
         type: choice
-        options: [smoke, bench, duo, select, writer-test, patch-test, repair-test, quality-gate, blueprint, planner-bakeoff]
+        options: [smoke, bench, duo, select, writer-test, patch-test, repair-test, quality-gate, blueprint, planner-bakeoff, target-bundle]
         default: smoke
       max_tests:
         description: "smoke only: how many models to probe (capped at 16)"
@@ -513,6 +513,37 @@ jobs:
             $SRC --lines "$LINES" \
             $FLAGS --batch "$PREFIX" \
             --out "data/story-candidates/$PREFIX"
+      - name: Fresh corpus dump for target-bundle (read-only)
+        if: inputs.mode == 'target-bundle'
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node dump-story-corpus.mjs --out reports/story-corpus-dump.json
+
+      - name: "Target bundle - which words the next story should teach"
+        if: inputs.mode == 'target-bundle'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          MODEL_A: ${{ inputs.model_a }}
+          EFFORT_A: ${{ inputs.effort_a }}
+          PREFIX: ${{ inputs.batch_prefix }}
+          LEVEL: ${{ inputs.level }}
+          COUNT: ${{ inputs.count }}
+        run: |
+          set -e
+          case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
+          case "$MODEL_A" in (""|*[!A-Za-z0-9._/:-]*) echo "bad or missing model_a"; exit 1;; esac
+          case "$EFFORT_A" in (""|none|low|medium|high|default) ;; (*) echo "bad effort_a"; exit 1;; esac
+          case "$LEVEL" in (*[!0-9]*|"") LEVEL=3;; esac
+          case "$COUNT" in (*[!0-9]*|"") COUNT=8;; esac
+          if [ "$COUNT" -gt 16 ]; then COUNT=16; fi
+          SPEC="$MODEL_A"
+          if [ -n "$EFFORT_A" ]; then SPEC="$MODEL_A:$EFFORT_A"; fi
+          node target-bundle.mjs \
+            --input reports/story-corpus-dump.json \
+            --model "$SPEC" --level "$LEVEL" --pool "$COUNT" \
+            --out "data/story-candidates/$PREFIX"
+
       - name: Fresh corpus dump for planner-bakeoff (read-only)
         if: inputs.mode == 'planner-bakeoff'
         env:
