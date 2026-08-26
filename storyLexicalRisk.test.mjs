@@ -333,6 +333,18 @@ describe('direct gloss support agrees on part of speech', () => {
     expect(support('bike', 'verb')).toMatchObject({ support: 'none' })
   })
 
+  it('a trailing -s is a plural, not a verb', () => {
+    // census-4 charged 邻居 (HSK 3) and 谢谢 (HSK 1) against the assisted budget
+    // because "neighbors" and "thanks" end in -s and were read as verbs.
+    const pos = beatConceptPos('They chat about how friendly neighbors are and he thanks her.')
+    expect(pos.get('neighbors')).toBeUndefined()
+    expect(pos.get('thanks')).toBeUndefined()
+    // -ing and -ed still mark a verb
+    const p2 = beatConceptPos('He is carrying the box and dropped it.')
+    expect(p2.get('carrying')).toBe('verb')
+    expect(p2.get('dropped')).toBe('verb')
+  })
+
   it('an unmarked concept is not blocked — "he needs help" still reaches 帮助', () => {
     expect(beatConceptPos('李明 realizes he needs help').get('help')).toBeUndefined()
     expect(support('help', null).words).toContain('帮助')

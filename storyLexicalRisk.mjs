@@ -123,7 +123,11 @@ export function beatConceptPos(text) {
     if (pos.has(t)) return
     const back = [tokens[i - 1], tokens[i - 2]].filter(Boolean)
     if (back.some(w => DETERMINERS.has(w))) { pos.set(t, 'noun'); return }
-    if (/(?:ing|ed|s)$/.test(t) && t.length > 3) pos.set(t, 'verb')
+    // -ing and -ed are reliable verb marks. A trailing -s is NOT: in these
+    // beats it is a plural noun far more often than a third-person verb, and
+    // treating it as one forced 邻居 (HSK 3, "neighbor"), 谢谢 (HSK 1, "thank
+    // you") and every other plural off the list and into the assisted budget.
+    if (/(?:ing|ed)$/.test(t) && t.length > 4) pos.set(t, 'verb')
   })
   return pos
 }
@@ -464,6 +468,16 @@ export function classifyConcept(support, { vocabMap = {}, level = 1, policy = AS
 
 // HIGH means the beat cannot be told at this level: its own subject matter is
 // missing, not a detail of it.
+// The budget is stated in WORDS THE READER TAPS, so identity is the Chinese
+// word, not the English token that reached it: "wheel" and "wheels" are one
+// tap of 轮子. Off-list concepts have no word to key on, so they fall back to
+// the harder stem — which still joins tire/tires without collapsing every
+// unrelated absent concept into one.
+export function assistKey(entry, concept = null) {
+  const c = riskStem((entry && entry.concept) || concept || '')
+  return entry && entry.word ? 'w:' + entry.word : 'c:' + c
+}
+
 export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index = null, fullIndex = null, names = [], synonyms = null, inLevelWords = null, policy = ASSISTED_POLICY } = {}) {
   const idx = index || buildGlossIndex(vocabMap, manifest.level)
   const full = fullIndex || buildFullGlossIndex(vocabMap)
@@ -491,7 +505,8 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
 
   // A beat is only unsafe on its own account when it is CROWDED — the budget
   // for the story as a whole is settled by assessShapeRisk.
-  const crowded = assisted.length > policy.assistedPerBeatMax
+  const distinct = new Set(assisted.map(c => assistKey(c.assist, c.concept))).size
+  const crowded = distinct > policy.assistedPerBeatMax
   const risk = crowded
     ? RISK.HIGH
     : (assisted.length ? RISK.MEDIUM : (incidentalAssisted.length ? RISK.MEDIUM : RISK.LOW))
@@ -544,8 +559,9 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
   const byConcept = new Map()
   for (const b of beats) {
     for (const a of b.assisted) {
-      if (!byConcept.has(a.concept)) byConcept.set(a.concept, { ...a, beats: [] })
-      byConcept.get(a.concept).beats.push(b.beat)
+      const key = assistKey(a)
+      if (!byConcept.has(key)) byConcept.set(key, { ...a, beats: [] })
+      byConcept.get(key).beats.push(b.beat)
     }
   }
   const assisted = [...byConcept.values()].sort((a, b) => (b.cost || 0) - (a.cost || 0))
