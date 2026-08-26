@@ -974,11 +974,12 @@ says so: it states plainly that Hanzi Dojo is not a company, that it is run by a
 individual based in **Norway**, and gives `support@hanzi-dojo.com` as the contact
 channel with a one-month response commitment.
 
-The name lives in one place — `CONTROLLER_NAME` in `src/brand.js` — and is
-rendered by the policy, so it can never drift from anything else that names the
-controller later. While it is empty the sentence still reads correctly ("run by
-one person, an individual based in Norway"), so the page is never *wrong*, only
-less specific. **Filling that constant is the last edit before this can merge.**
+The name — **Fabian Rykkelid Johnsen**, confirmed by the owner 2026-08-26 — lives
+in one place, `CONTROLLER_NAME` in `src/brand.js`, and is rendered by the policy.
+Anything that has to name the controller later (App Store Connect, Play Console)
+should read it from there rather than repeating a literal, so the two can never
+disagree. The notice now reads: *"Hanzi Dojo is not a company. It is built and
+run by Fabian Rykkelid Johnsen, an individual based in Norway…"*
 
 ##### Correction: a postal address is **not** legally required here
 

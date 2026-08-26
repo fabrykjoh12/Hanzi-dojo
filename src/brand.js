@@ -29,10 +29,12 @@ export const SUPPORT_EMAIL = 'support@hanzi-dojo.com'
 // no enkeltpersonforetak. The controller is therefore that person, and the
 // privacy notice names them.
 //
-// CONTROLLER_NAME is the owner's full legal name. While it is empty the notice
-// still reads correctly — it says the app is operated by an individual based in
-// Norway — so the page is never wrong, only less specific. Fill it in before the
-// policy is published.
+// CONTROLLER_NAME is the owner's full legal name, confirmed 2026-08-26. It is
+// rendered by the privacy notice and is the single source for the controller's
+// identity, so anything else that has to name the controller later — App Store
+// Connect, Play Console — reads it from here rather than repeating a literal.
+// (The notice degrades gracefully if it is ever blanked: it then says the app is
+// run by an individual based in Norway, which is true but less specific.)
 //
 // No postal address is published, and none is required: GDPR Art. 13(1)(a) asks
 // for "the identity and the contact details of the controller" without
@@ -41,7 +43,7 @@ export const SUPPORT_EMAIL = 'support@hanzi-dojo.com'
 // DPO's contact details, and Hanzi Dojo has no Art. 37 duty to appoint one.)
 // The App Store's DSA trader disclosure is a separate matter — see
 // docs/PRIVACY-AUDIT.md — and is handled in App Store Connect, not here.
-export const CONTROLLER_NAME = ''
+export const CONTROLLER_NAME = 'Fabian Rykkelid Johnsen'
 export const CONTROLLER_COUNTRY = 'Norway'
 
 // Inline style for the small, chrome wordmark (sidebar). Clean geometric sans.
