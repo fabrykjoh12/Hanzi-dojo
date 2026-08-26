@@ -38,7 +38,7 @@ import {
 } from './storyBlueprint.mjs'
 import { realizeByBeat, BEAT_LIMITS, BEAT_QUALITY, BEAT_VERSION } from './storyBeats.mjs'
 import { buildLexicalScaffold, applyScaffold, shapeChanges, SCAFFOLD_VERSION } from './storyLexicalScaffold.mjs'
-import { assessShapeRisk, validateGlossCorpus, RISK, RISK_VERSION } from './storyLexicalRisk.mjs'
+import { assessShapeRisk, validateGlossCorpus, ASSISTED_POLICY, RISK, RISK_VERSION } from './storyLexicalRisk.mjs'
 import { targetViabilityPrompt, parseTargetViability, assessTargetPlacements, effectiveTargets, VIABILITY_VERSION } from './storyTargetViability.mjs'
 import { judgePrompt, parseJudgment, JUDGE_VERSION } from './storyJudge.mjs'
 import { preRepairDecision, DRAFT_QUALITY } from './storyDraftQuality.mjs'
@@ -80,6 +80,9 @@ const shapeLabel = arg('shape-label', null)
 // Stored placement verdicts, so a selected plan is not re-judged on a
 // dimension it has already passed.
 const viabilityFromPath = arg('viability-from', null)
+// Re-score FROZEN plans under several lexical policies. Deterministic: no plan
+// is regenerated and no dimension is re-judged — only the thresholds move.
+const policyMatrix = arg('policy-matrix', null)
 // A3.1 pilot: resume a stored run's scaffold, keeping every piece it already
 // validated and retrying only the one that failed.
 const resumeScaffoldPath = arg('resume-scaffold', null)
@@ -173,6 +176,63 @@ if (preflightOnly) {
           + (r.highConcepts.join(', ') || '—').slice(0, 36).padEnd(38)
           + (r.eligible ? 'YES' : 'no'))
       }
+      if (policyMatrix) {
+        const configs = policyMatrix.split(';').map(spec => {
+          const [cost, offList] = spec.split(',').map(x => parseInt(x, 10))
+          return { label: 'cost ' + cost + ' / offList ' + offList, policy: { ...ASSISTED_POLICY, costBudget: cost, offListMax: offList } }
+        })
+        console.log('\nSENSITIVITY MATRIX over ' + rows.length + ' frozen plan(s) — thresholds move, nothing else\n')
+        const matrix = []
+        for (const cfg of configs) {
+          const line = []
+          for (const r of rows) {
+            const c = stored.candidates.find(x => (x.label || '-') === r.label)
+            if (!c || (!c.blueprint && !c.plan)) { line.push({ label: r.label, classification: 'no plan' }); continue }
+            const blueprint = c.plan ? adaptShape(c.plan).blueprint : c.blueprint
+            const report = assessShapeRisk({ blueprint, manifest: stored.manifest, vocabMap, policy: cfg.policy })
+            // Which words push it over: the dearest first, until the rest fit.
+            const over = []
+            if (report.classification === 'LEXICALLY_UNSAFE') {
+              let cost = report.budget.cost
+              let off = report.budget.offListWords
+              for (const a of report.assisted) {
+                if (cost <= cfg.policy.costBudget && off <= cfg.policy.offListMax) break
+                over.push((a.concepts || [a.concept]).join('/') + (a.word ? '→' + a.word + ' HSK' + a.hsk : '→off-list') + ' (' + a.cost + ')')
+                cost -= a.cost
+                if (a.offList) off -= 1
+              }
+            }
+            line.push({
+              label: r.label,
+              model: r.model,
+              quality: r.overall,
+              qualityOk: r.quality,
+              classification: report.classification,
+              assistedWords: report.budget.assistedWords,
+              cost: report.budget.cost,
+              offList: report.budget.offListWords,
+              crowdedBeats: report.budget.crowdedBeats,
+              clustered: report.budget.clusteredSentences,
+              necessity: report.assisted.map(a => ({ word: a.word || ('off:' + a.concept), necessity: a.necessity, hsk: a.hsk, distance: a.distance, cost: a.cost, baseCost: a.baseCost })),
+              over,
+              eligible: Boolean(r.structural && r.quality && report.classification !== 'LEXICALLY_UNSAFE'
+                && (!r.viability || r.viability.ok)),
+            })
+          }
+          const eligible = line.filter(x => x.eligible)
+          console.log('  ' + cfg.label.padEnd(24) + 'eligible: ' + (eligible.map(x => x.label + '(q' + x.quality + ')').join(', ') || 'NONE'))
+          for (const x of line) {
+            console.log('      ' + String(x.label).padEnd(3) + String(x.classification).padEnd(18)
+              + ('words ' + x.assistedWords).padEnd(10) + ('cost ' + x.cost).padEnd(9) + ('off-list ' + x.offList).padEnd(13)
+              + (x.over.length ? 'over on: ' + x.over.join(', ') : ''))
+          }
+          matrix.push({ ...cfg, plans: line, eligible: eligible.map(x => x.label) })
+          console.log('')
+        }
+        reports.push({ source: path, kind: 'policy-matrix', manifestId: stored.manifest.id, matrix })
+        continue
+      }
+
       // The fourth gate runs ONLY on the candidates that already pass the other
       // three: their structural, lexical and quality results are the stored
       // ones and nothing here re-judges them.

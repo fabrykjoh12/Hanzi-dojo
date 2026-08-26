@@ -150,10 +150,17 @@ export function conceptsFromBeat(beat, entries = [], { names = [] } = {}) {
   const core = []
   const supporting = []
   const incidental = []
+  // Which sentence each concept came from: the learner taps a word inside a
+  // sentence, and three unknowns in one sentence is a different experience
+  // from three spread over a beat.
+  const sentenceOf = new Map()
   parts.forEach((s, i) => {
     const { main, sub } = splitClause(s)
-    ;(i === 0 ? core : supporting).push(...clean(main))
-    incidental.push(...clean(sub))
+    const mainTokens = clean(main)
+    const subTokens = clean(sub)
+    for (const t of [...mainTokens, ...subTokens]) if (!sentenceOf.has(t)) sentenceOf.set(t, i + 1)
+    ;(i === 0 ? core : supporting).push(...mainTokens)
+    incidental.push(...subTokens)
   })
   // The causal link is story content and appears in the prose, so it is
   // incidental (charged at half). A target's INTENT is not: "Description",
@@ -166,7 +173,7 @@ export function conceptsFromBeat(beat, entries = [], { names = [] } = {}) {
   const seen = new Set()
   const dedupe = (list) => list.filter(t => (seen.has(t) ? false : (seen.add(t), true)))
   const pos = beatConceptPos(String((beat && beat.what) || '') + ' ' + String((beat && beat.because) || ''))
-  return { core: dedupe(core), supporting: dedupe(supporting), incidental: dedupe(incidental), meta: dedupe(meta), pos }
+  return { core: dedupe(core), supporting: dedupe(supporting), incidental: dedupe(incidental), meta: dedupe(meta), pos, sentenceOf }
 }
 
 // token → the words whose gloss uses it. Two indexes get built: one over the
@@ -485,11 +492,44 @@ export const ASSISTED_POLICY = {
   // as an UNKNOWN word, not an above-level one, and that gate is strict. Plan
   // time may not promise more of them than validation will accept.
   offListMax: 2,
+  // A word the story genuinely turns on is worth more than one it merely
+  // decorates itself with. The plan's own structure says which is which, so
+  // the writer cannot decide it retroactively.
+  necessityWeight: { CENTRAL_NECESSARY: 0.75, NATURAL_SUPPORT: 1, OPTIONAL_COMPLEXITY: 1.5 },
+  // The learner can tap a word; they should not have to tap half a sentence.
+  assistedPerSentencePreferred: 1,
+  assistedPerSentenceMax: 2,
+}
+
+export const NECESSITY = {
+  central: 'CENTRAL_NECESSARY',
+  support: 'NATURAL_SUPPORT',
+  optional: 'OPTIONAL_COMPLEXITY',
 }
 
 // A caller may override one number without restating the rest.
 export function withPolicy(policy) {
-  return { ...ASSISTED_POLICY, ...(policy || {}), distanceCost: { ...ASSISTED_POLICY.distanceCost, ...((policy || {}).distanceCost || {}) } }
+  return {
+    ...ASSISTED_POLICY,
+    ...(policy || {}),
+    distanceCost: { ...ASSISTED_POLICY.distanceCost, ...((policy || {}).distanceCost || {}) },
+    necessityWeight: { ...ASSISTED_POLICY.necessityWeight, ...((policy || {}).necessityWeight || {}) },
+  }
+}
+
+// What the concept is DOING in the beat, read off the plan's own structure:
+// the main clause of the first sentence is the event, later main clauses carry
+// it, and a subordinate clause is decoration.
+export function necessityOf(bucket) {
+  if (bucket === 'core') return NECESSITY.central
+  if (bucket === 'supporting') return NECESSITY.support
+  return NECESSITY.optional
+}
+
+export function weightedCost(cost, necessity, policyIn = ASSISTED_POLICY) {
+  const policy = withPolicy(policyIn)
+  const w = policy.necessityWeight[necessity]
+  return Math.max(1, Math.ceil((cost || 0) * (Number.isFinite(w) ? w : 1)))
 }
 
 export function assistCost(entry, policyIn = ASSISTED_POLICY) {
@@ -570,34 +610,54 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
     pos: concepts.pos.get(c) || 'unknown',
     ...conceptSupport(c, idx, full, { synonyms: syn, inLevelWords: inLevel, pos: concepts.pos.get(c) || null, targets: targetWords }),
   }))
-  const classify = (list) => list.map(c => ({ ...c, assist: classifyConcept(c, { vocabMap, level: manifest.level, policy }) }))
-  const core = classify(rate(concepts.core))
-  const supporting = classify(rate(concepts.supporting))
-  const incidental = classify(rate(concepts.incidental))
+  const classify = (list, bucket) => list.map(c => {
+    const assist = classifyConcept(c, { vocabMap, level: manifest.level, policy })
+    const necessity = necessityOf(bucket)
+    return {
+      ...c,
+      sentence: concepts.sentenceOf ? (concepts.sentenceOf.get(c.concept) || null) : null,
+      assist: { ...assist, necessity, baseCost: assist.cost, cost: weightedCost(assist.cost, necessity, policy) },
+    }
+  })
+  const core = classify(rate(concepts.core), 'core')
+  const supporting = classify(rate(concepts.supporting), 'supporting')
+  const incidental = classify(rate(concepts.incidental), 'incidental')
   // Reported so the artifact can show it, never charged: it is a note about
   // the plan, not a word the story has to say.
   const meta = classify(rate(concepts.meta || []))
 
-  // Incidental detail is decoration the writer may drop, so it is charged at
-  // HALF rate rather than free. Free was a hole: "he holds the wheel while he
-  // puts the chain back on" pushes the chain — the point of the beat — into a
-  // subordinate clause, and one relative clause could carry an entire story's
-  // worth of advanced vocabulary at no cost.
-  const halved = incidental.map(c => ({ ...c, assist: { ...c.assist, cost: Math.ceil((c.assist.cost || 0) / 2), incidental: true } }))
+  // Decoration is not free — that was a hole, one relative clause could carry a
+  // whole story's advanced vocabulary — and it is not cheap either: an advanced
+  // word the story does not need is exactly what should not be rewarded. The
+  // necessity weight above prices it, so nothing is halved here.
   const assisted = [...core, ...supporting].filter(c => c.assist.kind === ASSIST.ASSISTED)
-  const incidentalAssisted = halved.filter(c => c.assist.kind === ASSIST.ASSISTED)
+  const incidentalAssisted = incidental.filter(c => c.assist.kind === ASSIST.ASSISTED)
   const cost = [...assisted, ...incidentalAssisted].reduce((n, c) => n + c.assist.cost, 0)
 
   // A beat is only unsafe on its own account when it is CROWDED — the budget
   // for the story as a whole is settled by assessShapeRisk.
   const distinct = new Set(assisted.map(c => assistKey(c.assist, c.concept))).size
-  const crowded = distinct > policy.assistedPerBeatMax
+  // Per SENTENCE, not only per beat: comprehension should never depend on
+  // several unknown words at once.
+  const bySentence = new Map()
+  for (const c of [...assisted, ...incidentalAssisted]) {
+    const n = c.sentence || 0
+    if (!bySentence.has(n)) bySentence.set(n, new Set())
+    bySentence.get(n).add(assistKey(c.assist, c.concept))
+  }
+  const sentences = [...bySentence.entries()].map(([n, set]) => ({ sentence: n, assisted: set.size }))
+  const clustered = sentences.filter(x => x.assisted > policy.assistedPerSentenceMax)
+  const crowded = distinct > policy.assistedPerBeatMax || clustered.length > 0
   const risk = crowded
     ? RISK.HIGH
     : (assisted.length ? RISK.MEDIUM : (incidentalAssisted.length ? RISK.MEDIUM : RISK.LOW))
   const describe = (list) => list.map(c => c.concept + (c.assist.word ? ' (' + c.assist.word + ' HSK' + c.assist.wordLevel + ')' : ' (no word in the list)')).join(', ')
   let reason = 'every concept in this beat is in level'
-  if (crowded) {
+  if (clustered.length) {
+    reason = 'sentence ' + clustered.map(x => x.sentence).join(', ') + ' of this beat needs '
+      + clustered.map(x => x.assisted).join('/') + ' words above the level at once (max ' + policy.assistedPerSentenceMax
+      + ' in one sentence): ' + describe(assisted)
+  } else if (crowded) {
     reason = 'this one beat needs ' + assisted.length + ' words above the level (max ' + policy.assistedPerBeatMax + '): ' + describe(assisted)
   } else if (assisted.length) {
     reason = assisted.length + ' assisted word(s) the reader taps: ' + describe(assisted)
@@ -617,6 +677,8 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
     metaAssisted: meta.filter(c => c.assist.kind === ASSIST.ASSISTED).map(c => ({ concept: c.concept, ...c.assist })),
     cost,
     crowded,
+    sentences,
+    clustered: clustered.map(x => x.sentence),
     // Kept for the reports and specs that read them: what is NOT in level.
     coreMissing: core.filter(c => c.assist.kind === ASSIST.ASSISTED).map(c => c.concept),
     supportingMissing: supporting.filter(c => c.assist.kind === ASSIST.ASSISTED).map(c => c.concept),
@@ -737,6 +799,8 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
       hsk: a.wordLevel,
       distance: a.distance,
       source: a.source,
+      necessity: a.necessity || null,
+      baseCost: a.baseCost != null ? a.baseCost : a.cost,
       nearest: a.nearest || null,
       offList: a.offList,
       cost: a.cost,
@@ -748,6 +812,7 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
       cost,
       costBudget: policy.costBudget,
       crowdedBeats,
+      clusteredSentences: beats.filter(b => (b.clustered || []).length).map(b => ({ beat: b.beat, sentences: b.clustered })),
       offListWords: offList.length,
       offListMax: policy.offListMax,
       inLevelShareTarget: policy.inLevelShareTarget,

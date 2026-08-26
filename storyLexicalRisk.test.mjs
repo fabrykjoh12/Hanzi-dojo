@@ -472,19 +472,20 @@ describe('assisted vocabulary — a tapped word is not a defect', () => {
     expect(r.policy.costBudget).toBe(40)
   })
 
-  it('incidental decoration is charged at half, not free', () => {
-    // Free was a hole: one subordinate clause could carry a whole story's
-    // advanced vocabulary at no cost.
-    const r = assessShape({
+  it('gratuitous difficulty costs MORE than a word the story turns on', () => {
+    // Free was a hole — one relative clause could carry a whole story's
+    // advanced vocabulary. Cheap was wrong too: an advanced word the story
+    // does not need is precisely what should not be rewarded.
+    const decorative = assessShape({
       blueprint: shape([{ id: 1, what: '李明 looks at the bike', because: 'it is dark and the wrench is heavy' }]),
       manifest: manifest(), vocabMap: vm,
     })
-    const full = assessShape({
+    const central = assessShape({
       blueprint: shape([{ id: 1, what: '李明 looks at the dark wrench', because: 'the story opens' }]),
       manifest: manifest(), vocabMap: vm,
     })
-    expect(r.budget.cost).toBeGreaterThan(0)
-    expect(r.budget.cost).toBeLessThan(full.budget.cost)
+    expect(decorative.budget.cost).toBeGreaterThan(central.budget.cost)
+    for (const a of central.assisted) expect(a.necessity).toBe('CENTRAL_NECESSARY')
   })
 
   it('records every assisted word for the artifact and the UI', () => {

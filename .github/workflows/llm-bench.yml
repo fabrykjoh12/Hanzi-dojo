@@ -491,6 +491,13 @@ jobs:
                     (*,*) SRC="$SRC --viability-from ${MANIFEST#*,}";;
                   esac
                 ;;
+                # "matrix:12,2;15,3" re-scores frozen plans under several
+                # lexical policies. Deterministic: no model is called.
+                (matrix:*)
+                  SPECS="${STAGE#matrix:}"
+                  case "$SPECS" in (*[!0-9,\;]*|"") echo "bad matrix spec"; exit 1;; esac
+                  SRC="--preflight-only ${MANIFEST%%,*} --policy-matrix $SPECS"
+                ;;
                 # "shape:G" reuses one labelled plan out of a planner bakeoff.
                 # manifest_path may be "<bakeoff.json>,<viability.json>" to
                 # reuse that plan's stored placement verdicts instead of
