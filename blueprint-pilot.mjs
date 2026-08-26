@@ -177,6 +177,15 @@ if (preflightOnly) {
           + (r.eligible ? 'YES' : 'no'))
       }
       if (policyMatrix) {
+        // Stored placement verdicts, so eligibility in the matrix means the
+        // same four gates it means everywhere else.
+        const frozenViability = new Map()
+        if (viabilityFromPath) {
+          const v = JSON.parse(readFileSync(viabilityFromPath, 'utf8'))
+          for (const row of (((v.reports || [])[0] || {}).rows || [])) {
+            if (row && row.viability) frozenViability.set(row.label || '-', row.viability)
+          }
+        }
         const configs = policyMatrix.split(';').map(spec => {
           const [cost, offList] = spec.split(',').map(x => parseInt(x, 10))
           return { label: 'cost ' + cost + ' / offList ' + offList, policy: { ...ASSISTED_POLICY, costBudget: cost, offListMax: offList } }
@@ -215,8 +224,9 @@ if (preflightOnly) {
               clustered: report.budget.clusteredSentences,
               necessity: report.assisted.map(a => ({ word: a.word || ('off:' + a.concept), necessity: a.necessity, hsk: a.hsk, distance: a.distance, cost: a.cost, baseCost: a.baseCost })),
               over,
+              viability: frozenViability.has(r.label) ? frozenViability.get(r.label).ok : null,
               eligible: Boolean(r.structural && r.quality && report.classification !== 'LEXICALLY_UNSAFE'
-                && (!r.viability || r.viability.ok)),
+                && (!frozenViability.has(r.label) || frozenViability.get(r.label).ok)),
             })
           }
           const eligible = line.filter(x => x.eligible)

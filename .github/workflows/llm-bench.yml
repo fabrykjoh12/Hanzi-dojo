@@ -497,6 +497,9 @@ jobs:
                   SPECS="${STAGE#matrix:}"
                   case "$SPECS" in (*[!0-9,\;]*|"") echo "bad matrix spec"; exit 1;; esac
                   SRC="--preflight-only ${MANIFEST%%,*} --policy-matrix $SPECS"
+                  case "$MANIFEST" in
+                    (*,*) SRC="$SRC --viability-from ${MANIFEST#*,}";;
+                  esac
                 ;;
                 # "shape:G" reuses one labelled plan out of a planner bakeoff.
                 # manifest_path may be "<bakeoff.json>,<viability.json>" to
