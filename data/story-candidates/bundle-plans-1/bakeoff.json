@@ -1,0 +1,1743 @@
+{
+  "generatedAt": "2026-08-26T18:25:37.984Z",
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bundle-L3-001",
+    "batchId": "bundle",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "如果",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "认为",
+        "min": 2,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "A friend asking for advice on a conditional life choice, such as whether to accept a new job.",
+    "seasonSeed": null,
+    "series": null,
+    "composition": {
+      "bucket": "bundle",
+      "reason": "A friend asking for advice on a conditional life choice, such as whether to accept a new job.",
+      "hard": [
+        {
+          "word": "如果"
+        },
+        {
+          "word": "需要"
+        },
+        {
+          "word": "认为"
+        }
+      ],
+      "soft": []
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "required": [
+    "如果",
+    "需要",
+    "认为"
+  ],
+  "perModel": 3,
+  "thresholds": {
+    "overall": 6,
+    "causal": 6,
+    "chronology": 6,
+    "targetFit": 5
+  },
+  "models": [
+    "groq:qwen/qwen3.6-27b:none",
+    "groq:openai/gpt-oss-120b:low"
+  ],
+  "judge": "groq:qwen/qwen3.6-27b:none",
+  "contract": "fab9-transition@1",
+  "rejudgedFrom": null,
+  "judgeLog": [
+    {
+      "labels": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "ok": true,
+      "error": null,
+      "raw": "PLAN A: CAUSAL 8 CHRONOLOGY 9 PLAUSIBILITY 9 SIMPLICITY 9 TARGETFIT 8 SUITABILITY 7 CONTRADICTION no OVERALL 8 — Solid causal chain and clear motivation, but setting is static and lacks visual variety for a reader.\nPLAN B: CAUSAL 7 CHRONOLOGY 9 PLAUSIBILITY 9 SIMPLICITY 9 TARGETFIT 8 SUITABILITY 6 CONTRADICTION no OVERALL 6 — Beats are vague (\"explains conditional situation\") and lack concrete emotional stakes or specific dialogue hooks.\nPLAN C: CAUSAL 4 CHRONOLOGY 5 PLAUSIBILITY 7 SIMPLICITY 8 TARGETFIT 7 SUITABILITY 7 CONTRADICTION no OVERALL 4 — Poor causality (moving rooms doesn't cause understanding) and unnecessary complexity of location changes for a simple conversation.\nPLAN D: CAUSAL 8 CHRONOLOGY 9 PLAUSIBILITY 9 SIMPLICITY 9 TARGETFIT 9 SUITABILITY 8 CONTRADICTION no OVERALL 9 — Strongest plot with high-stakes conflict (safety vs money) that naturally forces the use of target words in specific contexts."
+    },
+    {
+      "labels": [
+        "E",
+        "F"
+      ],
+      "ok": true,
+      "error": null,
+      "raw": "PLAN E: CAUSAL 9 CHRONOLOGY 10 PLAUSIBILITY 9 SIMPLICITY 10 TARGETFIT 9 SUITABILITY 9 CONTRADICTION no OVERALL 9 — Tight causal chain, static setting simplifies learner focus, and target words map naturally to the decision-making logic.\n\nPLAN F: CAUSAL 6 CHRONOLOGY 8 PLAUSIBILITY 8 SIMPLICITY 8 TARGETFIT 5 SUITABILITY 6 CONTRADICTION no OVERALL 6 — Forced target word distribution into every beat creates unnatural dialogue; venue hopping adds unnecessary complexity for a simple conversation."
+    }
+  ],
+  "rates": {
+    "groq:qwen/qwen3.6-27b:none": {
+      "n": 3,
+      "structural": 3,
+      "quality": 3,
+      "joint": 3,
+      "overall": [
+        9,
+        8,
+        9
+      ],
+      "buckets": {},
+      "transitionsStated": 0,
+      "transitionsRequired": 0,
+      "contractViolations": 0,
+      "adapterLosses": 0
+    },
+    "groq:openai/gpt-oss-120b:low": {
+      "n": 3,
+      "structural": 3,
+      "quality": 2,
+      "joint": 2,
+      "overall": [
+        6,
+        6,
+        4
+      ],
+      "buckets": {
+        "implausible causality": 1,
+        "chronology": 1
+      },
+      "transitionsStated": 6,
+      "transitionsRequired": 6,
+      "contractViolations": 0,
+      "adapterLosses": 0
+    }
+  },
+  "candidates": [
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 1,
+      "blueprint": {
+        "title": "The Dangerous Job Offer",
+        "setting": "A small apartment living room, Saturday afternoon",
+        "cast": [
+          "李明",
+          "小明"
+        ],
+        "problem": "小明 must decide whether to accept a new job that he feels is unsafe.",
+        "incitingEvent": "小明 tells 李明 that he has received a job offer but is worried about the working conditions.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Saturday afternoon",
+            "what": "小明 looks worried and sits down across from 李明.",
+            "because": "the story opens",
+            "targets": [],
+            "lines": 4,
+            "where": "Apartment living room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "Saturday afternoon",
+            "what": "小明 explains that he 认为 the new job is too dangerous because he must work alone at night.",
+            "because": "李明 asks why he looks worried",
+            "targets": [
+              "认为"
+            ],
+            "lines": 6,
+            "where": "Apartment living room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "Saturday afternoon",
+            "what": "李明 asks if the company provides security guards or cameras.",
+            "because": "小明 mentioned it is dangerous to work alone",
+            "targets": [],
+            "lines": 4,
+            "where": "Apartment living room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "Saturday afternoon",
+            "what": "小明 says no, and adds that he 需要 peace of mind, not just money.",
+            "because": "李明 asked if they provide security",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6,
+            "where": "Apartment living room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "Saturday afternoon",
+            "what": "李明 advises him to reject the offer if safety is the priority.",
+            "because": "小明 said he needs safety",
+            "targets": [],
+            "lines": 4,
+            "where": "Apartment living room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 6,
+            "when": "Saturday afternoon",
+            "what": "小明 agrees that 如果 he works there, he will be afraid every night.",
+            "because": "李明 suggested rejecting it",
+            "targets": [
+              "如果"
+            ],
+            "lines": 4,
+            "where": "Apartment living room",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "小明 decides not to take the job because his safety is more important than the salary.",
+        "targetPlan": [
+          {
+            "word": "认为",
+            "beat": 2,
+            "why": "小明 needs to express his personal belief/opinion about the job's safety.",
+            "speaker": "小明",
+            "refersTo": "the new job being dangerous",
+            "intent": "to state his opinion clearly to his friend"
+          },
+          {
+            "word": "需要",
+            "beat": 4,
+            "why": "小明 needs to express his requirement for safety rather than just salary.",
+            "speaker": "小明",
+            "refersTo": "peace of mind/safety",
+            "intent": "to explain what is essential for him to accept a job"
+          },
+          {
+            "word": "如果",
+            "beat": 6,
+            "why": "小明 needs to describe the conditional consequence of accepting the job (fear).",
+            "speaker": "小明",
+            "refersTo": "the hypothetical situation of working there",
+            "intent": "to illustrate the negative result of the choice"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "The Dangerous Job Offer",
+        "setting": "A small apartment living room, Saturday afternoon",
+        "cast": [
+          "李明",
+          "小明"
+        ],
+        "problem": "小明 must decide whether to accept a new job that he feels is unsafe.",
+        "incitingEvent": "小明 tells 李明 that he has received a job offer but is worried about the working conditions.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Saturday afternoon",
+            "location": "Apartment living room",
+            "what": "小明 looks worried and sits down across from 李明.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 4
+          },
+          {
+            "id": 2,
+            "when": "Saturday afternoon",
+            "location": "Apartment living room",
+            "what": "小明 explains that he 认为 the new job is too dangerous because he must work alone at night.",
+            "because": "李明 asks why he looks worried",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "认为"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 3,
+            "when": "Saturday afternoon",
+            "location": "Apartment living room",
+            "what": "李明 asks if the company provides security guards or cameras.",
+            "because": "小明 mentioned it is dangerous to work alone",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 4
+          },
+          {
+            "id": 4,
+            "when": "Saturday afternoon",
+            "location": "Apartment living room",
+            "what": "小明 says no, and adds that he 需要 peace of mind, not just money.",
+            "because": "李明 asked if they provide security",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "Saturday afternoon",
+            "location": "Apartment living room",
+            "what": "李明 advises him to reject the offer if safety is the priority.",
+            "because": "小明 said he needs safety",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 4
+          },
+          {
+            "id": 6,
+            "when": "Saturday afternoon",
+            "location": "Apartment living room",
+            "what": "小明 agrees that 如果 he works there, he will be afraid every night.",
+            "because": "李明 suggested rejecting it",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果"
+            ],
+            "lines": 4
+          }
+        ],
+        "resolution": "小明 decides not to take the job because his safety is more important than the salary.",
+        "targetPlan": [
+          {
+            "word": "认为",
+            "beat": 2,
+            "why": "小明 needs to express his personal belief/opinion about the job's safety.",
+            "speaker": "小明",
+            "refersTo": "the new job being dangerous",
+            "intent": "to state his opinion clearly to his friend"
+          },
+          {
+            "word": "需要",
+            "beat": 4,
+            "why": "小明 needs to express his requirement for safety rather than just salary.",
+            "speaker": "小明",
+            "refersTo": "peace of mind/safety",
+            "intent": "to explain what is essential for him to accept a job"
+          },
+          {
+            "word": "如果",
+            "beat": 6,
+            "why": "小明 needs to describe the conditional consequence of accepting the job (fear).",
+            "speaker": "小明",
+            "refersTo": "the hypothetical situation of working there",
+            "intent": "to illustrate the negative result of the choice"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 0,
+        "required": 0,
+        "violations": [],
+        "warnings": [],
+        "mapped": [],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 2722,
+      "tokens": {
+        "prompt": 1046,
+        "completion": 936
+      },
+      "score": {
+        "label": "D",
+        "contradiction": false,
+        "overall": 9,
+        "reason": "Strongest plot with high-stakes conflict (safety vs money) that naturally forces the use of target words in specific contexts.",
+        "causal": 8,
+        "chronology": 9,
+        "plausibility": 9,
+        "simplicity": 9,
+        "targetFit": 9,
+        "suitability": 8
+      },
+      "label": "D",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": []
+    },
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 2,
+      "blueprint": {
+        "title": "The Job Dilemma",
+        "setting": "A small tea house on a Tuesday afternoon.",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "Little Li needs to decide whether to accept a new job offer that requires moving to a different city.",
+        "incitingEvent": "Little Li receives the job offer and feels uncertain, prompting him to seek advice from his friend.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Tuesday afternoon",
+            "what": "Little Li meets Little Red and expresses his anxiety about the new job offer he just received.",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6,
+            "where": "Tea House",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "Tuesday afternoon, shortly after meeting",
+            "what": "Little Red listens and asks for details about the new job and why Little Li is hesitant.",
+            "because": "Little Li expressed anxiety, prompting questions from his friend.",
+            "targets": [],
+            "lines": 5,
+            "where": "Tea House",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "Tuesday afternoon",
+            "what": "Little Li explains that he needs the money but misses his family in the current city.",
+            "because": "Little Red asked for details about the hesitation.",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6,
+            "where": "Tea House",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "Tuesday afternoon",
+            "what": "Little Red shares her perspective on what she believes is the most important factor for happiness.",
+            "because": "Little Li explained his conflict between money and family.",
+            "targets": [
+              "认为"
+            ],
+            "lines": 6,
+            "where": "Tea House",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "Tuesday afternoon",
+            "what": "Little Li considers Little Red's advice and realizes how his feelings would change if he took the job.",
+            "because": "Little Red shared her perspective on happiness.",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5,
+            "where": "Tea House",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "Little Li decides to accept the job because he believes the financial stability will allow him to bring his family to the new city sooner.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "Little Li states his practical requirement for the job.",
+            "speaker": "李明",
+            "refersTo": "The new job position",
+            "intent": "To explain why he is considering the offer despite his reservations."
+          },
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "Little Li emphasizes his financial need as part of his dilemma.",
+            "speaker": "李明",
+            "refersTo": "Money",
+            "intent": "To justify the potential downside of leaving his family."
+          },
+          {
+            "word": "认为",
+            "beat": 4,
+            "why": "Little Red offers her personal opinion on what matters most.",
+            "speaker": "小红",
+            "refersTo": "Friendship and family proximity",
+            "intent": "To advise Little Li on what she values most in life."
+          },
+          {
+            "word": "如果",
+            "beat": 5,
+            "why": "Little Li uses a conditional to visualize the outcome of taking the job.",
+            "speaker": "李明",
+            "refersTo": "Taking the new job",
+            "intent": "To process the advice and weigh the hypothetical future."
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "The Job Dilemma",
+        "setting": "A small tea house on a Tuesday afternoon.",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "Little Li needs to decide whether to accept a new job offer that requires moving to a different city.",
+        "incitingEvent": "Little Li receives the job offer and feels uncertain, prompting him to seek advice from his friend.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Tuesday afternoon",
+            "location": "Tea House",
+            "what": "Little Li meets Little Red and expresses his anxiety about the new job offer he just received.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 2,
+            "when": "Tuesday afternoon, shortly after meeting",
+            "location": "Tea House",
+            "what": "Little Red listens and asks for details about the new job and why Little Li is hesitant.",
+            "because": "Little Li expressed anxiety, prompting questions from his friend.",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 5
+          },
+          {
+            "id": 3,
+            "when": "Tuesday afternoon",
+            "location": "Tea House",
+            "what": "Little Li explains that he needs the money but misses his family in the current city.",
+            "because": "Little Red asked for details about the hesitation.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 4,
+            "when": "Tuesday afternoon",
+            "location": "Tea House",
+            "what": "Little Red shares her perspective on what she believes is the most important factor for happiness.",
+            "because": "Little Li explained his conflict between money and family.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "认为"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "Tuesday afternoon",
+            "location": "Tea House",
+            "what": "Little Li considers Little Red's advice and realizes how his feelings would change if he took the job.",
+            "because": "Little Red shared her perspective on happiness.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5
+          }
+        ],
+        "resolution": "Little Li decides to accept the job because he believes the financial stability will allow him to bring his family to the new city sooner.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "Little Li states his practical requirement for the job.",
+            "speaker": "李明",
+            "refersTo": "The new job position",
+            "intent": "To explain why he is considering the offer despite his reservations."
+          },
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "Little Li emphasizes his financial need as part of his dilemma.",
+            "speaker": "李明",
+            "refersTo": "Money",
+            "intent": "To justify the potential downside of leaving his family."
+          },
+          {
+            "word": "认为",
+            "beat": 4,
+            "why": "Little Red offers her personal opinion on what matters most.",
+            "speaker": "小红",
+            "refersTo": "Friendship and family proximity",
+            "intent": "To advise Little Li on what she values most in life."
+          },
+          {
+            "word": "如果",
+            "beat": 5,
+            "why": "Little Li uses a conditional to visualize the outcome of taking the job.",
+            "speaker": "李明",
+            "refersTo": "Taking the new job",
+            "intent": "To process the advice and weigh the hypothetical future."
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 0,
+        "required": 0,
+        "violations": [],
+        "warnings": [],
+        "mapped": [],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 2626,
+      "tokens": {
+        "prompt": 1046,
+        "completion": 953
+      },
+      "score": {
+        "label": "A",
+        "contradiction": false,
+        "overall": 8,
+        "reason": "Solid causal chain and clear motivation, but setting is static and lacks visual variety for a reader.",
+        "causal": 8,
+        "chronology": 9,
+        "plausibility": 9,
+        "simplicity": 9,
+        "targetFit": 8,
+        "suitability": 7
+      },
+      "label": "A",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": []
+    },
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 3,
+      "blueprint": {
+        "title": "Job Advice",
+        "setting": "A quiet afternoon in a city park bench",
+        "cast": [
+          "李明",
+          "小明"
+        ],
+        "problem": "Xiao Ming is unsure whether to accept a new job offer that requires relocation",
+        "incitingEvent": "Xiao Ming tells Li Ming about the job offer and his confusion",
+        "beats": [
+          {
+            "id": 1,
+            "when": "3:00 PM",
+            "what": "Xiao Ming sits with Li Ming and looks worried. He holds a piece of paper with job details.",
+            "because": "the story opens",
+            "targets": [],
+            "lines": 5,
+            "where": "Park bench",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "3:05 PM",
+            "what": "Xiao Ming explains that a company in another city wants him. He says the salary is good, but he will be far from 妈妈.",
+            "because": "Li Ming asks what is wrong seeing Xiao Ming's worried face",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6,
+            "where": "Park bench",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "3:10 PM",
+            "what": "Xiao Ming asks for advice. He says he 需要 money for his family, but he also wants to stay close to them.",
+            "because": "He has stated the conflicting options (money vs. family)",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "Park bench",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "3:15 PM",
+            "what": "Li Ming listens carefully. He thinks it is a difficult choice. He tells Xiao Ming what he 认为 is most important.",
+            "because": "Xiao Ming asked for Li Ming's opinion",
+            "targets": [
+              "认为"
+            ],
+            "lines": 6,
+            "where": "Park bench",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "3:20 PM",
+            "what": "Li Ming gives a conditional suggestion. He says 如果 Xiao Ming goes, he will earn more, but be alone. 如果 he stays, he is happy but poor.",
+            "because": "Li Ming needs to explain the consequences of each choice clearly",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5,
+            "where": "Park bench",
+            "arrivedHow": ""
+          },
+          {
+            "id": 6,
+            "when": "3:25 PM",
+            "what": "Xiao Ming nods. He decides to ask 妈妈 for her opinion first. He feels better now.",
+            "because": "Li Ming's analysis helped Xiao Ming realize he needs more input before deciding",
+            "targets": [],
+            "lines": 5,
+            "where": "Park bench",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "Xiao Ming decides to consult his mother before making a final decision, feeling less anxious.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "Xiao Ming describes the job's requirement or his own need for money",
+            "speaker": "小明",
+            "refersTo": "the need for money or the job requirement",
+            "intent": "to explain the practical side of the offer"
+          },
+          {
+            "word": "认为",
+            "beat": 4,
+            "why": "Li Ming expresses his personal opinion on the situation",
+            "speaker": "李明",
+            "refersTo": "the best course of action",
+            "intent": "to give advice based on his belief"
+          },
+          {
+            "word": "如果",
+            "beat": 5,
+            "why": "Li Ming outlines the conditional outcomes of the two choices",
+            "speaker": "李明",
+            "refersTo": "the scenarios of accepting or rejecting the job",
+            "intent": "to clearly define the cause and effect of the decision"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Job Advice",
+        "setting": "A quiet afternoon in a city park bench",
+        "cast": [
+          "李明",
+          "小明"
+        ],
+        "problem": "Xiao Ming is unsure whether to accept a new job offer that requires relocation",
+        "incitingEvent": "Xiao Ming tells Li Ming about the job offer and his confusion",
+        "beats": [
+          {
+            "id": 1,
+            "when": "3:00 PM",
+            "location": "Park bench",
+            "what": "Xiao Ming sits with Li Ming and looks worried. He holds a piece of paper with job details.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "3:05 PM",
+            "location": "Park bench",
+            "what": "Xiao Ming explains that a company in another city wants him. He says the salary is good, but he will be far from 妈妈.",
+            "because": "Li Ming asks what is wrong seeing Xiao Ming's worried face",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 3,
+            "when": "3:10 PM",
+            "location": "Park bench",
+            "what": "Xiao Ming asks for advice. He says he 需要 money for his family, but he also wants to stay close to them.",
+            "because": "He has stated the conflicting options (money vs. family)",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "3:15 PM",
+            "location": "Park bench",
+            "what": "Li Ming listens carefully. He thinks it is a difficult choice. He tells Xiao Ming what he 认为 is most important.",
+            "because": "Xiao Ming asked for Li Ming's opinion",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "认为"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "3:20 PM",
+            "location": "Park bench",
+            "what": "Li Ming gives a conditional suggestion. He says 如果 Xiao Ming goes, he will earn more, but be alone. 如果 he stays, he is happy but poor.",
+            "because": "Li Ming needs to explain the consequences of each choice clearly",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 6,
+            "when": "3:25 PM",
+            "location": "Park bench",
+            "what": "Xiao Ming nods. He decides to ask 妈妈 for her opinion first. He feels better now.",
+            "because": "Li Ming's analysis helped Xiao Ming realize he needs more input before deciding",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 5
+          }
+        ],
+        "resolution": "Xiao Ming decides to consult his mother before making a final decision, feeling less anxious.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "Xiao Ming describes the job's requirement or his own need for money",
+            "speaker": "小明",
+            "refersTo": "the need for money or the job requirement",
+            "intent": "to explain the practical side of the offer"
+          },
+          {
+            "word": "认为",
+            "beat": 4,
+            "why": "Li Ming expresses his personal opinion on the situation",
+            "speaker": "李明",
+            "refersTo": "the best course of action",
+            "intent": "to give advice based on his belief"
+          },
+          {
+            "word": "如果",
+            "beat": 5,
+            "why": "Li Ming outlines the conditional outcomes of the two choices",
+            "speaker": "李明",
+            "refersTo": "the scenarios of accepting or rejecting the job",
+            "intent": "to clearly define the cause and effect of the decision"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 0,
+        "required": 0,
+        "violations": [],
+        "warnings": [],
+        "mapped": [],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 31151,
+      "tokens": {
+        "prompt": 1046,
+        "completion": 1055
+      },
+      "score": {
+        "label": "E",
+        "contradiction": false,
+        "overall": 9,
+        "reason": "Tight causal chain, static setting simplifies learner focus, and target words map naturally to the decision-making logic.",
+        "causal": 9,
+        "chronology": 10,
+        "plausibility": 9,
+        "simplicity": 10,
+        "targetFit": 9,
+        "suitability": 9
+      },
+      "label": "E",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": []
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:low",
+      "attempt": 1,
+      "blueprint": {
+        "title": "Deciding on a New Job",
+        "setting": "A small apartment, morning",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 is unsure whether to accept a new job offer.",
+        "incitingEvent": "李明 receives a job offer email.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning",
+            "what": "李明 sits at the table reading the job offer.",
+            "because": "the story opens",
+            "targets": [],
+            "lines": 5,
+            "where": "kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "morning",
+            "what": "小红 walks in and asks why 李明 looks worried.",
+            "because": "because 小红 notices 李明’s expression",
+            "targets": [],
+            "lines": 6,
+            "where": "kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "morning",
+            "what": "李明 explains the conditional situation and his needs.",
+            "because": "because 李明 wants to tell 小红 the details",
+            "targets": [
+              "如果",
+              "需要"
+            ],
+            "lines": 5,
+            "where": "kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "morning",
+            "what": "小红 gives her opinion about the choice.",
+            "because": "because 小红 is trying to help 李明 decide",
+            "targets": [
+              "认为"
+            ],
+            "lines": 6,
+            "where": "kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "morning",
+            "what": "李明 decides to accept the job after hearing 小红’s advice.",
+            "because": "because 小红’s advice clarifies his thinking",
+            "targets": [],
+            "lines": 6,
+            "where": "kitchen",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "李明 feels confident and says he will accept the new job.",
+        "targetPlan": [
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "李明 is talking about a condition – whether he accepts the job.",
+            "speaker": "李明",
+            "refersTo": "accepting the new job",
+            "intent": "introduce the conditional clause"
+          },
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "李明 mentions what he would have to do if he takes the job.",
+            "speaker": "李明",
+            "refersTo": "moving to a new city",
+            "intent": "state a requirement"
+          },
+          {
+            "word": "认为",
+            "beat": 4,
+            "why": "小红 expresses her belief about what 李明 should consider.",
+            "speaker": "小红",
+            "refersTo": "her opinion on the decision",
+            "intent": "share her thought"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Deciding on a New Job",
+        "setting": "A small apartment, morning",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 is unsure whether to accept a new job offer.",
+        "incitingEvent": "李明 receives a job offer email.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning",
+            "location": "kitchen",
+            "what": "李明 sits at the table reading the job offer.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "morning",
+            "location": "kitchen",
+            "what": "小红 walks in and asks why 李明 looks worried.",
+            "because": "because 小红 notices 李明’s expression",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 6
+          },
+          {
+            "id": 3,
+            "when": "morning",
+            "location": "kitchen",
+            "what": "李明 explains the conditional situation and his needs.",
+            "because": "because 李明 wants to tell 小红 the details",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果",
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "morning",
+            "location": "kitchen",
+            "what": "小红 gives her opinion about the choice.",
+            "because": "because 小红 is trying to help 李明 decide",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "认为"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "morning",
+            "location": "kitchen",
+            "what": "李明 decides to accept the job after hearing 小红’s advice.",
+            "because": "because 小红’s advice clarifies his thinking",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 6
+          }
+        ],
+        "resolution": "李明 feels confident and says he will accept the new job.",
+        "targetPlan": [
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "李明 is talking about a condition – whether he accepts the job.",
+            "speaker": "李明",
+            "refersTo": "accepting the new job",
+            "intent": "introduce the conditional clause"
+          },
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "李明 mentions what he would have to do if he takes the job.",
+            "speaker": "李明",
+            "refersTo": "moving to a new city",
+            "intent": "state a requirement"
+          },
+          {
+            "word": "认为",
+            "beat": 4,
+            "why": "小红 expresses her belief about what 李明 should consider.",
+            "speaker": "小红",
+            "refersTo": "her opinion on the decision",
+            "intent": "share her thought"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 0,
+        "required": 0,
+        "violations": [],
+        "warnings": [],
+        "mapped": [],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 2221,
+      "tokens": {
+        "prompt": 1069,
+        "completion": 969
+      },
+      "score": {
+        "label": "B",
+        "contradiction": false,
+        "overall": 6,
+        "reason": "Beats are vague (\"explains conditional situation\") and lack concrete emotional stakes or specific dialogue hooks.",
+        "causal": 7,
+        "chronology": 9,
+        "plausibility": 9,
+        "simplicity": 9,
+        "targetFit": 8,
+        "suitability": 6
+      },
+      "label": "B",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": []
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:low",
+      "attempt": 2,
+      "blueprint": {
+        "title": "Choosing a New Job",
+        "setting": "Modern apartment, weekday afternoon",
+        "cast": [
+          "李明",
+          "小红",
+          "妈妈"
+        ],
+        "problem": "李明 is unsure whether to accept a new job offer in another city.",
+        "incitingEvent": "李明 receives an email about the job offer while having tea with 小红.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "afternoon",
+            "what": "李明 shows the email to 小红",
+            "because": "the story opens",
+            "targets": [
+              "需要",
+              "如果"
+            ],
+            "lines": 5,
+            "where": "living room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "few minutes later",
+            "what": "小红 asks 李明 what he thinks about moving",
+            "because": "李明 mentioned the job offer",
+            "targets": [
+              "认为"
+            ],
+            "lines": 5,
+            "where": "kitchen",
+            "arrivedHow": "李明 and 小红 walk to the kitchen together"
+          },
+          {
+            "id": 3,
+            "when": "immediately after",
+            "what": "李明 says he needs more information before deciding",
+            "because": "小红 asked for his opinion",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "shortly after",
+            "what": "妈妈 comes out, hears the conversation, and offers advice",
+            "because": "李明 expressed a need for guidance",
+            "targets": [
+              "如果",
+              "认为"
+            ],
+            "lines": 6,
+            "where": "balcony",
+            "arrivedHow": "李明 and 小红 go out to the balcony; 妈妈 steps out"
+          },
+          {
+            "id": 5,
+            "when": "later that evening",
+            "what": "李明 decides to accept the job after hearing everyone's thoughts",
+            "because": "妈妈 gave a helpful conditional suggestion",
+            "targets": [
+              "如果",
+              "需要"
+            ],
+            "lines": 7,
+            "where": "living room",
+            "arrivedHow": "李明 returns to the living room with 小红"
+          }
+        ],
+        "resolution": "李明 accepts the new job, feeling confident because he heard advice and considered the conditions.",
+        "targetPlan": [
+          {
+            "word": "如果",
+            "beat": 1,
+            "why": "李明 mentions the condition of moving to a new city",
+            "speaker": "李明",
+            "refersTo": "the possible move",
+            "intent": "to introduce a conditional situation"
+          },
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 says he needs to think about the offer",
+            "speaker": "李明",
+            "refersTo": "more time/information",
+            "intent": "to express a requirement"
+          },
+          {
+            "word": "认为",
+            "beat": 2,
+            "why": "小红 asks what 李明 believes about the job",
+            "speaker": "小红",
+            "refersTo": "李明's opinion",
+            "intent": "to ask for his view"
+          },
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "李明 states he needs more details before deciding",
+            "speaker": "李明",
+            "refersTo": "additional information",
+            "intent": "to express a need"
+          },
+          {
+            "word": "如果",
+            "beat": 4,
+            "why": "妈妈 gives a conditional suggestion: 如果你喜欢挑战，就去",
+            "speaker": "妈妈",
+            "refersTo": "the condition of liking challenges",
+            "intent": "to offer advice based on a condition"
+          },
+          {
+            "word": "认为",
+            "beat": 4,
+            "why": "妈妈 says she believes the move will be good",
+            "speaker": "妈妈",
+            "refersTo": "her opinion",
+            "intent": "to share belief"
+          },
+          {
+            "word": "如果",
+            "beat": 5,
+            "why": "李明 repeats the condition before accepting",
+            "speaker": "李明",
+            "refersTo": "the job offer's terms",
+            "intent": "to confirm his decision"
+          },
+          {
+            "word": "需要",
+            "beat": 5,
+            "why": "李明 says he needs to prepare for the move",
+            "speaker": "李明",
+            "refersTo": "preparations",
+            "intent": "to state a requirement"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Choosing a New Job",
+        "setting": "Modern apartment, weekday afternoon",
+        "cast": [
+          "李明",
+          "小红",
+          "妈妈"
+        ],
+        "problem": "李明 is unsure whether to accept a new job offer in another city.",
+        "incitingEvent": "李明 receives an email about the job offer while having tea with 小红.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "afternoon",
+            "location": "living room",
+            "what": "李明 shows the email to 小红",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要",
+              "如果"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "few minutes later",
+            "location": "kitchen",
+            "what": "小红 asks 李明 what he thinks about moving",
+            "because": "李明 mentioned the job offer",
+            "transition_from_previous": "李明 and 小红 walk to the kitchen together",
+            "targets": [
+              "认为"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 3,
+            "when": "immediately after",
+            "location": "kitchen",
+            "what": "李明 says he needs more information before deciding",
+            "because": "小红 asked for his opinion",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "shortly after",
+            "location": "balcony",
+            "what": "妈妈 comes out, hears the conversation, and offers advice",
+            "because": "李明 expressed a need for guidance",
+            "transition_from_previous": "李明 and 小红 go out to the balcony; 妈妈 steps out",
+            "targets": [
+              "如果",
+              "认为"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "later that evening",
+            "location": "living room",
+            "what": "李明 decides to accept the job after hearing everyone's thoughts",
+            "because": "妈妈 gave a helpful conditional suggestion",
+            "transition_from_previous": "李明 returns to the living room with 小红",
+            "targets": [
+              "如果",
+              "需要"
+            ],
+            "lines": 7
+          }
+        ],
+        "resolution": "李明 accepts the new job, feeling confident because he heard advice and considered the conditions.",
+        "targetPlan": [
+          {
+            "word": "如果",
+            "beat": 1,
+            "why": "李明 mentions the condition of moving to a new city",
+            "speaker": "李明",
+            "refersTo": "the possible move",
+            "intent": "to introduce a conditional situation"
+          },
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 says he needs to think about the offer",
+            "speaker": "李明",
+            "refersTo": "more time/information",
+            "intent": "to express a requirement"
+          },
+          {
+            "word": "认为",
+            "beat": 2,
+            "why": "小红 asks what 李明 believes about the job",
+            "speaker": "小红",
+            "refersTo": "李明's opinion",
+            "intent": "to ask for his view"
+          },
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "李明 states he needs more details before deciding",
+            "speaker": "李明",
+            "refersTo": "additional information",
+            "intent": "to express a need"
+          },
+          {
+            "word": "如果",
+            "beat": 4,
+            "why": "妈妈 gives a conditional suggestion: 如果你喜欢挑战，就去",
+            "speaker": "妈妈",
+            "refersTo": "the condition of liking challenges",
+            "intent": "to offer advice based on a condition"
+          },
+          {
+            "word": "认为",
+            "beat": 4,
+            "why": "妈妈 says she believes the move will be good",
+            "speaker": "妈妈",
+            "refersTo": "her opinion",
+            "intent": "to share belief"
+          },
+          {
+            "word": "如果",
+            "beat": 5,
+            "why": "李明 repeats the condition before accepting",
+            "speaker": "李明",
+            "refersTo": "the job offer's terms",
+            "intent": "to confirm his decision"
+          },
+          {
+            "word": "需要",
+            "beat": 5,
+            "why": "李明 says he needs to prepare for the move",
+            "speaker": "李明",
+            "refersTo": "preparations",
+            "intent": "to state a requirement"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 3,
+        "required": 3,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 2,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 4,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 3868,
+      "tokens": {
+        "prompt": 1069,
+        "completion": 1191
+      },
+      "score": {
+        "label": "F",
+        "contradiction": false,
+        "overall": 6,
+        "reason": "Forced target word distribution into every beat creates unnatural dialogue; venue hopping adds unnecessary complexity for a simple conversation.",
+        "causal": 6,
+        "chronology": 8,
+        "plausibility": 8,
+        "simplicity": 8,
+        "targetFit": 5,
+        "suitability": 6
+      },
+      "label": "F",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": []
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:low",
+      "attempt": 3,
+      "blueprint": {
+        "title": "A friend asks for advice about a new job",
+        "setting": "Modern apartment, weekday morning to afternoon",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 is unsure whether to accept a new job offer",
+        "incitingEvent": "李明 receives a job offer letter and feels conflicted",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Morning",
+            "what": "李明 reads the job offer and feels pressure",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6,
+            "where": "kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "Morning",
+            "what": "李明 walks to the living room to think",
+            "because": "he wants a quieter place to consider the offer",
+            "targets": [],
+            "lines": 5,
+            "where": "living room",
+            "arrivedHow": "李明 walks from kitchen to living room"
+          },
+          {
+            "id": 3,
+            "when": "Late morning",
+            "what": "小红 arrives; 李明 asks her opinion",
+            "because": "he needs a friend’s view before deciding",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5,
+            "where": "living room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "Afternoon",
+            "what": "Both go to the balcony to discuss the pros and cons",
+            "because": "the conversation gets deeper and they need fresh air",
+            "targets": [
+              "认为"
+            ],
+            "lines": 6,
+            "where": "balcony",
+            "arrivedHow": "李明 and 小红 walk to the balcony together"
+          },
+          {
+            "id": 5,
+            "when": "Evening",
+            "what": "李明 decides to accept the job and thanks 小红",
+            "because": "after hearing 小红’s advice he feels confident",
+            "targets": [],
+            "lines": 6,
+            "where": "kitchen",
+            "arrivedHow": "李明 and 小红 walk back to the kitchen"
+          }
+        ],
+        "resolution": "李明 accepts the new job, feeling reassured by 小红’s advice",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 feels he needs to understand the job offer before deciding",
+            "speaker": "李明",
+            "refersTo": "the job offer",
+            "intent": "express his need for clarity"
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "李明 asks 小红 what he should do if he accepts the job",
+            "speaker": "李明",
+            "refersTo": "the conditional situation of accepting",
+            "intent": "seek conditional advice"
+          },
+          {
+            "word": "认为",
+            "beat": 4,
+            "why": "小红 shares what she thinks about the job’s benefits",
+            "speaker": "小红",
+            "refersTo": "the job’s pros and cons",
+            "intent": "give her opinion"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "A friend asks for advice about a new job",
+        "setting": "Modern apartment, weekday morning to afternoon",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 is unsure whether to accept a new job offer",
+        "incitingEvent": "李明 receives a job offer letter and feels conflicted",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Morning",
+            "location": "kitchen",
+            "what": "李明 reads the job offer and feels pressure",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 2,
+            "when": "Morning",
+            "location": "living room",
+            "what": "李明 walks to the living room to think",
+            "because": "he wants a quieter place to consider the offer",
+            "transition_from_previous": "李明 walks from kitchen to living room",
+            "targets": [],
+            "lines": 5
+          },
+          {
+            "id": 3,
+            "when": "Late morning",
+            "location": "living room",
+            "what": "小红 arrives; 李明 asks her opinion",
+            "because": "he needs a friend’s view before deciding",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "Afternoon",
+            "location": "balcony",
+            "what": "Both go to the balcony to discuss the pros and cons",
+            "because": "the conversation gets deeper and they need fresh air",
+            "transition_from_previous": "李明 and 小红 walk to the balcony together",
+            "targets": [
+              "认为"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "Evening",
+            "location": "kitchen",
+            "what": "李明 decides to accept the job and thanks 小红",
+            "because": "after hearing 小红’s advice he feels confident",
+            "transition_from_previous": "李明 and 小红 walk back to the kitchen",
+            "targets": [],
+            "lines": 6
+          }
+        ],
+        "resolution": "李明 accepts the new job, feeling reassured by 小红’s advice",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 feels he needs to understand the job offer before deciding",
+            "speaker": "李明",
+            "refersTo": "the job offer",
+            "intent": "express his need for clarity"
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "李明 asks 小红 what he should do if he accepts the job",
+            "speaker": "李明",
+            "refersTo": "the conditional situation of accepting",
+            "intent": "seek conditional advice"
+          },
+          {
+            "word": "认为",
+            "beat": 4,
+            "why": "小红 shares what she thinks about the job’s benefits",
+            "speaker": "小红",
+            "refersTo": "the job’s pros and cons",
+            "intent": "give her opinion"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 3,
+        "required": 3,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 2,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 4,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 56310,
+      "tokens": {
+        "prompt": 1069,
+        "completion": 1025
+      },
+      "score": {
+        "label": "C",
+        "contradiction": false,
+        "overall": 4,
+        "reason": "Poor causality (moving rooms doesn't cause understanding) and unnecessary complexity of location changes for a simple conversation.",
+        "causal": 4,
+        "chronology": 5,
+        "plausibility": 7,
+        "simplicity": 8,
+        "targetFit": 7,
+        "suitability": 7
+      },
+      "label": "C",
+      "qualityOk": false,
+      "jointOk": false,
+      "buckets": [
+        "implausible causality",
+        "chronology"
+      ]
+    }
+  ]
+}
