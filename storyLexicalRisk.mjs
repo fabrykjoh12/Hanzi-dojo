@@ -91,6 +91,11 @@ const LIGHT = new Set([
   'sees', 'looks', 'gives', 'puts', 'feels', 'thinks', 'knows', 'realizes', 'decides',
   'together', 'again', 'better', 'good', 'bad', 'happy', 'sad', 'new', 'old', 'first',
   'day', 'time', 'home', 'house', 'room', 'street', 'friend', 'people', 'person',
+  // The plan's own scaffolding, not the story's content: every beat 1 says
+  // "the story opens", and once incidental material is charged that boilerplate
+  // would put a phantom word on every plan's budget.
+  'story', 'opens', 'opening', 'follows', 'following', 'beat', 'scene', 'plot',
+  'previous', 'happens', 'happening', 'continues', 'begins', 'ends', 'ending',
 ])
 
 function sentences(text) {
@@ -180,8 +185,8 @@ export function buildGlossIndex(vocabMap, level) {
         for (const key of [t, stem(t), riskStem(t)]) {
           if (!index.has(key)) index.set(key, [])
           const hits = index.get(key)
-          if (hits.length < 8 && !hits.some(h => h.word === word && h.verb === sense.verb)) {
-            hits.push({ word, verb: sense.verb })
+          if (hits.length < 12 && !hits.some(h => h.word === word && h.verb === sense.verb && h.token === t)) {
+            hits.push({ word, verb: sense.verb, token: t })
           }
         }
       }
@@ -258,6 +263,30 @@ function senseHeads(meaning) {
 // in front of it, a verb by its inflection — because "he needs help" and
 // 帮助 "assistance; aid; to help" must keep matching, and there the concept's
 // part of speech is not marked at all.
+// "tired" and "tires" both stem to "tir", so the plural of the bicycle tire
+// reached 累 through its ADJECTIVE sense even though the verb sense was
+// correctly blocked — the POS fix held for the singular and leaked on the
+// plural. A stem is only allowed to join two words when their inflections are
+// compatible: base and -s are the same lemma, while -ed / -ing may only meet
+// them through a sense the gloss marks as a verb.
+export function suffixClass(word) {
+  const w = String(word || '').toLowerCase()
+  if (/ing$/.test(w) && w.length > 4) return 'ing'
+  if (/ed$/.test(w) && w.length > 3) return 'ed'
+  if (/s$/.test(w) && w.length > 3) return 's'
+  return 'base'
+}
+
+export function inflectionCompatible(concept, token, sense) {
+  const a = suffixClass(concept)
+  const b = suffixClass(token)
+  if (a === b) return true
+  const nominalish = (x) => x === 'base' || x === 's'
+  if (nominalish(a) && nominalish(b)) return true
+  // One of them is a participle: only a verbal sense joins those.
+  return Boolean(sense && sense.verb)
+}
+
 export function senseCompatible(pos, sense) {
   if (pos !== 'noun' && pos !== 'verb') return true
   return pos === 'verb' ? sense.verb : !sense.verb
@@ -315,7 +344,8 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
   // help; to assist", so "the help" matched only its verbal sense and the
   // check called the story's own target word missing. The tire keeps its
   // verdict: 累 is nobody's target.
-  const ok = (h) => senseCompatible(pos, h) || Boolean(targets && targets.has(h.word))
+  const ok = (h) => (senseCompatible(pos, h) && inflectionCompatible(concept, h.token || concept, h))
+    || Boolean(targets && targets.has(h.word))
   for (const form of forms(concept)) {
     const hit = (index.get(form) || []).filter(ok)
     if (hit.length) return { support: 'supported', via: 'gloss', words: names(hit) }
@@ -434,9 +464,19 @@ export const ASSISTED_POLICY = {
   farCost: 6,
   offListCost: 4,
   costBudget: 12,
+  // A word the learner list does not carry reaches the deterministic validator
+  // as an UNKNOWN word, not an above-level one, and that gate is strict. Plan
+  // time may not promise more of them than validation will accept.
+  offListMax: 2,
 }
 
-export function assistCost(entry, policy = ASSISTED_POLICY) {
+// A caller may override one number without restating the rest.
+export function withPolicy(policy) {
+  return { ...ASSISTED_POLICY, ...(policy || {}), distanceCost: { ...ASSISTED_POLICY.distanceCost, ...((policy || {}).distanceCost || {}) } }
+}
+
+export function assistCost(entry, policyIn = ASSISTED_POLICY) {
+  const policy = withPolicy(policyIn)
   if (!entry || entry.kind === ASSIST.IN_LEVEL) return 0
   if (entry.offList) return policy.offListCost
   const d = Number(entry.distance)
@@ -445,7 +485,8 @@ export function assistCost(entry, policy = ASSISTED_POLICY) {
 }
 
 // One concept's lexical standing: in level, or assisted by a named word.
-export function classifyConcept(support, { vocabMap = {}, level = 1, policy = ASSISTED_POLICY } = {}) {
+export function classifyConcept(support, { vocabMap = {}, level = 1, policy: policyIn = ASSISTED_POLICY } = {}) {
+  const policy = withPolicy(policyIn)
   if (support && support.support === 'supported') {
     return { kind: ASSIST.IN_LEVEL, cost: 0 }
   }
@@ -468,7 +509,12 @@ export function classifyConcept(support, { vocabMap = {}, level = 1, policy = AS
   }
   // The dictionary has a word for it, above the level: the reader taps it.
   const above = (support && support.words) || []
-  const word = above.find(w => vocabMap[w] && Number.isFinite(vocabMap[w].level))
+  // The cheapest way the language says it. Taking whichever entry the corpus
+  // happened to list first made the same concept cost 1 or 6 depending on row
+  // order — and named the wrong word in the artifact.
+  const word = above
+    .filter(w => vocabMap[w] && Number.isFinite(vocabMap[w].level))
+    .sort((a, b) => vocabMap[a].level - vocabMap[b].level || (a < b ? -1 : 1))[0]
   if (word) {
     const wordLevel = vocabMap[word].level
     const distance = Math.max(1, wordLevel - level)
@@ -512,13 +558,15 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
   const supporting = classify(rate(concepts.supporting))
   const incidental = classify(rate(concepts.incidental))
 
-  // Incidental detail is decoration the writer may simply drop (A3.2 has said
-  // so since it was built), so it is reported but never charged: paying for a
-  // word nobody has to write would make every beat look expensive.
-  const charged = [...core, ...supporting]
-  const assisted = charged.filter(c => c.assist.kind === ASSIST.ASSISTED)
-  const incidentalAssisted = incidental.filter(c => c.assist.kind === ASSIST.ASSISTED)
-  const cost = assisted.reduce((n, c) => n + c.assist.cost, 0)
+  // Incidental detail is decoration the writer may drop, so it is charged at
+  // HALF rate rather than free. Free was a hole: "he holds the wheel while he
+  // puts the chain back on" pushes the chain — the point of the beat — into a
+  // subordinate clause, and one relative clause could carry an entire story's
+  // worth of advanced vocabulary at no cost.
+  const halved = incidental.map(c => ({ ...c, assist: { ...c.assist, cost: Math.ceil((c.assist.cost || 0) / 2), incidental: true } }))
+  const assisted = [...core, ...supporting].filter(c => c.assist.kind === ASSIST.ASSISTED)
+  const incidentalAssisted = halved.filter(c => c.assist.kind === ASSIST.ASSISTED)
+  const cost = [...assisted, ...incidentalAssisted].reduce((n, c) => n + c.assist.cost, 0)
 
   // A beat is only unsafe on its own account when it is CROWDED — the budget
   // for the story as a whole is settled by assessShapeRisk.
@@ -575,15 +623,20 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
   // the reader taps it once too.
   const byConcept = new Map()
   for (const b of beats) {
-    for (const a of b.assisted) {
+    for (const a of [...b.assisted, ...b.incidentalAssisted]) {
       const key = assistKey(a)
-      if (!byConcept.has(key)) byConcept.set(key, { ...a, beats: [] })
-      byConcept.get(key).beats.push(b.beat)
+      if (!byConcept.has(key)) byConcept.set(key, { ...a, concepts: [], beats: [] })
+      const row = byConcept.get(key)
+      if (!row.concepts.includes(a.concept)) row.concepts.push(a.concept)
+      if (!row.beats.includes(b.beat)) row.beats.push(b.beat)
+      // One tap, charged at its cheapest reading.
+      row.cost = Math.min(row.cost, a.cost)
     }
   }
   const assisted = [...byConcept.values()].sort((a, b) => (b.cost || 0) - (a.cost || 0))
   const cost = assisted.reduce((n, a) => n + (a.cost || 0), 0)
   const crowdedBeats = beats.filter(b => b.crowded).map(b => b.beat)
+  const offList = assisted.filter(a => a.offList)
 
   const breaches = []
   if (assisted.length > policy.assistedWordsMax) {
@@ -595,6 +648,10 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
   }
   if (crowdedBeats.length) {
     breaches.push('beat(s) ' + crowdedBeats.join(', ') + ' carry more than ' + policy.assistedPerBeatMax + ' assisted words')
+  }
+  if (offList.length > policy.offListMax) {
+    breaches.push(offList.length + ' words the learner list does not carry at all (max ' + policy.offListMax
+      + ') — those reach the deterministic validator as UNKNOWN words, and it is strict about them')
   }
 
   const classification = breaches.length
@@ -620,9 +677,25 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
   const high = beats.filter(b => b.risk === RISK.HIGH)
   // What the planner has to avoid next time, in its own English — now only the
   // words that actually broke the budget, not every word above the level.
-  const blocking = classification === FEASIBILITY.UNSAFE
-    ? [...new Set([...high.flatMap(b => b.assisted.map(a => a.concept)), ...assisted.filter(a => a.offList).map(a => a.concept)])]
-    : []
+  // An UNSAFE verdict must always NAME words. A word-count or cost breach is
+  // broken by no single beat and by no off-list word, so `blocking` came back
+  // empty and the one permitted replan re-ran the planner on identical input.
+  const blocking = []
+  if (classification === FEASIBILITY.UNSAFE) {
+    const seen = new Set()
+    const add = (c) => { if (c && !seen.has(c)) { seen.add(c); blocking.push(c) } }
+    for (const b of high) for (const a of b.assisted) add(a.concept)
+    for (const a of offList) for (const c of a.concepts) add(c)
+    // `assisted` is sorted dearest-first: name them until the rest would fit.
+    let words = assisted.length
+    let spend = cost
+    for (const a of assisted) {
+      if (words <= policy.assistedWordsMax && spend <= policy.costBudget) break
+      for (const c of a.concepts) add(c)
+      words -= 1
+      spend -= (a.cost || 0)
+    }
+  }
 
   return {
     version: RISK_VERSION,
@@ -638,6 +711,7 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
     // how far above the level it sits.
     assisted: assisted.map(a => ({
       concept: a.concept,
+      concepts: a.concepts,
       word: a.word,
       hsk: a.wordLevel,
       distance: a.distance,
@@ -653,6 +727,8 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
       cost,
       costBudget: policy.costBudget,
       crowdedBeats,
+      offListWords: offList.length,
+      offListMax: policy.offListMax,
       inLevelShareTarget: policy.inLevelShareTarget,
       inLevelSharePreferred: policy.inLevelSharePreferred,
       // Stated, not measured here: there is no Chinese at plan time. The

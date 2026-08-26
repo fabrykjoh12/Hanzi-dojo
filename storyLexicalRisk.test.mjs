@@ -3,7 +3,8 @@ import {
   assessShapeRisk, assessBeatRisk, conceptsFromBeat, buildGlossIndex, buildFullGlossIndex,
   conceptSupport, buildSenseSynonyms, buildInLevelWords, componentHead,
   validateGlossCorpus, GlossCorpusError, glossSenses, senseCompatible, beatConceptPos,
-  assessShapeRisk as assessShape, classifyConcept, assistCost, ASSIST, FEASIBILITY, ASSISTED_POLICY,
+  assessShapeRisk as assessShape, classifyConcept, assistCost, withPolicy, assistKey,
+  suffixClass, inflectionCompatible, ASSIST, FEASIBILITY, ASSISTED_POLICY,
   RISK, RISK_VERSION,
 } from './storyLexicalRisk.mjs'
 import { buildManifest } from './storyManifestPlanner.mjs'
@@ -465,19 +466,25 @@ describe('assisted vocabulary — a tapped word is not a defect', () => {
     const beats = ['thud', 'sweat', 'grip', 'ladder', 'wrench'].map((w, i) => ({
       id: i + 1, what: 'Li Ming notices the ' + w, because: i ? 'it follows' : 'the story opens',
     }))
-    const generous = { ...ASSISTED_POLICY, costBudget: 40, assistedWordsMax: 20 }
+    const generous = { ...ASSISTED_POLICY, costBudget: 40, assistedWordsMax: 20, offListMax: 20 }
     const r = assessShape({ blueprint: shape(beats), manifest: manifest(), vocabMap: vm, policy: generous })
     expect(r.classification).toBe(FEASIBILITY.ASSISTED)
     expect(r.policy.costBudget).toBe(40)
   })
 
-  it('incidental decoration is reported but never charged', () => {
+  it('incidental decoration is charged at half, not free', () => {
+    // Free was a hole: one subordinate clause could carry a whole story's
+    // advanced vocabulary at no cost.
     const r = assessShape({
       blueprint: shape([{ id: 1, what: '李明 looks at the bike', because: 'it is dark and the wrench is heavy' }]),
       manifest: manifest(), vocabMap: vm,
     })
-    expect(r.budget.cost).toBe(0)
-    expect(r.classification).toBe(FEASIBILITY.IN_LEVEL)
+    const full = assessShape({
+      blueprint: shape([{ id: 1, what: '李明 looks at the dark wrench', because: 'the story opens' }]),
+      manifest: manifest(), vocabMap: vm,
+    })
+    expect(r.budget.cost).toBeGreaterThan(0)
+    expect(r.budget.cost).toBeLessThan(full.budget.cost)
   })
 
   it('records every assisted word for the artifact and the UI', () => {
@@ -511,5 +518,112 @@ describe('assisted vocabulary — a tapped word is not a defect', () => {
     })
     expect(r.assisted).toEqual([])
     expect(r.classification).toBe(FEASIBILITY.IN_LEVEL)
+  })
+
+  it('the plan’s own boilerplate is not charged as vocabulary', () => {
+    // Every beat 1 says "the story opens"; charging incidental material made
+    // that phantom word cost every plan in the census.
+    const r = assessShape({
+      blueprint: shape([{ id: 1, what: '李明 looks at his friend', because: 'the story opens' }]),
+      manifest: manifest(), vocabMap: vm,
+    })
+    expect(r.assisted.map(a => a.concept)).not.toContain('story')
+    expect(r.budget.cost).toBe(0)
+  })
+})
+
+// ── What the adversarial review found (2026-08-26) ──────────────────────────
+describe('defects the review reproduced', () => {
+  const ROWS = [
+    ['累', 2, 'tired, to tire'], ['站', 3, 'to stand; station'],
+    ['轮子', 6, 'wheel'], ['工具', 5, 'tool'],
+    ['修', 9, 'to repair'], ['修理', 4, 'to repair; to fix'],
+  ]
+  const vm = Object.fromEntries(ROWS.map(([word, level, meaning]) => [word, { word, level, meaning }]))
+  const manifest = () => buildManifest({ batchId: 'r', seq: 1, level: 3, targets: ['帮助'], defaults: { lines: [14, 38] } })
+  const shape = (beats) => ({ cast: ['李明'], beats, targetPlan: [] })
+  const index = buildGlossIndex(vm, 3)
+  const full = buildFullGlossIndex(vm)
+  const support = (c, pos) => conceptSupport(c, index, full, {
+    synonyms: buildSenseSynonyms(vm), inLevelWords: buildInLevelWords(vm, 3), pos,
+  })
+
+  it('a stem collision no longer reopens the tire bug on the plural', () => {
+    // "tired" and "tires" both stem to "tir", so the plural reached 累 through
+    // the ADJECTIVE sense while the verb sense was correctly blocked.
+    expect(support('tire', 'noun')).toMatchObject({ support: 'none' })
+    expect(support('tires', 'noun')).toMatchObject({ support: 'none' })
+    // and the real readings still work
+    expect(support('tired', null).words).toContain('累')
+    expect(support('stands', 'verb').words).toContain('站')
+    expect(support('standing', 'verb').words).toContain('站')
+  })
+
+  it('inflections only meet across a participle through a verbal sense', () => {
+    expect(suffixClass('tires')).toBe('s')
+    expect(suffixClass('tired')).toBe('ed')
+    expect(inflectionCompatible('tires', 'tire', { verb: false })).toBe(true)   // base ↔ -s
+    expect(inflectionCompatible('tires', 'tired', { verb: false })).toBe(false) // -s ↔ -ed, no verb
+    expect(inflectionCompatible('carrying', 'carry', { verb: true })).toBe(true)
+  })
+
+  it('charges the NEAREST word, not whichever the corpus listed first', () => {
+    const r = classifyConcept(support('repair', null), { vocabMap: vm, level: 3 })
+    expect(r.word).toBe('修理')      // HSK 4, not 修 at HSK 9
+    expect(r.cost).toBe(1)
+  })
+
+  it('one tapped word is charged once, however the English spells it', () => {
+    const r = assessShape({
+      blueprint: shape([
+        { id: 1, what: 'He looks at the wheel', because: 'the story opens' },
+        { id: 2, what: 'He turns the wheels', because: 'it follows' },
+      ]),
+      manifest: manifest(), vocabMap: vm,
+    })
+    const row = r.assisted.find(a => a.word === '轮子')
+    expect(row.concepts).toEqual(expect.arrayContaining(['wheel', 'wheels']))
+    expect(r.assisted.filter(a => a.word === '轮子')).toHaveLength(1)
+    expect(assistKey({ word: '轮子' })).toBe(assistKey({ word: '轮子', concept: 'wheels' }))
+  })
+
+  it('a subordinate clause is not a free channel for the budget', () => {
+    // "he holds the wheel while he puts the chain back on" — the chain is the
+    // point of the beat and used to cost nothing.
+    const r = assessShape({
+      blueprint: shape([{ id: 1, what: 'He holds it while he puts the wheel back on.', because: 'the story opens' }]),
+      manifest: manifest(), vocabMap: vm,
+    })
+    expect(r.budget.cost).toBeGreaterThan(0)
+  })
+
+  it('an UNSAFE verdict always names words for the one replan', () => {
+    const beats = ['candle', 'mushroom', 'whale', 'butterfly'].map((w, i) => ({
+      id: i + 1, what: 'He sees the ' + w, because: i ? 'it follows' : 'the story opens',
+    }))
+    const r = assessShape({ blueprint: shape(beats), manifest: manifest(), vocabMap: vm })
+    expect(r.classification).toBe(FEASIBILITY.UNSAFE)
+    expect(r.highBeats).toEqual([])          // no single beat is crowded
+    expect(r.blocking.length).toBeGreaterThan(0)
+    expect(r.blocking).toEqual(expect.arrayContaining(['candle', 'whale']))
+  })
+
+  it('caps the words the learner list does not carry, because the validator will not', () => {
+    const beats = ['candle', 'mushroom', 'whale'].map((w, i) => ({
+      id: i + 1, what: 'He sees the ' + w, because: i ? 'it follows' : 'the story opens',
+    }))
+    const r = assessShape({ blueprint: shape(beats), manifest: manifest(), vocabMap: vm })
+    expect(r.budget.offListWords).toBeGreaterThan(r.budget.offListMax)
+    expect(r.budget.breaches.join(' ')).toContain('UNKNOWN words')
+  })
+
+  it('a partial policy override does not crash', () => {
+    expect(assistCost({ kind: ASSIST.ASSISTED, distance: 2 }, { costBudget: 40 })).toBe(2)
+    expect(withPolicy({ costBudget: 40 }).distanceCost[3]).toBe(ASSISTED_POLICY.distanceCost[3])
+    const r = assessShape({
+      blueprint: shape([{ id: 1, what: 'He needs a tool', because: 'the story opens' }]),
+      manifest: manifest(), vocabMap: vm, policy: { costBudget: 40 },
+    })
+    expect(r.policy.costBudget).toBe(40)
   })
 })
