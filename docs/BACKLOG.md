@@ -207,6 +207,62 @@ tapping.
 
 **Eligible set is still empty.**
 
+### The adversarial review, and what it changed (2026-08-26)
+
+Six reviewers went at `fab9-risk@4`; 28 of 55 claims were verified before the
+run hit a session limit and 12 survived refutation. Confirmed and fixed in
+`fab9-risk@5`:
+
+- **A stem collision reopened the tire bug on the plural.** "tired" and "tires"
+  both stem to `tir`, so 轮胎's plural reached 累 through the *adjective* sense
+  while the verb sense was correctly blocked. Inflections may now only meet
+  across a participle through a sense the gloss marks verbal.
+- **The dearest word was charged, not the nearest** — cost depended on corpus
+  row order, and the artifact named the wrong word.
+- **A subordinate clause was a free channel** for the entire budget.
+  Incidental material is charged at half: droppable, not free.
+- **An UNSAFE verdict named no words**, so the one permitted replan re-ran the
+  planner on identical input.
+- **Off-list words outran the validator** — they arrive downstream as UNKNOWN
+  words, where the gate is strict. `offListMax` (2) makes the plan-time promise
+  answerable to it.
+- **A partial policy override crashed** (`{costBudget: 40}` threw).
+
+Charging incidental material then opened three smaller holes, all caught in the
+next census: target **intents** ("Description", "Social bonding") were billed as
+story vocabulary; legitimate inflections ("heard" vs 听见) were punished by the
+weak-match rule; and `isn't` was charged as the word "isn".
+
+**Process note.** Commit `67d58ef` swept in an `assistKey()` helper written into
+the working tree by a review agent while `git add -A` ran. The code is sound and
+is now read, extended and specced — but it entered under a message describing
+only the `-s` fix.
+
+### Census (`census-8`), original → assisted model
+
+| plan | quality | before | after | assisted | cost | off-list |
+|---|---|---|---|---|---|---|
+| H | 9 | MEDIUM | LEXICALLY_UNSAFE | 7 | 17/12 | 4/2 |
+| C | 9 | MEDIUM | LEXICALLY_UNSAFE | 5 | 16/12 | 4/2 |
+| A | 7 | MEDIUM | LEXICALLY_UNSAFE | 19 | 39/12 | 10/2 |
+| D | 9 | HIGH | LEXICALLY_UNSAFE | 15 | 38/12 | 12/2 |
+| F | 5 | MEDIUM | LEXICALLY_UNSAFE | 11 | 23/12 | 6/2 |
+| **G** | 6 | **HIGH** | **ASSISTED_OOL** | 4 | 8/12 | 1/2 |
+| E | 8 | LOW | IN_LEVEL | 0 | 0/12 | 0/2 |
+| B | 4 | MEDIUM | ASSISTED_OOL | 1 | 2/12 | 1/2 |
+
+轮胎 costs **2 of 12** — affordable on its own, exactly as intended. H fails on
+accumulation (downstairs, stronger, flat, tire, tool, wrench, repair) and on
+carrying four words the learner list does not have at all.
+
+**Eligible set: still empty.** G, the plan the methodology change rescued, was
+judged on placement viability for the first time and failed on 女人, 男人 AND
+关系 — *"a generic label for a character already established by name"* — the
+same reason C failed, from the other model. **Four of the eight plans have now
+been through the viability gate and every one fails on at least one of those
+three words.** The required target set itself may be the thing that cannot be
+placed naturally in a five-beat story.
+
 ### A3.2 matches a noun to a verb of the same spelling (open, found 2026-08-25)
 
 `a3-H-2` ran frozen plan H — a bike-tire repair story — and stopped at the
