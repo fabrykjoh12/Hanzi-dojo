@@ -1,0 +1,1237 @@
+{
+  "schema": "story-candidate@1",
+  "batchId": "a3-H-2",
+  "generatedAt": "2026-08-26T12:37:28.537Z",
+  "provider": {
+    "name": "groq",
+    "model": "qwen/qwen3.6-27b",
+    "reasoningEffort": "none"
+  },
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bakeoff-L3-001",
+    "batchId": "bakeoff",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "关系",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "女人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "男人",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "帮助",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "如果",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "而且",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "必须",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "friends and neighbours: helping someone, or being helped",
+    "seasonSeed": "a small neighborhood mystery (something goes missing or keeps happening) that resolves warmly",
+    "series": null,
+    "composition": {
+      "bucket": "social",
+      "reason": "4 pending hard targets share the \"social\" theme",
+      "hard": [
+        {
+          "word": "关系",
+          "meaning": "relation; relationship"
+        },
+        {
+          "word": "女人",
+          "meaning": "woman"
+        },
+        {
+          "word": "男人",
+          "meaning": "a man; a male"
+        },
+        {
+          "word": "帮助",
+          "meaning": "assistance; aid; to help; to assist"
+        },
+        {
+          "word": "需要",
+          "meaning": "to need; to want; to demand; to require; needs"
+        }
+      ],
+      "soft": [
+        {
+          "word": "如果",
+          "meaning": "if; in case"
+        },
+        {
+          "word": "而且",
+          "meaning": "(not only ...) but also; moreover"
+        },
+        {
+          "word": "必须",
+          "meaning": "to have to; must"
+        }
+      ],
+      "structuralSkipped": [
+        "被",
+        "中",
+        "该",
+        "像",
+        "或",
+        "受",
+        "发",
+        "信",
+        "接",
+        "刚",
+        "加",
+        "讲",
+        "选"
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "blueprintRun": {
+    "version": "fab9-blueprint@1",
+    "totalLines": 28,
+    "required": [
+      "关系",
+      "女人",
+      "男人",
+      "帮助",
+      "需要"
+    ],
+    "thresholds": {
+      "blueprint": {
+        "overall": 6,
+        "causal": 6,
+        "chronology": 6,
+        "targetFit": 5
+      },
+      "draft": {
+        "overall": 6,
+        "natural": 5,
+        "coherence": 5,
+        "integration": 5,
+        "human": 5
+      },
+      "line": {
+        "overall": 6,
+        "grammar": 6,
+        "mechanicalPenalty": 1
+      }
+    },
+    "resume": null,
+    "risk": {
+      "version": "fab9-risk@2",
+      "risk": "MEDIUM",
+      "beats": [
+        {
+          "beat": 1,
+          "risk": "MEDIUM",
+          "reason": "the central concept \"flat\" has no in-level vocabulary, but the rest of the beat does",
+          "core": [
+            {
+              "concept": "flat",
+              "support": "none",
+              "via": "above-level",
+              "words": [
+                "公寓",
+                "饼"
+              ]
+            },
+            {
+              "concept": "tire",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "累"
+              ]
+            },
+            {
+              "concept": "help",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "帮",
+                "帮忙",
+                "把",
+                "帮助"
+              ]
+            }
+          ],
+          "supporting": [],
+          "incidental": [
+            {
+              "concept": "story",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "房子"
+              ]
+            },
+            {
+              "concept": "opens",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "开",
+                "打开",
+                "开花"
+              ]
+            },
+            {
+              "concept": "express",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "以为"
+              ]
+            },
+            {
+              "concept": "need",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "要",
+                "需要",
+                "不用"
+              ]
+            },
+            {
+              "concept": "request",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "要求",
+                "请假"
+              ]
+            },
+            {
+              "concept": "aid",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "帮助"
+              ]
+            }
+          ],
+          "coreMissing": [
+            "flat"
+          ],
+          "supportingMissing": [],
+          "incidentalMissing": []
+        },
+        {
+          "beat": 2,
+          "risk": "LOW",
+          "reason": "every central concept has in-level vocabulary",
+          "core": [
+            {
+              "concept": "arrives",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "后来"
+              ]
+            }
+          ],
+          "supporting": [],
+          "incidental": [
+            {
+              "concept": "after",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "起来",
+                "然后",
+                "以后",
+                "差"
+              ]
+            },
+            {
+              "concept": "hearing",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "听见",
+                "听说",
+                "难听"
+              ]
+            },
+            {
+              "concept": "offers",
+              "support": "supported",
+              "via": "synonym",
+              "synonym": "open",
+              "words": [
+                "开",
+                "打开",
+                "开花"
+              ]
+            },
+            {
+              "concept": "assist",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "帮助"
+              ]
+            },
+            {
+              "concept": "called",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "叫"
+              ]
+            },
+            {
+              "concept": "help",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "帮",
+                "帮忙",
+                "把",
+                "帮助"
+              ]
+            },
+            {
+              "concept": "agree",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "同意"
+              ]
+            }
+          ],
+          "coreMissing": [],
+          "supportingMissing": [],
+          "incidentalMissing": []
+        },
+        {
+          "beat": 3,
+          "risk": "MEDIUM",
+          "reason": "detail without in-level vocabulary (wrench), but the beat's own event can be told",
+          "core": [
+            {
+              "concept": "downstairs",
+              "support": "weak",
+              "via": "substring",
+              "words": [
+                "楼梯"
+              ]
+            },
+            {
+              "concept": "find",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "发现"
+              ]
+            },
+            {
+              "concept": "tool",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "笔"
+              ]
+            },
+            {
+              "concept": "box",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "邮箱"
+              ]
+            }
+          ],
+          "supporting": [],
+          "incidental": [
+            {
+              "concept": "need",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "要",
+                "需要",
+                "不用"
+              ]
+            },
+            {
+              "concept": "wrench",
+              "support": "none",
+              "via": "absent",
+              "words": []
+            },
+            {
+              "concept": "fix",
+              "support": "supported",
+              "via": "synonym",
+              "synonym": "set",
+              "words": [
+                "出发"
+              ]
+            },
+            {
+              "concept": "tire",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "累"
+              ]
+            },
+            {
+              "concept": "explain",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "讲"
+              ]
+            },
+            {
+              "concept": "requirement",
+              "support": "supported",
+              "via": "synonym",
+              "synonym": "condition",
+              "words": [
+                "空调"
+              ]
+            }
+          ],
+          "coreMissing": [],
+          "supportingMissing": [],
+          "incidentalMissing": [
+            "wrench"
+          ]
+        },
+        {
+          "beat": 4,
+          "risk": "MEDIUM",
+          "reason": "detail without in-level vocabulary (repair, gender, isn, volunteer), but the beat's own event can be told",
+          "core": [
+            {
+              "concept": "appears",
+              "support": "supported",
+              "via": "component",
+              "compound": "出现",
+              "words": [
+                "出"
+              ]
+            },
+            {
+              "concept": "man",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "男人",
+                "老人"
+              ]
+            },
+            {
+              "concept": "fix",
+              "support": "supported",
+              "via": "synonym",
+              "synonym": "set",
+              "words": [
+                "出发"
+              ]
+            },
+            {
+              "concept": "woman",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "女人",
+                "老人"
+              ]
+            },
+            {
+              "concept": "help",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "帮",
+                "帮忙",
+                "把",
+                "帮助"
+              ]
+            }
+          ],
+          "supporting": [],
+          "incidental": [
+            {
+              "concept": "look",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "看",
+                "找",
+                "好看"
+              ]
+            },
+            {
+              "concept": "repair",
+              "support": "none",
+              "via": "above-level",
+              "words": [
+                "修理",
+                "补",
+                "修复"
+              ]
+            },
+            {
+              "concept": "bikes",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "自行车"
+              ]
+            },
+            {
+              "concept": "give",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "给",
+                "送",
+                "请客"
+              ]
+            },
+            {
+              "concept": "example",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "比如"
+              ]
+            },
+            {
+              "concept": "show",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "发",
+                "表演",
+                "照顾"
+              ]
+            },
+            {
+              "concept": "gender",
+              "support": "none",
+              "via": "above-level",
+              "words": [
+                "性别"
+              ]
+            },
+            {
+              "concept": "isn",
+              "support": "none",
+              "via": "absent",
+              "words": []
+            },
+            {
+              "concept": "limiting",
+              "support": "supported",
+              "via": "component",
+              "compound": "不仅",
+              "words": [
+                "不"
+              ]
+            },
+            {
+              "concept": "volunteer",
+              "support": "none",
+              "via": "above-level",
+              "words": [
+                "志愿者"
+              ]
+            },
+            {
+              "concept": "aid",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "帮助"
+              ]
+            }
+          ],
+          "coreMissing": [],
+          "supportingMissing": [],
+          "incidentalMissing": [
+            "repair",
+            "gender",
+            "isn",
+            "volunteer"
+          ]
+        },
+        {
+          "beat": 5,
+          "risk": "MEDIUM",
+          "reason": "the central concept \"stronger\" has no in-level vocabulary, but the rest of the beat does",
+          "core": [
+            {
+              "concept": "fix",
+              "support": "supported",
+              "via": "synonym",
+              "synonym": "set",
+              "words": [
+                "出发"
+              ]
+            },
+            {
+              "concept": "bike",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "自行车"
+              ]
+            },
+            {
+              "concept": "feel",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "觉得",
+                "认为",
+                "发",
+                "开心"
+              ]
+            },
+            {
+              "concept": "friendship",
+              "support": "weak",
+              "via": "substring",
+              "words": [
+                "朋友",
+                "小朋友"
+              ]
+            },
+            {
+              "concept": "stronger",
+              "support": "none",
+              "via": "absent",
+              "words": []
+            }
+          ],
+          "supporting": [],
+          "incidental": [
+            {
+              "concept": "tire",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "累"
+              ]
+            },
+            {
+              "concept": "repaired",
+              "support": "none",
+              "via": "above-level",
+              "words": [
+                "修理",
+                "补",
+                "修复"
+              ]
+            },
+            {
+              "concept": "ending",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "终于",
+                "放学"
+              ]
+            },
+            {
+              "concept": "problem",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "题",
+                "解决",
+                "难",
+                "难题"
+              ]
+            },
+            {
+              "concept": "express",
+              "support": "supported",
+              "via": "gloss",
+              "words": [
+                "以为"
+              ]
+            },
+            {
+              "concept": "closeness",
+              "support": "weak",
+              "via": "substring",
+              "words": [
+                "近",
+                "关注"
+              ]
+            }
+          ],
+          "coreMissing": [
+            "stronger"
+          ],
+          "supportingMissing": [],
+          "incidentalMissing": [
+            "repaired"
+          ]
+        }
+      ],
+      "highBeats": [],
+      "blocking": [],
+      "corpus": {
+        "ok": true,
+        "share": 1,
+        "glossed": 4998,
+        "total": 4998
+      }
+    },
+    "viability": {
+      "version": "fab9-target-viability@1",
+      "ok": true,
+      "rows": [
+        {
+          "word": "需要",
+          "beat": 1,
+          "referent": "李明's realization of need",
+          "function": "establishes the problem's urgency",
+          "verdict": "PASS",
+          "reason": "李明 genuinely feels the need for help, driving the plot forward.",
+          "requiredHere": true
+        },
+        {
+          "word": "帮助",
+          "beat": 1,
+          "referent": "李明's request for aid",
+          "function": "initiates the interaction",
+          "verdict": "PASS",
+          "reason": "李明 must ask for help to get the story moving.",
+          "requiredHere": true
+        },
+        {
+          "word": "帮助",
+          "beat": 2,
+          "referent": "李明's request for aid",
+          "function": "initiates the interaction",
+          "verdict": "PASS",
+          "reason": "李明 must ask for help to get the story moving.",
+          "requiredHere": true
+        },
+        {
+          "word": "必须",
+          "beat": 3,
+          "referent": "necessity of a tool",
+          "function": "forced emphasis on obvious task",
+          "verdict": "FAIL",
+          "reason": "The reader knows they need tools; stating it is \"necessary\" adds no new information.",
+          "requiredHere": false
+        },
+        {
+          "word": "需要",
+          "beat": 3,
+          "referent": "李明's realization of need",
+          "function": "establishes the problem's urgency",
+          "verdict": "PASS",
+          "reason": "李明 genuinely feels the need for help, driving the plot forward.",
+          "requiredHere": true
+        },
+        {
+          "word": "男人",
+          "beat": 4,
+          "referent": "example of male repairer",
+          "function": "sets up contrast",
+          "verdict": "PASS",
+          "reason": "妈妈 uses \"man\" to establish the first side of her gender comparison.",
+          "requiredHere": true
+        },
+        {
+          "word": "女人",
+          "beat": 4,
+          "referent": "example of female helper",
+          "function": "completes the moral point",
+          "verdict": "PASS",
+          "reason": "妈妈 uses \"woman\" to refute the idea that only men can fix bikes.",
+          "requiredHere": true
+        },
+        {
+          "word": "帮助",
+          "beat": 4,
+          "referent": "李明's request for aid",
+          "function": "initiates the interaction",
+          "verdict": "PASS",
+          "reason": "李明 must ask for help to get the story moving.",
+          "requiredHere": true
+        },
+        {
+          "word": "关系",
+          "beat": 5,
+          "referent": "their friendship",
+          "function": "thematic resolution",
+          "verdict": "PASS",
+          "reason": "The shared experience strengthens their bond, providing emotional closure.",
+          "requiredHere": true
+        }
+      ],
+      "failures": [],
+      "error": null,
+      "raw": "需要: PASS | 李明's realization of need | establishes the problem's urgency | 李明 genuinely feels the need for help, driving the plot forward.\n帮助: PASS | 李明's request for aid | initiates the interaction | 李明 must ask for help to get the story moving.\n帮助: PASS | 小红's offer | responds to the call | 小红 arrives specifically to provide help, making her presence useful.\n必须: FAIL | necessity of a tool | forced emphasis on obvious task | The reader knows they need tools; stating it is \"necessary\" adds no new information.\n需要: FAIL | the tool | redundant explanation | Since they are already going to find the toolbox, restating the need is repetitive.\n男人: PASS | example of male repairer | sets up contrast | 妈妈 uses \"man\" to establish the first side of her gender comparison.\n女人: PASS | example of female helper | completes the moral point | 妈妈 uses \"woman\" to refute the idea that only men can fix bikes.\n帮助: PASS | general assistance | reinforces the theme | 妈妈 concludes that women can also provide the help needed.\n关系: PASS | their friendship | thematic resolution | The shared experience strengthens their bond, providing emotional closure.",
+      "dispositions": [
+        {
+          "word": "需要",
+          "beat": 1,
+          "required": true,
+          "verdict": "PASS",
+          "reason": "李明 genuinely feels the need for help, driving the plot forward.",
+          "disposition": "retained_required"
+        },
+        {
+          "word": "帮助",
+          "beat": 1,
+          "required": true,
+          "verdict": "PASS",
+          "reason": "李明 must ask for help to get the story moving.",
+          "disposition": "retained_required"
+        },
+        {
+          "word": "帮助",
+          "beat": 2,
+          "required": true,
+          "verdict": "PASS",
+          "reason": "李明 must ask for help to get the story moving.",
+          "disposition": "retained_required"
+        },
+        {
+          "word": "必须",
+          "beat": 3,
+          "required": false,
+          "verdict": "FAIL",
+          "reason": "The reader knows they need tools; stating it is \"necessary\" adds no new information.",
+          "disposition": "dropped_optional"
+        },
+        {
+          "word": "需要",
+          "beat": 3,
+          "required": true,
+          "verdict": "PASS",
+          "reason": "李明 genuinely feels the need for help, driving the plot forward.",
+          "disposition": "retained_required"
+        },
+        {
+          "word": "男人",
+          "beat": 4,
+          "required": true,
+          "verdict": "PASS",
+          "reason": "妈妈 uses \"man\" to establish the first side of her gender comparison.",
+          "disposition": "retained_required"
+        },
+        {
+          "word": "女人",
+          "beat": 4,
+          "required": true,
+          "verdict": "PASS",
+          "reason": "妈妈 uses \"woman\" to refute the idea that only men can fix bikes.",
+          "disposition": "retained_required"
+        },
+        {
+          "word": "帮助",
+          "beat": 4,
+          "required": true,
+          "verdict": "PASS",
+          "reason": "李明 must ask for help to get the story moving.",
+          "disposition": "retained_required"
+        },
+        {
+          "word": "关系",
+          "beat": 5,
+          "required": true,
+          "verdict": "PASS",
+          "reason": "The shared experience strengthens their bond, providing emotional closure.",
+          "disposition": "retained_required"
+        }
+      ],
+      "dropped": [
+        "必须"
+      ]
+    },
+    "replanned": false,
+    "scaffold": {
+      "version": "fab9-scaffold@3",
+      "ok": false,
+      "code": "TARGET_SCAFFOLD_FAILED",
+      "detail": "帮助 (beat 1) could not be written in 2 attempts",
+      "failedAt": {
+        "beat": 1,
+        "word": "帮助"
+      },
+      "log": [
+        {
+          "piece": "title",
+          "attempt": 1,
+          "output": "李明的自行车",
+          "ok": true,
+          "problems": []
+        },
+        {
+          "piece": "sketch",
+          "beat": 1,
+          "word": "需要",
+          "attempt": 1,
+          "output": "我现在需要帮助。",
+          "ok": true,
+          "problems": [],
+          "repair": null
+        },
+        {
+          "piece": "sketch",
+          "beat": 1,
+          "word": "帮助",
+          "attempt": 1,
+          "output": "请帮助我换轮胎吧",
+          "ok": false,
+          "problems": [
+            "non-vocabulary text: 轮胎"
+          ],
+          "repair": null
+        },
+        {
+          "piece": "sketch",
+          "beat": 1,
+          "word": "帮助",
+          "attempt": 2,
+          "output": "请帮助我换轮胎吧",
+          "ok": false,
+          "problems": [
+            "non-vocabulary text: 轮胎"
+          ],
+          "repair": {
+            "original": "请帮助我换轮胎吧",
+            "keep": [
+              "请",
+              "帮助",
+              "换"
+            ],
+            "cast": [],
+            "target": "帮助",
+            "fix": [
+              {
+                "token": "轮胎",
+                "why": "non-vocabulary text: 轮胎",
+                "use": [],
+                "mayOmit": true
+              }
+            ],
+            "alsoAvailable": [
+              "累",
+              "上午",
+              "早上",
+              "帮",
+              "帮忙",
+              "房子",
+              "把",
+              "要求",
+              "请假",
+              "开",
+              "看",
+              "看病"
+            ]
+          }
+        }
+      ],
+      "title": null,
+      "beats": null
+    },
+    "blueprints": [
+      {
+        "label": "A",
+        "planner": "stored shape",
+        "attempt": 1,
+        "blueprint": {
+          "title": "Fixing the Bike",
+          "setting": "A modern apartment building, morning to afternoon",
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "problem": "李明's bike has a flat tire and he cannot ride to work",
+          "incitingEvent": "李明 discovers the flat tire while preparing to leave",
+          "beats": [
+            {
+              "id": 1,
+              "when": "morning, kitchen",
+              "what": "李明 sees the flat tire and realizes he needs help",
+              "because": "the story opens",
+              "targets": [
+                "需要",
+                "帮助"
+              ],
+              "lines": 6,
+              "where": "kitchen",
+              "arrivedHow": ""
+            },
+            {
+              "id": 2,
+              "when": "morning, kitchen",
+              "what": "小红 arrives after hearing 李明 and offers to assist",
+              "because": "李明 called for help because he needs it",
+              "targets": [
+                "帮助"
+              ],
+              "lines": 6,
+              "where": "kitchen",
+              "arrivedHow": ""
+            },
+            {
+              "id": 3,
+              "when": "mid‑morning, hallway",
+              "what": "李明 and 小红 go downstairs to find a tool box",
+              "because": "they need a wrench to fix the tire",
+              "targets": [
+                "必须",
+                "需要"
+              ],
+              "lines": 5,
+              "where": "hallway",
+              "arrivedHow": "李明 and 小红 walk downstairs together"
+            },
+            {
+              "id": 4,
+              "when": "mid‑morning, hallway",
+              "what": "妈妈 appears, says a man (男人) can fix it, but a woman (女人) can also help",
+              "because": "they look for someone who knows how to repair bikes",
+              "targets": [
+                "男人",
+                "女人",
+                "帮助"
+              ],
+              "lines": 6,
+              "where": "hallway",
+              "arrivedHow": ""
+            },
+            {
+              "id": 5,
+              "when": "afternoon, kitchen",
+              "what": "They fix the bike together and feel their friendship (关系) is stronger",
+              "because": "the tire is repaired, ending the problem",
+              "targets": [
+                "关系"
+              ],
+              "lines": 5,
+              "where": "kitchen",
+              "arrivedHow": "李明 and 小红 carry the repaired bike back upstairs"
+            }
+          ],
+          "resolution": "The bike is repaired, 李明 can ride to work, and the friends feel a closer relationship",
+          "targetPlan": [
+            {
+              "word": "需要",
+              "beat": 1,
+              "why": "李明 realizes he cannot fix the tire alone",
+              "speaker": "李明",
+              "refersTo": "assistance for the bike",
+              "intent": "express his need"
+            },
+            {
+              "word": "帮助",
+              "beat": 1,
+              "why": "He asks for help explicitly",
+              "speaker": "李明",
+              "refersTo": "someone to assist with the tire",
+              "intent": "request aid"
+            },
+            {
+              "word": "帮助",
+              "beat": 2,
+              "why": "小红 offers her assistance",
+              "speaker": "小红",
+              "refersTo": "helping 李明",
+              "intent": "agree to help"
+            },
+            {
+              "word": "必须",
+              "beat": 3,
+              "why": "They realize they must get a wrench",
+              "speaker": "李明",
+              "refersTo": "the necessity of a tool",
+              "intent": "state necessity"
+            },
+            {
+              "word": "需要",
+              "beat": 3,
+              "why": "They need the wrench to fix the tire",
+              "speaker": "小红",
+              "refersTo": "the tool",
+              "intent": "explain requirement"
+            },
+            {
+              "word": "男人",
+              "beat": 4,
+              "why": "妈妈 mentions a man who can fix bikes",
+              "speaker": "妈妈",
+              "refersTo": "a male bike repairer",
+              "intent": "give example"
+            },
+            {
+              "word": "女人",
+              "beat": 4,
+              "why": "妈妈 also says a woman can help",
+              "speaker": "妈妈",
+              "refersTo": "a female helper",
+              "intent": "show gender isn’t limiting"
+            },
+            {
+              "word": "帮助",
+              "beat": 4,
+              "why": "妈妈 offers her own help",
+              "speaker": "妈妈",
+              "refersTo": "assistance with the bike",
+              "intent": "volunteer aid"
+            },
+            {
+              "word": "关系",
+              "beat": 5,
+              "why": "They reflect on how fixing the bike improves their friendship",
+              "speaker": "小红",
+              "refersTo": "their relationship",
+              "intent": "express closeness"
+            }
+          ],
+          "impossibleTargets": []
+        },
+        "rendered": "TITLE CONCEPT: Fixing the Bike\nSETTING: A modern apartment building, morning to afternoon\nCAST: 李明、小红、妈妈\nCENTRAL PROBLEM: 李明's bike has a flat tire and he cannot ride to work\nINCITING EVENT: 李明 discovers the flat tire while preparing to leave\nBEATS:\n  1. [morning, kitchen · kitchen] · uses 需要、帮助\n     WHAT CHANGES: 李明 sees the flat tire and realizes he needs help\n  2. [morning, kitchen · kitchen] · uses 帮助\n     WHAT CHANGES: 小红 arrives after hearing 李明 and offers to assist\n     BECAUSE: 李明 called for help because he needs it\n  3. [mid‑morning, hallway · hallway] · uses 必须、需要\n     WHAT CHANGES: 李明 and 小红 go downstairs to find a tool box\n     BECAUSE: they need a wrench to fix the tire\n     GOT THERE BY: 李明 and 小红 walk downstairs together\n  4. [mid‑morning, hallway · hallway] · uses 男人、女人、帮助\n     WHAT CHANGES: 妈妈 appears, says a man (男人) can fix it, but a woman (女人) can also help\n     BECAUSE: they look for someone who knows how to repair bikes\n  5. [afternoon, kitchen · kitchen] · uses 关系\n     WHAT CHANGES: They fix the bike together and feel their friendship (关系) is stronger\n     BECAUSE: the tire is repaired, ending the problem\n     GOT THERE BY: 李明 and 小红 carry the repaired bike back upstairs\nRESOLUTION: The bike is repaired, 李明 can ride to work, and the friends feel a closer relationship\nTARGET WORDS:\n  需要 → beat 1: 李明 realizes he cannot fix the tire alone\n  帮助 → beat 1: He asks for help explicitly\n  帮助 → beat 2: 小红 offers her assistance\n  必须 → beat 3: They realize they must get a wrench\n  需要 → beat 3: They need the wrench to fix the tire\n  男人 → beat 4: 妈妈 mentions a man who can fix bikes\n  女人 → beat 4: 妈妈 also says a woman can help\n  帮助 → beat 4: 妈妈 offers her own help\n  关系 → beat 5: They reflect on how fixing the bike improves their friendship",
+        "check": {
+          "ok": true,
+          "failures": [],
+          "cast": [
+            "李明",
+            "小红",
+            "妈妈"
+          ],
+          "beats": 5,
+          "placed": {
+            "需要": 3,
+            "帮助": 4,
+            "必须": 3,
+            "男人": 4,
+            "女人": 4,
+            "关系": 5
+          }
+        },
+        "score": {
+          "label": "A",
+          "contradiction": false,
+          "overall": 9,
+          "reason": "Strong cause-and-effect, natural motivation for all target words, fits HSK 3 level well.",
+          "causal": 9,
+          "chronology": 8,
+          "plausibility": 8,
+          "simplicity": 9,
+          "targetFit": 8,
+          "suitability": 8
+        },
+        "acceptable": true
+      }
+    ],
+    "judgeRaw": null,
+    "selection": {
+      "scaffoldCode": "TARGET_SCAFFOLD_FAILED"
+    },
+    "beats": null,
+    "draft": null,
+    "before": null,
+    "preRepairCritique": null,
+    "decision": null,
+    "repair": null,
+    "after": null
+  },
+  "candidate": {
+    "manifestId": "bakeoff-L3-001",
+    "status": "rejected",
+    "title": null,
+    "content": null,
+    "englishContent": null,
+    "validation": null,
+    "critique": null,
+    "attempts": 0,
+    "calls": null,
+    "generatorVersion": "fab9-blueprint-first@1",
+    "promptVersion": "fab9-prompts@2",
+    "judgeVersion": "fab9-judge@1",
+    "plannerVersion": "fab9-repair-plan@1",
+    "usage": null
+  },
+  "staged": null
+}
