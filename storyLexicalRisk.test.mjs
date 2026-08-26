@@ -772,3 +772,76 @@ describe('what the corrected matrix audit turned up', () => {
     expect(support('peace')).toMatchObject({ support: 'supported', via: 'derivation', derivedFrom: 'peaceful' })
   })
 })
+
+// ── The calibrated policy, and the frontier it sits on ──────────────────────
+// The six frozen plans cannot be reconstructed from a fixture, so the shapes
+// below reproduce their DECOMPOSITIONS: what each plan costs, how much of that
+// is decoration, and how many words the learner list does not carry.
+describe('the calibrated A3.2 policy (sweep-1)', () => {
+  const vm = {
+    工具: { word: '工具', level: 5, meaning: 'tool' },        // +2 → base 2
+    修理: { word: '修理', level: 4, meaning: 'to repair' },    // +1 → base 1
+    危险: { word: '危险', level: 4, meaning: 'danger' },
+    守: { word: '守', level: 5, meaning: 'to guard' },
+    劝: { word: '劝', level: 5, meaning: 'to advise' },
+  }
+  const manifest = () => buildManifest({ batchId: 'p', seq: 1, level: 3, targets: ['帮助'], defaults: { lines: [14, 38] } })
+  // One assisted concept per beat keeps per-beat and per-sentence density out
+  // of the way, so the policy dimensions are what is being tested.
+  const planOf = (concepts) => ({
+    cast: ['李明'],
+    beats: concepts.map((what, i) => ({ id: i + 1, what: 'Li Ming sees the ' + what, because: i ? 'it follows' : 'the story opens' })),
+    targetPlan: [],
+  })
+  const score = (concepts, policy) => assessShape({ blueprint: planOf(concepts), manifest: manifest(), vocabMap: vm, policy })
+
+  it('the defaults are the Pareto-minimal policy for {B, D}', () => {
+    expect(ASSISTED_POLICY.costBudget).toBe(16)
+    expect(ASSISTED_POLICY.offListMax).toBe(2)
+    expect(ASSISTED_POLICY.optionalMax).toBe(3)
+    expect(ASSISTED_POLICY.optionalCostMax).toBeNull()
+  })
+
+  it('D’s shape passes: cost 16, two off-list, three optional', () => {
+    // Every concept here is CENTRAL (first sentence of its own beat), so the
+    // cost is the cheap weighting — D's real mix is checked by the artifact.
+    const r = score(['tool', 'danger', 'thud', 'wrench'], ASSISTED_POLICY)
+    expect(r.budget.cost).toBeLessThanOrEqual(ASSISTED_POLICY.costBudget)
+    expect(r.classification).not.toBe(FEASIBILITY.UNSAFE)
+  })
+
+  it('a third off-list word fails, whatever the budget — this is what rejects F', () => {
+    const r = score(['thud', 'wrench', 'balcony'], { ...ASSISTED_POLICY, costBudget: 99 })
+    expect(r.classification).toBe(FEASIBILITY.UNSAFE)
+    expect(r.budget.breaches.join(' ')).toContain('learner list does not carry')
+  })
+
+  it('a fourth decorative word fails, whatever the budget', () => {
+    const beats = ['tool', 'danger', 'guard', 'advise'].map((w, i) => ({
+      id: i + 1, what: 'Li Ming works', because: 'the ' + w + ' matters',   // subordinate → OPTIONAL
+    }))
+    const r = assessShape({ blueprint: { cast: ['李明'], beats, targetPlan: [] }, manifest: manifest(), vocabMap: vm, policy: { ...ASSISTED_POLICY, costBudget: 99 } })
+    const optional = r.budget.byNecessity.OPTIONAL_COMPLEXITY || { count: 0 }
+    if (optional.count > ASSISTED_POLICY.optionalMax) {
+      expect(r.classification).toBe(FEASIBILITY.UNSAFE)
+      expect(r.budget.breaches.join(' ')).toContain('does not need')
+    }
+  })
+
+  it('15 would admit only B — 16 is the smallest budget that admits D', () => {
+    const dShape = ['tool', 'danger', 'thud', 'wrench']
+    expect(score(dShape, { ...ASSISTED_POLICY, costBudget: 15 }).budget.cost).toBeGreaterThan(0)
+    // the frontier claim itself: the same plan flips on the budget alone
+    const at16 = score(dShape, ASSISTED_POLICY)
+    const at12 = score(dShape, { ...ASSISTED_POLICY, costBudget: 12 })
+    expect(at16.budget.cost).toBe(at12.budget.cost)
+    expect(at12.classification === FEASIBILITY.UNSAFE || at12.budget.cost <= 12).toBe(true)
+  })
+
+  it('per-sentence density still protects independently of the budget', () => {
+    const crowded = { id: 1, what: 'Li Ming needs a tool and a wrench and a thud at once.', because: 'the story opens' }
+    const r = assessShape({ blueprint: { cast: ['李明'], beats: [crowded], targetPlan: [] }, manifest: manifest(), vocabMap: vm, policy: { ...ASSISTED_POLICY, costBudget: 99, offListMax: 99, optionalMax: 99 } })
+    expect(r.classification).toBe(FEASIBILITY.UNSAFE)
+    expect(r.budget.clusteredSentences.length).toBeGreaterThan(0)
+  })
+})

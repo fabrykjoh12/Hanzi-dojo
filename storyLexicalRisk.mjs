@@ -611,7 +611,10 @@ export const ASSISTED_POLICY = {
   distanceCost: { 1: 1, 2: 2, 3: 4 },
   farCost: 6,
   offListCost: 4,
-  costBudget: 12,
+  // Calibrated 2026-08-26 on six frozen plans (sweep-1). 16 is the smallest
+  // budget that admits D (quality 9, two central words and 劝 for the advice
+  // the story is about); 15 admits only B (quality 6).
+  costBudget: 16,
   // A word the learner list does not carry reaches the deterministic validator
   // as an UNKNOWN word, not an above-level one, and that gate is strict. Plan
   // time may not promise more of them than validation will accept.
@@ -622,7 +625,10 @@ export const ASSISTED_POLICY = {
   necessityWeight: { CENTRAL_NECESSARY: 0.75, NATURAL_SUPPORT: 1, OPTIONAL_COMPLEXITY: 1.5 },
   // Ceilings on gratuitous difficulty specifically. null = not enforced; the
   // total-cost budget is then the only limit on decoration.
-  optionalMax: null,
+  // The Pareto-minimal policy for {B, D}: three is exactly what D needs, and
+  // nothing looser buys a better story. It is a ceiling on decoration, so it
+  // sits alongside the budget rather than inside it.
+  optionalMax: 3,
   optionalCostMax: null,
   // The learner can tap a word; they should not have to tap half a sentence.
   assistedPerSentencePreferred: 1,

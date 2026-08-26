@@ -154,6 +154,70 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### A3.2 policy calibrated on the frozen six (2026-08-26)
+
+**New defaults: `costBudget 16`, `offListMax 2`, `optionalMax 3`.**
+
+Decomposition of the six frozen plans (`sweep-1`, nothing regenerated):
+
+| plan | q | total | off-list | central | support | optional | max/sentence |
+|---|---|---|---|---|---|---|---|
+| **D** | 9 | 16 | 2 | 2× cost 5 | — | 3× cost 11 | 2 |
+| **B** | 6 | 12 | 2 | 2× cost 6 | — | 2× cost 6 | 1 |
+| F | 6 | 17 | **3** | 2× cost 5 | — | 2× cost 12 | 1 |
+| E | 9 | 25 | 2 | 2× cost 5 | 4× cost 8 | 3× cost 12 | 2 |
+| A | 8 | 29 | 5 | 4× cost 11 | — | 3× cost 18 | 2 |
+| C | 4 | 38 | 8 | 7× cost 17 | — | 4× cost 21 | 4 |
+
+**The Pareto frontier has three outcomes, one minimal policy each:**
+
+| admits | minimal policy |
+|---|---|
+| **B + D** | **cost 16 · offList 2 · optionalMax 3** |
+| B only | cost 12 · offList 2 · optionalMax 2 · optionalCostMax 6 |
+| nothing | cost 12 · offList 2 · optionalMax 1 · optionalCostMax 3 |
+
+**F never appears in any admitted set at `offListMax 2`** — it carries three
+words the learner list does not have (`offer`, `conditional`, `email`), so the
+off-list cap already rejects it and no separate optional ceiling is needed for
+that job. `optionalCostMax` is left off: it never produced an outcome the count
+cap did not.
+
+D earns admission on its word list: 劝 (HSK 5) and `offer` are
+CENTRAL_NECESSARY — it is a story about advising someone against an offer —
+against 守, 危险 and `provides` as decoration. F's two dearest words are both
+OPTIONAL_COMPLEXITY.
+
+**Caveat worth carrying: `optionalMax 3` binds exactly at D's count.** It is
+Pareto-minimal on this evidence and defensible on principle, but a fourth
+decorative word now fails a plan, on a sample of six.
+
+### The provenance audit found the next problem (open)
+
+Every non-direct in-level match was listed, and the **synonym and component
+bridges are producing false in-level matches** — which *understate* cost, the
+opposite direction of the bugs fixed so far:
+
+```
+job    → synonym   → 沙发 / 邮件 / 邮箱      (sofa, email, mailbox)
+offer  → synonym   → 开 / 打开 / 开花        (to open, to bloom)
+view   → synonym   → 手表                   (wristwatch — the object, not the act)
+current→ synonym   → 礼物                   (gift)
+choice → component → 不                     (not)
+guidance→component → 请                     (please)
+```
+
+Correct ones exist too (`happiness → 高兴/快乐/开心`, `night → 晚`,
+`peace → 安静` via derivation, `suggested → 最好` via the parenthetical), so the
+bridges are not worthless — but the synonym graph links single-word senses
+*within* a polysemous entry, which is the tire/累 homograph problem again, one
+level up: 看 "to look; to watch" makes watch ≈ look, and something glossing
+"view" then chains to 手表.
+
+**This biases every cost downward**, so the calibrated budget may be too
+generous once it is fixed. Fix the bridge, re-run `sweep-1`, and confirm the
+frontier before trusting 16 as a long-term number.
+
 ### 被 is a vocabulary content defect, not a pipeline one (open, found 2026-08-26)
 
 **Do not compensate for this inside the story pipeline.** Deferring 被 is
