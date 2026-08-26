@@ -998,11 +998,49 @@ Three facts are needed from the owner:
    address is the norm, and it becomes the address a supervisory authority
    writes to.
 
-One related fact also needs owner confirmation, and is not discoverable from the
-repo or the database: **whether data-processing agreements are actually in place**
-with Supabase, Vercel, Cloudflare and Brevo. Article 28 requires a processor
-contract. All four publish standard DPAs; whether they have been accepted for
-this account is an owner fact.
+#### Processor agreements — checked against each provider's current terms
+
+The earlier draft of this section asked the owner to "confirm DPAs are in place",
+which was lazy: for self-service accounts that is usually not a signing exercise
+at all, and saying so without checking would have sent the owner hunting for
+four signatures that mostly do not exist. Checked properly:
+
+| Provider | DPA exists | How it becomes binding | Signature needed? |
+|---|---|---|---|
+| **Supabase** | Yes | Incorporated by reference into the Terms of Service — the ToS states the parties agree to comply with the DPA, which is incorporated into the agreement | **No** |
+| **Vercel** | Yes | Forms part of the customer agreement — **but by its own terms it applies to Enterprise and Pro plans** | **No** — *if* we are on Pro. See below |
+| **Cloudflare** | Yes (Customer DPA, current version) | Incorporated by reference into the Self-Serve Subscription Agreement where customer content includes EEA personal data | **No** |
+| **Brevo** | Yes (Annex 2 to the General Terms) | Annexed to, and forms part of, the terms accepted at sign-up | **No** |
+
+So **three of the four are already covered automatically**, with nothing to sign
+and nothing to request. Only Vercel has a real question, and it is not about
+signing — it is about **which plan the project is on**, because Vercel's DPA
+scopes itself to Enterprise and Pro. On Hobby there is no DPA coverage by its own
+terms. That is one fact for the owner, not a contracting exercise.
+
+Two things worth recording while checking this, because both narrow the exposure:
+
+**Cloudflare is DNS-only here, and is not in the request path.** `docs/BACKLOG.md:112`
+says as much ("all added in Cloudflare DNS, the authoritative nameserver; Vercel
+only hosts"), and DNS confirms it: `hanzi-dojo.com` resolves to `216.198.79.65`
+and `64.29.17.65` — the same anycast ranges as `hanzi-dojo-jet.vercel.app`
+(`216.198.79.3`, `64.29.17.3`), and in **none** of Cloudflare's published IPv4
+ranges. The proxy is off. Cloudflare answers name lookups; it does not see
+learners' page requests, their IP addresses while browsing, or any content. The
+policy already describes it as "Cloudflare (DNS)", which is correct as written.
+
+**Brevo is genuinely in use**, so it is a real processor rather than a
+placeholder: `docs/BACKLOG.md:112` records Supabase custom SMTP wired to
+`smtp-relay.brevo.com:587` with sender `no-reply@hanzi-dojo.com`, configured
+2026-07-18. It handles sign-up and password emails, so it processes the email
+address and the message. (Its live send test is still listed as pending — that is
+a delivery question, not a contractual one.)
+
+**One fact still needed from the owner:** which Vercel plan the `hanzi-dojo`
+project is on. Pro or Enterprise → the DPA already applies and there is nothing
+to do. Hobby → the DPA does not apply by its own terms, and Vercel is a genuine
+processor here (it serves the app and logs visitor IP addresses), so that would
+need resolving before launch.
 
 ### 2.5 Other PASS results worth recording
 
