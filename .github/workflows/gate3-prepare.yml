@@ -7,32 +7,39 @@ name: Gate 3 — Prepare (read-only)
 # It never applies. Applying is a separate, separately-approved workflow
 # (gate3-apply.yml) that consumes exactly the artifact this run produces.
 #
-# ── WHY EVERYTHING IS ENCRYPTED ────────────────────────────────────────────
-# Hanzi-dojo is a PUBLIC repository. On a public repo both the job log and the
-# uploaded artifacts are readable by anyone on the internet. The snapshot is a
-# complete copy of ~800 user card rows and the manifest carries account ids,
-# card ids and real grade history, so neither may leave this runner in plain
-# text, and the log must not name an account.
+# ── WHY THE CODE SHA IS PINNED, NOT AN INPUT ───────────────────────────────
+# This job hands the production service-role credential to whatever repository
+# code it checked out. A free-form `migration_ref` input would mean a typo, or
+# any branch SHA, could run arbitrary repository code with that credential. So
+# there is no input: APPROVED_MIGRATION_SHA below is the one commit this
+# migration is allowed to run, fixed in the workflow, changeable only by a
+# reviewed commit to the default branch. Fail closed.
+#
+# ── WHY EVERYTHING IS ENCRYPTED, AND WHY NOTHING IS PIPED TO THE LOG ───────
+# Hanzi-dojo is a PUBLIC repository. Job logs and artifacts are readable by
+# anyone on the internet. The snapshot is a complete copy of ~800 user card
+# rows; the manifest carries account ids, card ids and real grade history.
 #
 #   snapshot  -> GPG PUBLIC-KEY encrypted to a recipient whose private key
 #                exists only on the maintainer's machine. CI cannot decrypt it,
-#                now or ever. It is rollback material, and CI never needs to
-#                read it back.
+#                now or ever. It is rollback material; CI never reads it back.
 #   manifest  -> GPG symmetric, passphrase from an Actions secret. Apply MUST
 #                read this back, so the key has to live in CI; the artifact is
 #                still opaque to anyone who downloads it.
-#   log       -> the script runs with --redact, so accounts and cards appear as
-#                account#1 / card#3 rather than UUIDs.
-#   metadata  -> counts and digests only. Deliberately plain text: it carries
-#                no user data and it is what a human reads to approve.
+#   logs      -> every command that touches production runs through
+#                ops/run-guarded.sh: output goes to a runner-local file, the
+#                leak guard scans it, and it is printed ONLY if it is clean.
+#                A failing log is destroyed before the step returns, so no
+#                later step can upload or summarize it.
+#   metadata  -> counts and digests only. Deliberately plain: no user data, and
+#                it is what a human reads to approve.
+#
+# Secrets are the repository's EXISTING ones. Gate 3 creates no duplicate copy
+# of the Supabase credentials; GATE3_MANIFEST_PASSPHRASE is the only new one.
 
 on:
   workflow_dispatch:
     inputs:
-      migration_ref:
-        description: 'Exact commit SHA of the approved migration code (full 40-char SHA)'
-        required: true
-        type: string
       confirm:
         description: 'Type PREPARE to confirm this reads production'
         required: true
@@ -45,12 +52,18 @@ concurrency:
   group: gate3
   cancel-in-progress: false
 
+env:
+  # The ONLY commit this migration may run. Set in a reviewed commit; never an
+  # input. See ops/README-gate3-snapshot-key.md.
+  APPROVED_MIGRATION_SHA: 'REPLACE_WITH_APPROVED_COMMIT_SHA'
+
 jobs:
   prepare:
     name: Snapshot, dry run and manifest
     runs-on: ubuntu-latest
-    # Read-only against production, but it does hold the service key, so it is
-    # still gated on an environment whose secrets only this workflow can reach.
+    # Read-only against production, but it does hold the service key. The
+    # environment's deployment-branch rule is what stops a dispatch from an
+    # arbitrary branch: if the branch is not allowed, the job never starts.
     environment: gate3-prepare
     timeout-minutes: 20
 
@@ -61,70 +74,78 @@ jobs:
           echo "::error::confirm must be exactly PREPARE"
           exit 1
 
-      - name: Check out the approved migration commit
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ inputs.migration_ref }}
-          persist-credentials: false
-
-      - name: Confirm the checkout is exactly the requested commit
+      - name: Refuse to run against an unpinned commit
         run: |
-          actual="$(git rev-parse HEAD)"
-          if [ "$actual" != "${{ inputs.migration_ref }}" ]; then
-            echo "::error::checked out $actual, expected ${{ inputs.migration_ref }}"
+          if ! printf '%s' "$APPROVED_MIGRATION_SHA" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::APPROVED_MIGRATION_SHA is not a full 40-character commit SHA."
+            echo "::error::Gate 3 will not hand production credentials to unpinned code."
             exit 1
           fi
-          echo "migration commit: $actual"
+          echo "approved migration commit: $APPROVED_MIGRATION_SHA"
 
-      - uses: actions/setup-node@v4
+      - name: Check out the approved migration commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ env.APPROVED_MIGRATION_SHA }}
+          persist-credentials: false
+
+      - name: Confirm the checkout is exactly the approved commit
+        run: |
+          actual="$(git rev-parse HEAD)"
+          if [ "$actual" != "$APPROVED_MIGRATION_SHA" ]; then
+            echo "::error::checked out $actual, expected $APPROVED_MIGRATION_SHA"
+            exit 1
+          fi
+          test -s ops/leakGuard.mjs   || { echo "::error::leak guard missing from the approved commit"; exit 1; }
+          test -x ops/run-guarded.sh  || chmod +x ops/run-guarded.sh
+          echo "verified: running $actual"
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
           node-version: 22
           cache: npm
 
       - run: npm ci
 
-      # The migration's own regressions must pass on THIS commit before it is
-      # allowed to read production. Cheap, and it fails closed.
-      - name: Migration tests
-        run: npx vitest run src/migration/
+      # The migration's own regressions, and the leak guard's, must pass on THIS
+      # commit before it is allowed to read production. Cheap, and fails closed.
+      - name: Migration and leak-guard tests
+        run: npx vitest run src/migration/ leak-guard.test.mjs
 
       - name: Verify the snapshot recipient key is present
         run: |
           if [ ! -s ops/gate3-snapshot-recipient.asc ]; then
             echo "::error::ops/gate3-snapshot-recipient.asc is missing."
-            echo "::error::Generate a keypair locally and commit ONLY the public half:"
-            echo "::error::  gpg --quick-generate-key 'Hanzi-dojo Gate 3 snapshot' default default never"
-            echo "::error::  gpg --armor --export <key-id> > ops/gate3-snapshot-recipient.asc"
+            echo "::error::Generate a keypair locally and commit ONLY the public half —"
+            echo "::error::see ops/README-gate3-snapshot-key.md."
             exit 1
           fi
           gpg --import-options show-only --import ops/gate3-snapshot-recipient.asc
 
+      # ── Production reads start here. Every one is guarded. ──────────────
       - name: Create the pre-apply snapshot (no production writes)
         env:
-          # Reuses the repository's existing secrets — Gate 3 introduces no
-          # duplicate copy of the Supabase credentials. This mapping
-          # (VITE_SUPABASE_URL -> SUPABASE_URL) is the same one
-          # content-utils.yml and regen-content.yml already use.
+          # The repository's EXISTING secrets — no duplicate credentials.
+          # This mapping is the same one content-utils.yml already uses.
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          mkdir -p /tmp/gate3 && chmod 700 /tmp/gate3
+          mkdir -p /tmp/gate3/logs && chmod 700 /tmp/gate3
           cd /tmp/gate3
-          node "$GITHUB_WORKSPACE/migrate-legacy-claims.mjs" --snapshot --redact | tee snapshot.log
-          # The script names the file itself; there is exactly one.
+          "$GITHUB_WORKSPACE/ops/run-guarded.sh" /tmp/gate3/logs/snapshot.log -- \
+            node "$GITHUB_WORKSPACE/migrate-legacy-claims.mjs" --snapshot --redact
           plain="$(ls -1 legacy-claim-snapshot-*.json)"
           echo "SNAPSHOT_PLAIN=$plain" >> "$GITHUB_ENV"
 
-      - name: Encrypt the snapshot to the maintainer's key, then destroy the plaintext
+      - name: Encrypt the snapshot, then destroy the plaintext
         run: |
           cd /tmp/gate3
           mkdir -p out
           gpg --batch --yes --trust-model always \
               --recipient-file "$GITHUB_WORKSPACE/ops/gate3-snapshot-recipient.asc" \
               --output "out/${SNAPSHOT_PLAIN}.gpg" --encrypt "$SNAPSHOT_PLAIN"
-          # Digest of the PLAINTEXT, so the maintainer can verify what they
-          # decrypt is byte-identical to what was captured. A digest is not
-          # sensitive.
+          # Digest of the PLAINTEXT, so the maintainer can prove what they
+          # decrypt is byte-identical to what was captured. Not sensitive.
           sha256sum "$SNAPSHOT_PLAIN" | awk '{print $1}' > out/snapshot.plaintext.sha256
           shred -u "$SNAPSHOT_PLAIN" 2>/dev/null || rm -f "$SNAPSHOT_PLAIN"
           test ! -f "$SNAPSHOT_PLAIN"
@@ -132,16 +153,13 @@ jobs:
 
       - name: Fresh dry run and manifest (no production writes)
         env:
-          # Reuses the repository's existing secrets — Gate 3 introduces no
-          # duplicate copy of the Supabase credentials. This mapping
-          # (VITE_SUPABASE_URL -> SUPABASE_URL) is the same one
-          # content-utils.yml and regen-content.yml already use.
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
           cd /tmp/gate3
-          node "$GITHUB_WORKSPACE/migrate-legacy-claims.mjs" \
-            --manifest /tmp/gate3/manifest.json --redact | tee dryrun.log
+          "$GITHUB_WORKSPACE/ops/run-guarded.sh" /tmp/gate3/logs/dryrun.log -- \
+            node "$GITHUB_WORKSPACE/migrate-legacy-claims.mjs" \
+              --manifest /tmp/gate3/manifest.json --redact
 
       # The check the snapshot bug taught us to make explicit: the snapshot must
       # cover EVERY row the manifest can act on. Both come from the same
@@ -153,7 +171,7 @@ jobs:
           node -e '
             const fs = require("fs");
             const manifest = JSON.parse(fs.readFileSync("manifest.json", "utf8"));
-            const snapLog = fs.readFileSync("snapshot.log", "utf8");
+            const snapLog = fs.readFileSync("logs/snapshot.log", "utf8");
             const num = re => { const m = snapLog.match(re); return m ? Number(m[1]) : null; };
             const snapConvert = num(/convert rows\s+(\d+)/);
             const snapReplay  = num(/replay rows\s+(\d+)/);
@@ -173,7 +191,7 @@ jobs:
         run: |
           cd /tmp/gate3
           if [ -z "$MANIFEST_PASSPHRASE" ]; then
-            echo "::error::GATE3_MANIFEST_PASSPHRASE is not set"; exit 1
+            echo "::error::GATE3_MANIFEST_PASSPHRASE is not set on the gate3-prepare environment"; exit 1
           fi
           sha256sum manifest.json | awk '{print $1}' > out/manifest.plaintext.sha256
           gpg --batch --yes --symmetric --cipher-algo AES256 \
@@ -188,7 +206,7 @@ jobs:
             const fs = require("fs");
             const meta = {
               kind: "hanzi-dojo/gate3-prepare",
-              migration_commit: process.env.GITHUB_SHA,
+              migration_commit: process.env.APPROVED_MIGRATION_SHA,
               prepare_run_id: process.env.GITHUB_RUN_ID,
               prepared_at: new Date().toISOString(),
               manifest_sha256: fs.readFileSync("out/manifest.plaintext.sha256", "utf8").trim(),
@@ -197,8 +215,8 @@ jobs:
             fs.writeFileSync("out/gate3-metadata.json", JSON.stringify(meta, null, 2));
             console.log(JSON.stringify(meta, null, 2));
           '
-          # Redacted logs are safe to keep alongside; they name no account.
-          cp snapshot.log dryrun.log out/
+          # Guarded logs only — each was cleared before it was ever printed.
+          cp logs/snapshot.log logs/dryrun.log out/
 
       - name: Job summary
         run: |
@@ -208,8 +226,10 @@ jobs:
             echo
             echo "Nothing was written to production."
             echo
+            echo "Migration code: \`$APPROVED_MIGRATION_SHA\` (pinned in the workflow)"
+            echo
             echo '```'
-            sed -n '/CLASSIFICATION/,/BATCH CORROBORATION/p' dryrun.log
+            sed -n '/CLASSIFICATION/,/BATCH CORROBORATION/p' logs/dryrun.log
             echo '```'
             echo
             echo "### To apply"
@@ -217,14 +237,13 @@ jobs:
             echo
             echo "- \`prepare_run_id\`: \`$GITHUB_RUN_ID\`"
             echo "- \`manifest_sha256\`: \`$(cat out/manifest.plaintext.sha256)\`"
-            echo "- \`migration_ref\`: \`$GITHUB_SHA\`"
             echo
             echo "Snapshot plaintext SHA-256 (verify after you decrypt): \`$(cat out/snapshot.plaintext.sha256)\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Only ciphertext, digests and redacted logs leave the runner.
+      # Only ciphertext, digests and guard-cleared logs leave the runner.
       - name: Upload the encrypted bundle
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: gate3-prepare-${{ github.run_id }}
           path: /tmp/gate3/out/

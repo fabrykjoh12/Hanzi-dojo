@@ -2,18 +2,27 @@ name: Gate 3 — Apply approved manifest
 
 # Applies EXACTLY the manifest a specific Prepare run produced. It never
 # re-derives what to do, never classifies afresh, and never runs unattended:
-# the `gate3-production` environment must have a required reviewer, so GitHub
+# the `gate3-production` environment carries a required reviewer, so GitHub
 # holds the job until a human approves it.
 #
-# Three independent things must line up before a single row is written:
+# Four independent things must line up before a single row is written:
 #   1. the operator names the Prepare run (prepare_run_id)
-#   2. the operator pastes that run's manifest digest (manifest_sha256), and
-#      this job recomputes it after decrypting — a mismatch aborts
-#   3. the checked-out code is the same commit Prepare recorded
+#   2. the operator pastes that run's manifest digest, and this job recomputes
+#      it AFTER decrypting — a mismatch aborts
+#   3. the bundle's recorded migration commit equals APPROVED_MIGRATION_SHA
+#   4. the checked-out code IS that same pinned commit
 #
-# The migration script's own compare-and-swap is untouched: every UPDATE still
+# There is deliberately no `migration_ref` input. The code that receives the
+# production service-role credential is fixed in this file and changeable only
+# by a reviewed commit to the default branch — a typo or a feature-branch SHA
+# must never be able to run arbitrary repository code against production.
+#
+# The migration script's compare-and-swap is untouched: every UPDATE still
 # carries its precondition in its WHERE clause, so a row graded between Prepare
 # and Apply is skipped as STALE_ROW rather than overwritten.
+#
+# Every command that touches production runs through ops/run-guarded.sh, so no
+# output reaches this public log until the leak guard has cleared it.
 #
 # 20260822180000 (the scheduler-state constraint) is NOT run here. It is a
 # separate gate, after these invariants are confirmed clean.
@@ -29,10 +38,6 @@ on:
         description: 'manifest_sha256 from that run summary (64 hex chars)'
         required: true
         type: string
-      migration_ref:
-        description: 'Exact commit SHA Prepare used (full 40-char SHA)'
-        required: true
-        type: string
       confirm:
         description: 'Type APPLY-TO-PRODUCTION to confirm'
         required: true
@@ -40,18 +45,24 @@ on:
 
 permissions:
   contents: read
-  actions: read      # to download the Prepare run's artifact
+  actions: read      # download the Prepare run's artifact; nothing more
 
 concurrency:
   group: gate3
   cancel-in-progress: false
 
+env:
+  # Must be byte-identical to gate3-prepare.yml. Both are changed together, in
+  # a reviewed commit.
+  APPROVED_MIGRATION_SHA: 'REPLACE_WITH_APPROVED_COMMIT_SHA'
+
 jobs:
   apply:
     name: Apply to production
     runs-on: ubuntu-latest
-    # REQUIRED REVIEWER lives here. Configure gate3-production with at least
-    # one reviewer; GitHub will pause this job until it is approved.
+    # REQUIRED REVIEWER lives here, together with the deployment-branch rule.
+    # GitHub pauses this job until a human approves, and refuses to start it at
+    # all from a branch the environment does not allow.
     environment: gate3-production
     timeout-minutes: 30
 
@@ -62,13 +73,40 @@ jobs:
           echo "::error::confirm must be exactly APPLY-TO-PRODUCTION"
           exit 1
 
+      - name: Validate inputs and the pin
+        env:
+          MANIFEST_SHA256: ${{ inputs.manifest_sha256 }}
+          PREPARE_RUN_ID: ${{ inputs.prepare_run_id }}
+        run: |
+          if ! printf '%s' "$APPROVED_MIGRATION_SHA" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::APPROVED_MIGRATION_SHA is not a full 40-character commit SHA."
+            echo "::error::Gate 3 will not hand production credentials to unpinned code."
+            exit 1
+          fi
+          printf '%s' "$MANIFEST_SHA256" | grep -Eq '^[0-9a-f]{64}$' \
+            || { echo "::error::manifest_sha256 must be 64 hex characters"; exit 1; }
+          printf '%s' "$PREPARE_RUN_ID" | grep -Eq '^[0-9]+$' \
+            || { echo "::error::prepare_run_id must be numeric"; exit 1; }
+          echo "approved migration commit: $APPROVED_MIGRATION_SHA"
+
       - name: Check out the approved migration commit
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ inputs.migration_ref }}
+          ref: ${{ env.APPROVED_MIGRATION_SHA }}
           persist-credentials: false
 
-      - uses: actions/setup-node@v4
+      - name: Confirm the checkout is exactly the approved commit
+        run: |
+          actual="$(git rev-parse HEAD)"
+          if [ "$actual" != "$APPROVED_MIGRATION_SHA" ]; then
+            echo "::error::checked out $actual, expected $APPROVED_MIGRATION_SHA"
+            exit 1
+          fi
+          test -s ops/leakGuard.mjs   || { echo "::error::leak guard missing from the approved commit"; exit 1; }
+          test -x ops/run-guarded.sh  || chmod +x ops/run-guarded.sh
+          echo "verified: running $actual"
+
+      - uses: actions/setup-node@39370e3970a6d050c480ffad4ff0ed4d3fdee5af # v4.1.0
         with:
           node-version: 22
           cache: npm
@@ -76,45 +114,48 @@ jobs:
       - run: npm ci
 
       - name: Download the Prepare bundle
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@fa0a91b85d4f404e444e00e005971372dc801d16 # v4.1.8
         with:
           name: gate3-prepare-${{ inputs.prepare_run_id }}
           run-id: ${{ inputs.prepare_run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
           path: /tmp/gate3-in
 
-      - name: Verify the bundle belongs to the approved commit and run
+      - name: Verify the bundle matches the pinned commit, the run and the digest
+        env:
+          PREPARE_RUN_ID: ${{ inputs.prepare_run_id }}
+          MANIFEST_SHA256: ${{ inputs.manifest_sha256 }}
         run: |
+          mkdir -p /tmp/gate3/logs && chmod 700 /tmp/gate3
           meta=/tmp/gate3-in/gate3-metadata.json
           test -s "$meta" || { echo "::error::metadata missing from the bundle"; exit 1; }
-          cat "$meta"
+          # Generated by us and digest-only, but guarded anyway — uniform rule.
+          "$GITHUB_WORKSPACE/ops/run-guarded.sh" /tmp/gate3/logs/metadata.log -- cat "$meta"
           node -e '
             const fs = require("fs");
             const m = JSON.parse(fs.readFileSync("/tmp/gate3-in/gate3-metadata.json","utf8"));
             const want = {
-              migration_commit: process.env.MIGRATION_REF,
+              migration_commit: process.env.APPROVED_MIGRATION_SHA,
               prepare_run_id: process.env.PREPARE_RUN_ID,
               manifest_sha256: process.env.MANIFEST_SHA256,
             };
             const bad = Object.entries(want).filter(([k,v]) => String(m[k]) !== String(v));
             if (bad.length) {
-              console.error("::error::bundle does not match the approval inputs");
-              for (const [k,v] of bad) console.error(`  ${k}: bundle ${m[k]} vs requested ${v}`);
+              console.error("::error::bundle does not match the approval inputs or the pinned commit");
+              for (const [k,v] of bad) console.error(`  ${k}: bundle ${m[k]} vs required ${v}`);
               process.exit(1);
             }
-            console.log("bundle matches commit, run id and manifest digest");
+            console.log("bundle matches the pinned commit, the run id and the manifest digest");
           '
-        env:
-          MIGRATION_REF: ${{ inputs.migration_ref }}
-          PREPARE_RUN_ID: ${{ inputs.prepare_run_id }}
-          MANIFEST_SHA256: ${{ inputs.manifest_sha256 }}
 
       - name: Decrypt the manifest and re-verify its digest
         env:
           MANIFEST_PASSPHRASE: ${{ secrets.GATE3_MANIFEST_PASSPHRASE }}
           MANIFEST_SHA256: ${{ inputs.manifest_sha256 }}
         run: |
-          mkdir -p /tmp/gate3 && chmod 700 /tmp/gate3
+          if [ -z "$MANIFEST_PASSPHRASE" ]; then
+            echo "::error::GATE3_MANIFEST_PASSPHRASE is not set on the gate3-production environment"; exit 1
+          fi
           gpg --batch --yes --quiet --passphrase-fd 0 --decrypt \
               --output /tmp/gate3/manifest.json /tmp/gate3-in/manifest.json.gpg <<< "$MANIFEST_PASSPHRASE"
           actual="$(sha256sum /tmp/gate3/manifest.json | awk '{print $1}')"
@@ -125,60 +166,58 @@ jobs:
           fi
           echo "manifest digest verified: $actual"
 
+      # ── The only production write in the entire design. ─────────────────
       # The manifest is a photograph. The script re-reads every row and applies
       # only where the recorded precondition still holds; anything that moved is
       # reported STALE_ROW and skipped, never forced.
       - name: Apply the approved manifest
         env:
-          # Reuses the repository's existing secrets — Gate 3 introduces no
-          # duplicate copy of the Supabase credentials. This mapping
-          # (VITE_SUPABASE_URL -> SUPABASE_URL) is the same one
-          # content-utils.yml and regen-content.yml already use.
+          # The repository's EXISTING secrets — no duplicate credentials.
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          node migrate-legacy-claims.mjs \
-            --apply --manifest /tmp/gate3/manifest.json --redact | tee /tmp/gate3/apply.log
+          "$GITHUB_WORKSPACE/ops/run-guarded.sh" /tmp/gate3/logs/apply.log -- \
+            node migrate-legacy-claims.mjs \
+              --apply --manifest /tmp/gate3/manifest.json --redact
 
       - name: Post-apply invariants
+        if: always()
         env:
-          # Reuses the repository's existing secrets — Gate 3 introduces no
-          # duplicate copy of the Supabase credentials. This mapping
-          # (VITE_SUPABASE_URL -> SUPABASE_URL) is the same one
-          # content-utils.yml and regen-content.yml already use.
           SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: |
-          node migrate-legacy-claims.mjs --redact | tee /tmp/gate3/post.log
+          "$GITHUB_WORKSPACE/ops/run-guarded.sh" /tmp/gate3/logs/post.log -- \
+            node migrate-legacy-claims.mjs --redact
 
+      # Reads only guard-cleared files. A log that failed the guard was
+      # destroyed at the point of failure, so there is nothing here to leak.
       - name: Job summary
         if: always()
         run: |
           {
             echo "## Gate 3 — Apply"
             echo
+            echo "Migration code: \`$APPROVED_MIGRATION_SHA\` (pinned)"
             echo "Manifest \`${{ inputs.manifest_sha256 }}\` from run \`${{ inputs.prepare_run_id }}\`."
             echo
             echo '### Apply'
             echo '```'
-            tail -n 40 /tmp/gate3/apply.log 2>/dev/null || echo '(no apply log)'
+            tail -n 40 /tmp/gate3/logs/apply.log 2>/dev/null || echo '(no cleared apply log)'
             echo '```'
             echo '### Post-apply census'
             echo '```'
-            sed -n '/CLASSIFICATION/,/BATCH CORROBORATION/p' /tmp/gate3/post.log 2>/dev/null || echo '(no post log)'
+            sed -n '/CLASSIFICATION/,/BATCH CORROBORATION/p' /tmp/gate3/logs/post.log 2>/dev/null || echo '(no cleared post log)'
             echo '```'
             echo
             echo "> \`20260822180000\` has NOT been applied. That is a separate gate."
           } >> "$GITHUB_STEP_SUMMARY"
 
-      # Redacted logs only — no manifest, no snapshot, no identifiers.
-      - name: Upload redacted apply logs
+      # Guard-cleared logs only. No manifest, no snapshot, no identifiers.
+      - name: Upload cleared logs
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: gate3-apply-${{ github.run_id }}
-          path: |
-            /tmp/gate3/apply.log
-            /tmp/gate3/post.log
+          path: /tmp/gate3/logs/
           retention-days: 7
           if-no-files-found: warn
