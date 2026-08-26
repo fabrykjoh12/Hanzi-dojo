@@ -173,10 +173,22 @@ if (preflightOnly) {
       // The fourth gate runs ONLY on the candidates that already pass the other
       // three: their structural, lexical and quality results are the stored
       // ones and nothing here re-judges them.
+      // Stored verdicts are reused: a candidate that already has one is never
+      // re-judged, and only a candidate that has become relevant without one
+      // costs a call.
+      const priorViability = new Map()
+      if (viabilityFromPath) {
+        const v = JSON.parse(readFileSync(viabilityFromPath, 'utf8'))
+        for (const row of (((v.reports || [])[0] || {}).rows || [])) {
+          if (row && row.viability) priorViability.set(row.label || '-', row.viability)
+        }
+      }
       for (const r of rows.filter(x => x.eligible)) {
         const c = stored.candidates.find(x => (x.label || '-') === r.label)
         const blueprint = c.plan ? adaptShape(c.plan).blueprint : c.blueprint
-        const v = await judgeTargetPlacements(blueprint, { manifest: stored.manifest, required: stored.required, provider: writer })
+        const v = priorViability.get(r.label)
+          || await judgeTargetPlacements(blueprint, { manifest: stored.manifest, required: stored.required, provider: writer })
+        if (priorViability.has(r.label)) console.log('\n  PLAN ' + r.label + ' — placement verdicts reused, not re-judged')
         r.viability = v
         r.eligible = r.eligible && v.ok
         console.log('\n  PLAN ' + r.label + ' — target placements (' + VIABILITY_VERSION + '): ' + (v.ok ? 'all writable' : 'REJECTED'))

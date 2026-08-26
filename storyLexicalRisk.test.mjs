@@ -346,6 +346,16 @@ describe('direct gloss support agrees on part of speech', () => {
     expect(senseCompatible(null, { verb: false })).toBe(true)
   })
 
+  it('a word the story TEACHES is available to it, whatever the gloss marks', () => {
+    // C beat 4 reads "Xiao Hong accepts the help and thanks him". 帮助 is
+    // glossed "assistance; aid; to help; to assist", so the noun matched only
+    // its verbal sense — and 帮助 is this story's own target word.
+    const asTarget = { ...opts('noun'), targets: new Set(['帮助']) }
+    expect(conceptSupport('help', index, full, asTarget).words).toContain('帮助')
+    // and the exemption does not rescue the tire: 累 is nobody's target
+    expect(conceptSupport('tire', index, full, asTarget)).toMatchObject({ support: 'none' })
+  })
+
   it('the beat that started this now sees the object as missing', () => {
     const beat = { id: 1, what: '李明 sees the flat tire and realizes he needs help', because: 'the story opens' }
     const r = assessBeatRisk({

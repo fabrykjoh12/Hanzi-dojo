@@ -304,10 +304,16 @@ export function componentHead(word, inLevelWords) {
   return null
 }
 
-export function conceptSupport(concept, index, fullIndex = null, { synonyms = null, inLevelWords = null, pos = null } = {}) {
+export function conceptSupport(concept, index, fullIndex = null, { synonyms = null, inLevelWords = null, pos = null, targets = null } = {}) {
   const names = (hits) => [...new Set((hits || []).map(h => (h && h.word) || h))].slice(0, 4)
+  // A word the story exists to TEACH is available to it whatever part of
+  // speech the gloss happens to mark. 帮助 is glossed "assistance; aid; to
+  // help; to assist", so "the help" matched only its verbal sense and the
+  // check called the story's own target word missing. The tire keeps its
+  // verdict: 累 is nobody's target.
+  const ok = (h) => senseCompatible(pos, h) || Boolean(targets && targets.has(h.word))
   for (const form of forms(concept)) {
-    const hit = (index.get(form) || []).filter(h => senseCompatible(pos, h))
+    const hit = (index.get(form) || []).filter(ok)
     if (hit.length) return { support: 'supported', via: 'gloss', words: names(hit) }
   }
 
@@ -316,7 +322,7 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
     for (const form of forms(concept)) {
       for (const synonym of (synonyms.get(form) || [])) {
         for (const sf of forms(synonym)) {
-          const hit = (index.get(sf) || []).filter(h => senseCompatible(pos, h))
+          const hit = (index.get(sf) || []).filter(ok)
           if (hit.length) return { support: 'supported', via: 'synonym', synonym, words: names(hit) }
         }
       }
@@ -328,7 +334,7 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
   let above = null
   if (fullIndex) {
     for (const form of forms(concept)) {
-      const hits = (fullIndex.get(form) || []).filter(h => senseCompatible(pos, h))
+      const hits = (fullIndex.get(form) || []).filter(ok)
       if (!above && hits.length) above = names(hits)
     }
   }
@@ -341,7 +347,7 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
 
   // A longer concept that is a piece of some gloss token, or vice versa.
   for (const [key, hits] of index) {
-    const usable = (hits || []).filter(h => senseCompatible(pos, h))
+    const usable = (hits || []).filter(ok)
     if (usable.length && concept.length >= 5 && (key.includes(riskStem(concept)) || riskStem(concept).includes(key)) && key.length >= 4) {
       return { support: 'weak', via: 'substring', words: names(usable).slice(0, 3) }
     }
@@ -390,10 +396,11 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
   const syn = synonyms || buildSenseSynonyms(vocabMap)
   const inLevel = inLevelWords || buildInLevelWords(vocabMap, manifest.level)
   const concepts = conceptsFromBeat(beat, entries, { names })
+  const targetWords = new Set((manifest.targets || []).map(t => t.word))
   const rate = (list) => list.map(c => ({
     concept: c,
     pos: concepts.pos.get(c) || 'unknown',
-    ...conceptSupport(c, idx, full, { synonyms: syn, inLevelWords: inLevel, pos: concepts.pos.get(c) || null }),
+    ...conceptSupport(c, idx, full, { synonyms: syn, inLevelWords: inLevel, pos: concepts.pos.get(c) || null, targets: targetWords }),
   }))
   const core = rate(concepts.core)
   const supporting = rate(concepts.supporting)
