@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { ArrowLeft } from 'lucide-react'
-import { BRAND_NAME, BRAND_URL, SUPPORT_EMAIL } from './brand'
+import { BRAND_NAME, BRAND_URL, SUPPORT_EMAIL, CONTROLLER_NAME, CONTROLLER_COUNTRY } from './brand'
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 import { externalLinkProps } from './externalLink'
 
@@ -76,11 +76,19 @@ function Privacy() {
 
       <H2>Who is responsible for your data</H2>
       <P>
-        {BRAND_NAME} decides what data is collected and why — in data-protection terms, it is
-        the <strong>controller</strong> for everything described on this page. The way to
-        reach us about any of it, including the requests listed under “Your rights” below, is{' '}
+        {BRAND_NAME} is not a company. It is built and run by{' '}
+        {CONTROLLER_NAME ? <strong>{CONTROLLER_NAME}</strong> : 'one person'}, an individual
+        based in {CONTROLLER_COUNTRY}, who decides what data is collected and why — in
+        data-protection terms, the <strong>controller</strong> for everything described on
+        this page.
+      </P>
+      <P>
+        The way to reach the controller about any of it, including every request under
+        “Your rights” below, is{' '}
         <a href={'mailto:' + SUPPORT_EMAIL} style={{ color: 'var(--text)', fontWeight: 600 }}>{SUPPORT_EMAIL}</a>.
-        We answer data requests at that address within one month.
+        It is a real, monitored inbox, and data requests are answered within one month. We
+        don’t publish a street address — this is a person, not an office — but if you need
+        one for a formal or legal purpose, ask at that address and you will get it.
       </P>
 
       <H2>What we store</H2>

@@ -966,37 +966,69 @@ The policy currently says these are kept without a fixed end date, and says
 plainly that we intend to set one — rather than implying a policy that does not
 exist yet.
 
-#### Controller identity — **NOT ESTABLISHED. This blocks sign-off**
+#### Controller identity — **RESOLVED 2026-08-26 (natural person)**
 
-Searched: `LICENSE`, `NOTICE.md`, `package.json`, `src/brand.js`, every `.md` in
-the repo, and the git history. What exists:
+There is no registered company. The owner has confirmed that **Hanzi Dojo is
+operated by a natural person**, who is therefore the controller. The notice now
+says so: it states plainly that Hanzi Dojo is not a company, that it is run by an
+individual based in **Norway**, and gives `support@hanzi-dojo.com` as the contact
+channel with a one-month response commitment.
 
-- `LICENSE`: "Copyright (c) 2026 **Hanzi Dojo**. All rights reserved." — a
-  trading name, not a legal person.
-- `package.json`: no `author`, no `license`, no `homepage`.
-- `src/brand.js`: the name, `hanzi-dojo.com`, and `support@hanzi-dojo.com`.
-- Supabase organisation: "Learning Org" — an internal label.
-- Git commits: a personal name and a personal Gmail address — which
-  `tools/verify-public-bundle.mjs` explicitly **bans** from the shipped bundle
-  as a "personal-identifier" violation, so it is plainly not intended as the
-  public contact.
+The name lives in one place — `CONTROLLER_NAME` in `src/brand.js` — and is
+rendered by the policy, so it can never drift from anything else that names the
+controller later. While it is empty the sentence still reads correctly ("run by
+one person, an individual based in Norway"), so the page is never *wrong*, only
+less specific. **Filling that constant is the last edit before this can merge.**
 
-Nowhere is there a registered company name, an organisation number, a country of
-establishment, or a postal address. **No controller identity was invented.** The
-policy names {BRAND_NAME} as the controller and gives the support address, which
-is true and is the real contact channel — but GDPR Article 13(1)(a) wants the
-controller's *identity* to be ascertainable, and a trading name alone is not.
+##### Correction: a postal address is **not** legally required here
 
-Three facts are needed from the owner:
+An earlier version of this section said "an email alone is thin for Article 13; a
+postal address is the norm". That was an overstatement and is withdrawn.
 
-1. **Is there a registered legal entity** (e.g. a Norwegian AS or
-   enkeltpersonforetak)? If so, its exact registered name and organisation
-   number.
-2. **If not** — i.e. the controller is a natural person operating under the
-   Hanzi Dojo name — the full legal name that should appear.
-3. **A contact address.** An email alone is thin for Article 13; a postal
-   address is the norm, and it becomes the address a supervisory authority
-   writes to.
+GDPR **Art. 13(1)(a)** requires *"the identity and the contact details of the
+controller"*. It does not specify a postal address, and nothing in Art. 13 or
+Art. 12 adds one. The EDPB-endorsed transparency guidance (WP260) that people
+cite for "postal address" is about the **DPO's** contact details — and Hanzi
+Dojo has no Art. 37 duty to appoint a DPO: it is not a public authority, its
+core activity is not large-scale systematic monitoring, and it processes no
+special-category data at scale.
+
+So a monitored email address satisfies "contact details" for this setup. The
+policy says we do not publish a street address, explains why (this is a person,
+not an office), and offers to provide one on request for a formal or legal
+purpose — which is what keeps the contact route adequate rather than evasive.
+Publishing a home address here would be a real harm to a real person for no
+legal gain.
+
+##### But the App Store *does* require a published address — under a different law
+
+This is separate from GDPR and it is a genuine store-launch item, so it belongs
+in Stage 4 rather than in the privacy notice.
+
+Under **DSA Articles 30 and 31**, Apple must verify and display trader contact
+information for traders distributing apps in the EU. Apple requires an
+**address, phone number and email**, and once verified **publishes them on the
+App Store product page** in all 27 EU territories. Apps that had not verified
+trader status were removed from the EU App Store on **17 February 2025**. Google
+Play operates the same regime.
+
+The declaration itself is mandatory either way — **every** developer must answer,
+including a solo developer with a free app. What differs is the answer:
+
+- **Trader** — address, phone and email are published on the product page.
+- **Non-trader** — the declaration is made, nothing is published.
+
+Trader status turns on whether the app is distributed for purposes relating to a
+trade, business, craft or profession. Hanzi Dojo is free, has no in-app
+purchases, no ads and no revenue (`docs/STORE-LISTING.md`: "Free, no in-app
+purchases, no ads"), which points at non-trader — but **this is the owner's
+declaration to make honestly, not a call this audit can make**, and getting it
+wrong quietly delists the app in the EU with no rejection email.
+
+**Action for Stage 4:** decide and record the trader/non-trader answer. If
+trader, the address question returns — but as an App Store Connect field, not as
+privacy-policy text, and that is the point at which a non-residential address
+becomes worth arranging.
 
 #### Processor agreements — checked against each provider's current terms
 

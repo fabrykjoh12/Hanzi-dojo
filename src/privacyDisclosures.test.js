@@ -35,6 +35,29 @@ describe('privacy policy — GDPR disclosure completeness', () => {
     expect(PRIVACY).toContain('SUPPORT_EMAIL')
   })
 
+  it('names the controller from a single constant, so it cannot drift', () => {
+    // The owner's legal name lives in brand.js and is rendered here. Inlining it
+    // as a literal would let the policy and any future store metadata disagree.
+    expect(PRIVACY).toContain('CONTROLLER_NAME')
+    expect(PRIVACY).toContain('CONTROLLER_COUNTRY')
+  })
+
+  it('states the controller is an individual, not a company', () => {
+    // Hanzi Dojo has no AS and no enkeltpersonforetak. Saying or implying
+    // otherwise would misidentify the controller.
+    expect(PRIVACY).toContain('is not a company')
+    expect(PRIVACY).toContain('an individual')
+  })
+
+  it('does not publish a street address, and says how to get one', () => {
+    // GDPR Art. 13(1)(a) asks for identity and contact details, not a street
+    // address; the controller is a person, so publishing a home address is a
+    // real harm with no legal upside. The offer to provide one on request is
+    // what keeps the contact details adequate.
+    expect(PRIVACY).toContain('don’t publish a street address')
+    expect(PRIVACY).toContain('ask at that address and you will get it')
+  })
+
   it('states a legal basis for each meaningful kind of processing', () => {
     expect(heading('Why we are allowed to process it')).toBe(true)
     for (const basis of ['perform our agreement', 'legitimate interest', 'your consent']) {

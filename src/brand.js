@@ -23,6 +23,27 @@ export const BRAND_INK = '#B83A24'
 // future in-app mention can never drift apart on the address.
 export const SUPPORT_EMAIL = 'support@hanzi-dojo.com'
 
+// ── The data controller (GDPR Article 13) ────────────────────────────────────
+//
+// Hanzi Dojo is operated by a natural person, not a company: there is no AS and
+// no enkeltpersonforetak. The controller is therefore that person, and the
+// privacy notice names them.
+//
+// CONTROLLER_NAME is the owner's full legal name. While it is empty the notice
+// still reads correctly — it says the app is operated by an individual based in
+// Norway — so the page is never wrong, only less specific. Fill it in before the
+// policy is published.
+//
+// No postal address is published, and none is required: GDPR Art. 13(1)(a) asks
+// for "the identity and the contact details of the controller" without
+// specifying a street address, and SUPPORT_EMAIL is a real, monitored channel.
+// (The EDPB transparency guidance that mentions a postal address is about the
+// DPO's contact details, and Hanzi Dojo has no Art. 37 duty to appoint one.)
+// The App Store's DSA trader disclosure is a separate matter — see
+// docs/PRIVACY-AUDIT.md — and is handled in App Store Connect, not here.
+export const CONTROLLER_NAME = ''
+export const CONTROLLER_COUNTRY = 'Norway'
+
 // Inline style for the small, chrome wordmark (sidebar). Clean geometric sans.
 export function wordmarkStyle(fontSize = '18px') {
   return {
