@@ -415,6 +415,23 @@ describe('assisted vocabulary — a tapped word is not a defect', () => {
     expect(r).toMatchObject({ kind: ASSIST.ASSISTED, offList: true, word: null, cost: ASSISTED_POLICY.offListCost })
   })
 
+  it('a substring coincidence never counts as in level', () => {
+    // census-5 called "downstairs" in-level because 楼梯 is glossed
+    // "stair; staircase" and the strings overlap.
+    const near = { 楼梯: { word: '楼梯', level: 3, meaning: 'stair; staircase' } }
+    const idx = buildGlossIndex(near, 3)
+    const support = conceptSupport('downstairs', idx, buildFullGlossIndex(near), {
+      synonyms: buildSenseSynonyms(near), inLevelWords: buildInLevelWords(near, 3),
+    })
+    expect(support.support).toBe('weak')
+    const r = classifyConcept(support, { vocabMap: near, level: 3 })
+    expect(r.kind).toBe(ASSIST.ASSISTED)
+    expect(r.offList).toBe(true)
+    expect(r.source).toBe('weak-match')
+    expect(r.nearest).toBe('楼梯')
+    expect(r.cost).toBe(ASSISTED_POLICY.offListCost)
+  })
+
   it('one natural central noun above the level keeps the plan usable', () => {
     const r = assessShape({
       blueprint: shape([{ id: 1, what: '李明 sees the broken bike and needs help', because: 'the story opens' }]),

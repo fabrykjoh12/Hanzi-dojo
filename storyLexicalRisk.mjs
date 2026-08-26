@@ -446,8 +446,25 @@ export function assistCost(entry, policy = ASSISTED_POLICY) {
 
 // One concept's lexical standing: in level, or assisted by a named word.
 export function classifyConcept(support, { vocabMap = {}, level = 1, policy = ASSISTED_POLICY } = {}) {
-  if (support && (support.support === 'supported' || support.support === 'weak')) {
+  if (support && support.support === 'supported') {
     return { kind: ASSIST.IN_LEVEL, cost: 0 }
+  }
+  // A WEAK match is a substring coincidence, not evidence. "downstairs" was
+  // being called in-level because 楼梯 is glossed "stair; staircase" and the
+  // strings overlap — an out-of-level concept disguised as an in-level one,
+  // which is the one thing this classification must never do. The near miss is
+  // recorded for diagnosis and pays the full off-list price.
+  if (support && support.support === 'weak') {
+    const entry = {
+      kind: ASSIST.ASSISTED,
+      word: null,
+      wordLevel: null,
+      distance: null,
+      offList: true,
+      source: 'weak-match',
+      nearest: (support.words || [])[0] || null,
+    }
+    return { ...entry, cost: assistCost(entry, policy) }
   }
   // The dictionary has a word for it, above the level: the reader taps it.
   const above = (support && support.words) || []
