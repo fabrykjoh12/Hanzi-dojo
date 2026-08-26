@@ -41,7 +41,7 @@ const ROMANIZED = (() => {
   return out
 })()
 
-export const RISK_VERSION = 'fab9-risk@2'
+export const RISK_VERSION = 'fab9-risk@3'
 
 export const RISK = { LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH' }
 
@@ -103,6 +103,31 @@ function splitClause(sentence) {
   return { main: sentence.slice(0, m.index).trim(), sub: sentence.slice(m.index).trim() }
 }
 
+// The only part-of-speech signal on the ENGLISH side is the shape of the
+// sentence the concept came from. A determiner in front of a word makes it a
+// noun ("the flat TIRE"); an inflected verb with no determiner makes it a verb
+// ("Xiao Hong STANDS"). Everything else stays unknown, and unknown never
+// blocks a match — "he needs help" must keep reaching 帮助.
+const DETERMINERS = new Set([
+  'the', 'a', 'an', 'his', 'her', 'their', 'its', 'my', 'your', 'our',
+  'this', 'that', 'these', 'those', 'one', 'two', 'three', 'some', 'any',
+  'every', 'another', 'each', 'both',
+])
+
+export function beatConceptPos(text) {
+  // A RAW split, not tokenize(): tokenize drops stopwords, and the stopwords
+  // are exactly the determiners this reads.
+  const tokens = String(text || '').toLowerCase().split(/[^a-z]+/).filter(Boolean)
+  const pos = new Map()
+  tokens.forEach((t, i) => {
+    if (pos.has(t)) return
+    const back = [tokens[i - 1], tokens[i - 2]].filter(Boolean)
+    if (back.some(w => DETERMINERS.has(w))) { pos.set(t, 'noun'); return }
+    if (/(?:ing|ed|s)$/.test(t) && t.length > 3) pos.set(t, 'verb')
+  })
+  return pos
+}
+
 // The concepts a beat depends on, sorted by how central they are.
 export function conceptsFromBeat(beat, entries = [], { names = [] } = {}) {
   const nameTokens = new Set([...names, ...ROMANIZED].flatMap(n => tokenize(
@@ -124,7 +149,8 @@ export function conceptsFromBeat(beat, entries = [], { names = [] } = {}) {
   for (const e of entries) incidental.push(...clean(e && e.intent))
   const seen = new Set()
   const dedupe = (list) => list.filter(t => (seen.has(t) ? false : (seen.add(t), true)))
-  return { core: dedupe(core), supporting: dedupe(supporting), incidental: dedupe(incidental) }
+  const pos = beatConceptPos(String((beat && beat.what) || '') + ' ' + String((beat && beat.because) || ''))
+  return { core: dedupe(core), supporting: dedupe(supporting), incidental: dedupe(incidental), pos }
 }
 
 // token → the words whose gloss uses it. Two indexes get built: one over the
@@ -142,10 +168,18 @@ export function buildGlossIndex(vocabMap, level) {
   for (const word of Object.keys(vocabMap)) {
     const v = vocabMap[word]
     if (!v || !Number.isFinite(v.level) || v.level > level || !v.meaning) continue
-    for (const t of tokenize(v.meaning)) {
-      for (const key of [t, stem(t), riskStem(t)]) {
-        if (!index.has(key)) index.set(key, [])
-        if (index.get(key).length < 6 && !index.get(key).includes(word)) index.get(key).push(word)
+    // Indexed sense by sense, so a token remembers whether the reading it came
+    // from was verbal. Flattening the gloss first is what let "tire" (noun)
+    // be answered by "to tire".
+    for (const sense of glossSenses(v.meaning)) {
+      for (const t of sense.tokens) {
+        for (const key of [t, stem(t), riskStem(t)]) {
+          if (!index.has(key)) index.set(key, [])
+          const hits = index.get(key)
+          if (hits.length < 8 && !hits.some(h => h.word === word && h.verb === sense.verb)) {
+            hits.push({ word, verb: sense.verb })
+          }
+        }
       }
     }
   }
@@ -185,19 +219,44 @@ export function buildFullGlossIndex(vocabMap) {
 //    (wheel, HSK 6) a real gap — 轮 is not a word the reader has.
 const SENSE_STOP = new Set(['the', 'and', 'for', 'with', 'that', 'this', 'sth', 'sb', 'etc', 'coll', 'used', 'not'])
 
-function senseHeads(meaning) {
+// ONE reading of a gloss, shared by everything that needs to know what a sense
+// means and what part of speech it is. The glosses mark verbs themselves with
+// a leading "to", and that mark is the only part-of-speech signal in the
+// dataset — so it is read once, here, rather than re-guessed per feature.
+export function glossSenses(meaning) {
   const out = []
   for (const raw of String(meaning || '').split(/[;,]/)) {
     const sense = raw.replace(/\([^)]*\)/g, ' ').trim()
     if (!sense) continue
     const verb = /^to\s+/i.test(sense)
-    const head = sense.replace(/^to\s+/i, '').replace(/^(?:a|an|the)\s+/i, '').trim().toLowerCase()
-    // One word only: "large bus" is not a synonym of "coach", it is a phrase.
-    if (!/^[a-z][a-z'-]*$/.test(head) || head.length < 3 || SENSE_STOP.has(head)) continue
-    if (/-/.test(head)) continue
-    out.push({ head, verb })
+    const body = sense.replace(/^to\s+/i, '').replace(/^(?:a|an|the)\s+/i, '').trim().toLowerCase()
+    if (!body) continue
+    out.push({ text: body, verb, tokens: tokenize(body) })
   }
   return out
+}
+
+// Senses that are a single word are the ones that can stand as synonyms of
+// each other. "large bus" is not a synonym of "coach", it is a phrase.
+function senseHeads(meaning) {
+  return glossSenses(meaning)
+    .map(s => ({ head: s.text, verb: s.verb }))
+    .filter(s => /^[a-z][a-z'-]*$/.test(s.head) && s.head.length >= 3 && !SENSE_STOP.has(s.head) && !/-/.test(s.head))
+}
+
+// Is a concept of this part of speech allowed to be answered by this sense?
+// a3-H-2 rated a bicycle TIRE feasible because 累 is glossed "tired, to tire":
+// the noun matched the verb "to tire", and a plan whose central object has no
+// word at any level cleared the feasibility gate.
+//
+// The check is deliberately one-directional in strength: it only rules a hit
+// out when the concept's part of speech is KNOWN — a noun with a determiner
+// in front of it, a verb by its inflection — because "he needs help" and
+// 帮助 "assistance; aid; to help" must keep matching, and there the concept's
+// part of speech is not marked at all.
+export function senseCompatible(pos, sense) {
+  if (pos !== 'noun' && pos !== 'verb') return true
+  return pos === 'verb' ? sense.verb : !sense.verb
 }
 
 // token → tokens that some entry lists as an alternative translation of it.
@@ -245,10 +304,11 @@ export function componentHead(word, inLevelWords) {
   return null
 }
 
-export function conceptSupport(concept, index, fullIndex = null, { synonyms = null, inLevelWords = null } = {}) {
+export function conceptSupport(concept, index, fullIndex = null, { synonyms = null, inLevelWords = null, pos = null } = {}) {
+  const names = (hits) => [...new Set((hits || []).map(h => (h && h.word) || h))].slice(0, 4)
   for (const form of forms(concept)) {
-    const hit = index.get(form)
-    if (hit && hit.length) return { support: 'supported', via: 'gloss', words: hit.slice(0, 4) }
+    const hit = (index.get(form) || []).filter(h => senseCompatible(pos, h))
+    if (hit.length) return { support: 'supported', via: 'gloss', words: names(hit) }
   }
 
   // Bridge 1 — a synonym the dataset itself declares.
@@ -256,10 +316,8 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
     for (const form of forms(concept)) {
       for (const synonym of (synonyms.get(form) || [])) {
         for (const sf of forms(synonym)) {
-          const hit = index.get(sf)
-          if (hit && hit.length) {
-            return { support: 'supported', via: 'synonym', synonym, words: hit.slice(0, 4) }
-          }
+          const hit = (index.get(sf) || []).filter(h => senseCompatible(pos, h))
+          if (hit.length) return { support: 'supported', via: 'synonym', synonym, words: names(hit) }
         }
       }
     }
@@ -268,7 +326,12 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
   // Bridge 2 — the language says it with a compound built on a word the
   // reader already has.
   let above = null
-  if (fullIndex) for (const form of forms(concept)) { above = above || fullIndex.get(form) }
+  if (fullIndex) {
+    for (const form of forms(concept)) {
+      const hits = (fullIndex.get(form) || []).filter(h => senseCompatible(pos, h))
+      if (!above && hits.length) above = names(hits)
+    }
+  }
   if (inLevelWords && above) {
     for (const word of above) {
       const head = componentHead(word, inLevelWords)
@@ -277,9 +340,10 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
   }
 
   // A longer concept that is a piece of some gloss token, or vice versa.
-  for (const [key, words] of index) {
-    if (concept.length >= 5 && (key.includes(riskStem(concept)) || riskStem(concept).includes(key)) && key.length >= 4) {
-      return { support: 'weak', via: 'substring', words: words.slice(0, 3) }
+  for (const [key, hits] of index) {
+    const usable = (hits || []).filter(h => senseCompatible(pos, h))
+    if (usable.length && concept.length >= 5 && (key.includes(riskStem(concept)) || riskStem(concept).includes(key)) && key.length >= 4) {
+      return { support: 'weak', via: 'substring', words: names(usable).slice(0, 3) }
     }
   }
   // Only now is the concept unsupported, and the full index says which kind:
@@ -326,7 +390,11 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
   const syn = synonyms || buildSenseSynonyms(vocabMap)
   const inLevel = inLevelWords || buildInLevelWords(vocabMap, manifest.level)
   const concepts = conceptsFromBeat(beat, entries, { names })
-  const rate = (list) => list.map(c => ({ concept: c, ...conceptSupport(c, idx, full, { synonyms: syn, inLevelWords: inLevel }) }))
+  const rate = (list) => list.map(c => ({
+    concept: c,
+    pos: concepts.pos.get(c) || 'unknown',
+    ...conceptSupport(c, idx, full, { synonyms: syn, inLevelWords: inLevel, pos: concepts.pos.get(c) || null }),
+  }))
   const core = rate(concepts.core)
   const supporting = rate(concepts.supporting)
   const incidental = rate(concepts.incidental)

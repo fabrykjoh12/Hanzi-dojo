@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   assessShapeRisk, assessBeatRisk, conceptsFromBeat, buildGlossIndex, buildFullGlossIndex,
   conceptSupport, buildSenseSynonyms, buildInLevelWords, componentHead,
-  validateGlossCorpus, GlossCorpusError, RISK, RISK_VERSION,
+  validateGlossCorpus, GlossCorpusError, glossSenses, senseCompatible, beatConceptPos,
+  RISK, RISK_VERSION,
 } from './storyLexicalRisk.mjs'
 import { buildManifest } from './storyManifestPlanner.mjs'
 
@@ -284,5 +285,74 @@ describe('corpus integrity — a gate without evidence must refuse', () => {
   it('accepts a corpus that actually carries glosses', () => {
     const good = { 大: { level: 1, meaning: 'big' }, 拿: { level: 2, meaning: 'to take, to hold' } }
     expect(validateGlossCorpus(good)).toMatchObject({ ok: true, glossed: 2, total: 2 })
+  })
+})
+
+// ── a3-H-2: a noun answered by a verb of the same spelling ──────────────────
+describe('direct gloss support agrees on part of speech', () => {
+  // Glosses verbatim from the canonical table.
+  const ROWS = [
+    ['累', 2, 'tired, to tire'],
+    ['自行车', 3, 'bicycle; bike'],
+    ['车', 1, 'vehicle, car'],
+    ['帮助', 3, 'assistance; aid; to help; to assist'],
+    ['站', 3, 'to stand; station'],
+    ['工作', 3, 'work; job; to work'],
+    ['大', 1, 'big'],
+  ]
+  const vm = Object.fromEntries(ROWS.map(([word, level, meaning]) => [word, { word, level, meaning }]))
+  const index = buildGlossIndex(vm, 3)
+  const full = buildFullGlossIndex(vm)
+  const opts = (pos) => ({ synonyms: buildSenseSynonyms(vm), inLevelWords: buildInLevelWords(vm, 3), pos })
+  const support = (concept, pos) => conceptSupport(concept, index, full, opts(pos))
+
+  it('the bug: a bicycle tire is not supported by 累 "tired, to tire"', () => {
+    expect(support('tire', 'noun')).toMatchObject({ support: 'none', via: 'absent' })
+    // and the plan's own sentence is what marks it a noun
+    expect(beatConceptPos('李明 sees the flat tire and realizes he needs help').get('tire')).toBe('noun')
+  })
+
+  it('the same entry still answers the state it really means', () => {
+    expect(support('tired', null).words).toContain('累')
+    expect(support('tire', 'verb').words).toContain('累')
+  })
+
+  it('a multi-POS entry answers BOTH of its senses', () => {
+    // 站 is "to stand; station" — a verb and a noun, and each is available.
+    expect(support('stand', 'verb').words).toContain('站')
+    expect(support('station', 'noun').words).toContain('站')
+    expect(support('work', 'noun').words).toContain('工作')
+    expect(support('work', 'verb').words).toContain('工作')
+  })
+
+  it('a verb is not answered by a noun-only sense', () => {
+    expect(support('bike', 'noun').words).toContain('自行车')
+    expect(support('bike', 'verb')).toMatchObject({ support: 'none' })
+  })
+
+  it('an unmarked concept is not blocked — "he needs help" still reaches 帮助', () => {
+    expect(beatConceptPos('李明 realizes he needs help').get('help')).toBeUndefined()
+    expect(support('help', null).words).toContain('帮助')
+  })
+
+  it('reads senses and their part of speech once, for everyone', () => {
+    expect(glossSenses('tired, to tire')).toEqual([
+      { text: 'tired', verb: false, tokens: expect.any(Array) },
+      { text: 'tire', verb: true, tokens: expect.any(Array) },
+    ])
+    expect(senseCompatible('noun', { verb: true })).toBe(false)
+    expect(senseCompatible('verb', { verb: true })).toBe(true)
+    expect(senseCompatible('unknown', { verb: true })).toBe(true)
+    expect(senseCompatible(null, { verb: false })).toBe(true)
+  })
+
+  it('the beat that started this now sees the object as missing', () => {
+    const beat = { id: 1, what: '李明 sees the flat tire and realizes he needs help', because: 'the story opens' }
+    const r = assessBeatRisk({
+      beat, manifest: buildManifest({ batchId: 'h', seq: 1, level: 3, targets: ['帮助'], defaults: { lines: [14, 38] } }),
+      vocabMap: vm, index, fullIndex: full, names: ['李明'],
+    })
+    expect(r.coreMissing).toContain('tire')
+    expect(r.risk).toBe(RISK.HIGH)
   })
 })
