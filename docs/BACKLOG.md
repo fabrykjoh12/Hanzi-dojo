@@ -183,6 +183,35 @@ Secondary, and real: given a correct repair brief naming 轮胎, permission to
 delete it, and eight alternatives, the writer returned the identical sentence
 on its retry.
 
+**Fixed 2026-08-25 (`fab9-risk@3`).** `glossSenses()` reads each gloss sense
+and its part of speech once, the index is built sense by sense, and
+`senseCompatible()` gates every match. On the English side the sentence marks
+the concept: a determiner in front makes a noun, an inflection without one
+makes a verb, anything else stays unknown and never blocks. A word the story
+TEACHES is exempt — 帮助 is glossed "assistance; aid; to help", and calling a
+story's own target missing is never right.
+
+Corrected census over all eight stored plans (`census-3/preflight.json`,
+nothing re-planned, no dimension re-judged):
+
+| | A3.2 before → after | eligible |
+|---|---|---|
+| H | MEDIUM → **HIGH** (flat, tire, downstairs, tool) | YES → no |
+| C | MEDIUM → MEDIUM | no (viability) |
+| A | MEDIUM → MEDIUM | no (viability) |
+| D, G | HIGH → HIGH | no |
+| F, B, E | unchanged | no |
+
+**No candidate's verdict improved**, which is what removing false support
+should look like. **Eligible set is now empty.**
+
+**Residual false negative, in the verb direction.** C beat 4 reads "…and
+thanks him", tagged a verb by its inflection; 谢谢 is glossed **"thank you"**,
+which carries no "to" and so reads as non-verbal, and 谢谢 is not a target. The
+beat is MEDIUM either way so nothing turned on it here. Worth noting that the
+noun→verbal direction is what caught the tire, while the verb→noun direction
+has so far produced one false negative and no catches.
+
 ### Target-placement viability is now a gate — and it changed the selection (2026-08-25)
 
 `storyTargetViability.mjs` judges every target→beat placement on its own:
