@@ -493,6 +493,13 @@ jobs:
                 ;;
                 # "matrix:12,2;15,3" re-scores frozen plans under several
                 # lexical policies. Deterministic: no model is called.
+                # "sweep" runs the frozen two-dimensional calibration.
+                (sweep)
+                  SRC="--preflight-only ${MANIFEST%%,*} --policy-sweep 1"
+                  case "$MANIFEST" in
+                    (*,*) SRC="$SRC --viability-from ${MANIFEST#*,}";;
+                  esac
+                ;;
                 (matrix:*)
                   SPECS="${STAGE#matrix:}"
                   case "$SPECS" in (*[!0-9,\;]*|"") echo "bad matrix spec"; exit 1;; esac

@@ -83,6 +83,8 @@ const viabilityFromPath = arg('viability-from', null)
 // Re-score FROZEN plans under several lexical policies. Deterministic: no plan
 // is regenerated and no dimension is re-judged — only the thresholds move.
 const policyMatrix = arg('policy-matrix', null)
+// The frozen two-dimensional calibration sweep.
+const policySweep = arg('policy-sweep', null)
 // A3.1 pilot: resume a stored run's scaffold, keeping every piece it already
 // validated and retrying only the one that failed.
 const resumeScaffoldPath = arg('resume-scaffold', null)
@@ -176,6 +178,110 @@ if (preflightOnly) {
           + (r.highConcepts.join(', ') || '—').slice(0, 36).padEnd(38)
           + (r.eligible ? 'YES' : 'no'))
       }
+      if (policySweep) {
+        // A frozen, deterministic sweep: nothing is regenerated or re-judged,
+        // only the thresholds move. The grid is the one the calibration asked
+        // for — total cost 12..18 at offListMax 2, crossed with ceilings on
+        // gratuitous difficulty by count and by weighted cost.
+        const frozenViability = new Map()
+        if (viabilityFromPath) {
+          const v = JSON.parse(readFileSync(viabilityFromPath, 'utf8'))
+          for (const row of (((v.reports || [])[0] || {}).rows || [])) {
+            if (row && row.viability) frozenViability.set(row.label || '-', row.viability)
+          }
+        }
+        const candidates = rows.map(r => {
+          const c = stored.candidates.find(x => (x.label || '-') === r.label)
+          return { row: r, blueprint: c && (c.plan ? adaptShape(c.plan).blueprint : c.blueprint) }
+        }).filter(x => x.blueprint)
+
+        // ── 1. The decomposition, at the current defaults ────────────────────
+        console.log('\nASSISTED COST BY NECESSITY (offListMax ' + ASSISTED_POLICY.offListMax + ')\n')
+        console.log('  plan  q  total  off  central       support       optional      max/sentence')
+        const detail = []
+        for (const { row, blueprint } of candidates) {
+          const rep = assessShapeRisk({ blueprint, manifest: stored.manifest, vocabMap })
+          const n = rep.budget.byNecessity || {}
+          const cell = (k) => { const x = n[k] || { count: 0, cost: 0 }; return (x.count + '× cost ' + x.cost).padEnd(14) }
+          console.log('  ' + String(row.label).padEnd(6) + String(row.overall).padEnd(3)
+            + String(rep.budget.cost).padEnd(7) + String(rep.budget.offListWords).padEnd(5)
+            + cell('CENTRAL_NECESSARY') + cell('NATURAL_SUPPORT') + cell('OPTIONAL_COMPLEXITY')
+            + String(rep.budget.maxPerSentence))
+          detail.push({ label: row.label, quality: row.overall, report: rep })
+        }
+        for (const L of ['D', 'F', 'B']) {
+          const d = detail.find(x => x.label === L)
+          if (!d) continue
+          console.log('\n  PLAN ' + L + ' (q' + d.quality + ') — every assisted concept')
+          for (const a of d.report.assisted) {
+            console.log('     ' + (a.concepts || [a.concept]).join('/').padEnd(14)
+              + String(a.word || '(no word in the list)').padEnd(20)
+              + (a.hsk ? ('HSK' + a.hsk + ' +' + a.distance) : 'off-list').padEnd(11)
+              + String(a.necessity).padEnd(21) + ('charge ' + a.cost + ' (base ' + a.baseCost + ')').padEnd(22)
+              + 'beat ' + a.beats.join(','))
+          }
+        }
+
+        // ── 2. Matcher provenance for every non-direct in-level match ───────
+        console.log('\nMATCH PROVENANCE — in-level matches that did NOT come from a direct gloss hit\n')
+        const seen = new Set()
+        for (const d of detail) {
+          for (const r of d.report.routes || []) {
+            const key = d.label + ':' + r.concept + ':' + r.route
+            if (seen.has(key)) continue
+            seen.add(key)
+            console.log('  ' + d.label + '  ' + r.concept.padEnd(16) + String(r.route).padEnd(14)
+              + String(r.confidence || '').padEnd(15) + (r.words || []).join('/'))
+          }
+        }
+
+        // ── 3. The sweep ─────────────────────────────────────────────────────
+        const configs = []
+        for (const cost of [12, 13, 14, 15, 16, 17, 18]) {
+          for (const optionalMax of [null, 1, 2, 3]) {
+            for (const optionalCostMax of [null, 3, 6, 9]) {
+              configs.push({ cost, offListMax: 2, optionalMax, optionalCostMax })
+            }
+          }
+        }
+        const results = configs.map(cfg => {
+          const policy = { ...ASSISTED_POLICY, costBudget: cfg.cost, offListMax: cfg.offListMax, optionalMax: cfg.optionalMax, optionalCostMax: cfg.optionalCostMax }
+          const eligible = []
+          for (const { row, blueprint } of candidates) {
+            const rep = assessShapeRisk({ blueprint, manifest: stored.manifest, vocabMap, policy })
+            const viable = !frozenViability.has(row.label) || frozenViability.get(row.label).ok
+            if (row.structural && row.quality && viable && rep.classification !== 'LEXICALLY_UNSAFE') eligible.push(row.label)
+          }
+          return { ...cfg, eligible, signature: eligible.slice().sort().join('') }
+        })
+
+        // ── 4. The frontier: for each outcome, the TIGHTEST policies ────────
+        const tighter = (a, b) => {
+          const cap = (v) => (v == null ? Infinity : v)
+          return a.cost <= b.cost && cap(a.optionalMax) <= cap(b.optionalMax) && cap(a.optionalCostMax) <= cap(b.optionalCostMax)
+            && (a.cost < b.cost || cap(a.optionalMax) < cap(b.optionalMax) || cap(a.optionalCostMax) < cap(b.optionalCostMax))
+        }
+        const bySignature = new Map()
+        for (const r of results) {
+          if (!bySignature.has(r.signature)) bySignature.set(r.signature, [])
+          bySignature.get(r.signature).push(r)
+        }
+        console.log('\nPARETO FRONTIER — for each outcome, the policies nothing tighter achieves\n')
+        const frontier = []
+        for (const [signature, group] of [...bySignature.entries()].sort((a, b) => b[0].length - a[0].length)) {
+          const minimal = group.filter(x => !group.some(y => tighter(y, x)))
+          console.log('  admits ' + (signature || 'NOTHING').padEnd(8) + '(' + group.length + ' policies, ' + minimal.length + ' minimal)')
+          for (const m of minimal) {
+            console.log('      cost ' + String(m.cost).padEnd(3) + ' offList ' + m.offListMax
+              + '  optionalMax ' + String(m.optionalMax == null ? 'off' : m.optionalMax).padEnd(4)
+              + '  optionalCostMax ' + String(m.optionalCostMax == null ? 'off' : m.optionalCostMax))
+          }
+          frontier.push({ signature, admits: signature.split(''), policies: group.length, minimal })
+        }
+        reports.push({ source: path, kind: 'policy-sweep', manifestId: stored.manifest.id, detail: detail.map(d => ({ label: d.label, quality: d.quality, budget: d.report.budget, assisted: d.report.assisted, routes: d.report.routes })), results, frontier })
+        continue
+      }
+
       if (policyMatrix) {
         // Stored placement verdicts, so eligibility in the matrix means the
         // same four gates it means everywhere else.

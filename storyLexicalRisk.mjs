@@ -620,6 +620,10 @@ export const ASSISTED_POLICY = {
   // decorates itself with. The plan's own structure says which is which, so
   // the writer cannot decide it retroactively.
   necessityWeight: { CENTRAL_NECESSARY: 0.75, NATURAL_SUPPORT: 1, OPTIONAL_COMPLEXITY: 1.5 },
+  // Ceilings on gratuitous difficulty specifically. null = not enforced; the
+  // total-cost budget is then the only limit on decoration.
+  optionalMax: null,
+  optionalCostMax: null,
   // The learner can tap a word; they should not have to tap half a sentence.
   assistedPerSentencePreferred: 1,
   assistedPerSentenceMax: 2,
@@ -669,7 +673,7 @@ export function assistCost(entry, policyIn = ASSISTED_POLICY) {
 export function classifyConcept(support, { vocabMap = {}, level = 1, policy: policyIn = ASSISTED_POLICY } = {}) {
   const policy = withPolicy(policyIn)
   if (support && support.support === 'supported') {
-    return { kind: ASSIST.IN_LEVEL, cost: 0 }
+    return { kind: ASSIST.IN_LEVEL, cost: 0, route: support.via || 'gloss', confidence: support.confidence || null, words: support.words || [] }
   }
   // A WEAK match is a substring coincidence, not evidence. "downstairs" was
   // being called in-level because 楼梯 is glossed "stair; staircase" and the
@@ -699,14 +703,14 @@ export function classifyConcept(support, { vocabMap = {}, level = 1, policy: pol
   if (word) {
     const wordLevel = vocabMap[word].level
     const distance = Math.max(1, wordLevel - level)
-    const entry = { kind: ASSIST.ASSISTED, word, wordLevel, distance, offList: false, source: 'above-level' }
+    const entry = { kind: ASSIST.ASSISTED, word, wordLevel, distance, offList: false, source: 'above-level', route: (support && support.via) || null }
     return { ...entry, cost: assistCost(entry, policy) }
   }
   // Nothing in the learner list at all. The language still has a word for a
   // tire; this dataset is a course vocabulary, not a dictionary. It is
   // assisted, and charged like the far end because nothing here can vouch for
   // how ordinary it is.
-  const entry = { kind: ASSIST.ASSISTED, word: null, wordLevel: null, distance: null, offList: true, source: 'off-list' }
+  const entry = { kind: ASSIST.ASSISTED, word: null, wordLevel: null, distance: null, offList: true, source: 'off-list', route: (support && support.via) || 'absent' }
   return { ...entry, cost: assistCost(entry, policy) }
 }
 
@@ -789,10 +793,15 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
     reason = 'only incidental detail is out of level (' + describe(incidentalAssisted) + '), and the beat does not need it'
   }
 
+  const inLevelRoutes = [...core, ...supporting, ...incidental]
+    .filter(c => c.assist.kind === ASSIST.IN_LEVEL && c.assist.route && c.assist.route !== 'gloss')
+    .map(c => ({ concept: c.concept, route: c.assist.route, confidence: c.assist.confidence || null, words: c.assist.words || [], beat: beat.id }))
+
   return {
     beat: beat.id,
     risk,
     reason,
+    inLevelRoutes,
     core,
     supporting,
     incidental,
@@ -845,7 +854,26 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
   const crowdedBeats = beats.filter(b => b.crowded).map(b => b.beat)
   const offList = assisted.filter(a => a.offList)
 
+  const byNecessity = {}
+  for (const a of assisted) {
+    const k = a.necessity || 'UNCLASSIFIED'
+    if (!byNecessity[k]) byNecessity[k] = { count: 0, cost: 0, words: [] }
+    byNecessity[k].count += 1
+    byNecessity[k].cost += (a.cost || 0)
+    byNecessity[k].words.push(a.word || ('off:' + (a.concepts || [a.concept])[0]))
+  }
+  const optional = byNecessity.OPTIONAL_COMPLEXITY || { count: 0, cost: 0, words: [] }
+  const maxPerSentence = beats.reduce((n, b) => Math.max(n, ...(b.sentences || []).map(x => x.assisted), 0), 0)
+  const routes = beats.flatMap(b => b.inLevelRoutes || [])
+
   const breaches = []
+  if (policy.optionalMax != null && optional.count > policy.optionalMax) {
+    breaches.push(optional.count + ' words the story does not need (max ' + policy.optionalMax
+      + ') — ' + optional.words.join('、'))
+  }
+  if (policy.optionalCostMax != null && optional.cost > policy.optionalCostMax) {
+    breaches.push('an optional-complexity cost of ' + optional.cost + ' (max ' + policy.optionalCostMax + ')')
+  }
   if (assisted.length > policy.assistedWordsMax) {
     breaches.push(assisted.length + ' words above the level (max ' + policy.assistedWordsMax + ')')
   }
@@ -913,6 +941,7 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
     blocking,
     corpus,
     policy,
+    routes,
     // Everything the artifact, the UI and the analytics need to explain the
     // level of the finished story: what was assisted, where it came from, and
     // how far above the level it sits.
@@ -923,6 +952,7 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
       hsk: a.wordLevel,
       distance: a.distance,
       source: a.source,
+      route: a.route || null,
       necessity: a.necessity || null,
       baseCost: a.baseCost != null ? a.baseCost : a.cost,
       nearest: a.nearest || null,
@@ -935,6 +965,8 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
       assistedWords: assisted.length,
       cost,
       costBudget: policy.costBudget,
+      byNecessity,
+      maxPerSentence,
       crowdedBeats,
       clusteredSentences: beats.filter(b => (b.clustered || []).length).map(b => ({ beat: b.beat, sentences: b.clustered })),
       offListWords: offList.length,
