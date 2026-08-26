@@ -1036,11 +1036,79 @@ placeholder: `docs/BACKLOG.md:112` records Supabase custom SMTP wired to
 address and the message. (Its live send test is still listed as pending — that is
 a delivery question, not a contractual one.)
 
-**One fact still needed from the owner:** which Vercel plan the `hanzi-dojo`
-project is on. Pro or Enterprise → the DPA already applies and there is nothing
-to do. Hobby → the DPA does not apply by its own terms, and Vercel is a genuine
-processor here (it serves the app and logs visitor IP addresses), so that would
-need resolving before launch.
+#### Vercel is not on the native runtime path — verified, not assumed
+
+The line above said Vercel "serves the app". For the **website** that is true.
+For the **store apps it is false**, and since v1 is primarily a mobile product
+the distinction decides whether the Vercel plan blocks a store release at all.
+
+**Static evidence.** `capacitor.config.json` sets `webDir: dist/client` and has
+**no `server.url`** — so the Capacitor shell serves the app's HTML, JS, CSS and
+fonts from the bundle inside the IPA/AAB, not from a remote origin. The only two
+occurrences of `hanzi-dojo.com` anywhere in the built native bundle are prose in
+the Support page and the `BRAND_URL` constant. Neither is a fetch target.
+
+**Runtime evidence.** The native build was served locally, loaded in Chromium
+with every non-local request blocked-but-logged, and taken through a cold launch
+plus all four public in-app routes. Result:
+
+```
+BOOT CHECK: rendered "Hanzi Dojo · Log in · Reading-first Chinese…" (not the error card)
+
+  [app bundle] http://127.0.0.1:37411   ×129
+  [EXTERNAL]   https://mock.supabase.co  ×18   e.g. /rest/v1/analytics_events
+
+External hosts: https://mock.supabase.co
+```
+
+**129 requests to the app bundle, 18 to Supabase, zero to Vercel.** Analytics is
+in that list going *directly* to Supabase, which answers the "is analytics
+processed through Vercel" question outright: it is not.
+
+*A first attempt at this returned "zero external hosts", which was wrong and
+worth recording. The sandbox has no `.env`, so `VITE_SUPABASE_URL` was never
+baked in, `supabase.js` threw at import, and the capture measured the "Site
+can't start" card rather than the app. The run above sets the env vars, and the
+boot check exists precisely so a broken page cannot be mistaken for a clean
+result again.*
+
+**Two narrow exceptions**, both user-initiated, both public-web, neither
+learner data:
+
+1. Tapping **Terms or Privacy on the sign-up screen** opens
+   `https://hanzi-dojo.com/…` in the system browser (`externalLink.legalLinkProps`
+   → `publicPageUrl`). That is a deliberate tap that leaves the app. The Settings
+   links added in Stage 1 deliberately navigate *in-app* instead, so a signed-in
+   learner reading the policy never leaves the app or touches Vercel.
+2. **Sharing a story** puts a `hanzi-dojo.com/read/…` URL into the share sheet
+   (`StoryReaderImmersive.jsx:514`). The app does not fetch it; a recipient might
+   later open it in their own browser.
+
+In both cases Vercel sees a page view from a browser, exactly as it would for
+any visitor to the public site. No account, progress, review, feedback or
+analytics data reaches it.
+
+#### Conclusion on the Vercel plan
+
+**Deferred web-launch item. Not a store-release blocker.**
+
+Vercel is a processor for the **website** only — visitors to hanzi-dojo.com and
+the public trust pages, whose IP addresses it logs. It processes nothing for the
+iOS and Android apps. So:
+
+- **App Store / Play release is not gated on it.** Nothing in the native runtime
+  touches Vercel, so no learner data is processed by it under the mobile product.
+- **Before promoting the website as a product surface** — or if web ever becomes
+  a primary surface — confirm the plan. Vercel's DPA covers Enterprise and Pro;
+  on Hobby there is no DPA coverage by its own terms, and Vercel would still be
+  logging public-site visitors' IPs. Upgrading to Pro is the whole fix; there is
+  nothing to sign.
+
+The policy now states this split in plain language, so a reader is not left to
+assume the app runs through the website.
+
+**One fact for the owner when web launch matters:** which Vercel plan the
+`hanzi-dojo` project is on. It does not block mobile.
 
 ### 2.5 Other PASS results worth recording
 

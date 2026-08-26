@@ -188,6 +188,15 @@ function Privacy() {
         (sending sign-up and password emails).
       </P>
       <P>
+        One difference between the apps and the website is worth stating, because it is not
+        obvious: <strong>the iPhone and Android apps are not served from our website</strong>.
+        The app itself lives on your device — installed from the App Store or Play Store —
+        and talks directly to Supabase. Vercel hosts the website and the public pages (this
+        one, Terms, Support), so it is not involved when you use the app. It only sees you
+        if you open hanzi-dojo.com in a browser, including when you tap a link to these
+        pages from the sign-up screen.
+      </P>
+      <P>
         Three services are contacted directly by your browser or app as you use it, which
         means they can see your IP address:
       </P>
