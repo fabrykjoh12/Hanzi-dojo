@@ -154,6 +154,116 @@ Shipped 2026-07-20 (see Claude.md §0). Data loaded to prod Supabase: **123,465*
 
 ## Content
 
+### Sense-aware targets, and why the lexical thresholds cannot be calibrated yet (2026-08-26)
+
+**被 was deferred as a quilt.** The vocabulary row glosses it *"quilt; to cover
+(with)"*, `part_of_speech` is null, and its example sentence is 折被子. The fix
+is not a 被 case: `storyWordSenses.mjs` now hands the bundle judge every sense
+in the gloss (516 of 950 in-level rows carry more than one), the POS where the
+dataset has it (300 of 950), the row's own example (950 of 950), and **how the
+word is actually used in the published corpus** — a word that keeps standing
+between a noun and a verb is doing grammatical work whatever its noun gloss
+says. The window is three entries because the passive puts the agent in
+between (他[被][老师][叫]).
+
+Rerun (`bundle-2`): the same rule reports **该 as grammatical, 8 of 9 uses**,
+and finds nothing for ordinary nouns. **被 is still deferred, but now for the
+right reason** — the judge says the passive marker *"is a grammatical structure
+not listed in the senses provided; teaching it here with the given definition
+is misleading."* **被 has zero uses in the published corpus**, so there was no
+usage evidence to recover either.
+
+**That is a content bug, not a pipeline bug: 被's vocabulary row is missing its
+primary HSK 3 sense.** Until the row is fixed, 被 cannot be taught correctly by
+anything downstream.
+
+Selection changed: 如果 / 需要 / **认为** → 如果 / 需要 (认为 deferred).
+
+### Threshold sensitivity — the thresholds are not what is binding
+
+Matrix over the six frozen plans (`matrix-1`), nothing regenerated or
+re-judged:
+
+| cost / off-list | eligible |
+|---|---|
+| 12 / 2 | **B (q6)** |
+| 12 / 3 | **B** |
+| 15 / 3 | **B** |
+| 18 / 3 | **B** |
+| 18 / 4 | **B** |
+
+**The eligible set is identical at every setting.** Raising the budget by half
+and doubling the off-list allowance changes nothing, because the words pushing
+plans over are almost all "off-list, charged 6" — and several of them are
+matcher false negatives, reproduced directly:
+
+- **gave** → absent, while **give** → 给 (HSK 1). Irregular past tense: `gave`
+  is not a prefix of `give`, so the inflection rule cannot reach it.
+- **helpful** → absent, though 帮 and 帮助 gloss "to help". Tagged a noun by the
+  determiner in front of it, and the only senses containing "help" are verbal —
+  the known noun/verb false-negative class, now doing real damage.
+- **suggested** → absent, because 最好's "(do what we suggest)" is inside a
+  parenthetical, and parentheticals are stripped when senses are parsed.
+
+Each then costs 6: off-list (4) × the OPTIONAL_COMPLEXITY weight (1.5).
+
+**Recommendation: do not move the thresholds yet.** No configuration in the
+matrix argues for a change, and the data feeding it is distorted. Fix the three
+matcher classes above, re-run the same matrix, and calibrate then. Plan B sits
+at exactly 12/12 today, so a more accurate matcher will move every plan's cost
+down and the honest budget may well be *lower* than 12, not higher.
+
+Necessity pricing is live and visible: B carries two CENTRAL_NECESSARY words
+(offer, conditional — the story is about a conditional offer) charged 3 each
+against base 4, and two OPTIONAL_COMPLEXITY words (咨询, 明确) charged 3 against
+base 2. Per-sentence density found genuine clusters in F and C.
+
+### Target-bundle selection moved upstream, and the eligible set is finally non-empty (2026-08-26)
+
+Four stored plans had been through placement viability and every one failed on
+at least one of 男人 / 女人 / 关系 — always the same reason: the manifest
+demanded the word and the story had no reason to say it. The fix is not in the
+planner or the writer. It is that the manifest asked for five specific words at
+once and left the planner to invent a reason for each.
+
+`storyTargetBundle.mjs` chooses the words BEFORE the story is planned:
+**REQUIRED** (a real communicative role, and they cohere as one story),
+**OPPORTUNITY** (worth reinforcing if they fit; omitting them fails nothing),
+**DEFERRED** (no compatible context yet — later, not never). The judgement asks
+two separate questions, because individually storyable words can still be a bad
+bundle when each needs its own subplot; selection from those answers is
+deterministic. No word is blacklisted: 男人 passes the same machinery when it
+tells two people at the door apart.
+
+Deferral is recorded — times deferred, when, last real contextual exposure — and
+two deferrals promote a word above anything fresher as soon as a context
+appears, so difficult words are not silently starved. FSRS weakness has a field
+and is left for the app side.
+
+**First run (`bundle-1`).** Pool of 8; selected 如果 / 需要 / 认为 for *"a friend
+asking for advice on a conditional life choice"*; deferred 被, 中, 该, 像, 生活
+with reasons (被 was glossed "quilt" — the single-character gloss issue above).
+
+**Candidates from that bundle (`bundle-plans-1`), same prompt and gates:**
+
+| | structural | quality | JOINT |
+|---|---|---|---|
+| Qwen | 3/3 | 3/3 | **3/3** |
+| gpt-oss | 3/3 | 2/3 | **2/3** |
+
+against 0/6 and 0/6 for the original target set. **5 of 6 plans clear both bars.**
+
+**Eligibility (`bundle-eligible-1`): plan B passes all four gates** — structural,
+quality 6, A3.2 ASSISTED_OOL (4 assisted, cost 10/12), and placement viability
+PASS on all three targets, each with a real role (*"marks the speaker's
+subjective view, distinguishing advice from fact"*). Nothing was relaxed.
+
+**The binding constraint has moved to lexical feasibility.** The three
+highest-quality plans (qwen, 8–9) are all LEXICALLY_UNSAFE: D on 3 off-list
+words against a cap of 2, E on cost 18/12 for a salary-and-advice story. The
+gates are now trading quality against vocabulary — worth watching, because the
+plan that survived is the one scoring 6, not the ones scoring 9.
+
 ### A3.2 is now comprehensibility, not purity (`fab9-risk@4`, 2026-08-26)
 
 The product decision changed: a learner can tap any word, so a little
