@@ -9,6 +9,29 @@ name: Visual regression baselines
 # a renderer. Dispatch this after an intentional visual change (or when the
 # runner image update shifts rendering), review the committed diff, done.
 #
+# THE `mode` INPUT, AND WHY IT HAD TO EXIST.
+#
+# The default, `changed`, rewrites only the snapshots whose comparison FAILS.
+# Comparison runs at playwright.config.js's maxDiffPixelRatio: 0.02 — on the
+# 1280x800 desktop captures that is 20,480 pixels of tolerance. A text edit
+# confined to a line or two is a few thousand differing pixels, so it passes,
+# and `changed` therefore leaves the baseline alone. The run goes green and
+# reports "Baselines unchanged — nothing to commit", which reads like "no
+# visual change" when what it means is "the change was under tolerance".
+#
+# That is fine for the check itself and wrong for the artifact: the committed
+# PNG is also the human-readable record of what a page says, and one showing
+# text the app no longer displays misleads the next reader. `all` rewrites
+# every snapshot unconditionally, which is what you want after an intentional
+# copy change.
+#
+# Observed on 2026-08-26: naming the controller in the privacy policy changed a
+# visible line of the page and `changed` committed nothing (run 33007027135).
+#
+# Use `changed` for layout/rendering shifts, `all` after an intentional copy
+# edit. Note the corollary — a small copy regression will NOT fail the e2e
+# visual check either; these snapshots catch layout breakage, not wording.
+#
 # ⚠️ The commit is pushed with the workflow's own GITHUB_TOKEN, so — like the
 # manhua-art-fetch commits (see docs/BACKLOG.md) — it does NOT trigger CI on
 # the PR. The baseline images can't break lint/test/build, but the check list
@@ -17,6 +40,13 @@ name: Visual regression baselines
 
 on:
   workflow_dispatch:
+    inputs:
+      mode:
+        description: 'changed = rewrite only snapshots that fail comparison; all = rewrite every snapshot'
+        required: false
+        default: changed
+        type: choice
+        options: [changed, all]
 
 permissions:
   contents: write
@@ -45,7 +75,7 @@ jobs:
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
       - name: Capture baselines
-        run: npx playwright test tests/e2e/visual.spec.js --update-snapshots
+        run: npx playwright test tests/e2e/visual.spec.js --update-snapshots=${{ inputs.mode || 'changed' }}
       - name: Commit baselines
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

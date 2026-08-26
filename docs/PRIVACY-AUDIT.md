@@ -136,7 +136,7 @@ claim · **medium** = should fix before submission · **low** = tidy-up.
 
 ### 2.1 Privacy Policy vs reality
 
-#### F1 · MISMATCH · high — "Analyze text" pasted text *is* stored on the server
+#### F1 · FIXED in Stage 2 · high — "Analyze text" pasted text *is* stored on the server
 **Layer: policy text (or code)**
 
 Policy (`src/TrustPages.jsx:103-108`):
@@ -158,7 +158,7 @@ with the card so reviews can show the context." The feature is worth keeping;
 the sentence in the policy is what needs to change. Removing `source_sentence`
 from the Analyzer path is the alternative, but it costs a genuinely good feature.
 
-#### F2 · MISMATCH · medium — the push section describes an unbuilt feature
+#### F2 · FIXED in Stage 2 · medium — the push section described an unbuilt feature
 **Layer: policy text (code later, when §0b lands)**
 
 Policy (`TrustPages.jsx:119-129`) says that in the iPhone and Android apps a push
@@ -177,7 +177,7 @@ both stores and describes a feature reviewers cannot find.
 
 **Fix:** scope the paragraph to the web until native push ships.
 
-#### F3 · FIXED in Stage 3 (migration written, NOT yet applied) · medium — Discord as an undisclosed recipient of feedback content
+#### F3 · **CLOSED IN PRODUCTION 2026-08-26** · medium — Discord as an undisclosed recipient of feedback content
 **Layer: code/SQL to remove the relay — or policy text**
 
 > **Corrected 2026-08-25 after a live check.** The trigger is installed and
@@ -218,7 +218,7 @@ Every cold launch of the iOS and Android app requests `fonts.googleapis.com` and
 fix on its own merits — an offline-first app should not need a CDN round-trip to
 render its first paint. Minimum viable fix: delete "on the web" from the policy.
 
-#### F5 · MISSING · medium — jsDelivr is an undisclosed runtime third party
+#### F5 · FIXED in Stage 2 · medium — jsDelivr was an undisclosed runtime third party
 **Layer: policy text or code**
 
 `src/strokeData.js:19` — `STROKE_CDN = 'https://cdn.jsdelivr.net/npm/hanzi-writer-data@2.0.1'`,
@@ -229,7 +229,7 @@ The Infrastructure list does not name it.
 **Fix:** name it in the policy, or bundle/proxy the stroke data (which also
 removes a runtime network dependency from an offline-first app).
 
-#### F6 · MISSING · medium — error/crash reporting is not described in the policy
+#### F6 · FIXED in Stage 2 · medium — error/crash reporting was not described in the policy
 **Layer: policy text**
 
 `errorMonitor.js` sends `client_error` events. The policy's "Product analytics"
@@ -240,7 +240,7 @@ as distinct declarable types; the policy has to match what you declare.
 
 **Fix:** one sentence in the analytics section.
 
-#### F7 · MISMATCH · low — "ask for a copy of your data" with no export path
+#### F7 · FIXED in Stage 2 (wording) · low — "ask for a copy of your data" with no export path
 **Layer: process/verification (code optional)**
 
 Policy `:150-151`. There is no export feature anywhere in `src/`; fulfilment is
@@ -250,7 +250,7 @@ unstaffed, untested, and GDPR gives you one month to answer.
 **Fix:** decide and document the manual procedure now; a `Profile → Download my
 data` button is roughly a day's work and closes it properly.
 
-#### F8 · MISSING · low–medium — no retention statement, and anonymous events are immortal
+#### F8 · FIXED in Stage 2 · low–medium — no retention statement, and anonymous events are immortal
 **Layer: policy text (+ optional SQL)**
 
 Policy `:152-153` says data is kept "as long as you have an account" — true for
@@ -260,18 +260,18 @@ they belong to no account, and nothing ever deletes them.
 **Fix:** state a retention window for anonymous usage events, and optionally add
 a purge.
 
-#### F9 · MISSING · medium — no children's-data section
+#### F9 · FIXED in Stage 2 · medium — no children's-data section
 **Layer: policy text (+ store metadata alignment)**
 
 The 13+ age requirement lives only in the Terms (`TrustPages.jsx:187`). The
 Privacy Policy says nothing about age or children. Both stores' age
 questionnaires and Play's Families policy look for this.
 
-#### F10 · MISMATCH · low — "Last updated 1 August 2026" is stale
+#### F10 · FIXED in Stage 2 · low — "Last updated 1 August 2026" was stale
 `TrustPages.jsx:358`. It predates the account-deletion RPC (2026-08-07) and
 everything since. Bump it in the same commit as the fixes.
 
-#### F11 · NEEDS DEVICE/ARCHIVE VERIFICATION · low — `bodyos_app_state`
+#### F11 · **RESOLVED 2026-08-26** · low — `bodyos_app_state`
 A user-keyed table with a `data` jsonb, RLS and four owner policies, sharing this
 project's `auth.users` tenant, and referenced **nowhere in this repo** except the
 deletion RPC. 0 rows today.
@@ -309,7 +309,7 @@ Note on "Linked": Apple asks per data type, not per row. Signed-in events carry
 `user_id`, so Usage Data and Diagnostics must be declared Linked even though the
 pre-auth events are anonymous.
 
-#### F13 · PASS, permanently once the migration is applied · high — "Data shared with third parties: No"
+#### F13 · **CLOSED IN PRODUCTION 2026-08-26** · high — "Data shared with third parties: No"
 **Layer: Play Console metadata — or code/SQL (see F3)**
 
 `docs/STORE-LISTING.md:184`. The answer is **true today**, because the Discord
@@ -421,7 +421,7 @@ browser rather than navigating the webview away from a half-filled form.
 These came out of an independent 14-agent sweep run after the first pass, and
 were each re-verified by hand before being written down.
 
-#### F25 · MISSING · medium — YouTube is an undisclosed runtime third party
+#### F25 · FIXED in Stage 2 · medium — YouTube was an undisclosed runtime third party
 **Layer: policy text**
 
 Practice → Videos loads a thumbnail per card from `https://img.youtube.com/vi/…`
@@ -453,7 +453,7 @@ don't keep your data beyond that". Two things survive:
 **Fix:** soften the absolute claim, or — better — drop the relay (F3) so only the
 de-identified admin rows need mentioning.
 
-#### F27 · MISMATCH · medium — the device timezone is captured silently
+#### F27 · FIXED in Stage 2 · medium — the device timezone is captured silently
 **Layer: policy text**
 
 `src/App.jsx:103-112` writes `Intl.DateTimeFormat().resolvedOptions().timeZone`
@@ -464,7 +464,7 @@ something the learner chose.
 
 **Fix:** say it is read from the device automatically.
 
-#### F28 · MISSING · medium — a feedback row holds more than "the text"
+#### F28 · FIXED in Stage 2 · medium — a feedback row holds more than "the text"
 **Layer: policy text**
 
 The policy says *"Feedback you send: the text of in-app feedback"*. The row also
@@ -472,7 +472,7 @@ carries `email`, `page`, `language`, and a `context` jsonb with the open story's
 id and truncated title plus the build sha (`src/Feedback.jsx:73`,
 `src/feedbackContext.js`, `20260801120000_add_feedback_context.sql`).
 
-#### F29 · MISSING · low — on-device dictionary history is not described
+#### F29 · FIXED in Stage 2 · low — on-device dictionary history was not described
 **Layer: policy text**
 
 `localStorage['dict:recent:<language>']` keeps the last 8 words the learner
@@ -481,7 +481,7 @@ leaves the device — so it is not "collected" for store-declaration purposes �
 but the policy's "On your device" paragraph lists only content caches and the
 review queue.
 
-#### F30 · MISSING · low — the TTS vendor is unnamed while every other subprocessor is
+#### F30 · FIXED in Stage 2 · low — the TTS vendor was unnamed while every other subprocessor was named
 **Layer: policy text**
 
 The policy names Supabase, Vercel, Cloudflare, Brevo, Google Fonts, APNs and FCM,
@@ -499,7 +499,7 @@ permission. In the store apps the Speaking drill is disabled outright
 Review notes already state (`docs/STORE-LISTING.md:156-158`). The policy covers
 "all three" surfaces, so it should say the drill is web-only.
 
-#### F32 · MISSING · medium — analytics run before any account exists, with no gate
+#### F32 · FIXED in Stage 2 (disclosure only) · medium — analytics run before any account exists, with no gate
 **Layer: policy text**
 
 `LANDING_VIEWED`, `PUBLIC_STORY_VIEWED` and `ASSESSMENT_*` fire pre-auth; 2,905
@@ -532,7 +532,7 @@ Even if a `PrivacyInfo.xcprivacy` were added to
 declaration has to live in the **app** target (F18) rather than being fixed
 upstream in place.
 
-#### F35 · NEEDS DEVICE/ARCHIVE VERIFICATION · medium — Supabase platform logging
+#### F35 · **RESOLVED 2026-08-26** · medium — Supabase platform logging
 **Layer: process/verification, policy text**
 
 Supabase's API gateway records request IP addresses and user agents as platform
@@ -766,6 +766,383 @@ makes the result trustworthy.
   privacy-policy wording fix are Stage 2 and Stage 4, deliberately untouched.
 - **The App Store privacy work as a whole is not complete.**
 
+### 2.8 Production state and Stage 2 (2026-08-26)
+
+**The Discord relay is gone from production.** PR #217 merged (`ed2dffe`) with CI
+green — `check` and `playwright` both passed, confirming that the two visual
+snapshot failures seen in the sandbox were environmental. Migration
+`20260825120000_drop_feedback_discord_relay.sql` was then applied to
+`bvqvturqupbggxaeihvi` as `20260826123336 drop_feedback_discord_relay`, and
+nothing else was applied — Claude B's `20260822180000` is deliberately still
+unapplied.
+
+`supabase/tests/feedback_relay_removal_verification.sql` was run against
+production in its rollback-safe mode: **13/13 PASS**. An independent read-only
+sweep then confirmed twelve invariants, comparing against a snapshot taken
+immediately before the apply:
+
+| invariant | expected | got |
+|---|---|---|
+| `on_feedback_notify_discord` triggers | 0 | **0** |
+| `notify_discord_feedback` functions (any schema) | 0 | **0** |
+| public functions reading `discord_feedback_webhook` | 0 | **0** |
+| feedback triggers calling `net.http` | 0 | **0** |
+| public functions calling `net.http` | 0 | **0** |
+| *any* trigger left on `public.feedback` | 0 | **0** |
+| feedback row count | 2 | **2** |
+| feedback id fingerprint | `d458a5d7…` | **`d458a5d7…`** |
+| RLS enabled on feedback | 1 | **1** |
+| feedback RLS policies | 2 | **2** |
+| vault secrets total | 0 | **0** |
+| `pg_net` still installed (deliberately) | 1 | **1** |
+
+The row-id fingerprint is the part worth keeping: it is the same before and
+after, so existing feedback was not merely counted but confirmed unaltered. A
+feedback insert still succeeds under RLS (checked inside the rolled-back
+transaction), and `delete_my_account` is untouched.
+
+**F3 and F13 are closed in production**, not merely in the repo.
+
+#### Stage 2 — the policy now describes what actually happens
+
+`src/TrustPages.jsx` was rewritten to match the post-Stage-3 live product rather
+than the architecture it had before. Every change is a disclosure change; no
+behaviour moved.
+
+- **"Analyze text"** no longer claims the pasted text is never stored. It says
+  plainly that saving a word from the passage keeps that one sentence with the
+  card, which is what the code does. *(F1)*
+- **Reminders** are described as web-only, and the section states outright that
+  the apps send no reminders and collect no push token — replacing an APNs/FCM
+  paragraph describing a feature that was never built. *(F2)*
+- **Discord is not mentioned as a feedback recipient**, because after Stage 3 it
+  isn't one. Feedback "stays in our database; it is not forwarded anywhere" is
+  now a true sentence. *(F3)*
+- **Google Fonts** is scoped to the website, with the apps' bundled copies
+  stated. *(F4)* **jsDelivr** and **YouTube** are named as services contacted
+  directly by your device, with what each can see. *(F5, F25)*
+- **Crash and error reports** get their own section: error name, 40-character
+  message, screen, no stack traces, no typed text. *(F6)*
+- **Retention** is stated honestly, including that anonymous usage events are
+  currently kept indefinitely. *(F8)*
+- **Age** gets its own section at 13+, pointing at the Terms. *(F9)*
+- **Timezone** is described as read automatically from the device, not chosen.
+  *(F27)*
+- A **feedback row's real contents** are listed. *(F28)*
+- **On-device dictionary history** is described, and that it never leaves the
+  device. *(F29)*
+- The **TTS vendors** are named, with the point that they never see learner
+  data. *(F30)*
+- The **microphone** section is scoped to the web, stating the drill is off in
+  the apps and no permission is ever requested. *(F31)*
+- **Pre-account analytics** are disclosed, including the absence of an opt-out.
+  *(F32)*
+- **Data export** is described as manual on request rather than implied to be
+  self-service. *(F7)*
+- The **absolute deletion claim** is softened to list what goes, without the
+  unqualified "we don't keep your data beyond that". *(F26)*
+- **Last updated** bumped to 26 August 2026. *(F10)*
+
+#### Still open after Stage 2
+
+- **F18 — NEEDS ARCHIVE VERIFICATION.** Untouched by Stages 2 and 3.
+- **F11** — the `bodyos_app_state` owner question.
+- **F35** — whether Supabase's platform layer retains IPs and user agents, and
+  for how long. The policy now says which services can see your IP, but the
+  retention window on the platform's own logs still needs an answer.
+- **Stage 4** — the App Store Connect answers (F12) and the Play Data Safety
+  corrections (F14) are not written.
+- **The App Store privacy work is not complete.**
+
+### 2.9 Pre-sign-off investigation (2026-08-26)
+
+Four things were run down before owner sign-off. All read-only; nothing was
+deleted or altered.
+
+#### F35 — RESOLVED. What the platform actually logs, and for how long
+
+The project is `Hanzi-Dojo` in org `Learning Org`, region **`eu-west-3`
+(AWS Paris — inside the EEA)**, on the **Pro** plan. Supabase's documented Logs
+Explorer retention for Pro is **7 days**.
+
+What those logs contain, measured over a 24-hour window rather than assumed
+(field *presence and population*, never values):
+
+| source | rows | with IP | with user-agent | with account id | with sign-in identifier |
+|---|---|---|---|---|---|
+| `edge_logs` | 1,216 | **1,216** | **1,216** | **726** | 0 |
+| `storage_logs` | 251 | **251** | **125** | 0 | 0 |
+| `auth_logs` | 24 | **18** | 0 | **6** | 0 |
+| `auth_audit_logs` | 9 | 0 | **9** | **9** | **9** |
+| `pgbouncer` / `postgres` / `postgrest` / `realtime` | 539 | 0 | 0 | 0 | 0 |
+
+A first pass reported zero for `storage_logs` and `auth_audit_logs`. That was
+wrong — each service names its fields differently (`req.headers.*` and
+`auth_audit_event.*` rather than `request.headers.*`), so the query missed them.
+The table above uses the per-source names. Worth recording because the
+under-count would have produced a policy that understated collection.
+
+`edge_logs` carries more than IP and user-agent: `request.cf.city`,
+`request.cf.region`, `request.cf.postalCode`, `request.cf.country` (coarse
+location resolved from the IP), `request.cf.asOrganization` (network operator),
+and `request.cf.botManagement.ja3Hash` / `ja4` (a TLS fingerprint) — on every
+row. On 726 of 1,216 rows `request.sb.auth_user` carries the signed-in account
+id **alongside** those, so for a signed-in learner the IP, device string, coarse
+location and account are correlated in one line, for 7 days.
+
+**A second, larger finding came out of this — and it is not a log.**
+
+`auth.sessions` stores `ip inet` and `user_agent text` **in the database**, one
+row per signed-in device: **54 rows, all 54 populated with both, across 36
+distinct users, oldest 2026-06-30, and `not_after` is NULL on all of them** — so
+they have no expiry, and 35 have been idle for over 30 days. This is Supabase
+Auth's normal behaviour, not a defect, but it means IP addresses and device
+strings tied to an account persist **indefinitely** in the database, not for
+7 days. Nothing in the audit or the policy had mentioned it.
+
+It is covered by account deletion — `auth.sessions.user_id → auth.users ON DELETE
+CASCADE`, already verified in §1.6 — so deleting the account removes it.
+`auth.audit_log_entries` is empty (0 rows), so there is no second persistent copy.
+
+Both are now disclosed in the policy: a "Server logs" section for the 7-day
+platform logs, and a sign-in-sessions entry under "What we store".
+
+#### F11 — RESOLVED. The project is **not** shared with BodyOS
+
+`list_projects` returns exactly **one** project for the organisation:
+`Hanzi-Dojo`. There is no separate BodyOS project, so the question was never
+"are two products sharing a tenant" but "what is this table doing here".
+
+Evidence gathered read-only:
+
+| | |
+|---|---|
+| owner | `postgres` (the default; no separate role) |
+| columns | `user_id uuid, data jsonb, app_version integer, updated_at timestamptz` |
+| rows | **0** |
+| distinct users | **0** |
+| oldest / newest `updated_at` | **none — the table has never held a row** |
+| size on disk | 16 kB (an empty heap) |
+| RLS | enabled, 4 owner-only policies |
+| trigger | `bodyos_app_state_touch` → `public.bodyos_touch_updated_at()` |
+| provenance | applied `20260716233821 bodyos_app_state` and `20260716234138 bodyos_touch_updated_at_search_path` |
+| in this repo? | **No.** Neither migration exists in `supabase/migrations/`; both were applied directly to the database, outside this repo's history |
+| referenced by app code? | **No.** The only mentions are the deletion RPC's guard and two audit docs |
+
+**Answer: abandoned scaffolding, not shared production data.** Someone created a
+generic per-user key-value table for a different idea on 2026-07-16, outside the
+repo's migration flow, and nothing ever wrote to it. It holds no personal data
+and never has. `docs/PRE-RELEASE-READINESS-AUDIT.md:241` had already flagged it
+as a "dead guard… never created by any migration" and listed its production
+existence as unknown — it does exist, and it is empty.
+
+No policy change is needed. It is left in place, as instructed. Dropping it
+would be reasonable housekeeping later, but it is not a privacy matter, and the
+deletion RPC's `to_regclass` guard means it costs nothing to leave.
+
+#### Retention recommendation — account-unlinked usage events
+
+**Recommendation: a 12-month rolling window. Not implemented.**
+
+The rows in question are the 2,905 of 5,334 `analytics_events` with
+`user_id IS NULL` — landing views, the public reading check, shared story links.
+Their only product use is funnel measurement: how many people who see the
+landing page start the reading check, and how many of those sign up.
+
+That question is answered by a *rolling window*, not by an archive. Nothing in
+`dashboardMetrics.js` or the admin RPCs reads beyond a recent period, and the
+oldest row is 2026-07-15 — so today, indefinite retention and 12-month retention
+would return identical numbers. There is no demonstrated need.
+
+Twelve months rather than something shorter for one reason: a learning app has
+real seasonality (January and September are not August), and a year lets a
+future funnel change be compared against the same month a year earlier. Six
+months would be leaner and still cover every current use; the trade-off is
+losing year-on-year comparison permanently, since deleted rows cannot be
+recovered. Anything beyond twelve months is storage without a stated purpose,
+which is exactly what a regulator asks about.
+
+The policy currently says these are kept without a fixed end date, and says
+plainly that we intend to set one — rather than implying a policy that does not
+exist yet.
+
+#### Controller identity — **RESOLVED 2026-08-26 (natural person)**
+
+There is no registered company. The owner has confirmed that **Hanzi Dojo is
+operated by a natural person**, who is therefore the controller. The notice now
+says so: it states plainly that Hanzi Dojo is not a company, that it is run by an
+individual based in **Norway**, and gives `support@hanzi-dojo.com` as the contact
+channel with a one-month response commitment.
+
+The name — **Fabian Rykkelid Johnsen**, confirmed by the owner 2026-08-26 — lives
+in one place, `CONTROLLER_NAME` in `src/brand.js`, and is rendered by the policy.
+Anything that has to name the controller later (App Store Connect, Play Console)
+should read it from there rather than repeating a literal, so the two can never
+disagree. The notice now reads: *"Hanzi Dojo is not a company. It is built and
+run by Fabian Rykkelid Johnsen, an individual based in Norway…"*
+
+##### Correction: a postal address is **not** legally required here
+
+An earlier version of this section said "an email alone is thin for Article 13; a
+postal address is the norm". That was an overstatement and is withdrawn.
+
+GDPR **Art. 13(1)(a)** requires *"the identity and the contact details of the
+controller"*. It does not specify a postal address, and nothing in Art. 13 or
+Art. 12 adds one. The EDPB-endorsed transparency guidance (WP260) that people
+cite for "postal address" is about the **DPO's** contact details — and Hanzi
+Dojo has no Art. 37 duty to appoint a DPO: it is not a public authority, its
+core activity is not large-scale systematic monitoring, and it processes no
+special-category data at scale.
+
+So a monitored email address satisfies "contact details" for this setup. The
+policy says we do not publish a street address, explains why (this is a person,
+not an office), and offers to provide one on request for a formal or legal
+purpose — which is what keeps the contact route adequate rather than evasive.
+Publishing a home address here would be a real harm to a real person for no
+legal gain.
+
+##### But the App Store *does* require a published address — under a different law
+
+This is separate from GDPR and it is a genuine store-launch item, so it belongs
+in Stage 4 rather than in the privacy notice.
+
+Under **DSA Articles 30 and 31**, Apple must verify and display trader contact
+information for traders distributing apps in the EU. Apple requires an
+**address, phone number and email**, and once verified **publishes them on the
+App Store product page** in all 27 EU territories. Apps that had not verified
+trader status were removed from the EU App Store on **17 February 2025**. Google
+Play operates the same regime.
+
+The declaration itself is mandatory either way — **every** developer must answer,
+including a solo developer with a free app. What differs is the answer:
+
+- **Trader** — address, phone and email are published on the product page.
+- **Non-trader** — the declaration is made, nothing is published.
+
+Trader status turns on whether the app is distributed for purposes relating to a
+trade, business, craft or profession. Hanzi Dojo is free, has no in-app
+purchases, no ads and no revenue (`docs/STORE-LISTING.md`: "Free, no in-app
+purchases, no ads"), which points at non-trader — but **this is the owner's
+declaration to make honestly, not a call this audit can make**, and getting it
+wrong quietly delists the app in the EU with no rejection email.
+
+**Action for Stage 4:** decide and record the trader/non-trader answer. If
+trader, the address question returns — but as an App Store Connect field, not as
+privacy-policy text, and that is the point at which a non-residential address
+becomes worth arranging.
+
+#### Processor agreements — checked against each provider's current terms
+
+The earlier draft of this section asked the owner to "confirm DPAs are in place",
+which was lazy: for self-service accounts that is usually not a signing exercise
+at all, and saying so without checking would have sent the owner hunting for
+four signatures that mostly do not exist. Checked properly:
+
+| Provider | DPA exists | How it becomes binding | Signature needed? |
+|---|---|---|---|
+| **Supabase** | Yes | Incorporated by reference into the Terms of Service — the ToS states the parties agree to comply with the DPA, which is incorporated into the agreement | **No** |
+| **Vercel** | Yes | Forms part of the customer agreement — **but by its own terms it applies to Enterprise and Pro plans** | **No** — *if* we are on Pro. See below |
+| **Cloudflare** | Yes (Customer DPA, current version) | Incorporated by reference into the Self-Serve Subscription Agreement where customer content includes EEA personal data | **No** |
+| **Brevo** | Yes (Annex 2 to the General Terms) | Annexed to, and forms part of, the terms accepted at sign-up | **No** |
+
+So **three of the four are already covered automatically**, with nothing to sign
+and nothing to request. Only Vercel has a real question, and it is not about
+signing — it is about **which plan the project is on**, because Vercel's DPA
+scopes itself to Enterprise and Pro. On Hobby there is no DPA coverage by its own
+terms. That is one fact for the owner, not a contracting exercise.
+
+Two things worth recording while checking this, because both narrow the exposure:
+
+**Cloudflare is DNS-only here, and is not in the request path.** `docs/BACKLOG.md:112`
+says as much ("all added in Cloudflare DNS, the authoritative nameserver; Vercel
+only hosts"), and DNS confirms it: `hanzi-dojo.com` resolves to `216.198.79.65`
+and `64.29.17.65` — the same anycast ranges as `hanzi-dojo-jet.vercel.app`
+(`216.198.79.3`, `64.29.17.3`), and in **none** of Cloudflare's published IPv4
+ranges. The proxy is off. Cloudflare answers name lookups; it does not see
+learners' page requests, their IP addresses while browsing, or any content. The
+policy already describes it as "Cloudflare (DNS)", which is correct as written.
+
+**Brevo is genuinely in use**, so it is a real processor rather than a
+placeholder: `docs/BACKLOG.md:112` records Supabase custom SMTP wired to
+`smtp-relay.brevo.com:587` with sender `no-reply@hanzi-dojo.com`, configured
+2026-07-18. It handles sign-up and password emails, so it processes the email
+address and the message. (Its live send test is still listed as pending — that is
+a delivery question, not a contractual one.)
+
+#### Vercel is not on the native runtime path — verified, not assumed
+
+The line above said Vercel "serves the app". For the **website** that is true.
+For the **store apps it is false**, and since v1 is primarily a mobile product
+the distinction decides whether the Vercel plan blocks a store release at all.
+
+**Static evidence.** `capacitor.config.json` sets `webDir: dist/client` and has
+**no `server.url`** — so the Capacitor shell serves the app's HTML, JS, CSS and
+fonts from the bundle inside the IPA/AAB, not from a remote origin. The only two
+occurrences of `hanzi-dojo.com` anywhere in the built native bundle are prose in
+the Support page and the `BRAND_URL` constant. Neither is a fetch target.
+
+**Runtime evidence.** The native build was served locally, loaded in Chromium
+with every non-local request blocked-but-logged, and taken through a cold launch
+plus all four public in-app routes. Result:
+
+```
+BOOT CHECK: rendered "Hanzi Dojo · Log in · Reading-first Chinese…" (not the error card)
+
+  [app bundle] http://127.0.0.1:37411   ×129
+  [EXTERNAL]   https://mock.supabase.co  ×18   e.g. /rest/v1/analytics_events
+
+External hosts: https://mock.supabase.co
+```
+
+**129 requests to the app bundle, 18 to Supabase, zero to Vercel.** Analytics is
+in that list going *directly* to Supabase, which answers the "is analytics
+processed through Vercel" question outright: it is not.
+
+*A first attempt at this returned "zero external hosts", which was wrong and
+worth recording. The sandbox has no `.env`, so `VITE_SUPABASE_URL` was never
+baked in, `supabase.js` threw at import, and the capture measured the "Site
+can't start" card rather than the app. The run above sets the env vars, and the
+boot check exists precisely so a broken page cannot be mistaken for a clean
+result again.*
+
+**Two narrow exceptions**, both user-initiated, both public-web, neither
+learner data:
+
+1. Tapping **Terms or Privacy on the sign-up screen** opens
+   `https://hanzi-dojo.com/…` in the system browser (`externalLink.legalLinkProps`
+   → `publicPageUrl`). That is a deliberate tap that leaves the app. The Settings
+   links added in Stage 1 deliberately navigate *in-app* instead, so a signed-in
+   learner reading the policy never leaves the app or touches Vercel.
+2. **Sharing a story** puts a `hanzi-dojo.com/read/…` URL into the share sheet
+   (`StoryReaderImmersive.jsx:514`). The app does not fetch it; a recipient might
+   later open it in their own browser.
+
+In both cases Vercel sees a page view from a browser, exactly as it would for
+any visitor to the public site. No account, progress, review, feedback or
+analytics data reaches it.
+
+#### Conclusion on the Vercel plan
+
+**Deferred web-launch item. Not a store-release blocker.**
+
+Vercel is a processor for the **website** only — visitors to hanzi-dojo.com and
+the public trust pages, whose IP addresses it logs. It processes nothing for the
+iOS and Android apps. So:
+
+- **App Store / Play release is not gated on it.** Nothing in the native runtime
+  touches Vercel, so no learner data is processed by it under the mobile product.
+- **Before promoting the website as a product surface** — or if web ever becomes
+  a primary surface — confirm the plan. Vercel's DPA covers Enterprise and Pro;
+  on Hobby there is no DPA coverage by its own terms, and Vercel would still be
+  logging public-site visitors' IPs. Upgrading to Pro is the whole fix; there is
+  nothing to sign.
+
+The policy now states this split in plain language, so a reader is not left to
+assume the app runs through the website.
+
+**One fact for the owner when web launch matters:** which Vercel plan the
+`hanzi-dojo` project is on. It does not block mobile.
+
 ### 2.5 Other PASS results worth recording
 
 - Analytics can never carry free text — 40-char cap, tested
@@ -878,8 +1255,10 @@ Nothing below has been applied. Ordered by what blocks submission.
 
 ## 4 · Applying the Stage 3 migration to production
 
-**Not yet applied.** The migration is committed and locally verified; running it
-is a deliberate, separate step.
+**APPLIED 2026-08-26** as `20260826123336 drop_feedback_discord_relay`, after PR
+#217 merged with CI green. Verification results are in §2.8 — 13/13 on the
+committed test plus twelve independent read-only invariants. The steps below are
+retained as the record of what was run.
 
 ```
 supabase/migrations/20260825120000_drop_feedback_discord_relay.sql
