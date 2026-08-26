@@ -23,7 +23,9 @@
 // Pure: prompt in, verdicts out, selection deterministic. The provider and the
 // debt store are supplied by the harness.
 
-export const BUNDLE_VERSION = 'fab9-bundle@1'
+import { renderSenses } from './storyWordSenses.mjs'
+
+export const BUNDLE_VERSION = 'fab9-bundle@2'
 
 export const BUNDLE = { REQUIRED: 'REQUIRED', OPPORTUNITY: 'OPPORTUNITY', DEFERRED: 'DEFERRED' }
 
@@ -43,12 +45,22 @@ const text = (v) => String(v == null ? '' : v).trim()
 // The judgement. Deliberately asks two different questions — one about each
 // word alone, one about the set — because a bundle of individually storyable
 // words can still be a bad bundle when each needs its own subplot.
-export function bundlePrompt({ pool, levelName, meanings = {}, policy = BUNDLE_POLICY }) {
-  const rows = pool.map(p => '  ' + p.word + (meanings[p.word] ? ' (' + meanings[p.word] + ')' : '')
-    + (p.timesDeferred ? '  [deferred ' + p.timesDeferred + '× already]' : '')).join('\n')
+export function bundlePrompt({ pool, levelName, meanings = {}, senses = null, policy = BUNDLE_POLICY }) {
+  // Every sense the dataset has, the part of speech where it has one, the
+  // row's example, and how the word is actually used in published stories.
+  // Judging 被 on the first gloss alone deferred the passive marker every HSK 3
+  // learner meets as though it were a quilt.
+  const byWord = new Map((senses || []).map(e => [e.word, e]))
+  const rows = pool.map(p => {
+    const e = byWord.get(p.word)
+    const head = e ? renderSenses(e) : '  ' + p.word + (meanings[p.word] ? ' (' + meanings[p.word] + ')' : '')
+    return head + (p.timesDeferred ? '\n      [deferred ' + p.timesDeferred + '× already]' : '')
+  }).join('\n')
   return 'You are choosing which words a single short ' + levelName + ' story should teach.\n\n'
     + 'CANDIDATE WORDS:\n' + rows + '\n\n'
     + 'Answer TWO questions.\n\n'
+    + 'Judge each word by the sense and the ROLE it actually has for a learner at this level, not by whichever English gloss is listed first. '
+    + 'A word that stands between a noun and a verb in real usage is grammatical machinery, however its noun sense reads.\n\n'
     + '1. For each word alone: could an everyday story at this level give it a real reason to be said — '
     + 'someone identifying an unknown person or thing, telling two possibilities apart, saying something that matters to what happens, '
     + 'or a relationship that is actually what the story is about?\n'

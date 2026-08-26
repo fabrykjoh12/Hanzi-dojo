@@ -19,6 +19,7 @@ import {
   bundlePrompt, parseBundleJudgment, selectBundle, applyDeferral, buildPool,
   BUNDLE_POLICY, BUNDLE_VERSION,
 } from './storyTargetBundle.mjs'
+import { wordSenses, SENSES_VERSION } from './storyWordSenses.mjs'
 
 const arg = (name, fallback = null) => {
   const i = process.argv.indexOf('--' + name)
@@ -52,22 +53,30 @@ const pending = pendingTargets(plan).slice(0, poolSize)
 const debt = existsSync(debtPath) ? JSON.parse(readFileSync(debtPath, 'utf8')) : {}
 const pool = buildPool(pending.map(t => ({ word: t.word, pending: Math.max(0, (plan.goal || 0) - (t.planned || 0)) })), debt)
 
+// Every sense, the part of speech where the dataset has one, the row's own
+// example, and how the word is really used in the published stories.
+const vocabMap = {}
+for (const v of vocab) if (v && v.word && !vocabMap[v.word]) vocabMap[v.word] = v
+const corpusLines = stories.flatMap(st => String(st.content || '').split('\n')).map(l => l.trim()).filter(Boolean)
+const senses = pool.map(p => wordSenses(p.word, { vocabMap, corpusLines }))
+
 const cfg = levelConfig('chinese', 'hsk_3', level)
 const levelName = (cfg && cfg.levelName) || ('HSK ' + level)
 
 console.log('='.repeat(78))
 console.log('TARGET BUNDLE (' + BUNDLE_VERSION + ') — HSK ' + level + ', pool of ' + pool.length)
 console.log('='.repeat(78))
-for (const p of pool) {
-  console.log('  ' + p.word.padEnd(6) + (meanings[p.word] || '').slice(0, 42).padEnd(44)
-    + (p.timesDeferred ? 'deferred ' + p.timesDeferred + '×' : ''))
+for (const e of senses) {
+  console.log('  ' + e.word.padEnd(4) + (e.senses.map(x => (x.verb ? 'to ' : '') + x.text).join(' / ') || e.gloss || '').slice(0, 46).padEnd(48)
+    + (e.pos ? e.pos.slice(0, 8).padEnd(10) : ''.padEnd(10))
+    + (e.role ? 'grammatical (' + e.role.framed + '/' + e.role.uses + ')' : e.corpusUses + ' uses'))
 }
 
 let judgement = null
 let rawOut = null
 let error = null
 try {
-  rawOut = await provider.send({ kind: 'bundle', prompt: bundlePrompt({ pool, levelName, meanings }), maxTokens: 1400 })
+  rawOut = await provider.send({ kind: 'bundle', prompt: bundlePrompt({ pool, levelName, meanings, senses }), maxTokens: 1400 })
   judgement = parseBundleJudgment(rawOut, pool.map(p => p.word))
   if (!judgement) error = 'the judgement did not parse'
 } catch (err) { error = String((err && err.message) || err).slice(0, 300) }
@@ -91,6 +100,7 @@ if (!selection.enough) console.log('\nBUNDLE_TOO_THIN: fewer than ' + selection.
 mkdirSync(outDir, { recursive: true })
 writeFileSync(join(outDir, 'bundle.json'), JSON.stringify({
   version: BUNDLE_VERSION,
+  senses: { version: SENSES_VERSION, words: senses },
   generatedAt: new Date().toISOString(),
   level,
   levelName,

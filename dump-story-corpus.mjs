@@ -40,7 +40,7 @@ const stories = await pages(() => supabase
   .order('level').order('story_number'), 'Stories')
 const vocab = await pages(() => supabase
   .from('vocabulary')
-  .select('word, level, sort_order, meaning')
+  .select('word, level, sort_order, meaning, part_of_speech, example_sentence, example_translation')
   .eq('language', 'chinese').eq('system', 'hsk_3').eq('is_active', true)
   .order('level').order('sort_order'), 'Vocabulary')
 

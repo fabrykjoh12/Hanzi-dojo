@@ -31,6 +31,22 @@ describe('the prompt asks two different questions', () => {
     expect(p).toContain('come back in a later story')
   })
 
+  it('shows every sense and the observed role, not the first gloss', () => {
+    const senses = [{
+      word: '被', level: 3, pos: null, senseCount: 2,
+      senses: [{ text: 'quilt', verb: false }, { text: 'cover', verb: true }],
+      gloss: 'quilt; to cover (with)', example: '折被子。', exampleTranslation: 'Fold the quilt.',
+      corpusExamples: ['他被老师叫到办公室。'], corpusUses: 5,
+      role: { role: 'grammatical', detail: 'stands between a noun and a verb in 4 of 5 uses', framed: 4, uses: 5 },
+    }]
+    const p = bundlePrompt({ pool: buildPool(['被']), levelName: 'HSK 3', senses })
+    expect(p).toContain('1) quilt')
+    expect(p).toContain('2) to cover')
+    expect(p).toContain('OBSERVED ROLE')
+    expect(p).toContain('他被老师叫到办公室。')
+    expect(p).toContain('not by whichever English gloss is listed first')
+  })
+
   it('shows the model what has already been put off', () => {
     expect(p).toContain('关系')
     expect(p).toContain('deferred 2×')
@@ -179,6 +195,6 @@ describe('reinforcement debt — deferred means later, not never', () => {
     expect(pool.find(p => p.word === '关系').timesDeferred).toBe(2)
     // and now it outranks everything the moment a context exists
     expect(reinforcementPriority(pool.find(p => p.word === '关系'))).toBeGreaterThan(1000)
-    expect(BUNDLE_VERSION).toBe('fab9-bundle@1')
+    expect(BUNDLE_VERSION).toBe('fab9-bundle@2')
   })
 })
