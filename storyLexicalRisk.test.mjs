@@ -736,3 +736,39 @@ describe('matcher accuracy: inflection, derivation, parenthetical', () => {
     expect(support('tire', 'noun').support).toBe('none')                 // still not 累
   })
 })
+
+// ── The audit of the fixes found two more of the same class ─────────────────
+describe('what the corrected matrix audit turned up', () => {
+  const vm = {
+    安静: { word: '安静', level: 3, meaning: 'quiet; peaceful' },
+    玉米: { word: '玉米', level: 3, meaning: 'corn' },
+    深: { word: '深', level: 4, meaning: 'deep' },
+  }
+  const index = buildGlossIndex(vm, 3)
+  const full = buildFullGlossIndex(vm)
+  const frame = beatConceptPos('The room is quieter now. He stands in the corner. The water looks deeper than before.')
+  const support = (c) => conceptSupport(c, index, full, {
+    synonyms: buildSenseSynonyms(vm), inLevelWords: buildInLevelWords(vm, 3), pos: frame.get(c) || null,
+  })
+
+  it('a comparative the sentence marks as one reaches its adjective', () => {
+    expect(frame.get('quieter')).toBe('comparative')
+    expect(support('quieter')).toMatchObject({ support: 'supported', via: 'comparative' })
+  })
+
+  it('and -er without that frame is still not an inflection', () => {
+    // "He stands in the corner" — a determiner, not a comparative frame.
+    expect(frame.get('corner')).toBe('noun')
+    expect(support('corner').support).not.toBe('supported')
+  })
+
+  it('a comparative of an ABOVE-level adjective stays assisted', () => {
+    // 深 is HSK 4: "deeper" is honestly out of level, not a matcher failure.
+    expect(support('deeper').support).toBe('none')
+  })
+
+  it('the gloss may hold the derived form while the story says the base', () => {
+    // 安静 is glossed "quiet; peaceful"; the plan says "peace".
+    expect(support('peace')).toMatchObject({ support: 'supported', via: 'derivation', derivedFrom: 'peaceful' })
+  })
+})

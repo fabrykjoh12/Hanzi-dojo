@@ -118,6 +118,11 @@ function splitClause(sentence) {
 // noun ("the flat TIRE"); an inflected verb with no determiner makes it a verb
 // ("Xiao Hong STANDS"). Everything else stays unknown, and unknown never
 // blocks a match — "he needs help" must keep reaching 帮助.
+const COMPARATIVE_FRAME = new Set([
+  'is', 'are', 'was', 'were', 'looks', 'looked', 'feels', 'felt', 'seems', 'seemed',
+  'gets', 'got', 'grows', 'grew', 'becomes', 'became', 'much', 'even', 'far', 'still', 'no',
+])
+
 const DETERMINERS = new Set([
   'the', 'a', 'an', 'his', 'her', 'their', 'its', 'my', 'your', 'our',
   'this', 'that', 'these', 'those', 'one', 'two', 'three', 'some', 'any',
@@ -137,7 +142,14 @@ export function beatConceptPos(text) {
     // beats it is a plural noun far more often than a third-person verb, and
     // treating it as one forced 邻居 (HSK 3, "neighbor"), 谢谢 (HSK 1, "thank
     // you") and every other plural off the list and into the assisted budget.
-    if (/(?:ing|ed)$/.test(t) && t.length > 4) pos.set(t, 'verb')
+    if (/(?:ing|ed)$/.test(t) && t.length > 4) { pos.set(t, 'verb'); return }
+    // A comparative is known by its frame, not by -er: "is quieter", "even
+    // deeper", "quieter than". Without the frame, -er is agentive or simply
+    // part of the word, and corner is not a form of corn.
+    const prev = tokens[i - 1]
+    const next = tokens[i + 1]
+    if (/(?:er|est)$/.test(t) && t.length > 4
+      && (COMPARATIVE_FRAME.has(prev) || next === 'than')) pos.set(t, 'comparative')
   })
   return pos
 }
@@ -192,7 +204,9 @@ export function conceptsFromBeat(beat, entries = [], { names = [] } = {}) {
 export function buildGlossIndex(vocabMap, level) {
   const index = new Map()
   const notes = new Map()
+  const derived = new Map()
   index.notes = notes
+  index.derived = derived
   for (const word of Object.keys(vocabMap)) {
     const v = vocabMap[word]
     if (!v || !Number.isFinite(v.level) || v.level > level || !v.meaning) continue
@@ -210,6 +224,16 @@ export function buildGlossIndex(vocabMap, level) {
     }
     for (const sense of glossSenses(v.meaning)) {
       for (const t of sense.tokens) {
+        // A gloss may hold the DERIVED form while the concept is the base:
+        // 安静 is glossed "peaceful" and the story says "peace". Indexed
+        // separately so it stays derivational evidence, not a direct hit.
+        for (const d of derivations(t)) {
+          if (!derived.has(d.base)) derived.set(d.base, [])
+          const rows = derived.get(d.base)
+          if (rows.length < 6 && !rows.some(x => x.word === word)) {
+            rows.push({ word, verb: sense.verb, token: t, suffix: d.suffix, expects: d.expects })
+          }
+        }
         for (const key of [t, stem(t), riskStem(t)]) {
           if (!index.has(key)) index.set(key, [])
           const hits = index.get(key)
@@ -448,6 +472,33 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
           words: names(hits),
         }
       }
+    }
+  }
+
+  // Bridge 3b — the same relation seen from the gloss side.
+  if (index.derived) {
+    for (const form of [...new Set([concept, lemma(concept)])]) {
+      const hits = (index.derived.get(form) || []).filter(h => h.expects !== 'verb' || h.verb)
+      if (hits.length) {
+        return {
+          support: 'supported',
+          via: 'derivation',
+          confidence: 'derivational',
+          derivedFrom: hits[0].token,
+          suffix: hits[0].suffix,
+          words: names(hits),
+        }
+      }
+    }
+  }
+
+  // Bridge 3c — a comparative the sentence itself marks as one.
+  if (pos === 'comparative') {
+    const base = concept.replace(/(?:est|er)$/, '')
+    for (const form of [...new Set([base, base + 'e', base.replace(/i$/, 'y')])]) {
+      if (form.length < 3) continue
+      const hits = (index.get(form) || []).filter(h => !h.verb)
+      if (hits.length) return { support: 'supported', via: 'comparative', confidence: 'comparative', words: names(hits) }
     }
   }
 
