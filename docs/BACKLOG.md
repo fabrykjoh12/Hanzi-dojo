@@ -817,11 +817,13 @@ gpt-oss hit a 429 asking for 666 more seconds. Writer recommendation remains
 **`source_id` root cause.** Nothing ever wrote it. `seed-vocab.mjs` inserts
 `{language, system, level, sort_order, word, reading, reading_plain, meaning,
 audio_path, is_active}` — `source_id` is not in the payload, and no other code
-path touches it. The column has no DDL in the repo either: the earliest
-migration is `20260605213000_add_progress_reset_function.sql`, so the
-`vocabulary` table predates `supabase/migrations/` and was created outside git.
-Every `source_id` reference in the codebase belongs to `tts_audio` / `tts_jobs`,
-a different column entirely.
+path touches it.
+
+*(Corrected 2026-08-27 — two claims in the paragraph that stood here were
+false. The column DOES have DDL in the repo: `supabase/schema.sql:112`, with a
+foreign key to `content_sources(id) ON DELETE SET NULL`. And not every
+`source_id` in the codebase belongs to TTS — this one is a real, purpose-built
+provenance column. See the corrected section below.)*
 
 **Source provenance IS deterministically recoverable — from the repository, not
 the database.** The chain is committed:
@@ -901,6 +903,113 @@ reusing `untappableRuns()` — production `segmentLine`, production matcher, nam
 and segmenter — because an invariant enforced against a copy of the logic tests
 the copy. **Blast radius: 142 of 204 published stories would fail, 62 pass.** Not
 enforced anywhere; enforcing it today would make the repository unbuildable.
+
+### `forms[0]` is the root cause of the corpus incident (2026-08-27)
+
+**The inventory reconciles exactly.** 4,998 raw Chinese rows = 4,995 learner-
+facing (levels 1–6) + **3 orphans with `level IS NULL`**, `sort_order 0`, raw
+CC-CEDICT glosses: 僮 *"servant boy"*, 白 (a 20-sense gloss) and **操 *"variant
+of 肏[cao4]"* — a vulgar character sitting in the learner vocabulary table**.
+`prefetchLevel` filters `.eq('level', level)`, so no app query ever loads them;
+they are dead data, not learner-facing. **4,995 is the canonical denominator.**
+No inactive Chinese rows, no duplicate words (all 29 duplicate groups in the
+table are Japanese).
+
+**`source_id` is the right destination, and I was wrong to say otherwise.**
+It is `uuid`, nullable, with a real foreign key to a purpose-built registry:
+
+```
+-- 1. Content sources
+-- Used to document where vocabulary/story data came from.
+create table public.content_sources (id, name, source_type
+  check in ('official_list','dictionary','manual','tts','other'),
+  license_note, source_url, notes, created_at)
+```
+
+`supabase/schema.sql:32-43` and `:112`. The table exists in the live database
+and so does `vocabulary_source_id_fkey`. It holds **exactly one row** — *"HSK
+3.0 Level 1 curated list"*, `source_url` NULL, `license_note: "Verify final
+licensing/source attribution before public release."* — and **nothing
+references it**: `source_id` is NULL on all **6,583** rows across all three
+languages. `source_id` sits at column 14, between `audio_voice` and
+`is_active`, so it was created with the original table, not bolted on. It is a
+dead column with a correct design — it needs populating, not replacing. It is
+also dangerously named: `tts_audio.source_id` is a polymorphic pointer to *what
+was spoken* and means something entirely different.
+
+**Provenance, deterministic.** HSK 3–6: `complete.json`
+(drkameleon/complete-hsk-vocabulary, MIT) → `build-hsk-vocab.mjs` →
+`data/hsk{3,4,5,6}.json` → `seed-vocab.mjs`. All **4,494** committed rows match
+`forms[0]` of their dataset entry **exactly** on both reading and gloss — zero
+matched a later form, zero matched none. HSK 1–2 (497 rows) were inserted at two
+distinct times three weeks apart and are **not one dataset**; label them
+`legacy_unknown` rather than attributing them to drkameleon because the content
+resembles it. The 4 previously-unmapped rows (可, 声, 协议, 节奏) came from the
+2026-07-20 bulk seed of the **2021-draft** tagset, not the 2025 one.
+
+**The root cause of the whole corpus incident.** `hskEntryToRow` reads only
+`forms[0]`, and returns **null** when that form's gloss is degenerate — a
+surname, a *"variant of"* cross-reference. Measured on the real upstream file:
+
+| loss | measured |
+|---|---|
+| entries with more than one form | 879 of 11,470 (7.7%); 671 single-character |
+| entries with more than one distinct pinyin | **377**; 287 single-character |
+| forms discarded by `forms[0]` | 1,153 |
+| meanings discarded by `slice(0, 2)` | **14,300 of 33,708 (42%)** |
+| shipped rows teaching one reading of a polyphone, suppressing the rest | **149** |
+| **words dropped ENTIRELY because `forms[0]` was degenerate** | **336 upstream; 190 inside the built bands** |
+
+Casualties include **船, 纸, 怕, 关 — all HSK 3**, the exact level these stories
+teach — plus 白, 火, 墙, 岛, 还, 了, 得, 觉, 百, 班, 帮, 包.
+
+**So the 652-occurrence classification was wrong, and I made it wrong.** I
+classified against `data/hsk<N>.json`, which is the build's own output —
+circular reasoning that cannot reveal what the build dropped. Against the
+upstream word list the matrix nearly inverts:
+
+| class | forms | occ | stories | repairability |
+|---|---|---|---|---|
+| **CURRICULUM_ROW_MISSING** | **42** | **284 (44%)** | **90** | **AUTO-SAFE** |
+| OUT_OF_CURRICULUM | 59 | 247 | 100 | STORY-REWRITE |
+| MORPHEME_OF_COMPOUND | 18 | 121 | 64 | STORY-REWRITE |
+
+The previous entry's claim — *"转 is the only true ingestion loss, 3
+occurrences"* — is superseded. **44% of the learner-facing debt is an ingestion
+loss repairable without touching a single story.**
+
+**卡 is not what I said either.** Its reading and gloss come from the SAME
+upstream form — `forms[0]` is `kǎ` with meanings `[to stop, to block,
+(computing) slow, (loanword) card]`, and `slice(0, 2)` throws away *"card"* at
+index 3. It is a **sense-truncation** defect, not a reading↔gloss mispairing.
+行 **is** a `forms[0]` defect: `forms[1]` (xíng, "to walk; to go") is discarded
+whole. Both rows are exactly what `hskEntryToRow` produces.
+
+**Schema reality for polyphony.** No unique constraint on `word` at any scope —
+the only unique constraint is `(language, system, level, sort_order)`. Multiple
+rows per written form are already **in production use for Japanese** (日 has 3
+rows, 2 readings, across levels 1–3). Chinese has zero duplicates. But three
+independent layers collapse by word and would have to change together:
+`vocabMap` (word-keyed, last-write-wins), `buildVocabMatcher`'s `exact` map
+(first-wins on the normalized form) and `calculateStoryReadability`'s `statuses`
+(commented *"distinct by word"*). Meanwhile `learnedByLevel` counts **card
+rows**, so a duplicate would be *over*-counted by the story-unlock gate while
+being *under*-counted by "% known" — opposite failures. Adding a second Chinese
+row today would silently corrupt both.
+
+**An unapplied migration:** `20260724170000_harden_policies_and_vocab_index.sql`
+declares `vocabulary_dict_word_uniq` (partial, `where level is null`). It is
+committed but **not present in the live database** — the race it guards against
+is still open.
+
+**Test gap:** `src/hskBuild.test.js` hard-codes a one-element `forms` array in
+its fixture factory, so no test pins which form is chosen. A fix that selected a
+different form would not break a single assertion.
+
+**Title minimum, docs:** `docs/ARCHITECTURE.md`'s vocabulary listing is stale —
+it omits `source_id`, `part_of_speech`, `category`, `priority`, `lesson_group`,
+`audio_provider`, `audio_voice`, `created_at`, `updated_at` (14 of 23 columns
+listed). `docs/DATABASE.md` omits `source_id` too.
 
 ### Target-bundle selection moved upstream, and the eligible set is finally non-empty (2026-08-26)
 
