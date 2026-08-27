@@ -1,0 +1,596 @@
+{
+  "schema": "writer-bakeoff@1",
+  "generatedAt": "2026-08-27T12:33:33.598Z",
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bundle-L3-001",
+    "batchId": "bundle",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "如果",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "该",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "被",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "中",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "认为",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "A student sees it’s raining, realizes he needs an umbrella, and thinks he should ask a classmate to borrow one.",
+    "seasonSeed": null,
+    "series": null,
+    "composition": {
+      "bucket": "bundle",
+      "reason": "A student sees it’s raining, realizes he needs an umbrella, and thinks he should ask a classmate to borrow one.",
+      "hard": [
+        {
+          "word": "如果"
+        },
+        {
+          "word": "该"
+        },
+        {
+          "word": "需要"
+        }
+      ],
+      "soft": [
+        {
+          "word": "被"
+        },
+        {
+          "word": "中"
+        },
+        {
+          "word": "认为"
+        }
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "totalLines": 26,
+  "scaffoldVersion": "fab9-scaffold@3",
+  "beatVersion": "fab9-beats@2",
+  "realizedVersion": "fab9-realized@1",
+  "beatLimits": {
+    "unknownDistinct": 1,
+    "outOfLevelCharShare": 0.08,
+    "maxTargetOccurrences": 3
+  },
+  "beatQuality": {
+    "overall": 6,
+    "natural": 6,
+    "continuity": 5,
+    "integration": 5
+  },
+  "lexicalPolicy": {
+    "version": "fab9-assist@1",
+    "inLevelShareTarget": 0.9,
+    "inLevelSharePreferred": 0.95,
+    "assistedWordsPreferred": 4,
+    "assistedWordsMax": 8,
+    "assistedPerBeatPreferred": 1,
+    "assistedPerBeatMax": null,
+    "distanceCost": {
+      "1": 1,
+      "2": 2,
+      "3": 4
+    },
+    "farCost": 6,
+    "offListCost": 4,
+    "costBudget": 16,
+    "offListMax": 2,
+    "necessityWeight": {
+      "CENTRAL_NECESSARY": 0.75,
+      "NATURAL_SUPPORT": 1,
+      "OPTIONAL_COMPLEXITY": 1.5
+    },
+    "optionalMax": 3,
+    "optionalCostMax": null,
+    "assistedPerSentencePreferred": 1,
+    "assistedPerSentenceMax": 2
+  },
+  "writers": [
+    "groq:qwen/qwen3.6-27b:none",
+    "groq:openai/gpt-oss-120b:medium"
+  ],
+  "judge": "groq:openai/gpt-oss-20b",
+  "anonMapping": [
+    {
+      "key": "B|groq:qwen/qwen3.6-27b:none",
+      "anon": "W1"
+    },
+    {
+      "key": "B|groq:openai/gpt-oss-120b:medium",
+      "anon": "W2"
+    },
+    {
+      "key": "C|groq:openai/gpt-oss-120b:medium",
+      "anon": "W1"
+    },
+    {
+      "key": "C|groq:qwen/qwen3.6-27b:none",
+      "anon": "W2"
+    },
+    {
+      "key": "A|groq:openai/gpt-oss-120b:medium",
+      "anon": "W1"
+    },
+    {
+      "key": "A|groq:qwen/qwen3.6-27b:none",
+      "anon": "W2"
+    },
+    {
+      "key": "D|groq:qwen/qwen3.6-27b:none",
+      "anon": "W1"
+    },
+    {
+      "key": "D|groq:openai/gpt-oss-120b:medium",
+      "anon": "W2"
+    }
+  ],
+  "plans": [
+    {
+      "label": "B",
+      "planner": "groq:openai/gpt-oss-120b:medium",
+      "quality": 9,
+      "problem": "李明 needs an umbrella because it starts to rain.",
+      "risk": {
+        "classification": "ASSISTED_OOL",
+        "budget": {
+          "nominalLevel": 3,
+          "assistedWords": 6,
+          "cost": 15,
+          "costBudget": 16,
+          "byNecessity": {
+            "CENTRAL_NECESSARY": {
+              "count": 6,
+              "cost": 15,
+              "words": [
+                "黑暗",
+                "备用",
+                "off:stays",
+                "off:dry",
+                "收集",
+                "院子"
+              ]
+            }
+          },
+          "minWorstSentence": 1,
+          "maxPerBeat": 2,
+          "crowdedBeats": [],
+          "clusteredSentences": [],
+          "offListWords": 2,
+          "offListMax": 2,
+          "inLevelShareTarget": 0.9,
+          "inLevelSharePreferred": 0.95,
+          "measuredOn": "the finished draft, by the deterministic validator",
+          "breaches": [],
+          "notes": [
+            "above the comfortable 4 assisted words, still inside the 8 allowed",
+            "beat 1 carries 2 assisted words over undefined lines",
+            "beat 5 carries 2 assisted words over undefined lines"
+          ]
+        }
+      }
+    },
+    {
+      "label": "C",
+      "planner": "groq:openai/gpt-oss-120b:medium",
+      "quality": 5,
+      "problem": "李明 forgot his bus card and cannot take the bus home",
+      "risk": {
+        "classification": "ASSISTED_OOL",
+        "budget": {
+          "nominalLevel": 3,
+          "assistedWords": 7,
+          "cost": 16,
+          "costBudget": 16,
+          "byNecessity": {
+            "CENTRAL_NECESSARY": {
+              "count": 5,
+              "cost": 12,
+              "words": [
+                "查询",
+                "off:options",
+                "off:boards",
+                "口袋",
+                "提醒"
+              ]
+            },
+            "OPTIONAL_COMPLEXITY": {
+              "count": 2,
+              "cost": 4,
+              "words": [
+                "乘坐",
+                "及时"
+              ]
+            }
+          },
+          "minWorstSentence": 1,
+          "maxPerBeat": 2,
+          "crowdedBeats": [],
+          "clusteredSentences": [],
+          "offListWords": 2,
+          "offListMax": 2,
+          "inLevelShareTarget": 0.9,
+          "inLevelSharePreferred": 0.95,
+          "measuredOn": "the finished draft, by the deterministic validator",
+          "breaches": [],
+          "notes": [
+            "above the comfortable 4 assisted words, still inside the 8 allowed",
+            "beat 1 carries 2 assisted words over undefined lines"
+          ]
+        }
+      }
+    },
+    {
+      "label": "A",
+      "planner": "groq:openai/gpt-oss-120b:medium",
+      "quality": 9,
+      "problem": "李明's phone battery is low and he needs to charge it",
+      "risk": {
+        "classification": "LEXICALLY_UNSAFE",
+        "budget": {
+          "nominalLevel": 3,
+          "assistedWords": 13,
+          "cost": 37,
+          "costBudget": 16,
+          "byNecessity": {
+            "OPTIONAL_COMPLEXITY": {
+              "count": 3,
+              "cost": 11,
+              "words": [
+                "off:plug",
+                "请求",
+                "答案"
+              ]
+            },
+            "CENTRAL_NECESSARY": {
+              "count": 10,
+              "cost": 26,
+              "words": [
+                "off:icon",
+                "off:screen",
+                "off:dim",
+                "off:charger",
+                "off:plugged",
+                "off:outlet",
+                "闯",
+                "电池",
+                "力量",
+                "前后"
+              ]
+            }
+          },
+          "minWorstSentence": 1,
+          "maxPerBeat": 4,
+          "crowdedBeats": [],
+          "clusteredSentences": [],
+          "offListWords": 7,
+          "offListMax": 2,
+          "inLevelShareTarget": 0.9,
+          "inLevelSharePreferred": 0.95,
+          "measuredOn": "the finished draft, by the deterministic validator",
+          "breaches": [
+            "13 words above the level (max 8)",
+            "an assisted-vocabulary cost of 37 (budget 16) — distance above the level is charged, so a few far words cost more than several near ones",
+            "7 words the learner list does not carry at all (max 2) — those reach the deterministic validator as UNKNOWN words, and it is strict about them"
+          ],
+          "notes": [
+            "beat 1 carries 4 assisted words over undefined lines",
+            "beat 2 carries 3 assisted words over undefined lines",
+            "beat 4 carries 3 assisted words over undefined lines",
+            "beat 5 carries 2 assisted words over undefined lines"
+          ]
+        }
+      }
+    },
+    {
+      "label": "D",
+      "planner": "groq:openai/gpt-oss-120b:medium",
+      "quality": 4,
+      "problem": "李明 has no lunch to eat",
+      "risk": {
+        "classification": "LEXICALLY_UNSAFE",
+        "budget": {
+          "nominalLevel": 3,
+          "assistedWords": 8,
+          "cost": 27,
+          "costBudget": 16,
+          "byNecessity": {
+            "OPTIONAL_COMPLEXITY": {
+              "count": 3,
+              "cost": 14,
+              "words": [
+                "off:help",
+                "off:sandwich",
+                "部分"
+              ]
+            },
+            "CENTRAL_NECESSARY": {
+              "count": 5,
+              "cost": 13,
+              "words": [
+                "off:lunchbox",
+                "off:gone",
+                "off:saying",
+                "off:extra",
+                "食堂"
+              ]
+            }
+          },
+          "minWorstSentence": 1,
+          "maxPerBeat": 2,
+          "crowdedBeats": [],
+          "clusteredSentences": [],
+          "offListWords": 6,
+          "offListMax": 2,
+          "inLevelShareTarget": 0.9,
+          "inLevelSharePreferred": 0.95,
+          "measuredOn": "the finished draft, by the deterministic validator",
+          "breaches": [
+            "an assisted-vocabulary cost of 27 (budget 16) — distance above the level is charged, so a few far words cost more than several near ones",
+            "6 words the learner list does not carry at all (max 2) — those reach the deterministic validator as UNKNOWN words, and it is strict about them"
+          ],
+          "notes": [
+            "beat 1 carries 2 assisted words over undefined lines"
+          ]
+        }
+      }
+    }
+  ],
+  "runs": [
+    {
+      "plan": "B",
+      "writerSpec": "groq:qwen/qwen3.6-27b:none",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "detail": "sketch/1, sketch/2, sketch/2",
+      "latencyMs": 63399,
+      "tokens": {
+        "prompt": 8915,
+        "completion": 106
+      },
+      "usage": {
+        "requests": 7,
+        "failures": 1,
+        "promptTokens": 8915,
+        "completionTokens": 106,
+        "latencyMsTotal": 7503,
+        "rateLimit429s": 1,
+        "throttleWaitMs": 47666,
+        "retryAfterWaitMs": 8000
+      },
+      "anon": "W1"
+    },
+    {
+      "plan": "B",
+      "writerSpec": "groq:openai/gpt-oss-120b:medium",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "detail": "anchors/1, anchors/1",
+      "latencyMs": 6728,
+      "tokens": {
+        "prompt": 5919,
+        "completion": 1472
+      },
+      "usage": {
+        "requests": 6,
+        "failures": 2,
+        "promptTokens": 5919,
+        "completionTokens": 1472,
+        "latencyMsTotal": 4693,
+        "rateLimit429s": 2,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 2000
+      },
+      "anon": "W2"
+    },
+    {
+      "plan": "C",
+      "writerSpec": "groq:qwen/qwen3.6-27b:none",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "detail": "sketch/2, sketch/2",
+      "latencyMs": 8168,
+      "tokens": {
+        "prompt": 5905,
+        "completion": 84
+      },
+      "usage": {
+        "requests": 4,
+        "failures": 0,
+        "promptTokens": 5905,
+        "completionTokens": 84,
+        "latencyMsTotal": 8055,
+        "rateLimit429s": 0,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 0
+      },
+      "anon": "W2"
+    },
+    {
+      "plan": "C",
+      "writerSpec": "groq:openai/gpt-oss-120b:medium",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "detail": "title, title",
+      "latencyMs": 17969,
+      "tokens": {
+        "prompt": 2518,
+        "completion": 800
+      },
+      "usage": {
+        "requests": 4,
+        "failures": 2,
+        "promptTokens": 2518,
+        "completionTokens": 800,
+        "latencyMsTotal": 2967,
+        "rateLimit429s": 2,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 15000
+      },
+      "anon": "W1"
+    },
+    {
+      "plan": "A",
+      "writerSpec": "groq:qwen/qwen3.6-27b:none",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "detail": "sketch/1, sketch/1",
+      "latencyMs": 8351,
+      "tokens": {
+        "prompt": 4261,
+        "completion": 28
+      },
+      "usage": {
+        "requests": 4,
+        "failures": 1,
+        "promptTokens": 4261,
+        "completionTokens": 28,
+        "latencyMsTotal": 2294,
+        "rateLimit429s": 1,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 6000
+      },
+      "anon": "W2"
+    },
+    {
+      "plan": "A",
+      "writerSpec": "groq:openai/gpt-oss-120b:medium",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "detail": "title, title",
+      "latencyMs": 16368,
+      "tokens": {
+        "prompt": 2498,
+        "completion": 662
+      },
+      "usage": {
+        "requests": 4,
+        "failures": 2,
+        "promptTokens": 2498,
+        "completionTokens": 662,
+        "latencyMsTotal": 3339,
+        "rateLimit429s": 2,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 13000
+      },
+      "anon": "W1"
+    },
+    {
+      "plan": "D",
+      "writerSpec": "groq:qwen/qwen3.6-27b:none",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "detail": "title, title",
+      "latencyMs": 1182,
+      "tokens": {
+        "prompt": 2457,
+        "completion": 18
+      },
+      "usage": {
+        "requests": 2,
+        "failures": 0,
+        "promptTokens": 2457,
+        "completionTokens": 18,
+        "latencyMsTotal": 1166,
+        "rateLimit429s": 0,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 0
+      },
+      "anon": "W1"
+    },
+    {
+      "plan": "D",
+      "writerSpec": "groq:openai/gpt-oss-120b:medium",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "detail": "title, title",
+      "latencyMs": 22709,
+      "tokens": {
+        "prompt": 2500,
+        "completion": 800
+      },
+      "usage": {
+        "requests": 4,
+        "failures": 2,
+        "promptTokens": 2500,
+        "completionTokens": 800,
+        "latencyMsTotal": 2695,
+        "rateLimit429s": 2,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 20000
+      },
+      "anon": "W2"
+    }
+  ],
+  "densityChecks": [],
+  "judgeLog": []
+}
