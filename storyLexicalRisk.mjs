@@ -42,7 +42,7 @@ const ROMANIZED = (() => {
   return out
 })()
 
-export const RISK_VERSION = 'fab9-risk@10'
+export const RISK_VERSION = 'fab9-risk@11'
 
 export const RISK = { LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH' }
 
@@ -720,7 +720,15 @@ export const ASSISTED_POLICY = {
   // Crowding: one assisted word in a sentence is comfortable, two is the most
   // an otherwise easy sentence should carry.
   assistedPerBeatPreferred: 1,
-  assistedPerBeatMax: 2,
+  // NOT a gate. A beat is five or six Mandarin lines, so "at most N assisted
+  // words per beat" asserts a beat is one sentence — the same representation
+  // error minWorstSentence was built to replace. Measured over 60 beats
+  // (mean 5.2 lines), a cap of 2 implied 0.38 assisted words per line against
+  // a per-sentence cap of 2.00, and rejected 25 of those beats while ZERO of
+  // them violated the line-normalized bound. Kept as a reported statistic
+  // because "how much new vocabulary is in this scene" is worth seeing; it
+  // decides nothing.
+  assistedPerBeatMax: null,
   // Distance costs: HSK+1 is cheap, HSK+3 is not, and a word the learner list
   // does not contain at all is charged like the far end.
   distanceCost: { 1: 1, 2: 2, 3: 4 },
@@ -908,7 +916,7 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
   const overloaded = minWorstSentence > policy.assistedPerSentenceMax
   const sentences = [{ lines, assisted: allAssisted.size, minWorstSentence }]
   const clustered = overloaded ? sentences : []
-  const crowded = distinct > policy.assistedPerBeatMax || overloaded
+  const crowded = overloaded
   const risk = crowded
     ? RISK.HIGH
     : (assisted.length ? RISK.MEDIUM : (incidentalAssisted.length ? RISK.MEDIUM : RISK.LOW))
@@ -918,8 +926,6 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
     reason = 'this beat has ' + allAssisted.size + ' words above the level and only ' + lines
       + ' line(s) to spread them over, so at least ' + minWorstSentence
       + ' land in one sentence (max ' + policy.assistedPerSentenceMax + '): ' + describe(assisted)
-  } else if (crowded) {
-    reason = 'this one beat needs ' + assisted.length + ' words above the level (max ' + policy.assistedPerBeatMax + '): ' + describe(assisted)
   } else if (assisted.length) {
     reason = assisted.length + ' assisted word(s) the reader taps: ' + describe(assisted)
   } else if (incidentalAssisted.length) {
@@ -1062,7 +1068,7 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
       + ') — distance above the level is charged, so a few far words cost more than several near ones')
   }
   if (crowdedBeats.length) {
-    breaches.push('beat(s) ' + crowdedBeats.join(', ') + ' carry more than ' + policy.assistedPerBeatMax + ' assisted words')
+    breaches.push('beat(s) ' + crowdedBeats.join(', ') + ' cannot spread their assisted words over the lines they have')
   }
   if (offList.length > policy.offListMax) {
     breaches.push(offList.length + ' words the learner list does not carry at all (max ' + policy.offListMax
@@ -1083,9 +1089,12 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
   if (assisted.length > policy.assistedWordsPreferred && classification !== FEASIBILITY.UNSAFE) {
     notes.push('above the comfortable ' + policy.assistedWordsPreferred + ' assisted words, still inside the ' + policy.assistedWordsMax + ' allowed')
   }
+  // Reported, never charged: a scene carrying a lot of new vocabulary is worth
+  // seeing even when it has the lines to carry it.
+  const maxPerBeat = beats.reduce((n, b) => Math.max(n, (b.assisted || []).length), 0)
   for (const b of beats) {
     if (!b.crowded && b.assisted.length > policy.assistedPerBeatPreferred) {
-      notes.push('beat ' + b.beat + ' carries ' + b.assisted.length + ' assisted words; one per sentence reads more easily')
+      notes.push('beat ' + b.beat + ' carries ' + b.assisted.length + ' assisted words over ' + b.lines + ' lines')
     }
   }
 
@@ -1147,6 +1156,7 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
       costBudget: policy.costBudget,
       byNecessity,
       minWorstSentence,
+      maxPerBeat,
       crowdedBeats,
       clusteredSentences: beats.filter(b => (b.clustered || []).length).map(b => ({ beat: b.beat, sentences: b.clustered })),
       offListWords: offList.length,

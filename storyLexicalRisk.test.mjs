@@ -52,13 +52,20 @@ describe('lexical risk — what a beat IS versus what it mentions', () => {
   })
 
   // The exact beat that ran out of words after two attempts.
-  it('HIGH when the beat\'s own action and objects are missing', () => {
-    const r = risk('Li Ming and Xiao Hong help Xiao Ming put the chain back on. Xiao Hong holds the wheel, Li Ming fixes the metal links.')
-    expect(r.risk).toBe(RISK.HIGH)
+  it('names the beat\'s own missing action and objects', () => {
+    const text = 'Li Ming and Xiao Hong help Xiao Ming put the chain back on. Xiao Hong holds the wheel, Li Ming fixes the metal links.'
+    const r = risk(text)
     expect(r.coreMissing).toContain('chain')
     // "links" is not in the dictionary at any level, so it is not counted as a
     // gap; 轮子 and 金属 are, and they are what makes this beat untellable
     expect([...r.supportingMissing]).toEqual(expect.arrayContaining(['wheel', 'metal']))
+    // The BEAT is not what rejects it any more: five lines is room enough to
+    // introduce these one at a time. What rejects it is the story budget —
+    // see the shape-level test below, which still returns UNSAFE on cost and
+    // off-list count. Squeeze the same content into one line and the beat
+    // itself becomes impossible.
+    expect(r.risk).toBe(RISK.MEDIUM)
+    expect(risk(text, { lines: 1 }).risk).toBe(RISK.HIGH)
   })
 
   it('LOW for an everyday scene the reader has words for', () => {
@@ -152,7 +159,7 @@ describe('gloss index and support', () => {
 describe('assessShapeRisk', () => {
   const shape = (beats) => ({ cast: ['李明', '小红'], beats, targetPlan: [] })
 
-  it('one HIGH beat makes the shape HIGH, and names what to avoid', () => {
+  it('an unsayable scene is rejected by the story budget, and names what to avoid', () => {
     const r = assessShapeRisk({
       blueprint: shape([
         beat(1, 'Li Ming walks to school with his classmate.'),
@@ -161,8 +168,17 @@ describe('assessShapeRisk', () => {
       manifest: manifest(), vocabMap,
     })
     expect(r.risk).toBe(RISK.HIGH)
-    expect(r.highBeats).toEqual([2])
-    expect(r.blocking).toEqual(expect.arrayContaining(['chain']))
+    expect(r.classification).toBe(FEASIBILITY.UNSAFE)
+    // Cost and off-list count are what say so. No beat is IMPOSSIBLE — beat 2
+    // has five lines for its seven assisted words — so highBeats is empty, and
+    // that distinction is the point: "expensive" and "unwritable" are
+    // different verdicts and used to be the same one.
+    expect(r.budget.breaches.join(' ')).toMatch(/assisted-vocabulary cost/)
+    expect(r.highBeats).toEqual([])
+    // Still names words for the one permitted replan, and names the off-list
+    // ones first because those are the harder breach.
+    expect(r.blocking.length).toBeGreaterThan(0)
+    expect(r.blocking).toEqual(expect.arrayContaining(['links', 'fix']))
     expect(r.version).toBe(RISK_VERSION)
   })
 
@@ -1135,5 +1151,49 @@ describe('density is measured against the lines the beat becomes', () => {
     const s = r.beats[0].sentences[0]
     expect(s).toMatchObject({ lines: 6, assisted: expect.any(Number) })
     expect(s.minWorstSentence).toBe(Math.ceil(s.assisted / 6))
+  })
+})
+
+// assistedPerBeatMax was removed from the acceptance gate on 2026-08-27. Over 60
+// observed beats (mean 5.2 Mandarin lines) a cap of 2 implied 0.38 assisted
+// words per line against a per-sentence cap of 2.00; it rejected 25 of those
+// beats and ZERO of them violated the line-normalized bound. It asserted a beat
+// is one sentence — the same representation error minWorstSentence replaced.
+// It is still reported, and it decides nothing.
+describe('per-beat vocabulary is a statistic, not a gate', () => {
+  const vocabMap = {
+    好: { level: 1, meaning: 'good' }, 书: { level: 1, meaning: 'book' },
+    钥匙: { level: 4, meaning: 'key' }, 备用: { level: 6, meaning: 'reserve; spare' },
+    条件: { level: 4, meaning: 'condition' }, 柜子: { level: 5, meaning: 'cupboard; cabinet' },
+  }
+  const manifest = { level: 3, speakers: ['李明'], targets: [] }
+  const one = (lines, what) => assessShape({
+    blueprint: { cast: ['李明'], targetPlan: [], beats: [{ id: 1, lines, what, because: 'the story opens' }] },
+    manifest,
+    vocabMap,
+    // Isolate the density question from the story budget.
+    policy: { ...ASSISTED_POLICY, costBudget: 99, offListMax: 99, assistedWordsMax: 99 },
+  })
+  const SCENE = '李明 opens the cabinet with the spare key under the condition 小红 gave'
+
+  it('a beat with room to spread its new words is accepted', () => {
+    const r = one(6, SCENE)
+    expect(r.budget.maxPerBeat).toBeGreaterThan(2)   // the old cap would reject
+    expect(r.budget.minWorstSentence).toBeLessThanOrEqual(ASSISTED_POLICY.assistedPerSentenceMax)
+    expect(r.classification).not.toBe(FEASIBILITY.UNSAFE)
+  })
+
+  it('the same beat with no room to spread them is rejected', () => {
+    const r = one(1, SCENE)
+    expect(r.budget.minWorstSentence).toBeGreaterThan(ASSISTED_POLICY.assistedPerSentenceMax)
+    expect(r.classification).toBe(FEASIBILITY.UNSAFE)
+  })
+
+  it('the per-beat count is still reported', () => {
+    expect(one(6, SCENE).budget.maxPerBeat).toBe(one(1, SCENE).budget.maxPerBeat)
+  })
+
+  it('the policy no longer carries a per-beat maximum', () => {
+    expect(ASSISTED_POLICY.assistedPerBeatMax).toBeNull()
   })
 })
