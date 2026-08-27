@@ -16,7 +16,7 @@
 //
 // Pure: no network, no fs, no clock.
 
-export const MORPH_VERSION = 'fab9-morph@1'
+export const MORPH_VERSION = 'fab9-morph@2'
 
 const text = (v) => String(v == null ? '' : v).trim().toLowerCase()
 
@@ -63,6 +63,20 @@ export const IRREGULAR = (() => {
 
 // Ordinary inflection, after the irregulars have had their say.
 export function lemma(word) {
+  // One pass strips inflection; a second resolves what that uncovers. "thoughts"
+  // is a plural whose singular is itself an irregular past ("thought" → think),
+  // and stopping after one pass left the plural stranded while the singular
+  // resolved. Bounded at two so no chain can run away.
+  let out = lemmaOnce(word)
+  for (let i = 0; i < 1; i += 1) {
+    const next = lemmaOnce(out)
+    if (next === out) break
+    out = next
+  }
+  return out
+}
+
+function lemmaOnce(word) {
   const w = text(word)
   if (!w) return ''
   if (IRREGULAR.has(w)) return IRREGULAR.get(w)

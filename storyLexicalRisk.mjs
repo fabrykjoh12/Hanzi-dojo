@@ -42,7 +42,7 @@ const ROMANIZED = (() => {
   return out
 })()
 
-export const RISK_VERSION = 'fab9-risk@4'
+export const RISK_VERSION = 'fab9-risk@8'
 
 export const RISK = { LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH' }
 
@@ -205,8 +205,10 @@ export function buildGlossIndex(vocabMap, level) {
   const index = new Map()
   const notes = new Map()
   const derived = new Map()
+  const bySense = new Map()
   index.notes = notes
   index.derived = derived
+  index.senseHeads = bySense
   for (const word of Object.keys(vocabMap)) {
     const v = vocabMap[word]
     if (!v || !Number.isFinite(v.level) || v.level > level || !v.meaning) continue
@@ -222,7 +224,9 @@ export function buildGlossIndex(vocabMap, level) {
         }
       }
     }
+    if (!bySense.has(word)) bySense.set(word, new Set())
     for (const sense of glossSenses(v.meaning)) {
+      if (sense.head && !sense.restricted) bySense.get(word).add(lemma(sense.head))
       for (const t of sense.tokens) {
         // A gloss may hold the DERIVED form while the concept is the base:
         // 安静 is glossed "peaceful" and the story says "peace". Indexed
@@ -238,7 +242,11 @@ export function buildGlossIndex(vocabMap, level) {
           if (!index.has(key)) index.set(key, [])
           const hits = index.get(key)
           if (hits.length < 12 && !hits.some(h => h.word === word && h.verb === sense.verb && h.token === t)) {
-            hits.push({ word, verb: sense.verb, token: t })
+            // isHead: this token IS the whole sense, not a word sitting inside
+            // one. "post" heads a sense of 邮件 but is incidental inside 邮箱's
+            // "post office box"; "choice" is incidental inside 不得不's "have
+            // no choice but to". Bridges may only stand on heads.
+            hits.push({ word, verb: sense.verb, token: t, isHead: sense.head === t, restricted: sense.restricted })
           }
         }
       }
@@ -307,21 +315,33 @@ export function glossNotes(meaning) {
 export function glossSenses(meaning) {
   const out = []
   for (const raw of String(meaning || '').split(/[;,]/)) {
+    // A parenthetical RESTRICTS the sense it sits in: 开设 is "to offer (goods
+    // or services)", which is not the same claim as "to offer". Stripping it
+    // and then treating the sense as a plain synonym is how offer reached 开.
+    const restricted = /\([^)]*\)/.test(raw)
     const sense = raw.replace(/\([^)]*\)/g, ' ').trim()
     if (!sense) continue
     const verb = /^to\s+/i.test(sense)
     const body = sense.replace(/^to\s+/i, '').replace(/^(?:a|an|the)\s+/i, '').trim().toLowerCase()
     if (!body) continue
-    out.push({ text: body, verb, tokens: tokenize(body) })
+    out.push({ text: body, verb, restricted, tokens: tokenize(body), head: /^[a-z][a-z'-]*$/.test(body) ? body : null })
   }
   return out
+}
+
+// A classifier gloss is a grammatical description, not a list of senses: 颗 is
+// "classifier for small spheres, pearls, corn grains, teeth, hearts ...", and
+// splitting it on commas invents a sense for every noun it can count — which
+// is how "pearls" became a synonym of "teeth".
+function isClassifier(meaning) {
+  return /^\s*\(?\s*(?:classifier|measure word)\b/i.test(String(meaning || ''))
 }
 
 // Senses that are a single word are the ones that can stand as synonyms of
 // each other. "large bus" is not a synonym of "coach", it is a phrase.
 function senseHeads(meaning) {
   return glossSenses(meaning)
-    .map(s => ({ head: s.text, verb: s.verb }))
+    .map(s => ({ head: s.text, verb: s.verb, restricted: s.restricted }))
     .filter(s => /^[a-z][a-z'-]*$/.test(s.head) && s.head.length >= 3 && !SENSE_STOP.has(s.head) && !/-/.test(s.head))
 }
 
@@ -367,25 +387,61 @@ export function senseCompatible(pos, sense) {
 // token → tokens that some entry lists as an alternative translation of it.
 export function buildSenseSynonyms(vocabMap) {
   const syn = new Map()
-  const link = (a, b) => {
+  const link = (a, b, edge) => {
     for (const key of new Set([a, stem(a), riskStem(a)])) {
-      if (!syn.has(key)) syn.set(key, new Set())
-      syn.get(key).add(b)
+      if (!syn.has(key)) syn.set(key, [])
+      if (!syn.get(key).some(x => x.to === b && x.source === edge.source)) syn.get(key).push({ to: b, ...edge })
     }
   }
   for (const word of Object.keys(vocabMap || {})) {
     const v = vocabMap[word]
-    if (!v || !v.meaning) continue
+    if (!v || !v.meaning || isClassifier(v.meaning)) continue
     const heads = senseHeads(v.meaning)
     if (heads.length < 2) continue
     for (const a of heads) {
       for (const b of heads) {
         if (a.head === b.head || a.verb !== b.verb) continue
-        link(a.head, b.head)
+        // A restricted sense is a narrower claim than its bare head. 抱 "to
+        // hold; to carry (in one's arms)" still licenses carry~hold, because
+        // the pivot "hold" is unrestricted. 开设 "to offer (goods or
+        // services); to open (for business etc)" must NOT license offer~open
+        // onto 开's plain "to open" — the pivot there carries a restriction
+        // the landing sense does not.
+        link(a.head, b.head, { source: word, verb: a.verb, pivotRestricted: b.restricted })
       }
     }
   }
   return syn
+}
+
+// A pivot token that heads senses in entries with DISJOINT meanings is
+// ambiguous, and a bridge through it says nothing: "post" heads 岗位 (a job)
+// and 邮件 (mail), which share nothing but the string.
+export function ambiguousPivots(vocabMap) {
+  const byToken = new Map()
+  for (const word of Object.keys(vocabMap || {})) {
+    const v = vocabMap[word]
+    if (!v || !v.meaning || isClassifier(v.meaning)) continue
+    // EVERY entry that heads a sense with this token counts, including
+    // single-sense ones: 感冒 "a cold" is what makes "cold" ambiguous next to
+    // 寒冷 "cold; frigid", and skipping it let frigid reach 感冒.
+    const heads = senseHeads(v.meaning)
+    for (const h of heads) {
+      if (!byToken.has(h.head)) byToken.set(h.head, [])
+      byToken.get(h.head).push(new Set(heads.map(x => x.head).filter(x => x !== h.head)))
+    }
+  }
+  const out = new Set()
+  for (const [token, groups] of byToken) {
+    if (groups.length < 2) continue
+    for (let i = 0; i < groups.length; i += 1) {
+      for (let j = i + 1; j < groups.length; j += 1) {
+        if (![...groups[i]].some(x => groups[j].has(x))) { out.add(token); break }
+      }
+      if (out.has(token)) break
+    }
+  }
+  return out
 }
 
 // The words the reader has, for testing whether an above-level compound is
@@ -423,13 +479,36 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
     if (hit.length) return { support: 'supported', via: 'gloss', words: names(hit) }
   }
 
-  // Bridge 1 — a synonym the dataset itself declares.
+  // Bridge 1 — a synonym the dataset itself declares. Three things have to
+  // hold, or the edge carries no meaning across: the pivot must not be a
+  // string two unrelated senses happen to share (job~post landing on 邮件
+  // "mail"), the reading we land on must be the same part of speech as the
+  // reading that licensed the edge (view~watch is verb~verb, and 手表's
+  // "watch" is a noun), and it must be that sense's HEAD rather than a word
+  // inside it (开花's "to split open").
   if (synonyms) {
+    const ambiguous = synonyms.ambiguous || new Set()
     for (const form of forms(concept)) {
-      for (const synonym of (synonyms.get(form) || [])) {
-        for (const sf of forms(synonym)) {
-          const hit = (index.get(sf) || []).filter(ok)
-          if (hit.length) return { support: 'supported', via: 'synonym', synonym, words: names(hit) }
+      for (const edge of (synonyms.get(form) || [])) {
+        if (ambiguous.has(edge.to) || ambiguous.has(form)) continue
+        for (const sf of forms(edge.to)) {
+          // Same LEMMA, not merely the same stem. riskStem() strips -ly, which
+          // collapses "particulars" onto "particularly" and let 细节 "details;
+          // particulars" reach 特别. Suffixes that change word class are the
+          // derivation bridge's business, and it records itself as weaker
+          // evidence; the synonym bridge must not launder them as direct.
+          const hit = (index.get(sf) || []).filter(h =>
+            h.isHead && h.verb === edge.verb && lemma(h.token) === lemma(edge.to)
+            && (!edge.pivotRestricted || h.restricted) && ok(h))
+          if (hit.length) {
+            return {
+              support: 'supported',
+              via: 'synonym',
+              synonym: edge.to,
+              evidence: { pivot: edge.to, sourceWord: edge.source, sense: hit[0].token },
+              words: names(hit),
+            }
+          }
         }
       }
     }
@@ -437,17 +516,37 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
 
   // Bridge 2 — the language says it with a compound built on a word the
   // reader already has.
+  // The compound has to MEAN the concept — the concept must head one of its
+  // senses. 不得不 merely mentions "choice" inside "have no choice but to",
+  // and 请教 mentions "guidance" inside "to ask for guidance"; reading 不 and
+  // 请 out of those is reading a word out of a sentence.
   let above = null
   if (fullIndex) {
     for (const form of forms(concept)) {
-      const hits = (fullIndex.get(form) || []).filter(ok)
+      const hits = (fullIndex.get(form) || []).filter(h => h.isHead && ok(h))
       if (!above && hits.length) above = names(hits)
     }
   }
   if (inLevelWords && above) {
+    const heads = (fullIndex && fullIndex.senseHeads) || new Map()
     for (const word of above) {
       const head = componentHead(word, inLevelWords)
-      if (head) return { support: 'supported', via: 'component', compound: word, words: [head] }
+      if (!head) continue
+      // The compound must be a KIND of its head, and the only evidence for
+      // that in gloss data is a sense the two share: 晚上 "evening; night"
+      // and 晚 "evening" do; 看法 "view" and 看 "to see, to look" do not,
+      // nor 分析 and 分, nor 后果 and 后. Without this the bridge reads a
+      // grammatical morpheme as if it carried the compound's meaning.
+      const a = heads.get(word)
+      const b = heads.get(head)
+      if (!a || !b || ![...a].some(x => b.has(x))) continue
+      return {
+        support: 'supported',
+        via: 'component',
+        compound: word,
+        evidence: { compound: word, head, sharedSense: [...a].find(x => b.has(x)) },
+        words: [head],
+      }
     }
   }
 
@@ -736,6 +835,7 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
   const idx = index || buildGlossIndex(vocabMap, manifest.level)
   const full = fullIndex || buildFullGlossIndex(vocabMap)
   const syn = synonyms || buildSenseSynonyms(vocabMap)
+  if (!syn.ambiguous) syn.ambiguous = ambiguousPivots(vocabMap)
   const inLevel = inLevelWords || buildInLevelWords(vocabMap, manifest.level)
   const concepts = conceptsFromBeat(beat, entries, { names })
   const targetWords = new Set((manifest.targets || []).map(t => t.word))
@@ -833,6 +933,7 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
   const index = buildGlossIndex(vocabMap, manifest.level)
   const fullIndex = buildFullGlossIndex(vocabMap)
   const synonyms = buildSenseSynonyms(vocabMap)
+  synonyms.ambiguous = ambiguousPivots(vocabMap)
   const inLevelWords = buildInLevelWords(vocabMap, manifest.level)
   const names = [...(blueprint.cast || []), ...(manifest.speakers || [])]
   const beats = (blueprint.beats || []).map(beat => assessBeatRisk({

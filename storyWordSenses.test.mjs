@@ -42,8 +42,8 @@ describe('a word is more than its first gloss', () => {
   it('a true noun sense is preserved alongside a verbal one', () => {
     const e = wordSenses('生活', { vocabMap, corpusLines })
     expect(e.senses).toEqual([
-      { text: 'live', verb: true, tokens: expect.any(Array) },
-      { text: 'life', verb: false, tokens: expect.any(Array) },
+      { text: 'live', verb: true, restricted: false, head: 'live', tokens: expect.any(Array) },
+      { text: 'life', verb: false, restricted: false, head: 'life', tokens: expect.any(Array) },
     ])
   })
 

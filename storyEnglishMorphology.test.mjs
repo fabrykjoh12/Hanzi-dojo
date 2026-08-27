@@ -40,7 +40,7 @@ describe('lemma — irregular families, not one reproduced case', () => {
   it('leaves a base form and a real -ss word alone', () => {
     for (const w of ['give', 'child', 'glass', 'class', 'help']) expect(lemma(w)).toBe(w)
     expect(IRREGULAR.get('went')).toBe('go')
-    expect(MORPH_VERSION).toBe('fab9-morph@1')
+    expect(MORPH_VERSION).toBe('fab9-morph@2')
   })
 })
 

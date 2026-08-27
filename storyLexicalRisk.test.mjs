@@ -5,7 +5,7 @@ import {
   validateGlossCorpus, GlossCorpusError, glossSenses, senseCompatible, beatConceptPos,
   assessShapeRisk as assessShape, classifyConcept, assistCost, withPolicy, assistKey,
   suffixClass, inflectionCompatible, ASSIST, FEASIBILITY, ASSISTED_POLICY,
-  RISK, RISK_VERSION,
+  RISK, RISK_VERSION, ambiguousPivots,
 } from './storyLexicalRisk.mjs'
 import { buildManifest } from './storyManifestPlanner.mjs'
 
@@ -208,13 +208,19 @@ describe('conceptSupport — different wording is not a lexical gap', () => {
   const inLevelWords = buildInLevelWords(vocabMap, LEVEL)
   const support = (concept) => conceptSupport(concept, index, fullIndex, { synonyms, inLevelWords })
 
-  it('synonym wording: "large" is sayable because 大 is', () => {
-    // 大 is glossed "big", so exact overlap never found it.
+  it('"large" is charged as assisted: the corpus never says 大 is large', () => {
+    // 大 is glossed "big" and 大型 "large; large-scale". The two share no
+    // sense, so nothing in the dataset licenses large → 大 — the missing link
+    // is English-side (big ~ large), which this gate has no source for.
+    //
+    // This test used to assert the opposite, via the component bridge. That
+    // route was reading 大 out of 大型 on nothing but a shared character, and
+    // the same reasoning was simultaneously producing 看法 → 看, 分析 → 分,
+    // 后果 → 后 and 不得不 → 不. Charging "large" as assisted vocabulary is
+    // the conservative, honest cost of a gloss the dataset does not carry —
+    // the same class of gap as 晚上 glossed "evening" with no "night".
     expect(support('big').support).toBe('supported')
-    const large = support('large')
-    expect(large.support).toBe('supported')
-    expect(large.via).toBe('component')
-    expect(large.words).toContain('大')
+    expect(support('large').support).toBe('none')
   })
 
   it('compatible action wording: "carry" and "lift" are sayable', () => {
@@ -353,8 +359,8 @@ describe('direct gloss support agrees on part of speech', () => {
 
   it('reads senses and their part of speech once, for everyone', () => {
     expect(glossSenses('tired, to tire')).toEqual([
-      { text: 'tired', verb: false, tokens: expect.any(Array) },
-      { text: 'tire', verb: true, tokens: expect.any(Array) },
+      { text: 'tired', verb: false, restricted: false, head: 'tired', tokens: expect.any(Array) },
+      { text: 'tire', verb: true, restricted: false, head: 'tire', tokens: expect.any(Array) },
     ])
     expect(senseCompatible('noun', { verb: true })).toBe(false)
     expect(senseCompatible('verb', { verb: true })).toBe(true)
@@ -843,5 +849,145 @@ describe('the calibrated A3.2 policy (sweep-1)', () => {
     const r = assessShape({ blueprint: { cast: ['李明'], beats: [crowded], targetPlan: [] }, manifest: manifest(), vocabMap: vm, policy: { ...ASSISTED_POLICY, costBudget: 99, offListMax: 99, optionalMax: 99 } })
     expect(r.classification).toBe(FEASIBILITY.UNSAFE)
     expect(r.budget.clusteredSentences.length).toBeGreaterThan(0)
+  })
+})
+
+// The provenance audit (2026-08-27) ran every concept from the six frozen
+// plans through the matcher and read the evidence for each in-level verdict.
+// Thirty-odd routes were false: they made a concept look in-level, and so
+// undercharged the assisted-vocabulary budget the whole policy is calibrated
+// against. Every entry below is real corpus data, and each one is a DIFFERENT
+// way for a bridge to lie. They are pinned as a corpus because a fix for one
+// that reopens another is not a fix.
+describe('bridge evidence — the frozen negative corpus', () => {
+  const ROWS = [
+    // job / offer / view / choice / guidance: the five traced end to end.
+    ['岗位', 6, 'a post; a job'],
+    ['邮件', 3, 'mail; post'],
+    ['邮箱', 3, 'mailbox; post office box'],
+    ['沙发', 3, 'sofa (loanword); (Internet slang) the first reply or replier to a forum post'],
+    ['开设', 6, 'to offer (goods or services); to open (for business etc)'],
+    ['开', 1, 'to open'],
+    ['打开', 2, 'to open'],
+    ['开花', 3, 'to bloom; to blossom; to flower; (fig.) to burst; to split open'],
+    ['观看', 4, 'to watch; to view'],
+    ['看法', 4, 'way of looking at a thing; view'],
+    ['手表', 2, 'watch, wristwatch'],
+    ['看', 1, 'to see, to look'],
+    ['不得不', 4, 'have no choice or option but to; cannot but'],
+    ['不', 1, 'not, no'],
+    ['请教', 5, 'to ask for guidance; to consult'],
+    ['请', 1, 'please'],
+    // The same shapes, found across the rest of the audit.
+    ['分析', 4, 'to analyze; analysis'],
+    ['分', 1, 'minute, to divide'],
+    ['后果', 5, 'consequences; aftermath'],
+    ['后', 2, 'behind, later'],
+    ['信息', 4, 'information; news'],
+    ['信', 3, 'letter; mail'],
+    ['点头', 4, 'to nod'],
+    ['点', 1, 'o\'clock, dot'],
+    ['细节', 5, 'details; particulars'],
+    ['特别', 3, 'unusual; special; very; especially; particularly'],
+    // Positives that must survive every constraint above.
+    ['抱', 4, 'to hold; to carry (in one\'s arms)'],
+    ['拿', 2, 'to take, to hold'],
+    ['教育', 4, 'to educate; to teach'],
+    ['教', 1, 'to teach'],
+    ['帮助', 2, 'assistance; aid; to help; to assist'],
+    ['高兴', 1, 'happy; glad'],
+    ['错误', 4, 'mistaken; false; wrong; error; mistake'],
+    ['错', 2, 'wrong, mistaken'],
+    ['颗', 3, 'classifier for small spheres, pearls, corn grains, teeth, hearts, satellites etc'],
+    ['牙', 3, 'tooth; ivory'],
+  ]
+  const vocabMap = Object.fromEntries(ROWS.map(([word, level, meaning]) => [word, { level, meaning }]))
+  const LEVEL = 3
+  const index = buildGlossIndex(vocabMap, LEVEL)
+  const fullIndex = buildFullGlossIndex(vocabMap)
+  const synonyms = buildSenseSynonyms(vocabMap)
+  synonyms.ambiguous = ambiguousPivots(vocabMap)
+  const inLevelWords = buildInLevelWords(vocabMap, LEVEL)
+  const support = (c) => conceptSupport(c, index, fullIndex, { synonyms, inLevelWords })
+
+  const NEGATIVES = [
+    ['job', 'a post (employment) and a post (mail) are one string, not one sense'],
+    ['offer', 'to offer (goods or services) is not the bare verb 开 means'],
+    ['view', 'the view~watch edge is verbal; 手表 watch is a noun'],
+    ['choice', 'choice is a word inside "have no choice but to", not its sense'],
+    ['guidance', 'guidance is a word inside "to ask for guidance", not its sense'],
+    ['analysis', '分析 is not a kind of 分'],
+    ['consequences', '后果 is not a kind of 后'],
+    ['information', '信息 is not a kind of 信'],
+    ['nods', '点头 is not a kind of 点'],
+    ['details', 'particulars and particularly share a stem, not a lemma'],
+  ]
+  for (const [concept, why] of NEGATIVES) {
+    it('does not reach ' + concept + ': ' + why, () => {
+      const r = support(concept)
+      expect(['synonym', 'component'], concept + ' — ' + why).not.toContain(r.via)
+    })
+  }
+
+  it('the bridges still carry what they were built for', () => {
+    // 错误 "mistaken; false; wrong; error; mistake" declares false ~ mistaken,
+    // and 错 is glossed "wrong, mistaken" — the pivot is unrestricted, the
+    // reading is the same part of speech, and it heads the sense it lands on.
+    const f = support('false')
+    expect(f.support).toBe('supported')
+    expect(f.via).toBe('synonym')
+    expect(f.words).toContain('错')
+    // 教育 "to educate; to teach" and 教 "to teach" share the sense "teach",
+    // so the compound IS a kind of its head and the reader can approximate it.
+    const educate = support('educate')
+    expect(educate.support).toBe('supported')
+    expect(educate.via).toBe('component')
+    expect(educate.words).toContain('教')
+  })
+
+  it('every in-level verdict names the evidence that produced it', () => {
+    expect(support('false').evidence).toMatchObject({ pivot: 'mistaken', sourceWord: '错误' })
+    expect(support('educate').evidence).toMatchObject({ compound: '教育', head: '教', sharedSense: 'teach' })
+  })
+
+  it('an ambiguous pivot is one two entries share as a string only', () => {
+    const amb = ambiguousPivots(vocabMap)
+    expect(amb.has('post')).toBe(true)
+    expect(amb.has('mistaken')).toBe(false)
+  })
+
+  it('a classifier gloss lists what it counts, not what it means', () => {
+    // 颗 counts pearls and teeth; that never made them synonyms.
+    expect(support('pearls').via).not.toBe('synonym')
+    expect(buildSenseSynonyms({ 颗: vocabMap['颗'] }).size).toBe(0)
+  })
+
+  // Mutation guards: each removes ONE constraint and asserts a specific
+  // negative comes back. A refactor that quietly drops a constraint fails here
+  // rather than in a calibration run three steps downstream.
+  it('mutation: sense-head locality is what keeps 不得不 out of reach at all', () => {
+    // Loosening it alone puts the compound back in play — the shared-sense
+    // check below is the second line, and both are load-bearing.
+    const loose = buildGlossIndex(vocabMap, 99)
+    for (const hits of loose.values()) for (const h of hits) h.isHead = true
+    expect((loose.get('choice') || []).map(h => h.word)).toContain('不得不')
+    expect(conceptSupport('choice', index, loose, { synonyms, inLevelWords }).via).toBe('above-level')
+    expect(conceptSupport('choice', index, fullIndex, { synonyms, inLevelWords }).via).toBe('absent')
+  })
+
+  it('mutation: without shared-sense headedness, analysis reaches 分 again', () => {
+    const loose = buildFullGlossIndex(vocabMap)
+    for (const [word, set] of loose.senseHeads) if (word === '分') set.add('analysis')
+    loose.senseHeads.get('分析').add('analysis')
+    const r = conceptSupport('analysis', index, loose, { synonyms, inLevelWords })
+    expect(r.via).toBe('component')
+  })
+
+  it('mutation: without pivot ambiguity, job reaches 邮件 again', () => {
+    const loose = buildSenseSynonyms(vocabMap)
+    loose.ambiguous = new Set()
+    const r = conceptSupport('job', index, fullIndex, { synonyms: loose, inLevelWords })
+    expect(r.via).toBe('synonym')
+    expect(r.words).toContain('邮件')
   })
 })
