@@ -55,7 +55,7 @@ describe('realizedDensity — what the reader actually has to tap', () => {
   })
 
   it('is versioned', () => {
-    expect(REALIZED_VERSION).toBe('fab9-realized@1')
+    expect(REALIZED_VERSION).toBe('fab9-realized@2')
     expect(density('我的书。').version).toBe(REALIZED_VERSION)
   })
 })
@@ -83,5 +83,30 @@ describe('compareDensity — is the plan-time bound useful?', () => {
   it('AGREE_REJECT when both say it is too dense', () => {
     const r = compareDensity({ planned: 3, realized: realized('我需要备用钥匙打开柜子。'), cap: 2 })
     expect(r.verdict).toBe('AGREE_REJECT')
+  })
+})
+
+// The corpus audit found runs like "张纸。" and "午管" being counted as single
+// unknown WORDS. segmentLine walks unmatched text to the next thing the matcher
+// recognises and hands the run to a segmenter — and without one it emits the
+// whole stretch, punctuation included, as one token. The reader always passes a
+// segmenter; this module did not, so it was counting two unknown characters and
+// a full stop as one tap.
+describe('an unmatched stretch is segmented, not counted as one blob', () => {
+  const vocabMap = {
+    我: { word: '我', level: 1, meaning: 'I' },
+    看: { word: '看', level: 1, meaning: 'to see' },
+    一: { word: '一', level: 1, meaning: 'one' },
+  }
+  it('splits adjacent unknown characters instead of gluing them', () => {
+    const r = realizedDensity({ content: '我看一张纸。', vocabMap, level: 3 })
+    // 张 and 纸 are two taps, not one word called "张纸。"
+    expect(r.lines[0].words).not.toContain('张纸。')
+    expect(r.lines[0].taps).toBeGreaterThanOrEqual(2)
+  })
+
+  it('never counts punctuation as part of a tap', () => {
+    const r = realizedDensity({ content: '我看一张纸。', vocabMap, level: 3 })
+    for (const w of r.lines[0].words) expect(w).not.toMatch(/[。，！？；：]/)
   })
 })

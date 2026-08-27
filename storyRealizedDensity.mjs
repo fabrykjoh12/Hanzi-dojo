@@ -16,10 +16,10 @@
 // Pure: no network, no fs, no clock.
 
 import {
-  buildVocabMatcher, segmentLine, storyNamesFor, particlesFor,
+  buildVocabMatcher, segmentLine, storyNamesFor, particlesFor, segmenterFor,
 } from './src/storyReading.js'
 
-export const REALIZED_VERSION = 'fab9-realized@1'
+export const REALIZED_VERSION = 'fab9-realized@2'
 
 const CJK = /[一-鿿]/
 const cjkLength = (s) => [...String(s || '')].filter(ch => CJK.test(ch)).length
@@ -40,11 +40,16 @@ export function realizedDensity({ content, vocabMap = {}, level, language = 'chi
   const names = storyNamesFor(String(content || ''), vocabMap, language)
   const matcher = buildVocabMatcher(vocabMap, language)
   const particles = particlesFor(language)
+  // The reader hands segmentLine a segmenter, and without one an unmatched
+  // stretch comes back as ONE blob — "张纸。" instead of 张 / 纸 / 。 — which
+  // counts two unknown characters plus a full stop as a single tap. The whole
+  // point of this module is to see what the reader sees.
+  const segmenter = segmenterFor(language)
   const distinct = new Set()
   const lines = raw.map((line, i) => {
     const { text } = splitSpeaker(line)
     const words = new Set()
-    for (const tok of segmentLine(text, matcher, names, particles, null)) {
+    for (const tok of segmentLine(text, matcher, names, particles, segmenter)) {
       if (!isWordlike(tok.text) || tok.name) continue
       if (tok.vocab) {
         const wl = tok.vocab.level

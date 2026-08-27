@@ -194,6 +194,41 @@ export function validateBlueprint(bp, { manifest, vocabMap = null, requiredTarge
     if (!has(bp[field], 3)) fail('missing_' + field, label + ' is missing')
   }
 
+  // The plan is written in English — the brief's first line says so, and the
+  // whole downstream lexical gate reads English concepts. Three of twenty-two
+  // gpt-oss plans came back as Chinese prose, passed structural validation, and
+  // reached the gate, which had nothing to score and reported cost 0. Names ARE
+  // Chinese (the cast contract requires it) and a plan may quote the target word
+  // it is placing, so the test is the share of the prose that is Chinese once
+  // those are removed — the same rule the lexical gate uses.
+  const quoted = new Set([
+    ...(manifest.speakers || []).join(''),
+    ...(manifest.extraNames || []).join(''),
+    ...((manifest.targets || []).map(t => t.word).join('')),
+  ])
+  // The BEATS are checked on their own, not averaged with the summary fields.
+  // One plan had an English one-line `problem` and entirely Chinese beats, and
+  // averaging let the English dilute the Chinese below the threshold — while
+  // the beats are exactly the part realization and the lexical gate read.
+  const chineseShare = (parts) => {
+    const prose = parts.map(text).filter(Boolean).join(' ')
+    const solid = prose.replace(/\s+/g, '').length
+    if (!solid) return 0
+    return [...prose].filter(ch => /[\u4e00-\u9fff]/.test(ch) && !quoted.has(ch)).length / solid
+  }
+  const groups = [
+    ['beats', [...(bp.beats || []).map(b => b && b.what), ...(bp.beats || []).map(b => b && b.because)]],
+    ['summary', [bp.problem, bp.setting, bp.resolution, bp.incitingEvent]],
+  ]
+  for (const [what, parts] of groups) {
+    const share = chineseShare(parts)
+    if (share > 0.5) {
+      fail('plan_not_english', 'the plan\'s ' + what + ' are written in Chinese (' + Math.round(share * 100)
+        + '% of that prose). Write the PLAN in English — someone else writes the Chinese from it.')
+      break
+    }
+  }
+
   const allowed = new Set([...(manifest.speakers || []), ...(manifest.extraNames || [])])
   // The plan is written in English, so a planner names people the way an
   // English document does: "Li Ming", "Mom", "Xiao Ming (thought)". Demanding

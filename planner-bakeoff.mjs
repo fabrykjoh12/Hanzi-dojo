@@ -140,10 +140,11 @@ const DIVERGE = (used) => (used.length
     'Find a DIFFERENT everyday situation — a different place, a different object, a different small problem.',
     'It must not be a variation on any of the above.'].join(' ')
   : null)
-const promptFor = (used) => storyShapePrompt({
-  manifest, meanings, totalLines, targets: required, variation: DIVERGE(used),
+const promptFor = (used, feedback = null) => storyShapePrompt({
+  manifest, meanings, totalLines, targets: required, variation: DIVERGE(used), feedback,
 })
 const usedSituations = []
+let languageFeedback = null
 const candidates = []
 const stored = rejudgePath ? JSON.parse(readFileSync(rejudgePath, 'utf8')) : null
 if (stored) {
@@ -157,12 +158,28 @@ for (const p of (stored ? [] : planners)) {
     let raw = null
     let plan = null
     let error = null
-    try {
-      raw = await p.send({ kind: 'shape', prompt: promptFor(usedSituations), maxTokens: 2600 })
-      plan = parseBlueprint(raw)
-      // What this attempt actually chose, so the next one can avoid it.
-      if (plan && plan.problem) usedSituations.push(String(plan.problem).slice(0, 90))
-    } catch (err) { error = String(err.message || err).slice(0, 160) }
+    // ONE bounded retry, and only for a wrong-language plan. That failure is a
+    // format slip rather than an inability to plan — 3 of 22 gpt-oss plans came
+    // back as Chinese prose — and the question §8 asks is whether telling the
+    // planner once is enough. Nothing else is retried: a bad plan stays a bad
+    // plan and is counted as one.
+    let languageRetries = 0
+    for (let tryN = 1; tryN <= 2; tryN += 1) {
+      try {
+        raw = await p.send({ kind: 'shape', prompt: promptFor(usedSituations, languageFeedback), maxTokens: 2600 })
+        plan = parseBlueprint(raw)
+      } catch (err) { error = String(err.message || err).slice(0, 160); break }
+      const peek = plan ? adaptShape(plan).blueprint : null
+      const wrongLanguage = peek
+        && validateBlueprint(peek, { manifest, requiredTargets: required })
+          .failures.some(f => f.code === 'plan_not_english')
+      if (!wrongLanguage || tryN === 2) break
+      languageRetries += 1
+      languageFeedback = ['Your plan was written in Chinese. Write the PLAN in English — someone else writes the Chinese story from it. Chinese is only for the names of the people and for a target word you are quoting.']
+    }
+    languageFeedback = null
+    // What this attempt actually chose, so the next one can avoid it.
+    if (plan && plan.problem) usedSituations.push(String(plan.problem).slice(0, 90))
     const latencyMs = Date.now() - startedAt
     // The planner writes `location` and `transition_from_previous`; the
     // adapter renames them into the strict schema and decides nothing. A
@@ -182,6 +199,7 @@ for (const p of (stored ? [] : planners)) {
     candidates.push({
       model: p.label,
       attempt: k,
+      languageRetries,
       blueprint: bp,
       plan,
       structural: { ok: structural.ok, failures: structural.failures },
@@ -359,6 +377,11 @@ for (const c of candidates) {
   if (c.score && c.score.overall != null) m.overall.push(c.score.overall)
   for (const b of c.buckets) m.buckets[b] = (m.buckets[b] || 0) + 1
 }
+const langRetries = candidates.reduce((n, c) => n + (c.languageRetries || 0), 0)
+const stillWrong = candidates.filter(c => c.structural && (c.structural.failures || []).some(f => f.code === 'plan_not_english')).length
+console.log('\nLANGUAGE COMPLIANCE — one bounded retry, English-plan contract')
+console.log('  plans that needed the retry: ' + langRetries + '/' + candidates.length
+  + '   still wrong after it: ' + stillWrong)
 console.log('\nRATES (joint-pass is the ranking metric)')
 console.log('contract ' + SHAPE_CONTRACT_VERSION + ': transitions the planner stated / moves it made, and whether the mapping was lossless')
 for (const [model, m] of Object.entries(byModel)) {

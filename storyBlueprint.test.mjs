@@ -347,3 +347,67 @@ describe('the prompts keep planning and writing apart', () => {
     expect(parseBlueprint('no json here')).toBeNull()
   })
 })
+
+// Three of twenty-two gpt-oss plans came back as Chinese prose against a brief
+// whose first line is "Write NO Chinese sentences: this is a plan, in English".
+// They passed structural validation and reached the lexical gate, which reads
+// English concepts, found none, and reported cost 0 — ranking one of them as
+// the only feasible plan in its set.
+describe('an English plan must be in English', () => {
+  const manifest = {
+    id: 'x', level: 3, language: 'chinese', system: 'hsk_3',
+    speakers: ['李明', '小红'], extraNames: [],
+    targets: [{ word: '需要', min: 2, max: 4 }],
+    length: { minLines: 14, maxLines: 38 },
+  }
+  const shell = (over) => ({
+    title: 'The key', setting: 'a school, morning', problem: 'Li Ming lost his key',
+    incitingEvent: 'he cannot open the locker', resolution: 'Xiao Hong lends him hers',
+    cast: ['李明', '小红'],
+    beats: [
+      { id: 1, when: 'morning', location: 'school', what: '李明 tries the locker and finds the key gone', because: 'the story opens', transition_from_previous: 'same_place', targets: ['需要'], lines: 6 },
+      { id: 2, when: 'morning', location: 'school', what: '李明 asks 小红 for help', because: 'he cannot open it', transition_from_previous: 'same_place', targets: [], lines: 6 },
+    ],
+    targetPlan: [{ word: '需要', beat: 1, why: 'he states his need', speaker: '李明', refersTo: 'the key', intent: 'to state a need' }],
+    impossibleTargets: [],
+    ...over,
+  })
+  const codes = (bp) => validateBlueprint(bp, { manifest, requiredTargets: ['需要'] }).failures.map(f => f.code)
+
+  it('accepts an English plan that names its cast in Chinese', () => {
+    expect(codes(shell())).not.toContain('plan_not_english')
+  })
+
+  it('accepts an English plan that QUOTES the target word it places', () => {
+    const quoting = shell({
+      beats: shell().beats.map(b => (b.id === 1 ? { ...b, what: '李明 says he 需要 a key to open the locker' } : b)),
+    })
+    expect(codes(quoting)).not.toContain('plan_not_english')
+  })
+
+  it('rejects a plan whose beats are Chinese prose', () => {
+    const chinese = shell({
+      beats: shell().beats.map(b => ({ ...b, what: '李明打开书包，发现钥匙不见了，感到很着急', because: '故事开始了' })),
+    })
+    expect(codes(chinese)).toContain('plan_not_english')
+  })
+
+  it('rejects Chinese beats even when the summary fields are English', () => {
+    // calib-set-1 H: an English one-line `problem` diluted entirely Chinese
+    // beats below the threshold when the two were averaged together. The beats
+    // are what realization and the lexical gate actually read.
+    const mixed = shell({
+      problem: 'Xiao Ming needs a cup to drink water',
+      beats: shell().beats.map(b => ({ ...b, what: '小明发现水瓶空了，觉得自己需要一只杯子', because: '他很渴' })),
+    })
+    expect(codes(mixed)).toContain('plan_not_english')
+  })
+
+  it('names the offending group so one bounded retry can fix it', () => {
+    const chinese = shell({ beats: shell().beats.map(b => ({ ...b, what: '李明打开书包，发现钥匙不见了，感到很着急', because: '故事开始了' })) })
+    const f = validateBlueprint(chinese, { manifest, requiredTargets: ['需要'] })
+      .failures.find(x => x.code === 'plan_not_english')
+    expect(f.message).toMatch(/beats/)
+    expect(f.message).toMatch(/Write the PLAN in English/)
+  })
+})

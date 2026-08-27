@@ -141,6 +141,12 @@ export function directProvider(providerName, model, env = process.env, {
   maxWaitMs = 240000,          // total rate-limit waiting allowed per send()
   sleep = null,                // injectable for specs
   now = Date.now,
+  // Explicit sampling, for experiments that must compare two models fairly.
+  // Omitted by default, which is what production has always sent: nothing, so
+  // each provider applies its own default. A bakeoff that leaves this unset is
+  // comparing two different sampling configurations and calling it a model
+  // difference.
+  sampling = null,
 } = {}) {
   const cfg = DIRECT_PROVIDERS[providerName]
   if (!cfg) throw new Error('Unknown provider "' + providerName + '" (known: ' + Object.keys(DIRECT_PROVIDERS).join(', ') + ')')
@@ -148,6 +154,7 @@ export function directProvider(providerName, model, env = process.env, {
   if (!key) throw new Error(cfg.keyName + ' is not set — cannot use provider "' + providerName + '"')
   const url = cfg.baseURL.replace(/\/$/, '') + '/chat/completions'
   const usage = newUsage()
+  usage.sampling = sampling || null
   const budget = tpmBudget !== undefined ? tpmBudget
     : (providerName === 'groq' ? parseInt(env.GROQ_TPM || '', 10) || GROQ_TPM_DEFAULT : null)
   const limiter = newRateLimiter({ tpmBudget: budget, now, sleep })
@@ -166,6 +173,8 @@ export function directProvider(providerName, model, env = process.env, {
           max_tokens: maxTokens,
           messages: [{ role: 'user', content: prompt }],
           ...(reasoningEffort ? { reasoning_effort: reasoningEffort } : {}),
+          ...(sampling && Number.isFinite(sampling.temperature) ? { temperature: sampling.temperature } : {}),
+          ...(sampling && Number.isFinite(sampling.topP) ? { top_p: sampling.topP } : {}),
         }),
       })
     } catch (err) {

@@ -23,8 +23,9 @@
 //
 // Nothing here stages or publishes. No supabase-js import.
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs'
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs'
 import { join } from 'node:path'
+import { createHash } from 'node:crypto'
 import { publishedChineseStories } from './storyCoverage.mjs'
 import { allocateLines } from './storyBlueprint.mjs'
 import { adaptShape } from './storySemanticShape.mjs'
@@ -58,6 +59,20 @@ const totalLines = parseInt(arg('lines', '26'), 10)
 // the 400 the scaffold defaults to is a budget for one model and a gag for
 // another. writer-bake-1 lost all eight realizations to it.
 const scaffoldTokens = parseInt(arg('scaffold-tokens', '900'), 10)
+// Explicit and IDENTICAL for every writer. Without this each provider applies
+// its own default and the comparison measures two sampling configurations as
+// though they were two models.
+const temperature = arg('temperature', null) == null ? null : Number(arg('temperature'))
+const topP = arg('top-p', null) == null ? null : Number(arg('top-p'))
+const sampling = (Number.isFinite(temperature) || Number.isFinite(topP))
+  ? { temperature: Number.isFinite(temperature) ? temperature : undefined, topP: Number.isFinite(topP) ? topP : undefined }
+  : null
+// Successful realizations are cached by (plan, writer, config). A rerun after a
+// quota wall reuses what already worked instead of spending the budget again on
+// it — five runs of this bakeoff produced zero paired stories partly because
+// every attempt started from nothing.
+const cacheDir = arg('cache', 'data/story-candidates/_writer-cache')
+const noCache = args.includes('--no-cache')
 
 if (!inputPath || !shapeFrom || !labels.length || !writerSpecs.length || !outDir) {
   console.error('Required: --input <dump> --shape-from <bakeoff.json> --labels A,B --writers p:m[:effort],... --out <dir> [--judge p:m]')
@@ -67,10 +82,16 @@ if (!inputPath || !shapeFrom || !labels.length || !writerSpecs.length || !outDir
 function provider(spec) {
   const parts = spec.split(':')
   const effort = parts.length > 2 ? parts.pop() : null
-  const p = directProvider(parts[0], parts.slice(1).join(':'), process.env, { reasoningEffort: effort })
+  const p = directProvider(parts[0], parts.slice(1).join(':'), process.env, { reasoningEffort: effort, sampling })
   p.spec = spec
   return p
 }
+
+const sha = (v) => createHash('sha256').update(typeof v === 'string' ? v : JSON.stringify(v)).digest('hex').slice(0, 16)
+
+// A 429 is the provider saying "come back later". It is never evidence that a
+// writer is worse, so it must never be recorded as a writer failure.
+const isQuota = (text) => /HTTP 429|rate limit|quota/i.test(String(text || ''))
 
 const raw = JSON.parse(readFileSync(inputPath, 'utf8'))
 const stories = publishedChineseStories(raw.stories)
@@ -117,10 +138,32 @@ const runs = []
 for (const plan of plans) {
   const allocation = allocateLines(plan.blueprint.beats, totalLines)
   for (const spec of writerSpecs) {
+    // The identity of this attempt: the same plan, writer and generation
+    // contract must produce the same cache key on every rerun.
+    const configHash = sha({
+      plan: plan.label,
+      blueprint: sha(plan.blueprint),
+      manifest: manifest.id,
+      writer: spec,
+      sampling, totalLines, scaffoldTokens,
+      versions: { scaffold: SCAFFOLD_VERSION, beats: BEAT_VERSION, realized: REALIZED_VERSION },
+    })
+    const cachePath = join(cacheDir, configHash + '.json')
+    if (!noCache && existsSync(cachePath)) {
+      try {
+        const hit = JSON.parse(readFileSync(cachePath, 'utf8'))
+        if (hit && hit.ok) {
+          runs.push({ ...hit, reused: true })
+          console.log('  plan ' + plan.label + ' × writer#' + (writerSpecs.indexOf(spec) + 1)
+            + ' → reused a cached realization (' + hit.lineCount + ' lines)')
+          continue
+        }
+      } catch { /* a corrupt cache entry is simply a miss */ }
+    }
     const writer = provider(spec)
     const started = Date.now()
     const before = { p: writer.usage.promptTokens, c: writer.usage.completionTokens }
-    let record = { plan: plan.label, writerSpec: spec, ok: false, code: null }
+    let record = { plan: plan.label, writerSpec: spec, ok: false, code: null, configHash }
     try {
       const scaffold = await buildLexicalScaffold({
         blueprint: plan.blueprint, manifest, vocabMap, meanings, pool, writer,
@@ -188,10 +231,20 @@ for (const plan of plans) {
       record.code = 'ERROR'
       record.detail = String(err.message || err).slice(0, 200)
     }
+    // Quota is infrastructure. Relabel it so nothing downstream can read a
+    // rate limit as "this writer could not write the story".
+    if (isQuota(record.detail) || isQuota(record.firstReason)) {
+      record.quota = true
+      record.code = 'INCOMPLETE_QUOTA'
+    }
     record.latencyMs = Date.now() - started
     record.tokens = { prompt: writer.usage.promptTokens - before.p, completion: writer.usage.completionTokens - before.c }
     record.usage = { ...writer.usage }
     runs.push(record)
+    if (record.ok && !noCache) {
+      mkdirSync(cacheDir, { recursive: true })
+      writeFileSync(cachePath, JSON.stringify(record, null, 1) + '\n')
+    }
     console.log('  plan ' + plan.label + ' × writer#' + (writerSpecs.indexOf(spec) + 1) + ' → '
       + (record.ok ? record.lineCount + ' lines, ' + record.latencyMs + 'ms' : (record.code + ' ' + (record.detail || ''))))
   }
@@ -204,6 +257,15 @@ for (const plan of plans) {
   order.forEach((writerIdx, slot) => anon.set(plan.label + '|' + writerSpecs[writerIdx], 'W' + (slot + 1)))
 }
 for (const r of runs) r.anon = anon.get(r.plan + '|' + r.writerSpec)
+
+// ── Pair completeness: a model decision needs BOTH writers on the same plan ──
+const complete = plans.filter(p => writerSpecs.every(w => runs.some(r => r.plan === p.label && r.writerSpec === w && r.ok)))
+const quotaHit = runs.filter(r => r.quota).length
+console.log('\nPAIRS: ' + complete.length + '/' + plans.length + ' plans have every writer realized'
+  + (quotaHit ? '   (' + quotaHit + ' attempt(s) stopped on provider quota — infrastructure, not a writer result)' : ''))
+if (complete.length < plans.length) {
+  console.log('INCOMPLETE — rerun to resume; the ' + runs.filter(r => r.ok).length + ' realization(s) already produced are cached and will not be regenerated.')
+}
 
 // ── Deterministic results ───────────────────────────────────────────────────
 console.log('\n' + '='.repeat(96))
@@ -277,6 +339,10 @@ writeFileSync(join(outDir, 'writer-bakeoff.json'), JSON.stringify({
   scaffoldVersion: SCAFFOLD_VERSION, beatVersion: BEAT_VERSION, realizedVersion: REALIZED_VERSION,
   beatLimits: BEAT_LIMITS, beatQuality: BEAT_QUALITY, lexicalPolicy: ASSISTED_POLICY,
   writers: writerSpecs, judge: judgeSpec,
+  sampling: sampling || 'provider default (nothing sent)',
+  scaffoldTokens,
+  pairs: { complete: complete.map(p => p.label), of: plans.map(p => p.label), quotaStops: quotaHit },
+  status: complete.length === plans.length ? 'COMPLETE' : (quotaHit ? 'INCOMPLETE_QUOTA' : 'INCOMPLETE'),
   // The mapping lives here, in the artifact, not next to the stories above.
   anonMapping: [...anon.entries()].map(([k, v]) => ({ key: k, anon: v })),
   plans: plans.map(p => ({ label: p.label, planner: p.planner, quality: p.quality, problem: p.blueprint.problem, risk: { classification: p.risk.classification, budget: p.risk.budget } })),
