@@ -655,6 +655,93 @@ free, but they are wasted generations.
 but 不见's gloss is *"not to see; not to meet"*, so nothing in the data can reach
 it. Costs candidate E 2 points and one assisted word. Not patched.
 
+### assistedPerBeatMax removed; writer bakeoff built; no realized story yet (2026-08-27)
+
+**`assistedPerBeatMax` had no independent invariant, and is gone from the
+gate.** A beat is five or six Mandarin lines, so "at most N assisted words per
+beat" asserts a beat is one sentence — the error `minWorstSentence` was built to
+replace. Over 60 observed beats (mean 5.2 lines) a cap of 2 implied **0.38
+assisted words per line** against a per-sentence cap of 2.00, rejected 25 of
+those beats, and **zero of them violated the line-normalized bound**. Everything
+it could legitimately protect is already covered: sentence crowding by
+`minWorstSentence`, whole-story load by `assistedWordsMax`. It is now
+`null` and reported as `budget.maxPerBeat`. No replacement number was invented.
+
+**Feasible plans exist.** 35 candidates across four batches on the same cost-0
+premise; with only semantically justified gates, **3 are feasible** and the rest
+are not — no threshold was moved to get there.
+
+| plan | model | q | cost | off | words | minWorst | premise |
+|---|---|---|---|---|---|---|---|
+| calib-3 **B** | gpt-oss | **9** | 15 | 2 | 6 | 1 | caught in the rain, needs an umbrella |
+| calib-3 **C** | gpt-oss | 5 | 16 | 2 | 7 | 1 | forgot his bus card |
+| 2j **E** | gpt-oss | 5 | 12 | 1 | 6 | 1 | locker he has lost the key to |
+| calib-3 A | gpt-oss | 9 | 37 | 7 | 13 | 1 | phone battery low — INFEASIBLE |
+| calib-2 A | qwen | 8 | 114 | 18 | 33 | 3 | clogged sink — INFEASIBLE |
+| calib-2 N | qwen | 4 | 131 | 22 | 38 | 3 | formal qipao photo — INFEASIBLE |
+
+**Models as configured.** Planner and writer are both dispatch inputs with no
+committed default; the established A3 configuration is **`groq:qwen/qwen3.6-27b`
+with `reasoning_effort: none` for realization and judging**, `gpt-oss-120b` for
+planning comparison and line-repair fallback. **No `temperature` or `top_p` is
+sent at all** — `llmDirect.mjs` posts only `model`, `max_tokens`, `messages` and
+optionally `reasoning_effort`, so generation runs at the provider default.
+Groq offers exactly three usable text models (`qwen3.6-27b`, `gpt-oss-120b`,
+`gpt-oss-20b`); Gemini is wired into `llmDirect` and its key is present, but it
+has **never been generation-probed** — a probe was dispatched and did not land.
+
+**Writer bakeoff: harness done, evidence not.** `writer-bakeoff.mjs` freezes a
+plan, hands the identical plan/manifest/vocabulary/brief to every writer, shuffles
+the outputs into W1..Wn by a key derived from the PLAN (so a writer is W1 on one
+plan and W2 on the next), stores the mapping in the artifact rather than beside
+the stories, and judges blind with a model that is not one of the writers.
+`storyRealizedDensity.mjs` reads a finished story the way the reader does and
+reports per-line taps; `compareDensity` classifies the plan-time bound against
+it as AGREE / FALSE_POSITIVE / FALSE_NEGATIVE.
+
+**Five runs produced zero realized stories.** Each found a real defect, all now
+fixed, and the last was pure quota exhaustion:
+
+| run | what stopped it | disposition |
+|---|---|---|
+| writer-bake-1 | scaffold's 400-token budget is spent on thinking by a reasoning model | fixed — `--scaffold-tokens`, default 900 |
+| writer-bake-2 | 把 (HSK 3) rejected as an uninvited *character*: its gloss says "to hold a **baby** in position for defecation" | fixed — a word names a person only when a person IS one of its senses |
+| writer-bake-3 | 2 of 4 HTTP 429; 1 qwen `repair_drift`; 1 correct rejection of an infeasible plan's 充电 (HSK 5) | rate limit + a real qwen compliance failure |
+| writer-bake-4 | title 李明和小红 rejected as "1 characters" — `analyzeStory` skips names, so only 和 was counted | fixed — length is the length of the title |
+| writer-bake-5 | both writers HTTP 429, provider asking 518s and 1022s more | quota exhausted; infrastructure, not model evidence |
+
+So the writer question is **INSUFFICIENT EVIDENCE**. Nothing comparable was
+produced: no story reached the deterministic checks, so §9's plan-time vs
+realized comparison has no data either.
+
+**Planner language compliance (separate from writing quality):**
+
+| planner | plans in Chinese despite an English-only contract | structural PASS |
+|---|---|---|
+| qwen3.6-27b | **0/14 (0%)** | 11/14 (79%) |
+| gpt-oss-120b | **3/22 (14%)** | 19/22 (86%) |
+
+gpt-oss writes the cheaper, more concrete plans (all three feasible ones) and is
+the one that ignores the output-language contract. qwen never does, and its
+plans cost two to eight times more. These are different failures in different
+models, and neither says anything about either model as a *writer*.
+
+**Source-data defects found here, all the same family as 被** — the vocabulary
+row cannot express a word the language plainly has, so nothing downstream can
+reach it:
+
+| item | what is in the corpus | what is missing |
+|---|---|---|
+| 被 | *"quilt; to cover (with)"* | the passive marker, its primary HSK 3 sense |
+| 不见 | *"not to see; not to meet"* | "gone / missing" — published stories already use 苹果不见了 |
+| 没 | **absent entirely** (only 没有) | the ordinary negation, which blocks titles like 手机没电 |
+| 公交 | absent (公交车 is HSK 2) | blocks 公交卡, the central object of a plan scored feasible |
+
+The last one is worth its own note: plan C scored feasible because "bus" (公交车)
+and "card" (卡) are both in level, but the realization needs the compound 公交卡,
+which is not. **Concept-level feasibility does not guarantee compound-level
+sayability**, and that gap is only visible once something is written.
+
 ### Target-bundle selection moved upstream, and the eligible set is finally non-empty (2026-08-26)
 
 Four stored plans had been through placement viability and every one failed on
