@@ -133,9 +133,21 @@ jobs:
           "$GITHUB_WORKSPACE/ops/run-guarded.sh" /tmp/gate3/logs/metadata.log -- cat "$meta"
           # checkBundleBinding lives in src/migration/legacyClaimManifest.js so
           # it is unit-tested, not inline YAML. It is what makes a bundle from a
-          # SUPERSEDED pin structurally unusable: Gate 3 run 33014914945 records
-          # migration_commit d0dcc51, whose review-log query was broken, so once
-          # the pin moved past that commit its bundle can never be applied.
+          # SUPERSEDED pin structurally unusable.
+          #
+          # TWO Gate 3 Prepare runs are permanently poisoned. Both were
+          # dispatched while this pin was d0dcc51, whose review-log query
+          # omitted `previous_state`, so both classified ~982 cards across 30
+          # accounts where the truth is 207 across 2:
+          #
+          #     33014914945   run 1, 2026-08-26 21:20Z, from main @ 2551732
+          #     33015832443   run 2, 2026-08-26 21:32Z, from main @ be831ec
+          #
+          # Neither needs a special case here. Both bundles record
+          # migration_commit d0dcc51; the pin has moved past it; the generic
+          # comparison below rejects them, and would reject any future bundle
+          # built by a superseded pin the same way. Nobody has to remember a
+          # list of run ids.
           node --input-type=module -e '
             import fs from "node:fs";
             import { checkBundleBinding } from "./src/migration/legacyClaimManifest.js";

@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import fs from 'node:fs'
+import { checkBundleBinding } from './src/migration/legacyClaimManifest.js'
 
 // Static guards on the Gate 3 workflows.
 //
@@ -21,14 +22,30 @@ const APPLY = fs.readFileSync('.github/workflows/gate3-apply.yml', 'utf8')
 //
 // Every pin this replaces stays named here, because "which commit was the bad
 // one" is exactly the thing nobody should have to remember:
-//   d0dcc51  produced the poisoned Gate 3 run 33014914945 — its review-log
-//            query omitted previous_state, so its classification is wrong.
+//   d0dcc51  produced BOTH poisoned Gate 3 Prepare runs — its review-log query
+//            omitted previous_state, so their classification is wrong.
 //   6e6344b  proposed but never approved: it fixed the loader and left the
 //            snapshot unable to restore learning_step.
 const APPROVED_SHA = '5bb8b38383dfb8c4c45cb5b89c34cc3423ea790b'
+const BROKEN_LOADER_SHA = 'd0dcc5171d048b603b8e9a5c05d1cebcef273870'
 const SUPERSEDED_SHAS = [
-  'd0dcc5171d048b603b8e9a5c05d1cebcef273870',
+  BROKEN_LOADER_SHA,
   '6e6344b31f94157c9b4708fca9a2ca3cf782b981',
+]
+
+// THE POISONED PREPARE RUNS — the permanent record.
+//
+// Both were dispatched from main while the pin was d0dcc51, so both bundles
+// record migration_commit d0dcc51 and both are unusable for Apply. Their
+// manifests describe ~982 cards across 30 accounts; the truth is 207 across 2.
+//
+// This registry is evidence, NOT a runtime blocklist. Apply carries no
+// special case for either id and does not need one: the generic
+// migration_commit comparison rejects any bundle built by a superseded pin,
+// including ones nobody has thought to write down.
+const POISONED_PREPARE_RUNS = [
+  { id: '33014914945', dispatchedFrom: '25517329103dbc4eba3a2fd9d44c660ab6dd0d68' },
+  { id: '33015832443', dispatchedFrom: 'be831ecb764692f8c7c5a100f65b2c60f96fe6f4' },
 ]
 const FINGERPRINT = 'F1BAEB3D8E327B506E95E11F8DC40418467B259A'
 
@@ -80,6 +97,63 @@ describe('the production-code pin is intact', () => {
       expect(wf).toContain('git rev-parse HEAD')
       expect(wf).toContain('!= "$APPROVED_MIGRATION_SHA"')
     }
+  })
+})
+
+describe('both poisoned Prepare runs are rejected by the generic binding', () => {
+  // Apply reads gate3-metadata.json from the bundle. The only field that
+  // decides this is migration_commit, and both runs carry the broken one.
+  const metaFor = (run) => ({
+    kind: 'hanzi-dojo/gate3-prepare',
+    migration_commit: BROKEN_LOADER_SHA,
+    prepare_run_id: run.id,
+    // A digest shape only — no artifact contents are reproduced here.
+    manifest_sha256: 'a'.repeat(64),
+  })
+
+  it('names both runs, so neither can be quietly forgotten', () => {
+    expect(POISONED_PREPARE_RUNS.map(r => r.id)).toEqual(['33014914945', '33015832443'])
+  })
+
+  it('rejects each one against the approved pin, naming migration_commit', () => {
+    for (const run of POISONED_PREPARE_RUNS) {
+      const meta = metaFor(run)
+      const res = checkBundleBinding({
+        // The most favourable case for the bundle: the operator supplies that
+        // run's own id and its own digest, both correct.
+        meta,
+        approvedSha: APPROVED_SHA,
+        prepareRunId: meta.prepare_run_id,
+        manifestSha256: meta.manifest_sha256,
+      })
+      expect(res.ok).toBe(false)
+      expect(res.failures.join(' ')).toContain('migration_commit')
+      expect(res.failures.join(' ')).toContain(APPROVED_SHA)
+    }
+  })
+
+  it('rejects them for the PIN, not for being on a list', () => {
+    // The proof that this is generic: an unknown run id, never written down
+    // anywhere, built by the same broken pin, is refused identically.
+    const res = checkBundleBinding({
+      meta: { ...metaFor({ id: '99999999999' }) },
+      approvedSha: APPROVED_SHA,
+      prepareRunId: '99999999999',
+      manifestSha256: 'a'.repeat(64),
+    })
+    expect(res.ok).toBe(false)
+    expect(res.failures.join(' ')).toContain('migration_commit')
+
+    // And Apply carries no per-run special case to drift out of date.
+    for (const run of POISONED_PREPARE_RUNS) {
+      expect(APPLY).not.toContain(`prepare_run_id != "${run.id}"`)
+      expect(APPLY).not.toContain(`"${run.id}"`)
+    }
+  })
+
+  it('Apply documents both runs where an operator will read it', () => {
+    for (const run of POISONED_PREPARE_RUNS) expect(APPLY).toContain(run.id)
+    expect(APPLY).toContain('permanently poisoned')
   })
 })
 
