@@ -191,6 +191,42 @@ export function corroborateBatches(classified) {
 // created_at is coincidence rather than evidence of a batch.
 export const MIN_BULK_BATCH = 10
 
+// assertCorroborationSafe(plan) — the STOP that actually stops.
+//
+// Corroboration used to only PRINT "STOP and account for them before
+// applying". Gate 3 Prepare run 33014914945 printed exactly that, listed
+// hundreds of unexplained single-card cohorts — and still finished `success`,
+// wrote a manifest, and uploaded an Apply-compatible artifact. A warning that
+// does not fail is a warning nobody is forced to read.
+//
+// Outliers mean the provenance rule selected rows that do not belong to any
+// demonstrated bulk write. That is precisely the signature of a classifier
+// malfunction, so it must terminate the run before anything actionable is
+// produced. Call this BEFORE writing a snapshot, a manifest, or any other
+// artifact Apply could consume.
+//
+// This does NOT make corroboration a classifier input: it never changes how a
+// row is classified. It is a veto on the plan as a whole.
+export class CorroborationError extends Error {
+  constructor(corroboration) {
+    const n = corroboration.outlierCards
+    super(n + ' actionable row(s) fall outside any demonstrated bulk cohort. '
+      + 'Refusing to produce anything Apply could consume. Unexplained rows are '
+      + 'the signature of a classifier malfunction, not a rounding difference.')
+    this.name = 'CorroborationError'
+    this.corroboration = corroboration
+  }
+}
+
+export function assertCorroborationSafe(plan) {
+  const c = (plan && plan.corroboration) || null
+  if (!c) {
+    throw new Error('cannot verify corroboration: the plan carries none. Refusing to continue.')
+  }
+  if ((c.outlierCards || 0) > 0) throw new CorroborationError(c)
+  return true
+}
+
 // ── THE ONE ACTIONABLE SET ──────────────────────────────────────────────────
 //
 // Every consumer that needs "which cards could this migration touch?" asks

@@ -282,6 +282,40 @@ export function checkEntry(entry, card, logs) {
 // grade goes through grade_card, which always increments reps and rewrites
 // state in the same transaction as the review log. A concurrent review
 // therefore cannot slip past this predicate, whatever it does to the floats.
+// checkBundleBinding({ meta, approvedSha, prepareRunId, manifestSha256 })
+//
+// The three-way binding Apply must satisfy before it writes anything: the
+// bundle has to come from the named Prepare run, carry the digest the operator
+// approved, and have been produced by the SAME migration commit Apply is
+// pinned to.
+//
+// That last one is what makes a superseded bundle structurally unusable. When
+// a defect forces a new pin, every manifest produced under the old pin is
+// refused automatically — it does not depend on anyone remembering which run
+// was poisoned. Gate 3 run 33014914945 was built by d0dcc51 with a broken
+// review-log query; once the pin moves past that commit, its bundle can never
+// be applied.
+//
+// Extracted from the workflow YAML so it can be tested. Returns
+// { ok, failures[] } rather than throwing, so a caller can report every
+// mismatch at once.
+export function checkBundleBinding({ meta, approvedSha, prepareRunId, manifestSha256 } = {}) {
+  const failures = []
+  if (!meta || typeof meta !== 'object') {
+    return { ok: false, failures: ['bundle metadata is missing or unreadable'] }
+  }
+  const expect = (field, want) => {
+    const got = meta[field]
+    if (String(got) !== String(want)) {
+      failures.push(field + ': bundle ' + JSON.stringify(got) + ' vs required ' + JSON.stringify(want))
+    }
+  }
+  expect('migration_commit', approvedSha)
+  expect('prepare_run_id', prepareRunId)
+  expect('manifest_sha256', manifestSha256)
+  return { ok: failures.length === 0, failures }
+}
+
 export function casPredicate(entry) {
   const p = entry.precondition
   return {

@@ -1,10 +1,10 @@
 import { describe, it, expect } from 'vitest'
 import {
   CLASS, classifyCard, hasNewTransition, buildMigrationPlan, corroborateBatches, MIN_BULK_BATCH,
-  actionableCards, actionableBreakdown,
+  actionableCards, actionableBreakdown, assertCorroborationSafe, CorroborationError,
 } from './legacyClaimMigration'
 import { replayCard } from './legacyClaimReplay'
-import { buildManifest } from './legacyClaimManifest'
+import { buildManifest, checkBundleBinding } from './legacyClaimManifest'
 
 // Regressions for the PROVENANCE classifier — the one that survives a legitimate
 // grade landing on a fabricated seed.
@@ -394,5 +394,139 @@ describe('snapshot coverage comes from the one shared classification', () => {
     expect(b.convert).toBe(2)
     expect(b.replay).toBe(2)
     expect(b.total).toBe(snapshotIds.length)
+  })
+})
+
+// ── CORROBORATION IS A VETO, NOT A WARNING ──────────────────────────────────
+//
+// Gate 3 Prepare run 33014914945 printed "STOP and account for them before
+// applying", listed hundreds of unexplained single-card cohorts, and still
+// finished `success` — writing a manifest and uploading an Apply-compatible
+// artifact. A warning that does not fail is a warning nobody is forced to obey.
+describe('assertCorroborationSafe fails closed', () => {
+  const cohort = (n, at) => Array.from({ length: n }, (_, i) => ({
+    id: 'c' + at + i, klass: CLASS.UNTOUCHED_CLAIM, created_at: at,
+  }))
+
+  it('passes when every actionable row sits in a demonstrated cohort', () => {
+    const plan = buildMigrationPlan({
+      cards: Array.from({ length: MIN_BULK_BATCH + 5 }, (_, i) => seedRow({ id: 's' + i })),
+      logsByCardId: {},
+      loggingEpoch: EPOCH,
+    })
+    expect(plan.corroboration.outlierCards).toBe(0)
+    expect(assertCorroborationSafe(plan)).toBe(true)
+  })
+
+  it('THROWS when even one actionable row is unexplained', () => {
+    const classified = [
+      ...cohort(MIN_BULK_BATCH + 2, AFTER),
+      { id: 'stray', klass: CLASS.REVIEWED_SEED, created_at: '2026-08-02T00:00:00.000Z' },
+    ]
+    const plan = { corroboration: corroborateBatches(classified) }
+    expect(plan.corroboration.outlierCards).toBe(1)
+    expect(() => assertCorroborationSafe(plan)).toThrow(CorroborationError)
+    expect(() => assertCorroborationSafe(plan)).toThrow(/outside any demonstrated bulk cohort/)
+  })
+
+  it('scales the refusal to the real incident shape', () => {
+    // 30 accounts' worth of singleton cohorts, as run 33014914945 produced.
+    const strays = Array.from({ length: 30 }, (_, i) => ({
+      id: 'stray' + i, klass: CLASS.REVIEWED_SEED,
+      created_at: new Date(Date.UTC(2026, 6, 1 + i)).toISOString(),
+    }))
+    const plan = { corroboration: corroborateBatches([...cohort(500, AFTER), ...strays]) }
+    expect(plan.corroboration.outlierCards).toBe(30)
+    expect(() => assertCorroborationSafe(plan)).toThrow(CorroborationError)
+  })
+
+  it('refuses a plan carrying no corroboration at all, rather than assuming safe', () => {
+    expect(() => assertCorroborationSafe({})).toThrow(/carries none/)
+    expect(() => assertCorroborationSafe(null)).toThrow(/carries none/)
+  })
+
+  it('the error carries the counts a reviewer needs, and no row identities', () => {
+    const plan = { corroboration: corroborateBatches([
+      ...cohort(MIN_BULK_BATCH + 1, AFTER),
+      { id: 'secret-card-id', klass: CLASS.REVIEWED_SEED, created_at: '2026-08-03T00:00:00.000Z' },
+    ]) }
+    try {
+      assertCorroborationSafe(plan)
+      throw new Error('should have thrown')
+    } catch (err) {
+      expect(err).toBeInstanceOf(CorroborationError)
+      expect(err.message).not.toContain('secret-card-id')
+      expect(err.corroboration.outlierCards).toBe(1)
+    }
+  })
+
+  it('never changes a classification — it only vetoes the plan', () => {
+    // Corroboration stays an independent check, not a classifier input.
+    const card = seedRow({ id: 'lonely', created_at: '2026-08-07T00:00:00.000Z' })
+    const plan = buildMigrationPlan({ cards: [card], logsByCardId: {}, loggingEpoch: EPOCH })
+    expect(plan.counts.conversions).toBe(1)          // still classified
+    expect(() => assertCorroborationSafe(plan)).toThrow()  // but vetoed
+  })
+})
+
+// ── A MANIFEST FROM A SUPERSEDED PIN IS STRUCTURALLY UNUSABLE ───────────────
+//
+// Run 33014914945's bundle records migration_commit d0dcc51, the commit whose
+// review-log query was broken. Once the pin moves past that commit, Apply's
+// binding refuses it automatically — no one has to remember which run was
+// poisoned.
+describe('checkBundleBinding refuses a bundle from an older migration pin', () => {
+  const POISONED = {
+    kind: 'hanzi-dojo/gate3-prepare',
+    migration_commit: 'd0dcc5171d048b603b8e9a5c05d1cebcef273870',
+    prepare_run_id: '33014914945',
+    manifest_sha256: 'b77e1432bcd2f02fc92a21b25a780baae36fef6c8c25fb380b1b5d5a6be7bd55',
+  }
+  const NEW_PIN = '1111111111111111111111111111111111111111'
+
+  it('refuses run 33014914945 once the pin has moved on', () => {
+    const res = checkBundleBinding({
+      meta: POISONED,
+      approvedSha: NEW_PIN,
+      prepareRunId: POISONED.prepare_run_id,
+      manifestSha256: POISONED.manifest_sha256,
+    })
+    expect(res.ok).toBe(false)
+    expect(res.failures.join(' ')).toContain('migration_commit')
+  })
+
+  it('accepts only when all three agree', () => {
+    const res = checkBundleBinding({
+      meta: POISONED,
+      approvedSha: POISONED.migration_commit,
+      prepareRunId: POISONED.prepare_run_id,
+      manifestSha256: POISONED.manifest_sha256,
+    })
+    expect(res.ok).toBe(true)
+    expect(res.failures).toHaveLength(0)
+  })
+
+  it('catches a wrong run id and a wrong digest independently', () => {
+    expect(checkBundleBinding({
+      meta: POISONED, approvedSha: POISONED.migration_commit,
+      prepareRunId: '99999999', manifestSha256: POISONED.manifest_sha256,
+    }).failures.join(' ')).toContain('prepare_run_id')
+
+    expect(checkBundleBinding({
+      meta: POISONED, approvedSha: POISONED.migration_commit,
+      prepareRunId: POISONED.prepare_run_id, manifestSha256: 'f'.repeat(64),
+    }).failures.join(' ')).toContain('manifest_sha256')
+  })
+
+  it('reports every mismatch at once, not just the first', () => {
+    const res = checkBundleBinding({
+      meta: POISONED, approvedSha: NEW_PIN, prepareRunId: '1', manifestSha256: '0'.repeat(64),
+    })
+    expect(res.failures).toHaveLength(3)
+  })
+
+  it('refuses missing or unreadable metadata rather than passing', () => {
+    expect(checkBundleBinding({ meta: null, approvedSha: NEW_PIN }).ok).toBe(false)
+    expect(checkBundleBinding({}).ok).toBe(false)
   })
 })

@@ -27,8 +27,10 @@
 // them even in principle.
 
 import { createClient } from '@supabase/supabase-js'
-import { buildMigrationPlan, actionableCards, actionableBreakdown } from './src/migration/legacyClaimMigration.js'
+import { buildMigrationPlan, actionableCards, actionableBreakdown, assertCorroborationSafe, CorroborationError } from './src/migration/legacyClaimMigration.js'
+import { CARD_COLUMNS, REVIEW_LOG_COLUMNS, columnList, loadWorld as loadWorldWith } from './src/migration/reviewLogContract.js'
 import { replayCard, describeReplay } from './src/migration/legacyClaimReplay.js'
+import { buildSnapshot } from './src/migration/snapshotContract.js'
 import { buildManifest, checkEntry, casPredicate, ACTION, ENTRY_STATUS, MANIFEST_VERSION } from './src/migration/legacyClaimManifest.js'
 import fs from 'node:fs'
 import { createHash } from 'node:crypto'
@@ -63,10 +65,6 @@ if (APPLY && !MANIFEST_PATH) {
 }
 const supabase = createClient(url, key, { auth: { persistSession: false } })
 
-const CARD_COLUMNS = 'id, user_id, vocab_id, state, reps, lapses, stability, difficulty, learned, is_easy, ' +
-  'elapsed_days, scheduled_days, interval_days, last_review, due_at, created_at, ' +
-  'prior_known_at, prior_source, verified_at'
-
 async function fetchAll(table, columns) {
   const out = []
   for (let from = 0; ; from += PAGE) {
@@ -78,36 +76,51 @@ async function fetchAll(table, columns) {
   }
 }
 
+// The network half. The column lists and the grouping/epoch logic live in
+// src/migration/reviewLogContract.js so a test can drive that exact code path
+// through a fake that projects columns the way PostgREST does — which is the
+// only way the missing-`previous_state` bug could have been caught.
 async function loadWorld() {
-  const cards = await fetchAll('cards', CARD_COLUMNS)
-  const logs = await fetchAll('review_logs', 'id, card_id, grade, reviewed_at')
-  const logsByCardId = {}
-  for (const l of logs) {
-    if (!l.card_id) continue
-    ;(logsByCardId[l.card_id] || (logsByCardId[l.card_id] = [])).push(l)
-  }
-  // The oldest review_log in the database. Provenance is only provable for
-  // cards born after it — derived, never hardcoded.
-  let loggingEpoch = null
-  for (const l of logs) {
-    if (!l.reviewed_at) continue
-    if (loggingEpoch === null || new Date(l.reviewed_at) < new Date(loggingEpoch)) loggingEpoch = l.reviewed_at
-  }
-  return { cards, logs, logsByCardId, loggingEpoch }
+  return loadWorldWith({
+    fetchTable: (table, columns) => fetchAll(table, columns),
+    cardColumns: CARD_COLUMNS,
+    logColumns: REVIEW_LOG_COLUMNS,
+  })
 }
 
-// Stable within a run, meaningless outside it: the same id always gets the same
-// label so the report stays readable, but nothing identifies a real account.
-const redactionLabels = new Map()
-function label(kind, id) {
-  if (!REDACT) return id
-  if (id == null) return String(id)
-  const key = kind + ':' + id
-  if (!redactionLabels.has(key)) redactionLabels.set(key, kind + '#' + (redactionLabels.size + 1))
-  return redactionLabels.get(key)
+// Corroboration is a VETO, not a warning. Run 33014914945 printed "STOP and
+// account for them" and still produced an Apply-compatible artifact. Every
+// production path that could emit one calls this first.
+function haltIfUncorroborated(plan) {
+  try {
+    assertCorroborationSafe(plan)
+  } catch (err) {
+    console.error('')
+    console.error(line())
+    console.error('REFUSING TO CONTINUE')
+    console.error(line())
+    console.error('')
+    console.error('  ' + err.message)
+    if (err instanceof CorroborationError) {
+      console.error('')
+      console.error('  demonstrated cohorts  ' + err.corroboration.demonstrated.length)
+      console.error('  outlier cohorts       ' + err.corroboration.outliers.length)
+      console.error('  unexplained rows      ' + err.corroboration.outlierCards)
+    }
+    console.error('')
+    console.error('  No snapshot, manifest or artifact has been produced.')
+    console.error('')
+    process.exit(1)
+  }
 }
-const acct = id => label('account', id)
-const cardRef = id => (REDACT ? label('card', id) : String(id).slice(0, 8) + '…')
+
+// A cohort is identified by a production created_at — a timestamp describing
+// when one learner's rows were written. Under --redact it becomes a positional
+// label, so a reviewer still sees the shape without learning the timing.
+//
+// Note there is deliberately no card#N or account#N helper any more: under
+// --redact NOTHING row-level is printed, not even pseudonymised.
+const cohortRef = (createdAt, i) => (REDACT ? 'cohort#' + (i + 1) : String(createdAt))
 
 const line = (n = 70) => '='.repeat(n)
 const pad = (v, n) => String(v).padStart(n)
@@ -127,35 +140,27 @@ const pad = (v, n) => String(v).padStart(n)
 // another copy of user data for no restorative benefit.
 async function makeSnapshot() {
   const { cards, logsByCardId, loggingEpoch } = await loadWorld()
-  // THE SAME provenance classification the manifest uses — not a second
-  // predicate. Snapshot coverage and manifest coverage cannot drift apart
-  // because they are literally the same function.
-  const rows = actionableCards({ cards, logsByCardId, loggingEpoch })
-  const breakdown = actionableBreakdown({ cards, logsByCardId, loggingEpoch })
+  // Veto FIRST: a snapshot taken from a malfunctioning classification is not a
+  // useful backup, and producing it invites the run to continue.
+  haltIfUncorroborated(buildMigrationPlan({ cards, logsByCardId, loggingEpoch }))
+
+  // Everything else — coverage, canonical form, digest and the field contract —
+  // lives in src/migration/snapshotContract.js so the rollback guarantee can be
+  // tested without production credentials. It throws rather than writing a file
+  // that could not roll back what it protects.
   const generated_at = new Date().toISOString()
-
-  // Canonical form: rows sorted by id, keys sorted, so the digest is
-  // reproducible and any later tampering is detectable.
-  const canonicalRows = rows
-    .slice()
-    .sort((a, b) => (a.id < b.id ? -1 : a.id > b.id ? 1 : 0))
-    .map(sortKeys)
-  const body = JSON.stringify(canonicalRows)
-  const sha256 = createHash('sha256').update(body, 'utf8').digest('hex')
-
-  const snapshot = {
-    kind: 'hanzi-dojo/legacy-claim-presnapshot',
-    version: 1,
-    generated_at,
-    row_count: rows.length,
-    convert_count: breakdown.convert,
-    replay_count: breakdown.replay,
-    logging_epoch: loggingEpoch,
-    sha256,
-    note: 'Complete original card rows that the legacy-claim migration could modify. '
-      + 'Restoration must use these exact rows — never a reconstruction. '
-      + 'review_logs are deliberately not included and are never mutated.',
-    rows: canonicalRows,
+  let snapshot
+  try {
+    snapshot = buildSnapshot({ cards, logsByCardId, loggingEpoch, generatedAt: generated_at })
+  } catch (err) {
+    console.error('')
+    console.error(line())
+    console.error('REFUSING TO WRITE A SNAPSHOT')
+    console.error(line())
+    console.error('')
+    console.error('  ' + err.message)
+    console.error('')
+    process.exit(1)
   }
 
   const stamp = generated_at.replace(/[-:]/g, '').replace(/\..+$/, 'Z')
@@ -166,26 +171,25 @@ async function makeSnapshot() {
   console.log('PRE-APPLY SNAPSHOT')
   console.log(line())
   console.log('\n  file          ' + file)
-  console.log('  convert rows  ' + pad(breakdown.convert, 6))
-  console.log('  replay rows   ' + pad(breakdown.replay, 6))
+  console.log('  convert rows  ' + pad(snapshot.convert_count, 6))
+  console.log('  replay rows   ' + pad(snapshot.replay_count, 6))
   console.log('  ' + '-'.repeat(30))
-  console.log('  total rows    ' + pad(rows.length, 6)
-    + (rows.length === breakdown.total ? '' : '   !! disagrees with the breakdown'))
-  console.log('  sha256        ' + sha256)
+  console.log('  total rows    ' + pad(snapshot.row_count, 6)
+    + (snapshot.row_count === snapshot.convert_count + snapshot.replay_count
+      ? '' : '   !! disagrees with the breakdown'))
+  console.log('  restore cols  ' + pad(snapshot.restore_fields.length, 6))
+  console.log('  sha256        ' + snapshot.sha256)
   console.log('  logging epoch ' + loggingEpoch)
   console.log('  generated     ' + generated_at)
   console.log('  mode          0600 (owner read/write only)')
   console.log('\n  Coverage is the SAME provenance classification the manifest uses,')
-  console.log('  so every row that can enter the manifest is backed up here.')
-  console.log('\nThis file contains complete original rows and is the ONLY sanctioned')
-  console.log('restore source. Keep it off the repo — .gitignore covers it — and delete')
-  console.log('it once the migration has been accepted.\n')
-}
-
-function sortKeys(o) {
-  const out = {}
-  for (const k of Object.keys(o).sort()) out[k] = o[k]
-  return out
+  console.log('  so every row that can enter the manifest is backed up here. The')
+  console.log('  captured columns are DERIVED from conversionPatch() and')
+  console.log('  replayCard(), so every value Apply can overwrite is preserved:')
+  console.log('  ' + snapshot.restore_fields.join(', '))
+  console.log('\nThis file holds the original value of every column this migration can')
+  console.log('write, and is the ONLY sanctioned restore source. Keep it off the repo')
+  console.log('— .gitignore covers it — and delete it once the migration is accepted.\n')
 }
 
 // ── Dry run ─────────────────────────────────────────────────────────────────
@@ -198,7 +202,6 @@ async function dryRun() {
   console.log('\nRead ' + cards.length + ' cards and ' + logs.length + ' review logs at ' + new Date().toISOString())
 
   const plan = buildMigrationPlan({ cards, logsByCardId, loggingEpoch })
-  const manifest = buildManifest({ cards, logsByCardId, replayFor: (h) => replayCard(h), loggingEpoch })
 
   console.log('\n  logging epoch (oldest review_log): ' + loggingEpoch)
   console.log('  Provenance rule: a genuine card\'s history opens with a `new ->`')
@@ -206,64 +209,79 @@ async function dryRun() {
   console.log('  create one — so classification survives legitimate grading.')
 
   console.log('\nCLASSIFICATION')
-  console.log('  convert_legacy_claim   ' + pad(manifest.counts.convert_legacy_claim, 6))
-  console.log('  replay_reviewed_seed   ' + pad(manifest.counts.replay_reviewed_seed, 6))
-  console.log('  excluded_ambiguous     ' + pad(manifest.counts.excluded_ambiguous, 6) + '   (never actionable)')
-  console.log('  excluded_foreign       ' + pad(manifest.counts.excluded_foreign_written, 6) + '   (reps no grade wrote — import/restore)')
-  console.log('  excluded_pre_logging   ' + pad(manifest.counts.excluded_pre_logging, 6) + '   (born before complete history)')
-  console.log('  excluded_b2_claims     ' + pad(manifest.counts.excluded_prior_known_claims, 6) + '   (already modelled)')
-  console.log('  untouched_genuine      ' + pad(manifest.counts.untouched_genuine, 6))
-  console.log('  untouched_unstarted    ' + pad(manifest.counts.untouched_unstarted, 6))
-  const partition = manifest.counts.convert_legacy_claim + manifest.counts.replay_reviewed_seed
-    + manifest.counts.excluded_ambiguous + manifest.counts.excluded_foreign_written
-    + manifest.counts.excluded_pre_logging + manifest.counts.excluded_prior_known_claims
-    + manifest.counts.untouched_genuine + manifest.counts.untouched_unstarted
+  console.log('  convert_legacy_claim   ' + pad(plan.counts.conversions, 6))
+  console.log('  replay_reviewed_seed   ' + pad(plan.counts.replays, 6))
+  console.log('  excluded_ambiguous     ' + pad(plan.counts.ambiguous, 6) + '   (never actionable)')
+  console.log('  excluded_foreign       ' + pad(plan.counts.foreign_written, 6) + '   (reps no grade wrote — import/restore)')
+  console.log('  excluded_pre_logging   ' + pad(plan.counts.pre_logging, 6) + '   (born before complete history)')
+  console.log('  excluded_b2_claims     ' + pad(plan.counts.claims, 6) + '   (already modelled)')
+  console.log('  untouched_genuine      ' + pad(plan.counts.genuine, 6))
+  console.log('  untouched_unstarted    ' + pad(plan.counts.unstarted, 6))
+  const partition = plan.counts.conversions + plan.counts.replays + plan.counts.ambiguous
+    + plan.counts.foreign_written + plan.counts.pre_logging + plan.counts.claims
+    + plan.counts.genuine + plan.counts.unstarted
   console.log('  ' + '-'.repeat(40))
   console.log('  partition total        ' + pad(partition, 6)
     + (partition === cards.length ? '   == cards table (' + cards.length + ')'
                                   : '   !! MISMATCH, cards table has ' + cards.length))
+  console.log('  actionable entries     ' + pad(plan.counts.conversions + plan.counts.replays, 6))
 
   // Independent corroboration: the fabricated rows were bulk INSERTs, so they
   // share an exact created_at. This is a CHECK on the provenance rule, never an
   // input to it. Anything actionable outside a demonstrated cohort is a stop.
+  //
+  // A cohort's created_at is a production timestamp describing when specific
+  // learners' rows were written, so under --redact it becomes cohort#N. The
+  // COUNTS are what a reviewer actually needs.
   console.log('\nBATCH CORROBORATION (independent check, not a classifier input)')
-  for (const b of plan.corroboration.demonstrated) {
-    console.log('  ' + b.created_at + '  untouched ' + pad(b.untouched, 5) + '  reviewed ' + pad(b.reviewed, 5))
-  }
-  if (plan.corroboration.outlierCards > 0) {
-    console.log('\n  !! ' + plan.corroboration.outlierCards + ' actionable row(s) fall OUTSIDE any demonstrated bulk cohort:')
-    for (const b of plan.corroboration.outliers) {
-      console.log('     ' + b.created_at + '  untouched ' + b.untouched + '  reviewed ' + b.reviewed)
-    }
-    console.log('  These are unexplained. STOP and account for them before applying.')
-  } else {
+  plan.corroboration.demonstrated.forEach((b, i) => {
+    console.log('  ' + cohortRef(b.created_at, i) + '  untouched ' + pad(b.untouched, 5) + '  reviewed ' + pad(b.reviewed, 5))
+  })
+  console.log('  demonstrated cohorts   ' + pad(plan.corroboration.demonstrated.length, 6))
+  console.log('  outlier cohorts        ' + pad(plan.corroboration.outliers.length, 6))
+  console.log('  unexplained rows       ' + pad(plan.corroboration.outlierCards, 6))
+  if (plan.corroboration.outlierCards === 0) {
     console.log('  every actionable row sits inside a demonstrated bulk cohort')
   }
-  console.log('  ' + '-'.repeat(40))
-  console.log('  actionable entries     ' + pad(manifest.counts.actionable, 6))
 
-  const byUser = {}
-  for (const e of manifest.entries) {
-    const u = (byUser[e.user_id] || (byUser[e.user_id] = { convert: 0, replay: 0 }))
-    if (e.action === ACTION.CONVERT) u.convert += 1; else u.replay += 1
-  }
-  console.log('\nAFFECTED ACCOUNTS (' + Object.keys(byUser).length + ')')
-  for (const [u, v] of Object.entries(byUser)) {
-    console.log('  ' + acct(u) + '   convert ' + pad(v.convert, 4) + '   replay ' + pad(v.replay, 3))
-  }
+  // Nothing Apply could consume is built until corroboration passes. This
+  // EXITS on failure — it is a veto, not a warning.
+  haltIfUncorroborated(plan)
 
-  const replays = manifest.entries.filter(e => e.action === ACTION.REPLAY)
-  if (replays.length) {
-    console.log('\nREPLAY PREVIEW (first 5 of ' + replays.length + ')')
-    for (const e of replays.slice(0, 5)) {
-      const before = cards.find(c => c.id === e.card_id)
-      console.log('  ' + cardRef(e.card_id) + '  ' + describeReplay(before, replayCard(e.review_log_input)))
+  const manifest = buildManifest({ cards, logsByCardId, replayFor: (h) => replayCard(h), loggingEpoch })
+
+  // Aggregate only. A per-account breakdown — even pseudonymised as account#N —
+  // publishes how many rows each individual learner has and how they cluster,
+  // which is row-level activity metadata about a person. The count is the part
+  // a reviewer needs; the shape is not.
+  const affectedAccounts = new Set(manifest.entries.map(e => e.user_id)).size
+  console.log('\nAFFECTED ACCOUNTS      ' + pad(affectedAccounts, 6))
+  console.log('AMBIGUOUS (untouched)  ' + pad(plan.ambiguous.length, 6))
+
+  if (!REDACT) {
+    // Runner-local diagnostics only. Never reachable from a --redact run, which
+    // is the only mode CI uses, so this cannot reach a public log.
+    const byUser = {}
+    for (const e of manifest.entries) {
+      const u = (byUser[e.user_id] || (byUser[e.user_id] = { convert: 0, replay: 0 }))
+      if (e.action === ACTION.CONVERT) u.convert += 1; else u.replay += 1
     }
-  }
-
-  if (plan.ambiguous.length) {
-    console.log('\nAMBIGUOUS — excluded from the manifest, never touched')
-    for (const a of plan.ambiguous) console.log('  ' + cardRef(a.id) + '\n      ' + a.reason)
+    console.log('\nPER-ACCOUNT (local diagnostics)')
+    for (const [u, v] of Object.entries(byUser)) {
+      console.log('  ' + u + '   convert ' + pad(v.convert, 4) + '   replay ' + pad(v.replay, 3))
+    }
+    const replays = manifest.entries.filter(e => e.action === ACTION.REPLAY)
+    if (replays.length) {
+      console.log('\nREPLAY PREVIEW (first 5 of ' + replays.length + ')')
+      for (const e of replays.slice(0, 5)) {
+        const before = cards.find(c => c.id === e.card_id)
+        console.log('  ' + e.card_id + '  ' + describeReplay(before, replayCard(e.review_log_input)))
+      }
+    }
+    if (plan.ambiguous.length) {
+      console.log('\nAMBIGUOUS — excluded from the manifest, never touched')
+      for (const a of plan.ambiguous) console.log('  ' + a.id + '\n      ' + a.reason)
+    }
   }
 
   if (MANIFEST_PATH) {
@@ -392,14 +410,25 @@ async function printPostApply(report, manifest) {
 
   if (report.stale.length) {
     console.log('\nSTALE — SKIPPED, NOT APPLIED. Re-run a fresh dry run to reclassify these.')
-    for (const s of report.stale) {
-      console.log('  ' + cardRef(s.id) + '  ' + s.status + '  (' + s.action + ')')
-      console.log('      ' + s.reason)
+    // Aggregate always: a per-row list is row-level production activity.
+    const byStatus = {}
+    for (const s2 of report.stale) byStatus[s2.status] = (byStatus[s2.status] || 0) + 1
+    for (const [st, n] of Object.entries(byStatus)) console.log('  ' + st + '  ' + n)
+    console.log('  per-row drift detail is runner-local only')
+    if (!REDACT) {
+      for (const s2 of report.stale) {
+        console.log('  ' + s2.id + '  ' + s2.status + '  (' + s2.action + ')')
+        console.log('      ' + s2.reason)
+      }
     }
   }
+
   if (report.failed.length) {
     console.log('\nFAILED')
-    for (const f of report.failed) console.log('  ' + cardRef(f.id) + '  ' + f.error)
+    console.log('  ' + report.failed.length + ' failure(s); details are runner-local only')
+    if (!REDACT) {
+      for (const f of report.failed) console.log('  ' + f.id + '  ' + f.error)
+    }
   }
 
   console.log('\n' + line())
