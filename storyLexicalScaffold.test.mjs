@@ -245,7 +245,7 @@ describe('the shape is locked', () => {
     expect(checkTitle('Passport', { manifest: m, vocabMap }).problems.join(' ')).toContain('Latin')
     expect(checkTitle('森林的故事', { manifest: m, vocabMap }).problems.join(' ')).toContain('above-level')
     expect(checkTitle('找', { manifest: m, vocabMap }).problems.join(' ')).toContain('characters')
-    expect(SCAFFOLD_VERSION).toBe('fab9-scaffold@4')
+    expect(SCAFFOLD_VERSION).toBe('fab9-scaffold@5')
   })
 })
 
@@ -438,5 +438,31 @@ describe('a word names a person only when a person IS one of its senses', () => 
     // 同学's second sense is two words; only a long sense is treated as
     // mentioning rather than meaning.
     expect(check('我的同学需要伞。').intruders).toContain('同学')
+  })
+})
+
+// writer-bake-4 rejected the title 李明和小红 with "1 characters (need 2-12)".
+// analyzeStory skips name tokens — correctly, a name is not vocabulary — so
+// cjkChars counted only 和. The bound is about how long the title is.
+describe('title length is the length of the title', () => {
+  const mk = (o) => Object.fromEntries(Object.entries(o).map(([w, v]) => [w, { word: w, ...v }]))
+  const vocabMap = mk({
+    和: { level: 1, meaning: 'and' }, 伞: { level: 3, meaning: 'umbrella' },
+    的: { level: 1, meaning: 'of' }, 天: { level: 1, meaning: 'day' },
+  })
+  const manifest = { level: 3, targets: [], speakers: ['李明', '小红'] }
+
+  it('counts the characters a reader sees, names included', () => {
+    const r = checkTitle('李明和小红', { manifest, vocabMap })
+    expect(r.problems.join(' ')).not.toMatch(/characters \(need/)
+  })
+
+  it('still rejects a title that is genuinely too short', () => {
+    expect(checkTitle('伞', { manifest, vocabMap }).problems.join(' ')).toMatch(/1 characters/)
+  })
+
+  it('still rejects a title that is genuinely too long', () => {
+    const long = '天'.repeat(20)
+    expect(checkTitle(long, { manifest, vocabMap }).problems.join(' ')).toMatch(/20 characters/)
   })
 })

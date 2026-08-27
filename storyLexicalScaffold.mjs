@@ -33,7 +33,7 @@ import { retrieveCandidates, stem } from './storyLexicalRetrieval.mjs'
 import { classifySketch, repairBrief, checkRepairDrift } from './storySketchRepair.mjs'
 import { glossSenses } from './storyLexicalRisk.mjs'
 
-export const SCAFFOLD_VERSION = 'fab9-scaffold@4'
+export const SCAFFOLD_VERSION = 'fab9-scaffold@5'
 
 // A beat's toolkit needs three usable words and has never needed more than
 // six. a3-final-2 threw away 后来、门口、女人、拿、不用 — five valid words — because
@@ -56,7 +56,13 @@ export function checkTitle(title, { manifest, vocabMap }) {
   const a = analyzeStory({ title: '', level: manifest.level, content: t }, vocabMap)
   const targets = new Set(manifest.targets.map(x => x.word))
   const above = [...a.counts.keys()].filter(w => !targets.has(w) && vocabMap[w] && vocabMap[w].level > manifest.level)
-  if (a.cjkChars < TITLE_BOUNDS.min || a.cjkChars > TITLE_BOUNDS.max) problems.push(a.cjkChars + ' characters (need ' + TITLE_BOUNDS.min + '-' + TITLE_BOUNDS.max + ')')
+  // Length is the length of the TITLE. analyzeStory skips name tokens, because
+  // a name is not vocabulary a learner has to know — but that makes cjkChars
+  // the wrong number to measure a title by: writer-bake-4 rejected 李明和小红
+  // with "1 characters", counting only 和. The bound is about how long the
+  // title is, and it says so.
+  const titleChars = [...t].filter(ch => /[\u4e00-\u9fff]/.test(ch)).length
+  if (titleChars < TITLE_BOUNDS.min || titleChars > TITLE_BOUNDS.max) problems.push(titleChars + ' characters (need ' + TITLE_BOUNDS.min + '-' + TITLE_BOUNDS.max + ')')
   if (a.unknownRuns.length) problems.push('non-vocabulary text: ' + a.unknownRuns.join('、'))
   if (above.length) problems.push('above-level vocabulary: ' + above.map(w => w + ' (HSK ' + vocabMap[w].level + ')').join('、'))
   return { ok: problems.length === 0, problems }
