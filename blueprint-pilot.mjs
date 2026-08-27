@@ -208,7 +208,7 @@ if (preflightOnly) {
           console.log('  ' + String(row.label).padEnd(6) + String(row.overall).padEnd(3)
             + String(rep.budget.cost).padEnd(7) + String(rep.budget.offListWords).padEnd(5)
             + cell('CENTRAL_NECESSARY') + cell('NATURAL_SUPPORT') + cell('OPTIONAL_COMPLEXITY')
-            + String(rep.budget.maxPerSentence))
+            + String(rep.budget.minWorstSentence))
           detail.push({ label: row.label, quality: row.overall, report: rep })
         }
         for (const L of ['D', 'F', 'B']) {

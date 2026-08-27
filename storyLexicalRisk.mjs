@@ -42,7 +42,7 @@ const ROMANIZED = (() => {
   return out
 })()
 
-export const RISK_VERSION = 'fab9-risk@9'
+export const RISK_VERSION = 'fab9-risk@10'
 
 export const RISK = { LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH' }
 
@@ -887,26 +887,37 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
   // A beat is only unsafe on its own account when it is CROWDED — the budget
   // for the story as a whole is settled by assessShapeRisk.
   const distinct = new Set(assisted.map(c => assistKey(c.assist, c.concept))).size
-  // Per SENTENCE, not only per beat: comprehension should never depend on
-  // several unknown words at once.
-  const bySentence = new Map()
-  for (const c of [...assisted, ...incidentalAssisted]) {
-    const n = c.sentence || 0
-    if (!bySentence.has(n)) bySentence.set(n, new Set())
-    bySentence.get(n).add(assistKey(c.assist, c.concept))
-  }
-  const sentences = [...bySentence.entries()].map(([n, set]) => ({ sentence: n, assisted: set.size }))
-  const clustered = sentences.filter(x => x.assisted > policy.assistedPerSentenceMax)
-  const crowded = distinct > policy.assistedPerBeatMax || clustered.length > 0
+  // Density is a property of the MANDARIN sentence the learner meets, and no
+  // Mandarin exists at plan time. This used to count assisted concepts per
+  // English sentence of the beat's `what` — but `what` is a one-sentence
+  // SUMMARY of a beat that becomes five or six Mandarin lines, so "sentence 1"
+  // was the whole beat and the check silently duplicated assistedPerBeatMax.
+  // Candidate E of bundle-plans-2 failed on "李明 tries to open his locker and
+  // finds the key missing": three concepts in one English clause, six Mandarin
+  // lines to say them in, and no reason they would land together.
+  //
+  // What the plan DOES state is how many lines the beat becomes, and that is
+  // enough for a lower bound: A distinct assisted words spread over N lines put
+  // at least ceil(A / N) in the worst line, however well they are distributed.
+  // So the plan rejects only what is impossible to write within the cap. The
+  // actual per-line density is checked at realization, where real Mandarin
+  // lines exist (storyRepairPlanner already computes per-line facts).
+  const allAssisted = new Set([...assisted, ...incidentalAssisted].map(c => assistKey(c.assist, c.concept)))
+  const lines = Math.max(1, Number(beat && beat.lines) || 1)
+  const minWorstSentence = Math.ceil(allAssisted.size / lines)
+  const overloaded = minWorstSentence > policy.assistedPerSentenceMax
+  const sentences = [{ lines, assisted: allAssisted.size, minWorstSentence }]
+  const clustered = overloaded ? sentences : []
+  const crowded = distinct > policy.assistedPerBeatMax || overloaded
   const risk = crowded
     ? RISK.HIGH
     : (assisted.length ? RISK.MEDIUM : (incidentalAssisted.length ? RISK.MEDIUM : RISK.LOW))
   const describe = (list) => list.map(c => c.concept + (c.assist.word ? ' (' + c.assist.word + ' HSK' + c.assist.wordLevel + ')' : ' (no word in the list)')).join(', ')
   let reason = 'every concept in this beat is in level'
   if (clustered.length) {
-    reason = 'sentence ' + clustered.map(x => x.sentence).join(', ') + ' of this beat needs '
-      + clustered.map(x => x.assisted).join('/') + ' words above the level at once (max ' + policy.assistedPerSentenceMax
-      + ' in one sentence): ' + describe(assisted)
+    reason = 'this beat has ' + allAssisted.size + ' words above the level and only ' + lines
+      + ' line(s) to spread them over, so at least ' + minWorstSentence
+      + ' land in one sentence (max ' + policy.assistedPerSentenceMax + '): ' + describe(assisted)
   } else if (crowded) {
     reason = 'this one beat needs ' + assisted.length + ' words above the level (max ' + policy.assistedPerBeatMax + '): ' + describe(assisted)
   } else if (assisted.length) {
@@ -989,7 +1000,7 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
       beats: [],
       assisted: [],
       routes: [],
-      budget: { cost: null, offListWords: null, assistedWords: null, maxPerBeat: null, maxPerSentence: null, byNecessity: {}, clusteredSentences: [] },
+      budget: { cost: null, offListWords: null, assistedWords: null, maxPerBeat: null, minWorstSentence: null, byNecessity: {}, clusteredSentences: [] },
       highBeats: [],
       blocking: [],
       corpus,
@@ -1030,7 +1041,9 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
     byNecessity[k].words.push(a.word || ('off:' + (a.concepts || [a.concept])[0]))
   }
   const optional = byNecessity.OPTIONAL_COMPLEXITY || { count: 0, cost: 0, words: [] }
-  const maxPerSentence = beats.reduce((n, b) => Math.max(n, ...(b.sentences || []).map(x => x.assisted), 0), 0)
+  // The worst provable per-sentence density across the story: not what the
+  // realized Mandarin will have, but what it cannot go below.
+  const minWorstSentence = beats.reduce((n, b) => Math.max(n, ...(b.sentences || []).map(x => x.minWorstSentence || 0), 0), 0)
   const routes = beats.flatMap(b => b.inLevelRoutes || [])
 
   const breaches = []
@@ -1133,7 +1146,7 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
       cost,
       costBudget: policy.costBudget,
       byNecessity,
-      maxPerSentence,
+      minWorstSentence,
       crowdedBeats,
       clusteredSentences: beats.filter(b => (b.clustered || []).length).map(b => ({ beat: b.beat, sentences: b.clustered })),
       offListWords: offList.length,

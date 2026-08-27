@@ -845,7 +845,8 @@ describe('the calibrated A3.2 policy (sweep-1)', () => {
   })
 
   it('per-sentence density still protects independently of the budget', () => {
-    const crowded = { id: 1, what: 'Li Ming needs a tool and a wrench and a thud at once.', because: 'the story opens' }
+    // ONE line to say three unknown words in: no distribution saves it.
+    const crowded = { id: 1, lines: 1, what: 'Li Ming needs a tool and a wrench and a thud at once.', because: 'the story opens' }
     const r = assessShape({ blueprint: { cast: ['李明'], beats: [crowded], targetPlan: [] }, manifest: manifest(), vocabMap: vm, policy: { ...ASSISTED_POLICY, costBudget: 99, offListMax: 99, optionalMax: 99 } })
     expect(r.classification).toBe(FEASIBILITY.UNSAFE)
     expect(r.budget.clusteredSentences.length).toBeGreaterThan(0)
@@ -1066,5 +1067,73 @@ describe('a plan this gate cannot read is UNSAFE, not free', () => {
     const r = assessShape({ blueprint: quoting, manifest: { ...manifest, targets: [{ word: '认为' }] }, vocabMap })
     expect(r.unscorable).toBeUndefined()
     expect(r.budget.cost).not.toBeNull()
+  })
+})
+
+// Candidate E of bundle-plans-2 failed density on two beats:
+//
+//   beat 1 (6 lines): "李明 tries to open his locker and finds the key missing"
+//   beat 5 (5 lines): "李明 opens his locker with the spare key and stores his books"
+//
+// Three assisted concepts in one English clause each. But `what` is a
+// one-sentence SUMMARY of a beat that becomes five or six Mandarin lines, and
+// nothing said those three words land together — 他想打开柜子。/ 钥匙不见了。is
+// two sentences with two taps between them. The check was reading a property of
+// the planning representation and reporting it as a property of the reader's
+// experience.
+describe('density is measured against the lines the beat becomes', () => {
+  const vocabMap = {
+    好: { level: 1, meaning: 'good' }, 人: { level: 1, meaning: 'person' },
+    看: { level: 1, meaning: 'to see, to look' }, 书: { level: 1, meaning: 'book' },
+    钥匙: { level: 4, meaning: 'key' }, 备用: { level: 6, meaning: 'reserve; spare' },
+    条件: { level: 4, meaning: 'condition; circumstance' }, 柜子: { level: 5, meaning: 'cupboard; cabinet' },
+  }
+  const manifest = { level: 3, speakers: ['李明', '小红'], targets: [] }
+  const beat = (lines, what) => ({
+    cast: ['李明'], targetPlan: [],
+    beats: [{ id: 1, lines, what, because: 'the story opens' }],
+  })
+  const run = (bp) => assessShape({ blueprint: bp, manifest, vocabMap })
+
+  it('one English clause that becomes six Mandarin lines is not overloaded', () => {
+    // Three unknown words over six lines is one per line at worst.
+    const r = run(beat(6, '李明 tries to open his cabinet and finds the key missing'))
+    expect(r.budget.clusteredSentences).toEqual([])
+    expect(r.budget.minWorstSentence).toBeLessThanOrEqual(ASSISTED_POLICY.assistedPerSentenceMax)
+  })
+
+  it('the same clause in a ONE-line beat is still rejected', () => {
+    // Identical wording, identical vocabulary — only the space to say it
+    // changes, and that is exactly what decides whether it is sayable.
+    const r = run(beat(1, '李明 tries to open his cabinet and finds the key missing'))
+    expect(r.budget.clusteredSentences.length).toBeGreaterThan(0)
+    expect(r.classification).toBe(FEASIBILITY.UNSAFE)
+    expect(r.beats[0].reason).toMatch(/only 1 line\(s\) to spread them over/)
+  })
+
+  it('rejects what no distribution can fix, whatever the wording', () => {
+    // Six unknown words, two lines: at least three in one sentence however
+    // they are arranged.
+    const r = run({
+      cast: ['李明'], targetPlan: [],
+      beats: [{ id: 1, lines: 2, what: 'He sees the candle, the whale, the butterfly, the mushroom, the ladder and the wrench', because: 'the story opens' }],
+    })
+    expect(r.budget.minWorstSentence).toBeGreaterThan(ASSISTED_POLICY.assistedPerSentenceMax)
+    expect(r.classification).toBe(FEASIBILITY.UNSAFE)
+  })
+
+  it('a beat with no declared lines is treated as one sentence', () => {
+    // Conservative fallback: without the line count the plan claims nothing,
+    // so nothing is assumed in its favour.
+    const withLines = run(beat(6, '李明 opens his cabinet with the spare key'))
+    const without = run({ cast: ['李明'], targetPlan: [], beats: [{ id: 1, what: '李明 opens his cabinet with the spare key', because: 'the story opens' }] })
+    expect(withLines.budget.minWorstSentence).toBeLessThan(without.budget.minWorstSentence)
+  })
+
+  it('reports the bound, not a measurement it did not take', () => {
+    const r = run(beat(6, '李明 tries to open his cabinet and finds the key missing'))
+    const s = r.beats[0].sentences[0]
+    expect(s).toMatchObject({ lines: 6, assisted: expect.any(Number) })
+    expect(s.minWorstSentence).toBe(Math.ceil(s.assisted / 6))
   })
 })

@@ -292,7 +292,7 @@ if (lexIndexes) {
   console.log('='.repeat(78))
   const P = ASSISTED_POLICY
   console.log('caps: cost<=' + P.costBudget + '  offList<=' + P.offListMax + '  words<=' + P.assistedWordsMax
-    + '  perSentence<=' + P.assistedPerSentenceMax + '  (optionalMax ' + (P.optionalMax == null ? 'off' : P.optionalMax) + ')')
+    + '  minWorst<=' + P.assistedPerSentenceMax + '  (optionalMax ' + (P.optionalMax == null ? 'off' : P.optionalMax) + ')')
   console.log('\nlbl  targets  cost  off  words  /sent  central     support     optional    FEASIBLE  major unsupported')
   for (const c of candidates) {
     if (!c.blueprint) continue
@@ -308,12 +308,12 @@ if (lexIndexes) {
       .map(a => (a.concepts || [a.concept]).join('/') + (a.offList ? '(off)' : '→' + a.word))
     c.lexical = {
       cost: b.cost, offListWords: b.offListWords, assistedWords: b.assistedWords,
-      maxPerSentence: b.maxPerSentence, byNecessity: n, classification: rep.classification,
+      minWorstSentence: b.minWorstSentence, byNecessity: n, classification: rep.classification,
       feasible, targetCoverage: covered + '/' + required.length, worst,
     }
     console.log('  ' + String(c.label || '-').padEnd(5) + (covered + '/' + required.length).padEnd(9)
       + String(b.cost).padEnd(6) + String(b.offListWords).padEnd(5) + String(b.assistedWords).padEnd(7)
-      + String(b.maxPerSentence).padEnd(7)
+      + String(b.minWorstSentence).padEnd(7)
       + cell('CENTRAL_NECESSARY') + cell('NATURAL_SUPPORT') + cell('OPTIONAL_COMPLEXITY')
       + (feasible ? 'YES     ' : 'no      ').padEnd(10) + worst.join(', ').slice(0, 44))
   }
