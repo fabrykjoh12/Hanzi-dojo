@@ -156,10 +156,21 @@ for (const plan of plans) {
           buildBeatJudgePrompt: beatJudgePrompt, parseBeatJudgment,
           maxTokens: 1800,
         })
+        // Every attempt, pass or fail: a beat the writer could not write is a
+        // result about the writer, and the deterministic failures and the
+        // judge's reason are what say which writer struggled with what.
+        record.beatAttempts = (realized.attempts || []).map(a => ({
+          beat: a.beat, attempt: a.attempt, accepted: a.accepted, requested: a.requested,
+          lines: a.lines || [],
+          failures: ((a.deterministic && a.deterministic.failures) || []).map(f => f.code + ': ' + f.message).slice(0, 4),
+          score: a.score ? { overall: a.score.overall, reason: String(a.score.reason || '').slice(0, 160) } : null,
+        }))
         if (!realized.ok) {
           record.code = realized.code || 'BEATS_FAILED'
           record.detail = realized.detail || ''
           record.failedBeat = realized.failedBeat || null
+          const last = record.beatAttempts.filter(a => a.beat === realized.failedBeat).pop()
+          record.firstReason = last ? ('beat ' + last.beat + ': ' + (last.failures.join(' | ') || (last.score ? 'judged ' + last.score.overall + ' — ' + last.score.reason : 'no reason recorded'))) : null
         } else {
           const content = realized.lines.join('\n')
           const draft = { title: String(withScaffold.chineseTitle || '').trim(), content }

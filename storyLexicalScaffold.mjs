@@ -31,8 +31,9 @@ import { checkAnchor, checkUsageSketch, hasLatin } from './storyBlueprint.mjs'
 import { analyzeStory } from './storyCorpusCalibration.mjs'
 import { retrieveCandidates, stem } from './storyLexicalRetrieval.mjs'
 import { classifySketch, repairBrief, checkRepairDrift } from './storySketchRepair.mjs'
+import { glossSenses } from './storyLexicalRisk.mjs'
 
-export const SCAFFOLD_VERSION = 'fab9-scaffold@3'
+export const SCAFFOLD_VERSION = 'fab9-scaffold@4'
 
 // A beat's toolkit needs three usable words and has never needed more than
 // six. a3-final-2 threw away 后来、门口、女人、拿、不用 — five valid words — because
@@ -107,6 +108,24 @@ const PRONOUNS = new Set(['我', '你', '您', '他', '她', '它', '我们', '�
 // "someone" and "somebody" are grammar, not cast.
 const INDEFINITE_GLOSS = /\b(other people|others|other person|someone|somebody|anyone|anybody|everyone|everybody|no one|nobody|people in general|else)\b/i
 
+// A word names a person when a person IS one of its senses — not when a person
+// happens to be mentioned inside one. 把 is HSK 3 "to hold; to grasp; to hold a
+// baby in position for defecation; ...", and testing the whole gloss made the
+// measure word in 一把伞 ("an umbrella") an uninvited character: writer-bake-2
+// lost a realization to it. Same invariant the lexical bridges use — evidence
+// stands on a sense, not on a token inside one.
+const PERSON_SENSE_WORDS = 3
+function denotesPerson(meaning) {
+  for (const sense of glossSenses(meaning)) {
+    if (INDEFINITE_GLOSS.test(sense.text)) continue
+    // A short sense IS the person: "friend", "classmate", "fellow student",
+    // "young lady". A long one only mentions one.
+    if (sense.tokens.length > PERSON_SENSE_WORDS) continue
+    if (PERSON_GLOSS.test(sense.text)) return true
+  }
+  return false
+}
+
 export function checkSketchCast(sketch, { word, beat = null, blueprint = null, manifest = null, vocabMap = {} } = {}) {
   const text = String(sketch == null ? '' : sketch).trim()
   if (!text) return { ok: false, problems: ['no sketch'] }
@@ -131,7 +150,7 @@ export function checkSketchCast(sketch, { word, beat = null, blueprint = null, m
     if (w === word || cast.has(w) || PRONOUNS.has(w)) continue
     if (inFrozenBeat(w)) continue
     const meaning = vocabMap[w] && vocabMap[w].meaning
-    if (meaning && PERSON_GLOSS.test(meaning) && !INDEFINITE_GLOSS.test(meaning)) intruders.push(w)
+    if (meaning && denotesPerson(meaning)) intruders.push(w)
   }
   if (intruders.length) {
     return {

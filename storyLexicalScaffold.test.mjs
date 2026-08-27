@@ -245,7 +245,7 @@ describe('the shape is locked', () => {
     expect(checkTitle('Passport', { manifest: m, vocabMap }).problems.join(' ')).toContain('Latin')
     expect(checkTitle('森林的故事', { manifest: m, vocabMap }).problems.join(' ')).toContain('above-level')
     expect(checkTitle('找', { manifest: m, vocabMap }).problems.join(' ')).toContain('characters')
-    expect(SCAFFOLD_VERSION).toBe('fab9-scaffold@3')
+    expect(SCAFFOLD_VERSION).toBe('fab9-scaffold@4')
   })
 })
 
@@ -394,5 +394,49 @@ describe('the lexical scaffold, after a3-final-2', () => {
     expect(r.ok).toBe(false)
     expect(r.code).toBe('BEAT_LEXICAL_SCAFFOLD_FAILED')
     expect(r.failedAt).toEqual({ beat: 1 })
+  })
+})
+
+// writer-bake-2 lost a realization to "天要下雨，我需要一把伞。" — good HSK 3
+// Chinese for "it's going to rain, I need an umbrella" — because 把 is glossed
+// "to hold; to grasp; to hold a baby in position for defecation; classifier for
+// objects with a handle", and testing the whole gloss for a person-word found
+// "baby". The measure word in "一把伞" became an uninvited character.
+describe('a word names a person only when a person IS one of its senses', () => {
+  const mk = (o) => Object.fromEntries(Object.entries(o).map(([w, v]) => [w, { word: w, ...v }]))
+  const vocabMap = mk({
+    把: { level: 3, meaning: 'to hold; to grasp; to hold a baby in position for defecation; classifier for objects with a handle' },
+    伞: { level: 3, meaning: 'umbrella; parasol' },
+    我: { level: 1, meaning: 'I' }, 的: { level: 1, meaning: 'of' }, 一: { level: 1, meaning: 'one' },
+    需要: { level: 3, meaning: 'to need' }, 天: { level: 1, meaning: 'day; sky' },
+    要: { level: 1, meaning: 'to want' }, 下雨: { level: 1, meaning: 'to rain' },
+    朋友: { level: 1, meaning: 'friend' }, 爸爸: { level: 1, meaning: 'dad; father' },
+    同学: { level: 2, meaning: 'classmate; fellow student' },
+  })
+  const check = (text) => checkSketchCast(text, {
+    word: '需要',
+    beat: { what: 'Li Ming needs an umbrella', because: 'it is raining' },
+    blueprint: { cast: ['李明', '小红'] },
+    manifest: { level: 3 },
+    vocabMap,
+  })
+
+  it('a person mentioned inside a long sense does not make the word a character', () => {
+    const r = check('天要下雨，我需要一把伞。')
+    expect(r.ok, JSON.stringify(r.intruders)).toBe(true)
+  })
+
+  it('a word whose sense IS a person is still caught', () => {
+    for (const [text, who] of [['我的朋友需要伞。', '朋友'], ['我的爸爸需要伞。', '爸爸'], ['我的同学需要伞。', '同学']]) {
+      const r = check(text)
+      expect(r.ok, text).toBe(false)
+      expect(r.intruders, text).toContain(who)
+    }
+  })
+
+  it('a two-word person sense counts — "fellow student" is a person', () => {
+    // 同学's second sense is two words; only a long sense is treated as
+    // mentioning rather than meaning.
+    expect(check('我的同学需要伞。').intruders).toContain('同学')
   })
 })
