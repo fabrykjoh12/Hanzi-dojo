@@ -1,0 +1,355 @@
+{
+  "schema": "writer-bakeoff@1",
+  "generatedAt": "2026-08-27T12:59:28.073Z",
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bundle-L3-001",
+    "batchId": "bundle",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "如果",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "该",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "被",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "中",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "认为",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "A student sees it’s raining, realizes he needs an umbrella, and thinks he should ask a classmate to borrow one.",
+    "seasonSeed": null,
+    "series": null,
+    "composition": {
+      "bucket": "bundle",
+      "reason": "A student sees it’s raining, realizes he needs an umbrella, and thinks he should ask a classmate to borrow one.",
+      "hard": [
+        {
+          "word": "如果"
+        },
+        {
+          "word": "该"
+        },
+        {
+          "word": "需要"
+        }
+      ],
+      "soft": [
+        {
+          "word": "被"
+        },
+        {
+          "word": "中"
+        },
+        {
+          "word": "认为"
+        }
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "totalLines": 26,
+  "scaffoldVersion": "fab9-scaffold@4",
+  "beatVersion": "fab9-beats@2",
+  "realizedVersion": "fab9-realized@1",
+  "beatLimits": {
+    "unknownDistinct": 1,
+    "outOfLevelCharShare": 0.08,
+    "maxTargetOccurrences": 3
+  },
+  "beatQuality": {
+    "overall": 6,
+    "natural": 6,
+    "continuity": 5,
+    "integration": 5
+  },
+  "lexicalPolicy": {
+    "version": "fab9-assist@1",
+    "inLevelShareTarget": 0.9,
+    "inLevelSharePreferred": 0.95,
+    "assistedWordsPreferred": 4,
+    "assistedWordsMax": 8,
+    "assistedPerBeatPreferred": 1,
+    "assistedPerBeatMax": null,
+    "distanceCost": {
+      "1": 1,
+      "2": 2,
+      "3": 4
+    },
+    "farCost": 6,
+    "offListCost": 4,
+    "costBudget": 16,
+    "offListMax": 2,
+    "necessityWeight": {
+      "CENTRAL_NECESSARY": 0.75,
+      "NATURAL_SUPPORT": 1,
+      "OPTIONAL_COMPLEXITY": 1.5
+    },
+    "optionalMax": 3,
+    "optionalCostMax": null,
+    "assistedPerSentencePreferred": 1,
+    "assistedPerSentenceMax": 2
+  },
+  "writers": [
+    "groq:qwen/qwen3.6-27b:none",
+    "groq:openai/gpt-oss-120b:low"
+  ],
+  "judge": "groq:openai/gpt-oss-20b",
+  "anonMapping": [
+    {
+      "key": "B|groq:qwen/qwen3.6-27b:none",
+      "anon": "W1"
+    },
+    {
+      "key": "B|groq:openai/gpt-oss-120b:low",
+      "anon": "W2"
+    }
+  ],
+  "plans": [
+    {
+      "label": "B",
+      "planner": "groq:openai/gpt-oss-120b:medium",
+      "quality": 9,
+      "problem": "李明 needs an umbrella because it starts to rain.",
+      "risk": {
+        "classification": "ASSISTED_OOL",
+        "budget": {
+          "nominalLevel": 3,
+          "assistedWords": 6,
+          "cost": 15,
+          "costBudget": 16,
+          "byNecessity": {
+            "CENTRAL_NECESSARY": {
+              "count": 6,
+              "cost": 15,
+              "words": [
+                "黑暗",
+                "备用",
+                "off:stays",
+                "off:dry",
+                "收集",
+                "院子"
+              ]
+            }
+          },
+          "minWorstSentence": 1,
+          "maxPerBeat": 2,
+          "crowdedBeats": [],
+          "clusteredSentences": [],
+          "offListWords": 2,
+          "offListMax": 2,
+          "inLevelShareTarget": 0.9,
+          "inLevelSharePreferred": 0.95,
+          "measuredOn": "the finished draft, by the deterministic validator",
+          "breaches": [],
+          "notes": [
+            "above the comfortable 4 assisted words, still inside the 8 allowed",
+            "beat 1 carries 2 assisted words over undefined lines",
+            "beat 5 carries 2 assisted words over undefined lines"
+          ]
+        }
+      }
+    }
+  ],
+  "runs": [
+    {
+      "plan": "B",
+      "writerSpec": "groq:qwen/qwen3.6-27b:none",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "scaffold": {
+        "ok": false,
+        "log": [
+          {
+            "piece": "title",
+            "beat": null,
+            "word": null,
+            "attempt": 1,
+            "ok": false,
+            "output": "李明和小红",
+            "why": "1 characters (need 2-12)"
+          },
+          {
+            "piece": "title",
+            "beat": null,
+            "word": null,
+            "attempt": 2,
+            "ok": true,
+            "output": "下雨了",
+            "why": ""
+          },
+          {
+            "piece": "sketch",
+            "beat": 1,
+            "word": "需要",
+            "attempt": 1,
+            "ok": true,
+            "output": "天要下雨了，我需要一把伞。",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 1,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "上午,学校,下雨,上课,前",
+            "why": ""
+          },
+          {
+            "piece": "sketch",
+            "beat": 2,
+            "word": "该",
+            "attempt": 1,
+            "ok": false,
+            "output": "我得该向小红借把伞。",
+            "why": "non-vocabulary text: 向"
+          },
+          {
+            "piece": "sketch",
+            "beat": 2,
+            "word": "该",
+            "attempt": 2,
+            "ok": false,
+            "output": "我该问小红借一把伞。",
+            "why": "dropped words that were already fine: 得"
+          }
+        ]
+      },
+      "detail": "title, sketch/2, sketch/2",
+      "firstReason": "title: 1 characters (need 2-12)  [got: 李明和小红]",
+      "scaffoldCode": "TARGET_SCAFFOLD_FAILED",
+      "latencyMs": 61238,
+      "tokens": {
+        "prompt": 8564,
+        "completion": 97
+      },
+      "usage": {
+        "requests": 8,
+        "failures": 2,
+        "promptTokens": 8564,
+        "completionTokens": 97,
+        "latencyMsTotal": 3167,
+        "rateLimit429s": 2,
+        "throttleWaitMs": 32906,
+        "retryAfterWaitMs": 25000
+      },
+      "anon": "W1"
+    },
+    {
+      "plan": "B",
+      "writerSpec": "groq:openai/gpt-oss-120b:low",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "scaffold": {
+        "ok": false,
+        "log": [
+          {
+            "piece": "title",
+            "beat": null,
+            "word": null,
+            "attempt": 1,
+            "ok": false,
+            "output": "",
+            "why": "groq/openai/gpt-oss-120b HTTP 429: waited 0s, provider asks for 416s more (cap 240s)"
+          },
+          {
+            "piece": "title",
+            "beat": null,
+            "word": null,
+            "attempt": 2,
+            "ok": false,
+            "output": "",
+            "why": "groq/openai/gpt-oss-120b HTTP 429: waited 0s, provider asks for 434s more (cap 240s)"
+          }
+        ]
+      },
+      "detail": "title, title",
+      "firstReason": "title: groq/openai/gpt-oss-120b HTTP 429: waited 0s, provider asks for 416s more (cap 240s)  [got: ]",
+      "scaffoldCode": "TITLE_SCAFFOLD_FAILED",
+      "latencyMs": 165,
+      "tokens": {
+        "prompt": 0,
+        "completion": 0
+      },
+      "usage": {
+        "requests": 2,
+        "failures": 2,
+        "promptTokens": 0,
+        "completionTokens": 0,
+        "latencyMsTotal": 164,
+        "rateLimit429s": 2,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 0
+      },
+      "anon": "W2"
+    }
+  ],
+  "densityChecks": [],
+  "judgeLog": []
+}
