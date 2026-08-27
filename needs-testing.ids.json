@@ -1,0 +1,74 @@
+{
+  "assessment": {
+    "messageId": "1528150915251441726",
+    "threadId": "1528150915251441726"
+  },
+  "calm-home-recap": {
+    "messageId": "1529270756733747432",
+    "threadId": "1529270756733747432"
+  },
+  "chinese-tts": {
+    "messageId": "1528150914504982810",
+    "threadId": "1528150914504982810"
+  },
+  "comprehension": {
+    "messageId": "1528150916530700339",
+    "threadId": "1528150916530700339"
+  },
+  "dict-add-deck": {
+    "messageId": "1528894725824970783",
+    "threadId": "1528894725824970783"
+  },
+  "dict-entry": {
+    "messageId": "1528894720808321206",
+    "threadId": "1528894720808321206"
+  },
+  "dict-recent": {
+    "messageId": "1528894728358199437",
+    "threadId": "1528894728358199437"
+  },
+  "dict-search": {
+    "messageId": "1528894718107193549",
+    "threadId": "1528894718107193549"
+  },
+  "dict-strokes": {
+    "messageId": "1528894723182301207",
+    "threadId": "1528894723182301207"
+  },
+  "email-sender": {
+    "messageId": "1528150920502972517",
+    "threadId": "1528150920502972517"
+  },
+  "hsk-3-6": {
+    "messageId": "1528894730732179649",
+    "threadId": "1528894730732179649"
+  },
+  "no-streak-xp": {
+    "messageId": "1529486622163472429",
+    "threadId": "1529486622163472429"
+  },
+  "oauth-branding": {
+    "messageId": "1528151226158551164",
+    "threadId": "1528151226158551164"
+  },
+  "read-own-text": {
+    "messageId": "1528150919810912278",
+    "threadId": "1528150919810912278"
+  },
+  "review-mining": {
+    "messageId": "1528150918108024995",
+    "threadId": "1528150918108024995"
+  },
+  "speaking": {
+    "messageId": "1528150918644891671",
+    "threadId": "1528150918644891671"
+  },
+  "story-practice": {
+    "messageId": "1528150917407314003",
+    "threadId": "1528150917407314003"
+  },
+  "wow-onboarding": {
+    "messageId": "1529130755307868322",
+    "threadId": "1529130755307868322"
+  }
+}
