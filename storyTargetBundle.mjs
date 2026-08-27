@@ -94,7 +94,7 @@ export function bundlePrompt({ pool, levelName, meanings = {}, senses = null, po
     + '<word>: ROLE or NO_ROLE | <the role it would play, or why it has none> \n'
     + '(one line per candidate word, then)\n'
     + 'BUNDLE: <the words that belong in one story together, comma separated>\n'
-    + 'SITUATION: <one concrete everyday scene, one sentence, no example>'
+    + 'SITUATION: <one concrete everyday scene, one sentence of ENGLISH, no example>'
 }
 
 export function parseBundleJudgment(out, words = []) {

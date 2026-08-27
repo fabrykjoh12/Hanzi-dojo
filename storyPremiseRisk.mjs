@@ -37,9 +37,9 @@ import {
   ASSIST, ASSISTED_POLICY, withPolicy,
 } from './storyLexicalRisk.mjs'
 
-export const PREMISE_VERSION = 'fab9-premise@1'
+export const PREMISE_VERSION = 'fab9-premise@2'
 
-export const PREMISE = { OK: 'OK', COSTLY: 'COSTLY', UNSAYABLE: 'UNSAYABLE' }
+export const PREMISE = { OK: 'OK', COSTLY: 'COSTLY', UNSAYABLE: 'UNSAYABLE', UNSCORED: 'UNSCORED' }
 
 // A premise is a sentence, not a story: it may afford one word the reader taps,
 // and no more. These are deliberately far tighter than the story budget —
@@ -70,6 +70,26 @@ export function assessPremise(text, { vocabMap, level, indexes = null, policy = 
     if (entry.kind !== ASSIST.ASSISTED) continue
     assisted.push({ concept: c, word: entry.word || null, offList: Boolean(entry.offList), cost: entry.cost, route: entry.route || null })
   }
+  // bundle-concrete-2 came back with the situation written in CHINESE, and this
+  // gate reads English: it found nothing to score and reported cost 0, which is
+  // a false pass, not a cheap premise. A gate whose evidence is absent must say
+  // so rather than answer — the same rule validateGlossCorpus follows.
+  const scorable = [...concepts.core, ...concepts.supporting, ...concepts.incidental].length
+  if (!scorable) {
+    return {
+      version: PREMISE_VERSION,
+      text: String(text || ''),
+      verdict: PREMISE.UNSCORED,
+      reason: /[\u4e00-\u9fff]/.test(String(text || ''))
+        ? 'the premise is not in English, so this gate has nothing to score'
+        : 'no lexical concepts in the premise',
+      cost: null,
+      offListWords: null,
+      assisted: [],
+      unsayable: [],
+      policy: policy || PREMISE_POLICY,
+    }
+  }
   const cost = assisted.reduce((a, b) => a + b.cost, 0)
   const offList = assisted.filter(a => a.offList)
   const p = policy || PREMISE_POLICY
@@ -96,6 +116,7 @@ export function assessPremise(text, { vocabMap, level, indexes = null, policy = 
 export function choosePremise(candidates, opts = {}) {
   const scored = (candidates || []).filter(Boolean).map(text => assessPremise(text, opts))
   const ok = scored.find(s => s.verdict === PREMISE.OK)
-    || scored.slice().sort((a, b) => a.cost - b.cost || a.offListWords - b.offListWords)[0] || null
+    || scored.filter(s => s.verdict !== PREMISE.UNSCORED)
+      .sort((a, b) => a.cost - b.cost || a.offListWords - b.offListWords)[0] || scored[0] || null
   return { chosen: ok && ok.verdict === PREMISE.OK ? ok : null, cheapest: ok, scored }
 }

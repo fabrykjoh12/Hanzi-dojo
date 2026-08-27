@@ -95,8 +95,24 @@ describe('assessPremise — a situation is scored before it becomes a theme', ()
     expect(r.cheapest).toBeTruthy()
   })
 
+  it('a premise this gate cannot read is UNSCORED, never a cheap pass', () => {
+    // bundle-concrete-2 answered in Chinese. There was no English to score, so
+    // the gate found cost 0 and called it OK — a false pass.
+    const r = score('下雨时，张明发现自己没有带伞。')
+    expect(r.verdict).toBe(PREMISE.UNSCORED)
+    expect(r.cost).toBeNull()
+    expect(r.reason).toMatch(/not in English/)
+  })
+
+  it('never chooses an unscored premise over a scored one', () => {
+    const r = choosePremise(['下雨时，张明没有带伞。', 'They weigh the pros and cons of a career choice.'],
+      { vocabMap, level: LEVEL, indexes })
+    expect(r.chosen).toBeNull()
+    expect(r.cheapest.verdict).not.toBe(PREMISE.UNSCORED)
+  })
+
   it('is versioned', () => {
-    expect(PREMISE_VERSION).toBe('fab9-premise@1')
+    expect(PREMISE_VERSION).toBe('fab9-premise@2')
     expect(score('It is raining.').version).toBe(PREMISE_VERSION)
   })
 })
