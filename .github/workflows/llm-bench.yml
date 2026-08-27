@@ -22,7 +22,7 @@ on:
       mode:
         description: "smoke = probe; bench = benchmark; select = K-draft selection (production flow); duo = retired edit flow (diagnostic); writer-test = one draft"
         type: choice
-        options: [smoke, bench, duo, select, writer-test, patch-test, repair-test, quality-gate, blueprint, planner-bakeoff, target-bundle]
+        options: [smoke, bench, duo, select, writer-test, patch-test, repair-test, quality-gate, blueprint, planner-bakeoff, target-bundle, writer-bakeoff]
         default: smoke
       max_tests:
         description: "smoke only: how many models to probe (capped at 16)"
@@ -621,6 +621,53 @@ jobs:
             $SRC $JUDGE_FLAG \
             --per-model "$COUNT" --level "$LEVEL" --lines "$LINES" \
             --out "data/story-candidates/$PREFIX"
+
+      - name: Fresh corpus dump for writer-bakeoff (read-only)
+        if: inputs.mode == 'writer-bakeoff'
+        env:
+          SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: node dump-story-corpus.mjs --out reports/story-corpus-dump.json
+
+      - name: "Writer bakeoff - identical plans, several writers, blind"
+        if: inputs.mode == 'writer-bakeoff'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          MODEL_A: ${{ inputs.model_a }}      # writer 1 (the current writer)
+          EFFORT_A: ${{ inputs.effort_a }}
+          MODEL_B: ${{ inputs.model_b }}      # writer 2
+          EFFORT_B: ${{ inputs.effort_b }}
+          JUDGE: ${{ inputs.probe_models }}   # blind quality judge, must differ from the writers
+          MANIFEST: ${{ inputs.manifest_path }}   # the stored planner bakeoff
+          LABELS: ${{ inputs.stage_name }}    # comma-separated plan labels, e.g. E,D,B
+          PREFIX: ${{ inputs.batch_prefix }}
+          LINES: ${{ inputs.writer_max_tokens }}   # reused: exact story length
+        run: |
+          set -e
+          case "$PREFIX" in (*[!A-Za-z0-9_-]*|"") echo "bad batch_prefix"; exit 1;; esac
+          case "$MODEL_A" in (""|*[!A-Za-z0-9._/:-]*) echo "bad or missing model_a"; exit 1;; esac
+          case "$MANIFEST" in (*[!A-Za-z0-9._/-]*|""|/*|*..*) echo "bad manifest_path"; exit 1;; esac
+          [ -f "$MANIFEST" ] || { echo "bakeoff not found: $MANIFEST"; exit 1; }
+          case "$LABELS" in (*[!A-Za-z0-9,_-]*|"") echo "bad labels"; exit 1;; esac
+          case "$EFFORT_A" in (""|none|low|medium|high|default) ;; (*) echo "bad effort_a"; exit 1;; esac
+          case "$LINES" in (*[!0-9]*|"") LINES=26;; esac
+          WRITERS="$MODEL_A"; [ -n "$EFFORT_A" ] && WRITERS="$MODEL_A:$EFFORT_A"
+          if [ -n "$MODEL_B" ]; then
+            case "$MODEL_B" in (*[!A-Za-z0-9._/:-]*) echo "bad model_b"; exit 1;; esac
+            case "$EFFORT_B" in (""|none|low|medium|high|default) ;; (*) echo "bad effort_b"; exit 1;; esac
+            if [ -n "$EFFORT_B" ]; then WRITERS="$WRITERS,$MODEL_B:$EFFORT_B"; else WRITERS="$WRITERS,$MODEL_B"; fi
+          fi
+          JUDGE_FLAG=""
+          if [ -n "$JUDGE" ]; then
+            case "$JUDGE" in (*[!A-Za-z0-9._/:-]*) echo "bad judge"; exit 1;; esac
+            JUDGE_FLAG="--judge $JUDGE"
+          fi
+          node writer-bakeoff.mjs \
+            --input reports/story-corpus-dump.json \
+            --shape-from "$MANIFEST" --labels "$LABELS" \
+            --writers "$WRITERS" $JUDGE_FLAG \
+            --lines "$LINES" --out "data/story-candidates/$PREFIX"
 
       - name: Show reports
         if: always()
