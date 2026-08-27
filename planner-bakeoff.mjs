@@ -77,6 +77,24 @@ let manifest = null
 let required = []
 if (bundlePath) {
   const bundle = JSON.parse(readFileSync(bundlePath, 'utf8'))
+  // A bundle whose judgement was truncated selects nothing, and planning from
+  // nothing invents the story this stage exists to choose. Same for a premise
+  // the gate already rejected: it would be copied into manifest.theme verbatim
+  // and every candidate would pay for it, which is exactly how A-F happened.
+  if (bundle.selection.incomplete) {
+    console.error('\nBUNDLE INCOMPLETE — ' + bundle.selection.incomplete)
+    console.error('Nothing to plan from. Re-run target-bundle.\n')
+    process.exit(4)
+  }
+  if (bundle.premise && (bundle.premise.verdict === 'UNSAYABLE' || bundle.premise.verdict === 'COSTLY')) {
+    console.error('\nPREMISE REJECTED — ' + bundle.premise.verdict + ', cost ' + bundle.premise.cost
+      + ', unsayable: ' + (bundle.premise.unsayable.join(', ') || '(none)'))
+    console.error('This situation spends the story budget before a beat exists. Re-run target-bundle.\n')
+    process.exit(4)
+  }
+  if (bundle.premise && bundle.premise.verdict === 'UNSCORED') {
+    console.error('\nPREMISE UNSCORED — ' + bundle.premise.reason + '. Planning anyway; it was not verified.\n')
+  }
   const req = bundle.selection.required
   const opp = bundle.selection.opportunity || []
   const d = manifestDefaults(level)
