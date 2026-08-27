@@ -550,6 +550,7 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
     }
   }
 
+  let weak = null
   // A longer concept that is a piece of some gloss token, or vice versa.
   // Bridge 3 — a DERIVATION that changes part of speech. helpful is an
   // adjective and 帮 glosses a verb, so the part-of-speech filter above is
@@ -629,13 +630,19 @@ export function conceptSupport(concept, index, fullIndex = null, { synonyms = nu
     if (!overlap) continue
     const usable = (hits || []).filter(ok)
     if (!usable.length) continue
-    return prefix
-      ? { support: 'supported', via: 'inflection', words: names(usable).slice(0, 3) }
-      : { support: 'weak', via: 'substring', words: names(usable).slice(0, 3) }
+    if (prefix) return { support: 'supported', via: 'inflection', words: names(usable).slice(0, 3) }
+    // A weak match is a near miss, and a near miss is worse evidence than a
+    // word the dictionary actually has. 压力 is glossed "pressure" at HSK 4,
+    // and returning here charged "pressure" as off-list — cost 4 for a concept
+    // the reader can be handed at distance 1. Remember it and let the
+    // above-level answer speak first.
+    if (!weak) weak = { support: 'weak', via: 'substring', words: names(usable).slice(0, 3) }
   }
   // Only now is the concept unsupported, and the full index says which kind:
   // a word the language has and the reader does not, or nothing at all.
-  return { support: 'none', via: above ? 'above-level' : 'absent', words: (above || []).slice(0, 3) }
+  if (above) return { support: 'none', via: 'above-level', words: above.slice(0, 3) }
+  if (weak) return weak
+  return { support: 'none', via: 'absent', words: [] }
 }
 
 // ── Corpus integrity ────────────────────────────────────────────────────────
@@ -925,16 +932,29 @@ export function assessBeatRisk({ beat, entries = [], manifest, vocabMap, index =
   }
 }
 
-export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSISTED_POLICY } = {}) {
-  // Refuse rather than guess: a corpus without glosses makes every concept
-  // look impossible, which is indistinguishable from a story that is.
+// The four indexes a shape is scored against. Building them walks the whole
+// vocabulary, and a policy sweep scores the same plans hundreds of times with
+// only the thresholds moving — so the caller may build them once and hand them
+// back in. Same shape assessBeatRisk already accepts.
+export function buildLexicalIndexes(vocabMap, level) {
   const corpus = validateGlossCorpus(vocabMap)
   if (!corpus.ok) throw new GlossCorpusError('lexical risk refused: ' + corpus.reason)
-  const index = buildGlossIndex(vocabMap, manifest.level)
-  const fullIndex = buildFullGlossIndex(vocabMap)
   const synonyms = buildSenseSynonyms(vocabMap)
   synonyms.ambiguous = ambiguousPivots(vocabMap)
-  const inLevelWords = buildInLevelWords(vocabMap, manifest.level)
+  return {
+    corpus,
+    index: buildGlossIndex(vocabMap, level),
+    fullIndex: buildFullGlossIndex(vocabMap),
+    synonyms,
+    inLevelWords: buildInLevelWords(vocabMap, level),
+  }
+}
+
+export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSISTED_POLICY, indexes = null } = {}) {
+  // Refuse rather than guess: a corpus without glosses makes every concept
+  // look impossible, which is indistinguishable from a story that is.
+  const built = indexes || buildLexicalIndexes(vocabMap, manifest.level)
+  const { corpus, index, fullIndex, synonyms, inLevelWords } = built
   const names = [...(blueprint.cast || []), ...(manifest.speakers || [])]
   const beats = (blueprint.beats || []).map(beat => assessBeatRisk({
     beat,

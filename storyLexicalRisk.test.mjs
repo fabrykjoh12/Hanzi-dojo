@@ -956,6 +956,28 @@ describe('bridge evidence — the frozen negative corpus', () => {
     expect(amb.has('mistaken')).toBe(false)
   })
 
+  it('a near miss never outranks a word the dictionary actually has', () => {
+    // 压力 is glossed "pressure" at HSK 4. Returning the substring near-miss
+    // first charged "pressure" as off-list — the far-end price — for a concept
+    // the reader can be handed one level up. The near miss still decides when
+    // there is no such word: "downstairs" keeps paying full price for 楼梯.
+    const vm = {
+      ...vocabMap,
+      压力: { level: 4, meaning: 'pressure' },
+      一定: { level: 1, meaning: 'certainly; must' },
+      楼梯: { level: 3, meaning: 'stair; staircase' },
+    }
+    const ix = buildGlossIndex(vm, LEVEL)
+    const full = buildFullGlossIndex(vm)
+    const syn = buildSenseSynonyms(vm)
+    syn.ambiguous = ambiguousPivots(vm)
+    const words = buildInLevelWords(vm, LEVEL)
+    const pressure = conceptSupport('pressure', ix, full, { synonyms: syn, inLevelWords: words })
+    expect(pressure.via).toBe('above-level')
+    expect(pressure.words).toContain('压力')
+    expect(conceptSupport('downstairs', ix, full, { synonyms: syn, inLevelWords: words }).support).toBe('weak')
+  })
+
   it('a classifier gloss lists what it counts, not what it means', () => {
     // 颗 counts pearls and teeth; that never made them synonyms.
     expect(support('pearls').via).not.toBe('synonym')

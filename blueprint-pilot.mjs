@@ -85,6 +85,8 @@ const viabilityFromPath = arg('viability-from', null)
 const policyMatrix = arg('policy-matrix', null)
 // The frozen two-dimensional calibration sweep.
 const policySweep = arg('policy-sweep', null)
+const sweepCosts = arg('sweep-costs', null)
+const sweepOffList = arg('sweep-offlist', null)
 // A3.1 pilot: resume a stored run's scaffold, keeping every piece it already
 // validated and retrying only the one that failed.
 const resumeScaffoldPath = arg('resume-scaffold', null)
@@ -236,11 +238,23 @@ if (preflightOnly) {
         }
 
         // ── 3. The sweep ─────────────────────────────────────────────────────
+        // The grid has to span the costs actually observed, or every policy in
+        // it reports the same answer and the sweep says nothing. --sweep-costs
+        // takes a comma list; the default is the band the first calibration
+        // used, back when false in-level matches were halving these numbers.
+        const costs = sweepCosts
+          ? sweepCosts.split(',').map(x => Number(x.trim())).filter(Number.isFinite)
+          : [12, 13, 14, 15, 16, 17, 18]
+        const offLists = sweepOffList
+          ? sweepOffList.split(',').map(x => Number(x.trim())).filter(Number.isFinite)
+          : [2]
         const configs = []
-        for (const cost of [12, 13, 14, 15, 16, 17, 18]) {
-          for (const optionalMax of [null, 1, 2, 3]) {
-            for (const optionalCostMax of [null, 3, 6, 9]) {
-              configs.push({ cost, offListMax: 2, optionalMax, optionalCostMax })
+        for (const cost of costs) {
+          for (const offListMax of offLists) {
+            for (const optionalMax of [null, 1, 2, 3]) {
+              for (const optionalCostMax of [null, 3, 6, 9]) {
+                configs.push({ cost, offListMax, optionalMax, optionalCostMax })
+              }
             }
           }
         }
@@ -258,8 +272,10 @@ if (preflightOnly) {
         // ── 4. The frontier: for each outcome, the TIGHTEST policies ────────
         const tighter = (a, b) => {
           const cap = (v) => (v == null ? Infinity : v)
-          return a.cost <= b.cost && cap(a.optionalMax) <= cap(b.optionalMax) && cap(a.optionalCostMax) <= cap(b.optionalCostMax)
-            && (a.cost < b.cost || cap(a.optionalMax) < cap(b.optionalMax) || cap(a.optionalCostMax) < cap(b.optionalCostMax))
+          return a.cost <= b.cost && a.offListMax <= b.offListMax
+            && cap(a.optionalMax) <= cap(b.optionalMax) && cap(a.optionalCostMax) <= cap(b.optionalCostMax)
+            && (a.cost < b.cost || a.offListMax < b.offListMax
+              || cap(a.optionalMax) < cap(b.optionalMax) || cap(a.optionalCostMax) < cap(b.optionalCostMax))
         }
         const bySignature = new Map()
         for (const r of results) {
@@ -272,7 +288,7 @@ if (preflightOnly) {
           const minimal = group.filter(x => !group.some(y => tighter(y, x)))
           console.log('  admits ' + (signature || 'NOTHING').padEnd(8) + '(' + group.length + ' policies, ' + minimal.length + ' minimal)')
           for (const m of minimal) {
-            console.log('      cost ' + String(m.cost).padEnd(3) + ' offList ' + m.offListMax
+            console.log('      cost ' + String(m.cost).padEnd(3) + ' offList ' + String(m.offListMax).padEnd(3)
               + '  optionalMax ' + String(m.optionalMax == null ? 'off' : m.optionalMax).padEnd(4)
               + '  optionalCostMax ' + String(m.optionalCostMax == null ? 'off' : m.optionalCostMax))
           }

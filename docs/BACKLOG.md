@@ -337,6 +337,95 @@ Necessity pricing is live and visible: B carries two CENTRAL_NECESSARY words
 against base 4, and two OPTIONAL_COMPLEXITY words (咨询, 明确) charged 3 against
 base 2. Per-sentence density found genuine clusters in F and C.
 
+### The bridges were manufacturing in-level matches, and the calibration was fitted to them (2026-08-27)
+
+Auditing every non-direct in-level match the A3.2 gate produced showed the
+synonym and component bridges were licensing matches out of string coincidence.
+Five were traced end to end against live corpus data:
+
+| concept | route | why it is false |
+|---|---|---|
+| job | 岗位 *"a post; a job"* → **post** → 邮件 *"mail; post"*, 邮箱 *"post office box"*, 沙发 *"…forum post"* | one string, three unrelated senses |
+| offer | 开设 *"to offer (goods or services); to open (for business etc)"* → **open** → 开, 打开, 开花 | a restricted sense used as an unrestricted synonym |
+| view | 观看 *"to watch; to view"* → **watch** → 手表 | a verb edge landing on a noun sense |
+| choice | 不得不 *"have no choice or option but to"* → head 不 | a word inside a sense, read as the sense |
+| guidance | 请教 *"to ask for guidance; to consult"* → head 请 | the same |
+
+Four generic invariants, one per failure mode — **sense-head locality** (a
+bridge stands only on a token that IS a sense), **part of speech along the whole
+chain**, **restriction checked at the landing site** (so 抱 *"to hold; to carry
+(in one's arms)"* still works: its pivot, *hold*, is unrestricted), and
+**semantic headedness** (the compound and its in-level head must share a sense,
+which 教育/教 do and 看法/看, 分析/分, 后果/后, 点头/点 do not). Plus: a synonym
+edge must land on the same **lemma**, not the same stem (riskStem strips `-ly`,
+collapsing *particulars* onto *particularly*), and a **classifier gloss** yields
+no edges at all — 颗 is *"classifier for small spheres, pearls, corn grains,
+teeth…"*, and splitting that on commas invented a sense for every noun it counts.
+
+An **ambiguous pivot** — a token heading senses in entries that share nothing
+else — is refused. Measured, that earns its place: without it eight pinned
+negatives return (job → 邮件, situation → 国家, lift → 养 *"to raise
+(children)"*) to recover one correct positive, carry → 拿.
+
+**Precision, measured.** On the pinned audit set, bridge false positives went
+**24/25 → 0/25**. Exhaustively over all 3,353 above-level gloss heads in the
+live corpus: the component bridge keeps 50 routes at **~96%** (only
+precise/precisely → 就 is wrong), the synonym bridge 10 at **~70%**
+(finance → 银行, propriety → 大小, reservation → 书 remain). Both were near 25%.
+
+Separately, a **weak substring near-miss was outranking a real above-level
+identification**: 压力 is glossed *"pressure"* at HSK 4, and the gate charged
+*pressure* as off-list — the far-end price — for a concept the reader can be
+handed at distance 1. The near miss now decides only when no such word exists,
+so *downstairs* still pays full price for 楼梯.
+
+Two honest losses, recorded rather than papered over. **large** is now charged
+as assisted: 大 is glossed *"big"* and 大型 *"large; large-scale"*, and nothing
+in the dataset licenses large → 大 — the missing link is English-side. Same class
+of gap as 晚上 glossed *"evening"* with no *"night"*, and as 被. **carry** and
+**lift** lose their bridges; their old evidence was 开会 *"to hold a meeting"*
+and 养 *"to raise (children)"*.
+
+### The recalibration says the plans were never feasible (2026-08-27)
+
+Re-running the **same six frozen plans** (`bundle-plans-1`), recomputing only
+the lexical matches — nothing regenerated, nothing re-judged:
+
+| plan | q | cost before → after | off-list | assisted words | non-direct routes |
+|---|---|---|---|---|---|
+| D | 9 | 16 → **33** | 2 → 2 | 5 → 11 | 10 → 2 |
+| A | 8 | 29 → **44** | 5 → 6 | 7 → 14 | 16 → 5 |
+| E | 9 | 25 → **59** | 2 → 7 | 9 → 18 | 12 → 2 |
+| B | 6 | 12 → **29** | 2 → 4 | 4 → 10 | 8 → 1 |
+| F | 6 | 17 → **31** | 3 → 5 | 4 → 9 | 10 → 3 |
+| C | 4 | 38 → **46** | 8 → 9 | 11 → 13 | 4 → 1 |
+
+45 false routes disappeared. **Every plan now trips four or five caps at once**,
+by two to four times: cost 29–59 against 16, 9–18 assisted words against 8, 3–4
+in a single sentence against 2. Across a 384-policy sweep spanning cost 16–62
+and off-list 2–10, **nothing is admitted at any setting.**
+
+**The previous calibration (`cost 16 / offList 2 / optionalMax 3`) is void** —
+it was fitted to in-level shares the matcher had inflated. Do not re-fit the
+thresholds to admit these plans; that is lowering the gate to make something
+pass. Treat the A3.2 defaults as unset rather than provisional.
+
+**`optionalMax` is not justified by this data.** With the caps that bind first
+relaxed so the dimension can speak, it changes the answer in 34 of 192 settings
+— and in every one of them it is binary: `off` admits, any finite value ≤ 3
+admits nothing. It never distinguishes one plan from another, which is the only
+thing a policy dimension is for. Recommend `optionalMax: null` until an
+observation exists where it separates two plans differently from `costBudget`.
+
+**The real finding is upstream of the thresholds.** The concepts driving the
+cost are English abstractions the corpus has no word for at any level —
+*advice* (5 of 6 plans), *offer* (4), *conditional* (3), *choice*, *options*,
+*perspective*, *pros*, *cons*, *factor*, *priority*, *guidance*. All six plans
+are job-offer deliberations, because the target bundle put them there. A story
+whose subject is an abstract negotiation cannot be told in HSK 3 vocabulary, and
+no threshold should be bent to pretend otherwise. **The next move is the bundle
+and the planner brief, not the policy.**
+
 ### Target-bundle selection moved upstream, and the eligible set is finally non-empty (2026-08-26)
 
 Four stored plans had been through placement viability and every one failed on
