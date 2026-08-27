@@ -1,0 +1,582 @@
+{
+  "version": "fab9-bundle@3",
+  "senses": {
+    "version": "fab9-senses@1",
+    "words": [
+      {
+        "word": "被",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "quilt",
+            "verb": false,
+            "restricted": false,
+            "tokens": [
+              "quilt"
+            ],
+            "head": "quilt"
+          },
+          {
+            "text": "cover",
+            "verb": true,
+            "restricted": true,
+            "tokens": [
+              "cover"
+            ],
+            "head": "cover"
+          }
+        ],
+        "senseCount": 2,
+        "gloss": "quilt; to cover (with)",
+        "example": "折被子。",
+        "exampleTranslation": "Fold the quilt.",
+        "corpusExamples": [],
+        "corpusUses": 0,
+        "role": null
+      },
+      {
+        "word": "中",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "china",
+            "verb": false,
+            "restricted": false,
+            "tokens": [
+              "china"
+            ],
+            "head": "china"
+          },
+          {
+            "text": "chinese",
+            "verb": false,
+            "restricted": false,
+            "tokens": [
+              "chinese"
+            ],
+            "head": "chinese"
+          }
+        ],
+        "senseCount": 2,
+        "gloss": "China; Chinese",
+        "example": "进行中。",
+        "exampleTranslation": "In Progress.",
+        "corpusExamples": [
+          "现在是中午了。",
+          "妈妈：去年，你的姐姐也找不到她的中文课。"
+        ],
+        "corpusUses": 28,
+        "role": null
+      },
+      {
+        "word": "如果",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "if",
+            "verb": false,
+            "restricted": false,
+            "tokens": [],
+            "head": "if"
+          },
+          {
+            "text": "in case",
+            "verb": false,
+            "restricted": false,
+            "tokens": [
+              "case"
+            ],
+            "head": null
+          }
+        ],
+        "senseCount": 2,
+        "gloss": "if; in case",
+        "example": "如果你喜欢。",
+        "exampleTranslation": "If you like.",
+        "corpusExamples": [
+          "老王：如果我放弃，我今年还能剩下一点儿钱。",
+          "老王：如果我再做一年，可能一分也不剩。"
+        ],
+        "corpusUses": 4,
+        "role": null
+      },
+      {
+        "word": "该",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "should",
+            "verb": false,
+            "restricted": false,
+            "tokens": [],
+            "head": "should"
+          },
+          {
+            "text": "ought to",
+            "verb": false,
+            "restricted": false,
+            "tokens": [
+              "ought"
+            ],
+            "head": null
+          }
+        ],
+        "senseCount": 2,
+        "gloss": "should; ought to",
+        "example": "活该。",
+        "exampleTranslation": "Serves you right.",
+        "corpusExamples": [
+          "阿山：这块地应该给谁，我说了不算。",
+          "学生：说对不起的应该是我。"
+        ],
+        "corpusUses": 9,
+        "role": {
+          "role": "grammatical",
+          "detail": "stands between a noun and a verb in 8 of 9 uses in the published corpus — in this position it is doing grammatical work, whatever its noun gloss says",
+          "framed": 8,
+          "uses": 9
+        }
+      },
+      {
+        "word": "需要",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "need",
+            "verb": true,
+            "restricted": false,
+            "tokens": [
+              "need"
+            ],
+            "head": "need"
+          },
+          {
+            "text": "want",
+            "verb": true,
+            "restricted": false,
+            "tokens": [
+              "want"
+            ],
+            "head": "want"
+          },
+          {
+            "text": "demand",
+            "verb": true,
+            "restricted": false,
+            "tokens": [
+              "demand"
+            ],
+            "head": "demand"
+          },
+          {
+            "text": "require",
+            "verb": true,
+            "restricted": false,
+            "tokens": [
+              "require"
+            ],
+            "head": "require"
+          },
+          {
+            "text": "needs",
+            "verb": false,
+            "restricted": false,
+            "tokens": [
+              "needs"
+            ],
+            "head": "needs"
+          }
+        ],
+        "senseCount": 5,
+        "gloss": "to need; to want; to demand; to require; needs",
+        "example": "不需要。",
+        "exampleTranslation": "No need.",
+        "corpusExamples": [
+          "他不需要从楼里走。",
+          "小红：说你不需要她回来。"
+        ],
+        "corpusUses": 4,
+        "role": null
+      },
+      {
+        "word": "像",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "resemble",
+            "verb": true,
+            "restricted": false,
+            "tokens": [
+              "resemble"
+            ],
+            "head": "resemble"
+          },
+          {
+            "text": "be like",
+            "verb": true,
+            "restricted": false,
+            "tokens": [
+              "like"
+            ],
+            "head": null
+          }
+        ],
+        "senseCount": 2,
+        "gloss": "to resemble; to be like",
+        "example": "忠告像盐。",
+        "exampleTranslation": "Advice is like salt.",
+        "corpusExamples": [
+          "李明：好像是，可是不太一样。",
+          "他们好像知道一些事情。"
+        ],
+        "corpusUses": 11,
+        "role": null
+      },
+      {
+        "word": "认为",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "believe",
+            "verb": true,
+            "restricted": false,
+            "tokens": [
+              "believe"
+            ],
+            "head": "believe"
+          },
+          {
+            "text": "think",
+            "verb": true,
+            "restricted": false,
+            "tokens": [
+              "think"
+            ],
+            "head": "think"
+          },
+          {
+            "text": "consider",
+            "verb": true,
+            "restricted": false,
+            "tokens": [
+              "consider"
+            ],
+            "head": "consider"
+          },
+          {
+            "text": "feel",
+            "verb": true,
+            "restricted": false,
+            "tokens": [
+              "feel"
+            ],
+            "head": "feel"
+          }
+        ],
+        "senseCount": 4,
+        "gloss": "to believe; to think; to consider; to feel",
+        "example": "妳认为？",
+        "exampleTranslation": "Do you think?",
+        "corpusExamples": [],
+        "corpusUses": 0,
+        "role": null
+      },
+      {
+        "word": "生活",
+        "level": 3,
+        "pos": null,
+        "senses": [
+          {
+            "text": "live",
+            "verb": true,
+            "restricted": false,
+            "tokens": [
+              "live"
+            ],
+            "head": "live"
+          },
+          {
+            "text": "life",
+            "verb": false,
+            "restricted": false,
+            "tokens": [
+              "life"
+            ],
+            "head": "life"
+          }
+        ],
+        "senseCount": 2,
+        "gloss": "to live; life",
+        "example": "生活。",
+        "exampleTranslation": "My life.",
+        "corpusExamples": [],
+        "corpusUses": 0,
+        "role": null
+      }
+    ]
+  },
+  "generatedAt": "2026-08-27T11:09:15.207Z",
+  "level": 3,
+  "levelName": "HSK 3",
+  "model": "groq:openai/gpt-oss-120b:low",
+  "policy": {
+    "version": "fab9-bundle-policy@1",
+    "requiredMin": 2,
+    "requiredMax": 4,
+    "opportunityMax": 3,
+    "deferralsBeforePriority": 2
+  },
+  "pool": [
+    {
+      "word": "被",
+      "timesDeferred": 0,
+      "lastDeferredAt": "2026-08-26",
+      "lastContextualExposure": "2026-08-27",
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "中",
+      "timesDeferred": 0,
+      "lastDeferredAt": "2026-08-26",
+      "lastContextualExposure": "2026-08-27",
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "如果",
+      "timesDeferred": 1,
+      "lastDeferredAt": "2026-08-27",
+      "lastContextualExposure": "2026-08-26",
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "该",
+      "timesDeferred": 0,
+      "lastDeferredAt": "2026-08-26",
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "需要",
+      "timesDeferred": 1,
+      "lastDeferredAt": "2026-08-27",
+      "lastContextualExposure": "2026-08-26",
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "像",
+      "timesDeferred": 0,
+      "lastDeferredAt": "2026-08-26",
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "认为",
+      "timesDeferred": 0,
+      "lastDeferredAt": "2026-08-26",
+      "lastContextualExposure": "2026-08-26",
+      "weakness": 0,
+      "pendingExposures": 2
+    },
+    {
+      "word": "生活",
+      "timesDeferred": 3,
+      "lastDeferredAt": "2026-08-27",
+      "lastContextualExposure": null,
+      "weakness": 0,
+      "pendingExposures": 2
+    }
+  ],
+  "judgement": {
+    "roles": [
+      {
+        "word": "被",
+        "hasRole": true,
+        "reason": "marks the passive voice, needed for sentences like “书被风吹走了”。"
+      },
+      {
+        "word": "中",
+        "hasRole": true,
+        "reason": "indicates a location or state “在教室中”。"
+      },
+      {
+        "word": "如果",
+        "hasRole": true,
+        "reason": "introduces a condition, essential for “如果下雨”。"
+      },
+      {
+        "word": "该",
+        "hasRole": true,
+        "reason": "modal verb meaning “should/ought to”, e.g., “他该回家”。"
+      },
+      {
+        "word": "需要",
+        "hasRole": true,
+        "reason": "expresses necessity, e.g., “我需要雨伞”。"
+      },
+      {
+        "word": "像",
+        "hasRole": true,
+        "reason": "used for comparison, e.g., “像猫一样”。"
+      },
+      {
+        "word": "认为",
+        "hasRole": true,
+        "reason": "reports a person's thought, e.g., “我认为他会来”。"
+      },
+      {
+        "word": "生活",
+        "hasRole": false,
+        "reason": "too abstract for a single concrete scene; it describes overall existence rather than a specific, observable event."
+      }
+    ],
+    "bundle": [
+      "如果",
+      "需要",
+      "该",
+      "认为"
+    ],
+    "situation": "下雨时，张明发现自己没有带伞，认为如果去便利店买伞，他该马上回家。"
+  },
+  "raw": "被: ROLE | marks the passive voice, needed for sentences like “书被风吹走了”。  \n中: ROLE | indicates a location or state “在教室中”。  \n如果: ROLE | introduces a condition, essential for “如果下雨”。  \n该: ROLE | modal verb meaning “should/ought to”, e.g., “他该回家”。  \n需要: ROLE | expresses necessity, e.g., “我需要雨伞”。  \n像: ROLE | used for comparison, e.g., “像猫一样”。  \n认为: ROLE | reports a person's thought, e.g., “我认为他会来”。  \n生活: NO_ROLE | too abstract for a single concrete scene; it describes overall existence rather than a specific, observable event.  \n\nBUNDLE: 如果, 需要, 该, 认为  \nSITUATION: 下雨时，张明发现自己没有带伞，认为如果去便利店买伞，他该马上回家。",
+  "error": null,
+  "selection": {
+    "version": "fab9-bundle@3",
+    "policy": {
+      "version": "fab9-bundle-policy@1",
+      "requiredMin": 2,
+      "requiredMax": 4,
+      "opportunityMax": 3,
+      "deferralsBeforePriority": 2
+    },
+    "situation": "下雨时，张明发现自己没有带伞，认为如果去便利店买伞，他该马上回家。",
+    "required": [
+      "如果",
+      "需要",
+      "该",
+      "认为"
+    ],
+    "opportunity": [
+      "被",
+      "中",
+      "像"
+    ],
+    "deferred": [
+      "生活"
+    ],
+    "toppedUp": [],
+    "stated": true,
+    "enough": true,
+    "incomplete": null,
+    "rows": [
+      {
+        "word": "被",
+        "hasRole": true,
+        "reason": "marks the passive voice, needed for sentences like “书被风吹走了”。",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "OPPORTUNITY"
+      },
+      {
+        "word": "中",
+        "hasRole": true,
+        "reason": "indicates a location or state “在教室中”。",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "OPPORTUNITY"
+      },
+      {
+        "word": "如果",
+        "hasRole": true,
+        "reason": "introduces a condition, essential for “如果下雨”。",
+        "judged": true,
+        "priority": 102,
+        "timesDeferred": 1,
+        "bundle": "REQUIRED"
+      },
+      {
+        "word": "该",
+        "hasRole": true,
+        "reason": "modal verb meaning “should/ought to”, e.g., “他该回家”。",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "REQUIRED"
+      },
+      {
+        "word": "需要",
+        "hasRole": true,
+        "reason": "expresses necessity, e.g., “我需要雨伞”。",
+        "judged": true,
+        "priority": 102,
+        "timesDeferred": 1,
+        "bundle": "REQUIRED"
+      },
+      {
+        "word": "像",
+        "hasRole": true,
+        "reason": "used for comparison, e.g., “像猫一样”。",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "OPPORTUNITY"
+      },
+      {
+        "word": "认为",
+        "hasRole": true,
+        "reason": "reports a person's thought, e.g., “我认为他会来”。",
+        "judged": true,
+        "priority": 2,
+        "timesDeferred": 0,
+        "bundle": "REQUIRED"
+      },
+      {
+        "word": "生活",
+        "hasRole": false,
+        "reason": "too abstract for a single concrete scene; it describes overall existence rather than a specific, observable event.",
+        "judged": true,
+        "priority": 1302,
+        "timesDeferred": 3,
+        "bundle": "DEFERRED"
+      }
+    ]
+  },
+  "premise": {
+    "version": "fab9-premise@1",
+    "text": "下雨时，张明发现自己没有带伞，认为如果去便利店买伞，他该马上回家。",
+    "verdict": "OK",
+    "cost": 0,
+    "offListWords": 0,
+    "assisted": [],
+    "unsayable": [],
+    "policy": {
+      "version": "fab9-premise-policy@1",
+      "costMax": 4,
+      "offListMax": 1
+    }
+  },
+  "meanings": {
+    "被": "quilt; to cover (with)",
+    "中": "China; Chinese",
+    "如果": "if; in case",
+    "该": "should; ought to",
+    "需要": "to need; to want; to demand; to require; needs",
+    "像": "to resemble; to be like",
+    "认为": "to believe; to think; to consider; to feel",
+    "生活": "to live; life"
+  }
+}
