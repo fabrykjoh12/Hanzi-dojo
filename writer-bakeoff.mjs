@@ -54,6 +54,10 @@ const writerSpecs = String(arg('writers', '') || '').split(',').map(s => s.trim(
 const judgeSpec = arg('judge', null)
 const outDir = arg('out', null)
 const totalLines = parseInt(arg('lines', '26'), 10)
+// A reasoning model spends its thinking against the same max_tokens ceiling, so
+// the 400 the scaffold defaults to is a budget for one model and a gag for
+// another. writer-bake-1 lost all eight realizations to it.
+const scaffoldTokens = parseInt(arg('scaffold-tokens', '900'), 10)
 
 if (!inputPath || !shapeFrom || !labels.length || !writerSpecs.length || !outDir) {
   console.error('Required: --input <dump> --shape-from <bakeoff.json> --labels A,B --writers p:m[:effort],... --out <dir> [--judge p:m]')
@@ -123,10 +127,26 @@ for (const plan of plans) {
         buildTitlePrompt: titlePrompt, parseTitle,
         buildSketchPrompt: targetSketchPrompt, parseSketch,
         buildAnchorsPrompt: beatAnchorsPrompt, parseAnchors,
+        maxTokens: scaffoldTokens,
       })
+      // Stored whether it passed or not: a scaffold failure is a result about
+      // the writer, and the reason is the only part worth having.
+      record.scaffold = {
+        ok: scaffold.ok,
+        log: (scaffold.log || []).map(l => ({
+          piece: l.piece, beat: l.beat || null, word: l.word || null,
+          attempt: l.attempt, ok: l.ok,
+          output: String(l.output || '').slice(0, 160),
+          why: (l.problems || []).map(f => (f && f.message) || String(f)).join('; ').slice(0, 240),
+        })),
+      }
       if (!scaffold.ok) {
         record.code = 'SCAFFOLD_FAILED'
-        record.detail = (scaffold.log || []).filter(l => !l.ok).map(l => l.piece + (l.beat ? '/' + l.beat : '')).join(', ')
+        const bad = (scaffold.log || []).filter(l => !l.ok)
+        record.detail = bad.map(l => l.piece + (l.beat ? '/' + l.beat : '')).join(', ')
+        const firstBad = record.scaffold.log.find(l => !l.ok)
+        record.firstReason = firstBad ? (firstBad.piece + (firstBad.beat ? '/' + firstBad.beat : '') + ': ' + firstBad.why + '  [got: ' + firstBad.output + ']') : null
+        record.scaffoldCode = scaffold.code || null
       } else {
         const withScaffold = applyScaffold(plan.blueprint, scaffold)
         const realized = await realizeByBeat({
