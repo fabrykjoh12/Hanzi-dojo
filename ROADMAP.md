@@ -1,9 +1,9 @@
 # 🗺️ Hanzi Dojo Roadmap
 
-The living plan for what's next. **Once a change to this file reaches `main`, it
-updates the pinned `#roadmap` post in Discord** (via
-`.github/workflows/roadmap-live-sync.yml`), so the community always sees the
-latest. Keep it current — move things to **Shipped** as they land.
+The living plan for what's next. **Editing this file automatically posts an
+update to the `#roadmap` channel in Discord** (via `.github/workflows/discord-notify.yml`),
+so the community always sees the latest. Keep it current — move things to
+**Shipped** as they land.
 
 > **What we're building toward:** *No streaks. No leagues. No guilt. Just real
 > progress* — a memory engine, graded stories, and a tutor that only speaks words
