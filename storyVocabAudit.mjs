@@ -36,12 +36,28 @@ import {
 } from './src/storyReading.js'
 import { glossSenses } from './storyLexicalRisk.mjs'
 
-export const VOCAB_AUDIT_VERSION = 'fab9-vocab-audit@1'
+export const VOCAB_AUDIT_VERSION = 'fab9-vocab-audit@2'
 
+// The learner-facing failure, one primary class per unique lexical form. The
+// classes exist to name the layer that owns the repair, and two of them were
+// previously collapsed into one: a character the CURRICULUM lists but the DB
+// lost is an ingestion bug, while a character that is merely a piece of a
+// compound the course teaches is not a missing row at all — the course never
+// taught it. Calling both "source-data defect" is what this split fixes.
 export const DEFECT = {
-  COMPONENT_ONLY: 'COMPONENT_ONLY',
-  ABSENT: 'ABSENT',
-  NAME: 'NAME',
+  // The curriculum source lists this standalone word; the database has no row.
+  CURRICULUM_ROW_MISSING: 'CURRICULUM_ROW_MISSING',
+  // The story used a word the learner does not have and the course does not
+  // teach at any level.
+  OUT_OF_CURRICULUM: 'OUT_OF_CURRICULUM',
+  // The character appears inside a compound the course teaches, and nothing
+  // more. 火车 ("train") does not teach 火 ("fire"). NOT evidence of knowledge.
+  MORPHEME_OF_COMPOUND: 'MORPHEME_OF_COMPOUND',
+  // A canonical story entity — a person's name — which is deliberately outside
+  // ordinary vocabulary.
+  CANON_ENTITY: 'CANON_ENTITY',
+  // The reader's segmenter grouped or split the text wrongly.
+  SEGMENTATION: 'SEGMENTATION',
 }
 
 const CJK = /[一-鿿]/
@@ -72,33 +88,46 @@ export function untappableRuns({ content, vocabMap = {}, language = 'chinese' } 
  * `hosts` names the vocabulary words that contain it — the provenance for a
  * COMPONENT_ONLY verdict, so a reader of the audit can check it.
  */
-export function classifyRun(run, { vocabMap = {}, knownNames = [] } = {}) {
+export function classifyRun(run, { vocabMap = {}, knownNames = [], curriculum = null } = {}) {
   const r = String(run || '')
   if (!r) return null
   // Exact match, never containment: 石 is "stone" and 火 is "fire", and both
   // are substrings of characters' names in this corpus. A run is a name when it
   // IS the name.
   if (knownNames.some(n => String(n) === r)) {
-    return { run: r, defect: DEFECT.NAME, hosts: [], layer: 'segmentation' }
+    return { run: r, defect: DEFECT.CANON_ENTITY, hosts: [], layer: 'canon/names' }
+  }
+  // A multi-character run that the vocabulary does not carry, whose pieces it
+  // DOES carry, is the segmenter gluing two things together — not a word.
+  if (r.length > 1 && !vocabMap[r] && [...r].every(ch => vocabMap[ch])) {
+    return { run: r, defect: DEFECT.SEGMENTATION, hosts: [...r], layer: 'segmentation' }
+  }
+  // The curriculum source is the authority on whether a standalone row SHOULD
+  // exist. Without it this distinction cannot be made, and the run falls
+  // through to the weaker classes below.
+  if (curriculum && curriculum.has(r)) {
+    return { run: r, defect: DEFECT.CURRICULUM_ROW_MISSING, hosts: [], layer: 'ingestion' }
   }
   const hosts = []
   for (const w of Object.keys(vocabMap)) {
     if (w.length > r.length && w.includes(r)) hosts.push(w)
     if (hosts.length >= 6) break
   }
-  if (!hosts.length) return { run: r, defect: DEFECT.ABSENT, hosts: [], layer: 'content' }
+  if (!hosts.length) return { run: r, defect: DEFECT.OUT_OF_CURRICULUM, hosts: [], layer: 'story content' }
   hosts.sort((a, b) => ((vocabMap[a] || {}).level || 99) - ((vocabMap[b] || {}).level || 99))
   return {
     run: r,
-    defect: DEFECT.COMPONENT_ONLY,
+    defect: DEFECT.MORPHEME_OF_COMPOUND,
     hosts: hosts.slice(0, 4),
     hostLevel: (vocabMap[hosts[0]] || {}).level || null,
-    layer: 'source-data',
+    // Deliberately NOT 'source-data': the course does not teach this word, and
+    // the compound containing it is not evidence that it should.
+    layer: 'story content or curriculum decision',
   }
 }
 
 /** The whole audit over a corpus, grouped by defect class. */
-export function auditCorpus({ stories = [], vocabMap = {}, language = 'chinese' } = {}) {
+export function auditCorpus({ stories = [], vocabMap = {}, language = 'chinese', curriculum = null } = {}) {
   const totals = new Map()
   const seenIn = new Map()
   const names = new Set()
@@ -112,7 +141,7 @@ export function auditCorpus({ stories = [], vocabMap = {}, language = 'chinese' 
     }
   }
   const rows = [...totals.entries()].map(([run, occurrences]) => ({
-    ...classifyRun(run, { vocabMap, knownNames: [...names] }),
+    ...classifyRun(run, { vocabMap, knownNames: [...names], curriculum }),
     occurrences,
     stories: seenIn.get(run).size,
   })).sort((a, b) => b.occurrences - a.occurrences)
@@ -149,5 +178,68 @@ export function glossCoverage(word, { vocabMap = {}, expectedSenses = [] } = {})
     missing,
     reason: missing.length ? 'no sense is headed by: ' + missing.join(', ') : null,
     layer: 'source-data',
+  }
+}
+
+// ── The publishability invariant (FAB-9 §4, 2026-08-27) ─────────────────────
+//
+// Every learner-facing Mandarin token in a published story must resolve through
+// the SAME segmentation and lookup path the Reader uses, or be a canonical
+// non-vocabulary entity (a character's name). Nothing else may ship.
+//
+// It reuses untappableRuns(), which calls the production segmentLine with the
+// production matcher, names and segmenter — there is deliberately no second
+// implementation of segmentation here, because an invariant enforced against a
+// copy of the logic tests the copy.
+//
+// This is NOT enforced against the existing corpus: 204 published stories carry
+// 652 such occurrences today, and turning that into a build failure would make
+// the repository unbuildable. It is a gate for NEW publication, and a repair
+// backlog for what is already out.
+export function publishable(story, { vocabMap = {}, language = 'chinese', curriculum = null } = {}) {
+  const content = String((story && story.content) || '')
+  const names = storyNamesFor(content, vocabMap, language)
+  const known = Object.keys(names || {})
+  const offenders = []
+  for (const [run, occurrences] of untappableRuns({ content, vocabMap, language })) {
+    const c = classifyRun(run, { vocabMap, knownNames: known, curriculum })
+    // A canonical entity resolved by the Reader's own name path is the one
+    // permitted non-vocabulary token.
+    if (c.defect === DEFECT.CANON_ENTITY) continue
+    offenders.push({ ...c, occurrences })
+  }
+  return {
+    version: VOCAB_AUDIT_VERSION,
+    ok: offenders.length === 0,
+    title: (story && story.title) || null,
+    offenders,
+    occurrences: offenders.reduce((n, o) => n + o.occurrences, 0),
+  }
+}
+
+/** How much of an existing corpus would fail the invariant, and why. */
+export function publishabilityBlastRadius({ stories = [], vocabMap = {}, language = 'chinese', curriculum = null } = {}) {
+  const perStory = stories.map(s => ({ story: s.id || s.title, level: s.level, ...publishable(s, { vocabMap, language, curriculum }) }))
+  const failing = perStory.filter(r => !r.ok)
+  const byDefect = new Map()
+  for (const r of failing) {
+    for (const o of r.offenders) {
+      if (!byDefect.has(o.defect)) byDefect.set(o.defect, { defect: o.defect, layer: o.layer, forms: new Set(), occurrences: 0, stories: new Set() })
+      const e = byDefect.get(o.defect)
+      e.forms.add(o.run)
+      e.occurrences += o.occurrences
+      e.stories.add(r.story)
+    }
+  }
+  return {
+    version: VOCAB_AUDIT_VERSION,
+    stories: stories.length,
+    failing: failing.length,
+    passing: stories.length - failing.length,
+    matrix: [...byDefect.values()].map(e => ({
+      defect: e.defect, layer: e.layer,
+      uniqueForms: e.forms.size, occurrences: e.occurrences, stories: e.stories.size,
+    })).sort((a, b) => b.occurrences - a.occurrences),
+    perStory,
   }
 }

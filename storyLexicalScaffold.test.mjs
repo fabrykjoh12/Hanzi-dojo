@@ -244,8 +244,11 @@ describe('the shape is locked', () => {
     expect(checkTitle('找护照', { manifest: m, vocabMap }).ok).toBe(true)
     expect(checkTitle('Passport', { manifest: m, vocabMap }).problems.join(' ')).toContain('Latin')
     expect(checkTitle('森林的故事', { manifest: m, vocabMap }).problems.join(' ')).toContain('above-level')
-    expect(checkTitle('找', { manifest: m, vocabMap }).problems.join(' ')).toContain('characters')
-    expect(SCAFFOLD_VERSION).toBe('fab9-scaffold@5')
+    // One character is a valid title — 岛 and 疼 are published — so the length
+    // rule only catches an over-long one now.
+    expect(checkTitle('找', { manifest: m, vocabMap }).ok).toBe(true)
+    expect(checkTitle('找'.repeat(13), { manifest: m, vocabMap }).problems.join(' ')).toContain('characters')
+    expect(SCAFFOLD_VERSION).toBe('fab9-scaffold@6')
   })
 })
 
@@ -457,8 +460,15 @@ describe('title length is the length of the title', () => {
     expect(r.problems.join(' ')).not.toMatch(/characters \(need/)
   })
 
-  it('still rejects a title that is genuinely too short', () => {
-    expect(checkTitle('伞', { manifest, vocabMap }).problems.join(' ')).toMatch(/1 characters/)
+  it('accepts a one-character title, because the corpus already ships them', () => {
+    // 岛 ("island") and 疼 ("pain") are published story titles today. The
+    // minimum of 2 was an accidental validator assumption, not a product rule,
+    // and it discarded an otherwise valid story titled 伞 ("umbrella").
+    expect(checkTitle('伞', { manifest, vocabMap }).problems.join(' ')).not.toMatch(/characters \(need/)
+  })
+
+  it('rejects an empty title', () => {
+    expect(checkTitle('', { manifest, vocabMap }).problems).toContain('no title')
   })
 
   it('still rejects a title that is genuinely too long', () => {

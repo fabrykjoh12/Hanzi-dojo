@@ -33,7 +33,7 @@ import { retrieveCandidates, stem } from './storyLexicalRetrieval.mjs'
 import { classifySketch, repairBrief, checkRepairDrift } from './storySketchRepair.mjs'
 import { glossSenses } from './storyLexicalRisk.mjs'
 
-export const SCAFFOLD_VERSION = 'fab9-scaffold@5'
+export const SCAFFOLD_VERSION = 'fab9-scaffold@6'
 
 // A beat's toolkit needs three usable words and has never needed more than
 // six. a3-final-2 threw away 后来、门口、女人、拿、不用 — five valid words — because
@@ -42,7 +42,13 @@ export const SCAFFOLD_VERSION = 'fab9-scaffold@5'
 // word, and the invalid ones are simply dropped.
 export const ANCHOR_BOUNDS = { min: 3, max: 6 }
 
-export const TITLE_BOUNDS = { min: 2, max: 12 }
+// min 1, not 2. The published corpus already ships one-character titles — 岛
+// ("island") and 疼 ("pain") — so the Reader and the card UI plainly render
+// them, and no product or design document states a minimum. The 2 was an
+// accidental validator assumption, and it cost the writer bakeoff an otherwise
+// valid story titled 伞 ("umbrella"). Whether a one-character title is a GOOD
+// title is a story-quality question for the judge, not a format rule.
+export const TITLE_BOUNDS = { min: 1, max: 12 }
 
 // The title is Chinese the reader has to read, so it obeys the story's own
 // vocabulary rules — the same check validateBlueprint applies to a finished
