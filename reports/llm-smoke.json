@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-27T12:24:09.750Z",
+  "generatedAt": "2026-08-27T13:46:55.274Z",
   "keyPresence": {
     "GEMINI_API_KEY": {
       "present": true,
@@ -30,7 +30,7 @@
     "gemini": {
       "ok": true,
       "status": 200,
-      "latencyMs": 156,
+      "latencyMs": 171,
       "models": [
         "antigravity-preview-05-2026",
         "deep-research-max-preview-04-2026",
@@ -75,7 +75,7 @@
     "groq": {
       "ok": true,
       "status": 200,
-      "latencyMs": 187,
+      "latencyMs": 168,
       "models": [
         "allam-2-7b",
         "canopylabs/orpheus-arabic-saudi",
@@ -98,27 +98,19 @@
   "results": [
     {
       "provider": "gemini",
+      "model": "gemini-2.5-flash",
+      "ok": false,
+      "status": 429,
+      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
+      "latencyMs": 160
+    },
+    {
+      "provider": "gemini",
       "model": "gemini-2.5-pro",
       "ok": false,
       "status": 429,
       "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 161
-    },
-    {
-      "provider": "gemini",
-      "model": "gemini-3.1-pro-preview",
-      "ok": false,
-      "status": 429,
-      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 155
-    },
-    {
-      "provider": "gemini",
-      "model": "gemini-3.6-flash",
-      "ok": false,
-      "status": 429,
-      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
-      "latencyMs": 126
+      "latencyMs": 147
     }
   ]
 }
