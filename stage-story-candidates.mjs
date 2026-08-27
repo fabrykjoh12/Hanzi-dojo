@@ -77,14 +77,13 @@ const corpus = existingRows.filter(r => r.is_published && String(r.content || ''
 const vocabRows = await fetchAllPages(() => supabase
   .from('vocabulary').select('word, level')
   .eq('language', 'chinese').eq('system', 'hsk_3').eq('is_active', true), 'Vocabulary')
-// The curriculum authority — the committed build artifacts. It is what lets a
-// refusal say WHY a token is unresolved, and it never widens what resolves.
+// The curriculum authority — the upstream word list, not the build artifacts,
+// which are the build's own output and cannot reveal what it dropped. Used only
+// to explain WHY a token is unresolved; it never widens what resolves.
 const curriculum = new Set()
-for (const f of ['data/hsk3.json', 'data/hsk4.json', 'data/hsk5.json', 'data/hsk6.json']) {
-  if (existsSync(f)) for (const r of JSON.parse(readFileSync(f, 'utf8'))) curriculum.add(r.word)
-}
-for (const f of ['data/hsk1-vocab-snapshot.json', 'data/hsk2-vocab-snapshot.json', 'data/hsk3-vocab-snapshot.json']) {
-  if (existsSync(f)) for (const r of JSON.parse(readFileSync(f, 'utf8'))) curriculum.add(Array.isArray(r) ? r[0] : r.word)
+if (existsSync('data/hsk-curriculum-bands.json')) {
+  const bands = JSON.parse(readFileSync('data/hsk-curriculum-bands.json', 'utf8')).bands || {}
+  for (const [word, band] of Object.entries(bands)) if (band <= 6) curriculum.add(word)
 }
 
 const vocabMap = {}

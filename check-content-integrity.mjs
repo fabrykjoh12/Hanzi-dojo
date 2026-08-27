@@ -25,6 +25,10 @@ const args = process.argv.slice(2)
 const update = args.includes('--update-baseline')
 const json = args.includes('--json')
 const BASELINE = 'data/content-integrity-baseline.json'
+const CURRICULUM = 'data/hsk-curriculum-bands.json'
+// The bands the app actually teaches. A band-7 word is outside the course, not
+// a lost row.
+const MAX_LEVEL = 6
 
 const url = process.env.SUPABASE_URL
 const key = process.env.SUPABASE_SERVICE_KEY
@@ -55,24 +59,27 @@ const stories = await fetchAll('stories', 'id, title, level, content, language, 
 const vocabMap = {}
 for (const v of vocab) if (v && v.word && !vocabMap[v.word]) vocabMap[v.word] = v
 
-// The curriculum authority: every word the committed build artifacts list. It
-// is what separates "the database lost a row the course teaches" from "the
-// course never taught this word", and without it that distinction cannot be
-// made at all.
+// The curriculum authority. NOT the committed data/hsk<N>.json build
+// artifacts: those are the OUTPUT of the build, so asking them whether a word
+// should exist is circular — they cannot reveal what the build dropped, and
+// hskEntryToRow drops a word entirely whenever its forms[0] is a surname or a
+// "variant of" cross-reference. 船, 纸, 怕 and 关 are HSK 3 words that vanished
+// exactly that way. data/hsk-curriculum-bands.json is derived from the upstream
+// word list itself and is the only thing that can tell "the database lost a row
+// the course teaches" from "the course never taught this word".
 const curriculum = new Set()
-for (const f of ['data/hsk3.json', 'data/hsk4.json', 'data/hsk5.json', 'data/hsk6.json']) {
-  if (!existsSync(f)) continue
-  for (const r of JSON.parse(readFileSync(f, 'utf8'))) curriculum.add(r.word)
-}
-for (const f of ['data/hsk1-vocab-snapshot.json', 'data/hsk2-vocab-snapshot.json', 'data/hsk3-vocab-snapshot.json']) {
-  if (!existsSync(f)) continue
-  for (const r of JSON.parse(readFileSync(f, 'utf8'))) curriculum.add(Array.isArray(r) ? r[0] : r.word)
+if (existsSync(CURRICULUM)) {
+  const bands = JSON.parse(readFileSync(CURRICULUM, 'utf8')).bands || {}
+  for (const [word, band] of Object.entries(bands)) if (band <= MAX_LEVEL) curriculum.add(word)
+} else {
+  console.error('missing ' + CURRICULUM + ' — cannot tell a lost row from a word the course never taught.')
+  process.exit(2)
 }
 
 const current = collectDebt({ stories, vocabMap, curriculum })
 console.log('corpus: ' + stories.length + ' published Chinese stories, '
   + Object.keys(vocabMap).length + ' learner-facing vocabulary rows, '
-  + curriculum.size + ' words in the committed curriculum artifacts')
+  + curriculum.size + ' curriculum words at bands 1-' + MAX_LEVEL + ')')
 console.log('debt:   ' + current.occurrences + ' occurrences of ' + current.forms
   + ' distinct forms across ' + current.storiesWithDebt + ' stories\n')
 
