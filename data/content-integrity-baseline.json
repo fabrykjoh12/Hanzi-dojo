@@ -232,7 +232,7 @@
    "title": "5. 星期五的火车",
    "level": 5,
    "form": "关",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -256,7 +256,7 @@
    "title": "5. 星期五的火车",
    "level": 5,
    "form": "火",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -280,7 +280,7 @@
    "title": "5. 星期五的火车",
    "level": 5,
    "form": "闻",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -288,7 +288,7 @@
    "title": "4. 高楼下面",
    "level": 4,
    "form": "张",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -344,7 +344,7 @@
    "title": "4. 两个人的谈话",
    "level": 5,
    "form": "阳台",
-   "defect": "OUT_OF_CURRICULUM",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -376,7 +376,7 @@
    "title": "5. 六点半的石头",
    "level": 5,
    "form": "关",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -384,7 +384,7 @@
    "title": "5. 六点半的石头",
    "level": 5,
    "form": "张",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -392,7 +392,7 @@
    "title": "2. 另外一个城市",
    "level": 5,
    "form": "关",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -408,7 +408,7 @@
    "title": "2. 水下面的地",
    "level": 4,
    "form": "墙",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -416,7 +416,7 @@
    "title": "2. 水下面的地",
    "level": 4,
    "form": "干",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -440,7 +440,7 @@
    "title": "2. 水下面的地",
    "level": 4,
    "form": "闻",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -496,7 +496,7 @@
    "title": "3. 星期六上午十点",
    "level": 6,
    "form": "封",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -512,7 +512,7 @@
    "title": "12. 岛",
    "level": 2,
    "form": "岛",
-   "defect": "OUT_OF_CURRICULUM",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 11
   },
   {
@@ -520,7 +520,7 @@
    "title": "12. 岛",
    "level": 2,
    "form": "海",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 3
   },
   {
@@ -560,7 +560,7 @@
    "title": "12. 岛",
    "level": 2,
    "form": "船",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 4
   },
   {
@@ -584,7 +584,7 @@
    "title": "1. 妈妈的电话",
    "level": 5,
    "form": "业",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -592,7 +592,7 @@
    "title": "1. 妈妈的电话",
    "level": 5,
    "form": "墙",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -656,7 +656,7 @@
    "title": "4. 奶奶的话",
    "level": 5,
    "form": "怕",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -664,7 +664,7 @@
    "title": "1. 一个箱子",
    "level": 6,
    "form": "张",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -696,7 +696,7 @@
    "title": "3. 一个坏消息",
    "level": 5,
    "form": "句",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -728,7 +728,7 @@
    "title": "3. 一个坏消息",
    "level": 5,
    "form": "管",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -760,7 +760,7 @@
    "title": "4. 阿水不喝水",
    "level": 1,
    "form": "船",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -792,7 +792,7 @@
    "title": "3. 水里面",
    "level": 3,
    "form": "救",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -808,7 +808,7 @@
    "title": "5. 我们去一个岛",
    "level": 1,
    "form": "岛",
-   "defect": "OUT_OF_CURRICULUM",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 6
   },
   {
@@ -816,7 +816,7 @@
    "title": "5. 我们去一个岛",
    "level": 1,
    "form": "海",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -864,7 +864,7 @@
    "title": "2. 第一天",
    "level": 4,
    "form": "红",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -912,7 +912,7 @@
    "title": "4. 一张纸",
    "level": 4,
    "form": "张",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -920,7 +920,7 @@
    "title": "4. 一张纸",
    "level": 4,
    "form": "留",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -928,7 +928,7 @@
    "title": "4. 一张纸",
    "level": 4,
    "form": "纸",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 7
   },
   {
@@ -968,7 +968,7 @@
    "title": "3. 楼上的房间",
    "level": 5,
    "form": "关",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -976,7 +976,7 @@
    "title": "3. 楼上的房间",
    "level": 5,
    "form": "布",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1016,7 +1016,7 @@
    "title": "5. 一年一封",
    "level": 6,
    "form": "湿",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1024,7 +1024,7 @@
    "title": "5. 一年一封",
    "level": 6,
    "form": "留",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1056,7 +1056,7 @@
    "title": "6. 我们的歌",
    "level": 1,
    "form": "张",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1088,7 +1088,7 @@
    "title": "5. 一样的味道",
    "level": 4,
    "form": "张",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1096,7 +1096,7 @@
    "title": "5. 一样的味道",
    "level": 4,
    "form": "红",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1104,7 +1104,7 @@
    "title": "5. 农民回到田里",
    "level": 2,
    "form": "田",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1144,7 +1144,7 @@
    "title": "4. 楼下的椅子",
    "level": 6,
    "form": "句",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1152,7 +1152,7 @@
    "title": "4. 楼下的椅子",
    "level": 6,
    "form": "张",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1160,7 +1160,7 @@
    "title": "4. 楼下的椅子",
    "level": 6,
    "form": "碗",
-   "defect": "OUT_OF_CURRICULUM",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1184,7 +1184,7 @@
    "title": "4. 我写错了",
    "level": 3,
    "form": "张",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1200,7 +1200,7 @@
    "title": "1. 名字在上面",
    "level": 4,
    "form": "张",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1208,7 +1208,7 @@
    "title": "1. 名字在上面",
    "level": 4,
    "form": "米",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1216,7 +1216,7 @@
    "title": "1. 名字在上面",
    "level": 4,
    "form": "纸",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 3
   },
   {
@@ -1256,7 +1256,7 @@
    "title": "1. 写错地址的信",
    "level": 6,
    "form": "封",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1288,7 +1288,7 @@
    "title": "7. 这是谁的城",
    "level": 2,
    "form": "句",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1296,7 +1296,7 @@
    "title": "7. 这是谁的城",
    "level": 2,
    "form": "夜",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1312,7 +1312,7 @@
    "title": "7. 这是谁的城",
    "level": 2,
    "form": "火",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1344,7 +1344,7 @@
    "title": "4. 一张纸和一个盒子",
    "level": 5,
    "form": "修",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1360,7 +1360,7 @@
    "title": "4. 一张纸和一个盒子",
    "level": 5,
    "form": "布",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1376,7 +1376,7 @@
    "title": "4. 一张纸和一个盒子",
    "level": 5,
    "form": "纸",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1384,7 +1384,7 @@
    "title": "11. 十九个",
    "level": 2,
    "form": "岛",
-   "defect": "OUT_OF_CURRICULUM",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1408,7 +1408,7 @@
    "title": "4. 五楼",
    "level": 4,
    "form": "怕",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1416,7 +1416,7 @@
    "title": "3. 别人的意见",
    "level": 5,
    "form": "怕",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1432,7 +1432,7 @@
    "title": "3. 关着的门",
    "level": 4,
    "form": "关",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1448,7 +1448,7 @@
    "title": "3. 关着的门",
    "level": 4,
    "form": "布",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1456,7 +1456,7 @@
    "title": "3. 关着的门",
    "level": 4,
    "form": "干",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1472,7 +1472,7 @@
    "title": "3. 关着的门",
    "level": 4,
    "form": "纸",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1480,7 +1480,7 @@
    "title": "1. 新的地方",
    "level": 1,
    "form": "方",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1488,7 +1488,7 @@
    "title": "12. 城的名字",
    "level": 2,
    "form": "火",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1504,7 +1504,7 @@
    "title": "4. 两天以后",
    "level": 6,
    "form": "封",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 4
   },
   {
@@ -1520,7 +1520,7 @@
    "title": "4. 两天以后",
    "level": 6,
    "form": "纸",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1528,7 +1528,7 @@
    "title": "2. 一天七个",
    "level": 1,
    "form": "船",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1552,7 +1552,7 @@
    "title": "3. 海上都是海",
    "level": 1,
    "form": "海",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1576,7 +1576,7 @@
    "title": "3. 海上都是海",
    "level": 1,
    "form": "船",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1624,7 +1624,7 @@
    "title": "2. 一个星期的准备",
    "level": 6,
    "form": "句",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1672,7 +1672,7 @@
    "title": "1. 三天的雨",
    "level": 4,
    "form": "深",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1680,7 +1680,7 @@
    "title": "1. 三天的雨",
    "level": 4,
    "form": "湿",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1720,7 +1720,7 @@
    "title": "5. 第三十一封",
    "level": 6,
    "form": "封",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1728,7 +1728,7 @@
    "title": "5. 第三十一封",
    "level": 6,
    "form": "念",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1744,7 +1744,7 @@
    "title": "5. 第三十一封",
    "level": 6,
    "form": "纸",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1768,7 +1768,7 @@
    "title": "3. 每天都是这样",
    "level": 3,
    "form": "怕",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1784,7 +1784,7 @@
    "title": "5. 四个版本",
    "level": 6,
    "form": "假",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1808,7 +1808,7 @@
    "title": "1. 第一个星期",
    "level": 5,
    "form": "句",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1840,7 +1840,7 @@
    "title": "1. 第一个星期",
    "level": 5,
    "form": "米",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1864,7 +1864,7 @@
    "title": "新的决定",
    "level": 3,
    "form": "怕",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1888,7 +1888,7 @@
    "title": "5. 奶奶的意见",
    "level": 5,
    "form": "墙",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1912,7 +1912,7 @@
    "title": "2. 妈妈也不知道",
    "level": 4,
    "form": "宽",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1920,7 +1920,7 @@
    "title": "2. 妈妈也不知道",
    "level": 4,
    "form": "张",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -1960,7 +1960,7 @@
    "title": "6. 火族来了",
    "level": 2,
    "form": "火",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 7
   },
   {
@@ -1968,7 +1968,7 @@
    "title": "13. 上岛",
    "level": 3,
    "form": "岛",
-   "defect": "OUT_OF_CURRICULUM",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 3
   },
   {
@@ -1976,7 +1976,7 @@
    "title": "13. 上岛",
    "level": 3,
    "form": "海",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -1984,7 +1984,7 @@
    "title": "13. 上岛",
    "level": 3,
    "form": "船",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -2000,7 +2000,7 @@
    "title": "1. 一只跑得很快的兔子",
    "level": 2,
    "form": "田",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2016,7 +2016,7 @@
    "title": "4. 七月的账",
    "level": 5,
    "form": "汤",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2024,7 +2024,7 @@
    "title": "4. 七月的账",
    "level": 5,
    "form": "碗",
-   "defect": "OUT_OF_CURRICULUM",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2040,7 +2040,7 @@
    "title": "4. 七月的账",
    "level": 5,
    "form": "费",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2048,7 +2048,7 @@
    "title": "17. 第一天我就知道了",
    "level": 3,
    "form": "海",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2072,7 +2072,7 @@
    "title": "5. 四个小时",
    "level": 5,
    "form": "关",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2088,7 +2088,7 @@
    "title": "5. 四个小时",
    "level": 5,
    "form": "查",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -2096,7 +2096,7 @@
    "title": "5. 四个小时",
    "level": 5,
    "form": "红",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2152,7 +2152,7 @@
    "title": "2. 照片上的房间",
    "level": 5,
    "form": "提",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2176,7 +2176,7 @@
    "title": "2. 照片上的房间",
    "level": 5,
    "form": "管",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2192,7 +2192,7 @@
    "title": "2. 照片上的房间",
    "level": 5,
    "form": "阳台",
-   "defect": "OUT_OF_CURRICULUM",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -2208,7 +2208,7 @@
    "title": "2. 一个月",
    "level": 5,
    "form": "业",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -2224,7 +2224,7 @@
    "title": "3. 老王的新菜单",
    "level": 5,
    "form": "墙",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2248,7 +2248,7 @@
    "title": "4. 田怎么了",
    "level": 2,
    "form": "田",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2280,7 +2280,7 @@
    "title": "3. 他直接问了",
    "level": 6,
    "form": "封",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2288,7 +2288,7 @@
    "title": "3. 他直接问了",
    "level": 6,
    "form": "怕",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2320,7 +2320,7 @@
    "title": "11. 一个晚上",
    "level": 2,
    "form": "墙",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 7
   },
   {
@@ -2328,7 +2328,7 @@
    "title": "11. 一个晚上",
    "level": 2,
    "form": "夜",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2336,7 +2336,7 @@
    "title": "11. 一个晚上",
    "level": 2,
    "form": "火",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 3
   },
   {
@@ -2352,7 +2352,7 @@
    "title": "10. 一个也不走",
    "level": 2,
    "form": "句",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2360,7 +2360,7 @@
    "title": "10. 一个也不走",
    "level": 2,
    "form": "墙",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 3
   },
   {
@@ -2368,7 +2368,7 @@
    "title": "10. 一个也不走",
    "level": 2,
    "form": "夜",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 4
   },
   {
@@ -2376,7 +2376,7 @@
    "title": "10. 一个也不走",
    "level": 2,
    "form": "火",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -2424,7 +2424,7 @@
    "title": "2. 第二天",
    "level": 2,
    "form": "田",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2448,7 +2448,7 @@
    "title": "9. 山那边的人",
    "level": 2,
    "form": "夜",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2456,7 +2456,7 @@
    "title": "9. 山那边的人",
    "level": 2,
    "form": "山",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2464,7 +2464,7 @@
    "title": "9. 山那边的人",
    "level": 2,
    "form": "火",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2496,7 +2496,7 @@
    "title": "1. 一封回信",
    "level": 6,
    "form": "封",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2504,7 +2504,7 @@
    "title": "1. 一封回信",
    "level": 6,
    "form": "念",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 3
   },
   {
@@ -2520,7 +2520,7 @@
    "title": "3. 奶奶记得",
    "level": 4,
    "form": "盖",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2528,7 +2528,7 @@
    "title": "3. 奶奶记得",
    "level": 4,
    "form": "闻",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2536,7 +2536,7 @@
    "title": "5. 第二天早上",
    "level": 3,
    "form": "田",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -2568,7 +2568,7 @@
    "title": "14. 没有人说不",
    "level": 3,
    "form": "岛",
-   "defect": "OUT_OF_CURRICULUM",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2576,7 +2576,7 @@
    "title": "14. 没有人说不",
    "level": 3,
    "form": "海",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2600,7 +2600,7 @@
    "title": "3. 一天的工作",
    "level": 3,
    "form": "田",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2656,7 +2656,7 @@
    "title": "7. 我跟着他",
    "level": 2,
    "form": "船",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2688,7 +2688,7 @@
    "title": "2. 学校里",
    "level": 1,
    "form": "白",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2696,7 +2696,7 @@
    "title": "1. 没有人的地方",
    "level": 2,
    "form": "夜",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2712,7 +2712,7 @@
    "title": "1. 没有人的地方",
    "level": 2,
    "form": "火",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2744,7 +2744,7 @@
    "title": "6. 十一月",
    "level": 5,
    "form": "墙",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2760,7 +2760,7 @@
    "title": "5. 白天和晚上",
    "level": 2,
    "form": "夜",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 3
   },
   {
@@ -2784,7 +2784,7 @@
    "title": "5. 白天和晚上",
    "level": 2,
    "form": "立",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2792,7 +2792,7 @@
    "title": "5. 七百多天",
    "level": 4,
    "form": "修",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -2824,7 +2824,7 @@
    "title": "8. 出去七个，回来六个",
    "level": 2,
    "form": "岛",
-   "defect": "OUT_OF_CURRICULUM",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 3
   },
   {
@@ -2832,7 +2832,7 @@
    "title": "8. 出去七个，回来六个",
    "level": 2,
    "form": "船",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 3
   },
   {
@@ -2896,7 +2896,7 @@
    "title": "5. 一个月以后",
    "level": 6,
    "form": "封",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -2904,7 +2904,7 @@
    "title": "5. 一个月以后",
    "level": 6,
    "form": "张",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2920,7 +2920,7 @@
    "title": "5. 一个月以后",
    "level": 6,
    "form": "纸",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 5
   },
   {
@@ -2936,7 +2936,7 @@
    "title": "10. 这个水不是我的",
    "level": 2,
    "form": "船",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -2968,7 +2968,7 @@
    "title": "5. 早上六点",
    "level": 4,
    "form": "全",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -2976,7 +2976,7 @@
    "title": "5. 早上六点",
    "level": 4,
    "form": "墙",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 3
   },
   {
@@ -2984,7 +2984,7 @@
    "title": "5. 早上六点",
    "level": 4,
    "form": "张",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -2992,7 +2992,7 @@
    "title": "5. 早上六点",
    "level": 4,
    "form": "碗",
-   "defect": "OUT_OF_CURRICULUM",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -3000,7 +3000,7 @@
    "title": "5. 早上六点",
    "level": 4,
    "form": "纸",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -3016,7 +3016,7 @@
    "title": "坚持",
    "level": 3,
    "form": "怕",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -3040,7 +3040,7 @@
    "title": "8. 阿山会什么",
    "level": 2,
    "form": "夜",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -3048,7 +3048,7 @@
    "title": "8. 阿山会什么",
    "level": 2,
    "form": "火",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -3096,7 +3096,7 @@
    "title": "2. 上去看一看",
    "level": 3,
    "form": "怕",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -3120,7 +3120,7 @@
    "title": "1. 下雪了",
    "level": 1,
    "form": "白",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -3136,7 +3136,7 @@
    "title": "1. 对面开了一家店",
    "level": 5,
    "form": "关",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -3144,7 +3144,7 @@
    "title": "1. 对面开了一家店",
    "level": 5,
    "form": "墙",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -3168,7 +3168,7 @@
    "title": "1. 第七个人",
    "level": 1,
    "form": "海",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -3184,7 +3184,7 @@
    "title": "1. 第七个人",
    "level": 1,
    "form": "船",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -3216,7 +3216,7 @@
    "title": "2. 最后一次",
    "level": 5,
    "form": "步",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -3248,7 +3248,7 @@
    "title": "3. 风族不住下",
    "level": 2,
    "form": "山",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -3304,7 +3304,7 @@
    "title": "16. 我等了三年",
    "level": 3,
    "form": "船",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 6
   },
   {
@@ -3360,7 +3360,7 @@
    "title": "4. 三十封信",
    "level": 6,
    "form": "句",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -3368,7 +3368,7 @@
    "title": "4. 三十封信",
    "level": 6,
    "form": "封",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 15
   },
   {
@@ -3376,7 +3376,7 @@
    "title": "4. 三十封信",
    "level": 6,
    "form": "念",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 4
   },
   {
@@ -3424,7 +3424,7 @@
    "title": "2. 住在这里的人",
    "level": 6,
    "form": "封",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -3456,7 +3456,7 @@
    "title": "9. 你为什么在这个船上",
    "level": 2,
    "form": "岛",
-   "defect": "OUT_OF_CURRICULUM",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
@@ -3472,7 +3472,7 @@
    "title": "1. 大毛不见了",
    "level": 5,
    "form": "留",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 1
   },
   {
@@ -3504,7 +3504,7 @@
    "title": "18. 八个人",
    "level": 3,
    "form": "岛",
-   "defect": "OUT_OF_CURRICULUM",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 3
   },
   {
@@ -3512,7 +3512,7 @@
    "title": "18. 八个人",
    "level": 3,
    "form": "船",
-   "defect": "MORPHEME_OF_COMPOUND",
+   "defect": "CURRICULUM_ROW_MISSING",
    "occurrences": 2
   },
   {
