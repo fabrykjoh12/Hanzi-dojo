@@ -25,7 +25,7 @@
 
 import { renderSenses } from './storyWordSenses.mjs'
 
-export const BUNDLE_VERSION = 'fab9-bundle@2'
+export const BUNDLE_VERSION = 'fab9-bundle@3'
 
 export const BUNDLE = { REQUIRED: 'REQUIRED', OPPORTUNITY: 'OPPORTUNITY', DEFERRED: 'DEFERRED' }
 
@@ -69,11 +69,32 @@ export function bundlePrompt({ pool, levelName, meanings = {}, senses = null, po
     + '2. For the words that do have a role: which of them fit in ONE story together, without inventing a separate subplot for each?\n'
     + '   Choose ' + policy.requiredMin + '-' + policy.requiredMax + ' words that share one ordinary situation. '
     + 'A natural story teaching three words is better than a contrived one teaching eight — the rest will come back in a later story.\n\n'
+    // Bundle-1 read three abstract glosses — if / need / think — and answered
+    // "A friend asking for advice on a conditional life choice, such as whether
+    // to accept a new job." That sentence became manifest.theme verbatim, and
+    // all six plans it produced were job-offer deliberations that no HSK 3
+    // vocabulary could carry. The words were never the problem: 如果/需要/认为
+    // cost nothing. The situation cost 21 before a beat was planned, because
+    // advice, conditional, choice and job are not sayable at this level.
+    //
+    // So the situation is asked for as something a reader could SEE, and its
+    // own words are scored by the same lexical gate the story is (see
+    // storyPremiseRisk.mjs). Grammar words describe how people talk about a
+    // scene; they never require the scene itself to be abstract.
+    + 'THE SITUATION MUST BE CONCRETE, and it must be sayable with the words a '
+    + levelName + ' learner has.\n'
+    + '   Write something a reader could SEE happening: an object, a place, a small everyday problem between two people. '
+    + 'Rain and no umbrella. A broken bicycle. A lost key. A cat that will not come down.\n'
+    + '   Grammatical and mental words (if, need, think, should, seem) are how people TALK about an ordinary scene — '
+    + 'they do not make the scene itself abstract. Do not answer with a topic like advice, a choice, a decision, options, a plan, '
+    + 'an opportunity or a situation: those are English summaries of a scene, not a scene, and none of them can be said at this level.\n'
+    + '   Do NOT name an example to illustrate it — write the one situation you actually mean.\n'
+    + '   Use ordinary concrete words. If you cannot say what physically happens, choose different words for the bundle.\n\n'
     + 'Output exactly this, and nothing else:\n'
     + '<word>: ROLE or NO_ROLE | <the role it would play, or why it has none> \n'
     + '(one line per candidate word, then)\n'
     + 'BUNDLE: <the words that belong in one story together, comma separated>\n'
-    + 'SITUATION: <the one everyday situation they share, in a few words>'
+    + 'SITUATION: <one concrete everyday scene, one sentence, no example>'
 }
 
 export function parseBundleJudgment(out, words = []) {

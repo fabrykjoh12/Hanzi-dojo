@@ -611,7 +611,7 @@ export function parseBlueprintJudgment(text, labels, dimensions) {
 // piece of Chinese is asked for on its own, against the vocabulary, and
 // checked before the next piece is requested.
 
-export function storyShapePrompt({ manifest, meanings = {}, totalLines, targets = null, feedback = null }) {
+export function storyShapePrompt({ manifest, meanings = {}, totalLines, targets = null, feedback = null, variation = null }) {
   const name = levelName(manifest)
   const need = targets || manifest.targets.map(t => t.word)
   const list = manifest.targets
@@ -630,7 +630,22 @@ export function storyShapePrompt({ manifest, meanings = {}, totalLines, targets 
     + 'Internal thought does not make a new speaker: if ' + manifest.speakers[0] + ' thinks something, the speaker is "' + manifest.speakers[0] + '" — never "' + manifest.speakers[0] + ' (internal thought)".\n'
     + 'If a story idea needs another person, choose a different story idea.\n\n'
     + 'Words the finished story must teach. Each REQUIRED word needs a beat where a person would genuinely need it:\n' + list + '\n\n'
-    + (manifest.theme ? 'Theme: ' + manifest.theme + '\n\n' : '')
+    // The planner bakeoff produced six candidates that were all variants of one
+    // job-offer deliberation, and all six were lexically infeasible. The theme
+    // was "A friend asking for advice on a conditional life choice, such as
+    // whether to accept a new job" — an abstract English premise with a worked
+    // example, printed here as a bare requirement. The example acted as a
+    // template and the abstraction set the frame: advice, conditional, choice
+    // and job cost 62 points across the six plans, and the planner's own
+    // elaboration of that frame (offer, options, guidance, pros, cons) cost
+    // 180 more. The three TARGET words cost nothing at all.
+    //
+    // So the theme is offered as a starting point that may be reframed, and
+    // the concreteness rule below now names the class that actually broke —
+    // abstract nouns — not just the specialist concrete nouns it used to.
+    + (manifest.theme ? 'Starting point (a suggestion, not a requirement): ' + manifest.theme + '\n'
+      + 'If that situation cannot be told with ordinary words a ' + name + ' learner has, tell a DIFFERENT, simpler story with the same required words. The words matter; the suggestion does not.\n\n' : '')
+    + (variation ? variation + '\n\n' : '')
     + 'Rules:\n'
     + '- ONE central problem. No subplots, no side quests, nothing invented just to fit a word in.\n'
     + '- 5 or 6 beats. Every beat after the first happens BECAUSE of the beat before it — "because → therefore", never "and then".\n'
@@ -648,6 +663,13 @@ export function storyShapePrompt({ manifest, meanings = {}, totalLines, targets 
     + '- Nothing happens before the thing it depends on. Nobody appears where they could not be.\n'
     + '- The ending resolves the problem the story started with.\n'
     + '- Keep it ordinary and concrete, and keep it SAYABLE by a beginner: everyday places, small stakes, ordinary objects. A scene needing specialist words (tools, equipment, machinery, food names) cannot be written at this level — plan a different scene.\n'
+    // The specialist-noun rule above never fired on the failing plans, because
+    // nothing in them was specialist. What broke them was the opposite kind of
+    // word: an abstraction with no picture behind it.
+    + '- The story must be about something a reader could SEE. An ABSTRACT NOUN cannot be said at this level either, and it is the easier mistake to make: advice, a choice, options, a decision, a plan, an opportunity, an offer, a suggestion, guidance, pros and cons, a conflict, a perspective, a situation, pressure, a factor, details.\n'
+    + '  Those are English summaries of a scene, not a scene. Write what actually happens instead: someone says what they think, someone asks for help, someone cannot do the thing they came to do.\n'
+    + '  A person can NEED an umbrella, THINK the bus is late, and say what happens IF it rains — grammar and thinking words belong in a concrete scene. They are not a reason to make the scene itself abstract.\n'
+    + '- Every beat needs at least one thing you could photograph: an object, a place, a physical action. A beat where two people only discuss, weigh, consider or decide something is not a beat that can be written at this level.\n'
     + '- The whole story is exactly ' + totalLines + ' lines. Give each beat a share (2-8 lines) adding up to about ' + totalLines + '.\n'
     + '- If a REQUIRED word has no place where it would naturally be needed, list it in "impossibleTargets" instead of forcing it.\n\n'
     + 'Output JSON only, no commentary, exactly this shape:\n'

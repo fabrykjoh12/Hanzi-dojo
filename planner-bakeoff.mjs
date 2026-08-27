@@ -109,7 +109,22 @@ console.log('  required: ' + required.join('、'))
 console.log('  cast: ' + manifest.speakers.join('、') + '\n')
 
 // ── Generate ────────────────────────────────────────────────────────────────
-const prompt = storyShapePrompt({ manifest, meanings, totalLines, targets: required })
+// One prompt, sampled N times, is N paraphrases of one story. The six frozen
+// candidates were all job-offer deliberations because the manifest carried one
+// theme with one worked example, and every attempt saw it — "materially
+// different premises" was not something the harness could produce. Each attempt
+// now gets its own instruction to find a DIFFERENT concrete situation, and is
+// shown what the earlier attempts already used. Nothing about the story is
+// prescribed: the variation is a constraint to diverge, not a list of plots.
+const DIVERGE = (used) => (used.length
+  ? ['Other planners have already used these situations for these words: ' + used.join(' / ') + '.',
+    'Find a DIFFERENT everyday situation — a different place, a different object, a different small problem.',
+    'It must not be a variation on any of the above.'].join(' ')
+  : null)
+const promptFor = (used) => storyShapePrompt({
+  manifest, meanings, totalLines, targets: required, variation: DIVERGE(used),
+})
+const usedSituations = []
 const candidates = []
 const stored = rejudgePath ? JSON.parse(readFileSync(rejudgePath, 'utf8')) : null
 if (stored) {
@@ -124,8 +139,10 @@ for (const p of (stored ? [] : planners)) {
     let plan = null
     let error = null
     try {
-      raw = await p.send({ kind: 'shape', prompt, maxTokens: 2600 })
+      raw = await p.send({ kind: 'shape', prompt: promptFor(usedSituations), maxTokens: 2600 })
       plan = parseBlueprint(raw)
+      // What this attempt actually chose, so the next one can avoid it.
+      if (plan && plan.problem) usedSituations.push(String(plan.problem).slice(0, 90))
     } catch (err) { error = String(err.message || err).slice(0, 160) }
     const latencyMs = Date.now() - startedAt
     // The planner writes `location` and `transition_from_previous`; the

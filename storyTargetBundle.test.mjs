@@ -195,6 +195,43 @@ describe('reinforcement debt — deferred means later, not never', () => {
     expect(pool.find(p => p.word === '关系').timesDeferred).toBe(2)
     // and now it outranks everything the moment a context exists
     expect(reinforcementPriority(pool.find(p => p.word === '关系'))).toBeGreaterThan(1000)
-    expect(BUNDLE_VERSION).toBe('fab9-bundle@2')
+    expect(BUNDLE_VERSION).toBe('fab9-bundle@3')
+  })
+})
+
+// bundle-1 answered "A friend asking for advice on a conditional life choice,
+// such as whether to accept a new job." That sentence became manifest.theme and
+// cost 21 points before a beat was planned, while the three words it was
+// choosing for — 如果 / 需要 / 认为 — cost nothing. The prompt now asks for a
+// scene rather than a topic, and says so in the terms that failed.
+describe('the situation must be a scene, not an English summary of one', () => {
+  const prompt = bundlePrompt({
+    pool: [{ word: '如果', level: 3 }, { word: '需要', level: 3 }, { word: '认为', level: 3 }],
+    levelName: 'HSK 3',
+    meanings: { 如果: 'if; in case', 需要: 'to need', 认为: 'to think' },
+  })
+
+  it('asks for something the reader could see', () => {
+    expect(prompt).toMatch(/CONCRETE/)
+    expect(prompt).toMatch(/could SEE happening/)
+    expect(prompt).toMatch(/sayable with the words a HSK 3 learner has/)
+  })
+
+  it('names the abstractions that actually broke it, as a class', () => {
+    for (const word of ['advice', 'a choice', 'a decision', 'options', 'an opportunity']) {
+      expect(prompt).toContain(word)
+    }
+  })
+
+  it('says grammar words do not make the scene abstract', () => {
+    // The whole defect in one sentence: the judge read if/need/think and
+    // concluded the STORY had to be about deliberation.
+    expect(prompt).toMatch(/do not make the scene itself abstract/)
+  })
+
+  it('refuses the worked example that acted as a template', () => {
+    // "such as whether to accept a new job" — all six candidates used a job.
+    expect(prompt).toMatch(/Do NOT name an example/)
+    expect(prompt).toMatch(/no example/)
   })
 })

@@ -20,6 +20,8 @@ import {
   BUNDLE_POLICY, BUNDLE_VERSION,
 } from './storyTargetBundle.mjs'
 import { wordSenses, SENSES_VERSION } from './storyWordSenses.mjs'
+import { buildLexicalIndexes } from './storyLexicalRisk.mjs'
+import { assessPremise, PREMISE, PREMISE_VERSION } from './storyPremiseRisk.mjs'
 
 const arg = (name, fallback = null) => {
   const i = process.argv.indexOf('--' + name)
@@ -82,11 +84,31 @@ try {
 } catch (err) { error = String((err && err.message) || err).slice(0, 300) }
 if (error) console.error('\nbundle judgement failed: ' + error)
 
+const lexIndexes = buildLexicalIndexes(vocabMap, level)
 const selection = selectBundle(judgement || { roles: [], bundle: [], situation: '' }, { pool })
 const at = new Date().toISOString().slice(0, 10)
 const nextDebt = applyDeferral(debt, selection, { at })
 
+// The situation becomes manifest.theme verbatim and the shape prompt prints
+// it, so it is scored by the same lexical gate the story is — before any plan
+// is written. bundle-1's "A friend asking for advice on a conditional life
+// choice, such as whether to accept a new job" cost 21 with four unsayable
+// words, while the three targets it was choosing for cost nothing.
+const premise = selection.situation
+  ? assessPremise(selection.situation, { vocabMap, level, indexes: lexIndexes })
+  : null
 console.log('\nSITUATION: ' + (selection.situation || '(none proposed)'))
+if (premise) {
+  console.log('  premise gate: ' + premise.verdict + '  cost ' + premise.cost
+    + '  off-list ' + premise.offListWords + '/' + premise.policy.offListMax)
+  for (const a of premise.assisted) {
+    console.log('    ' + a.concept.padEnd(16) + (a.offList ? 'NOT SAYABLE at any level' : 'taps ' + a.word) + '  cost ' + a.cost)
+  }
+  if (premise.verdict !== PREMISE.OK) {
+    console.log('  → this premise spends the story\'s budget before a beat exists.')
+    console.log('    Unsayable: ' + (premise.unsayable.join(', ') || '(none)'))
+  }
+}
 console.log('\nword   disposition    reason')
 for (const r of selection.rows) {
   console.log('  ' + r.word.padEnd(6) + r.bundle.padEnd(15) + String(r.reason || '').slice(0, 88))
@@ -111,6 +133,7 @@ writeFileSync(join(outDir, 'bundle.json'), JSON.stringify({
   raw: String(rawOut || '').slice(0, 2000),
   error,
   selection,
+  premise: premise ? { version: PREMISE_VERSION, ...premise } : null,
   meanings: Object.fromEntries(pool.map(p => [p.word, meanings[p.word] || null])),
 }, null, 2) + '\n')
 mkdirSync(debtPath.split('/').slice(0, -1).join('/') || '.', { recursive: true })

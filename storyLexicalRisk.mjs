@@ -137,12 +137,21 @@ export function beatConceptPos(text) {
   tokens.forEach((t, i) => {
     if (pos.has(t)) return
     const back = [tokens[i - 1], tokens[i - 2]].filter(Boolean)
-    if (back.some(w => DETERMINERS.has(w))) { pos.set(t, 'noun'); return }
+    // A determiner binds to the word right after it, and to one behind an
+    // adjective — "the flat TIRE". It does NOT reach across another noun:
+    // in "a friend ASKING for advice" the determiner already belongs to
+    // "friend", and reading "asking" as a noun put 问 out of reach. An -ing
+    // or -ed form at that distance is a participle, so let the verb mark win.
+    // Immediately after a determiner it is a noun even so — "the MEETING",
+    // "the BUILDING".
+    const participle = /(?:ing|ed)$/.test(t) && t.length > 4
+    if (DETERMINERS.has(tokens[i - 1])) { pos.set(t, 'noun'); return }
+    if (!participle && back.some(w => DETERMINERS.has(w))) { pos.set(t, 'noun'); return }
     // -ing and -ed are reliable verb marks. A trailing -s is NOT: in these
     // beats it is a plural noun far more often than a third-person verb, and
     // treating it as one forced 邻居 (HSK 3, "neighbor"), 谢谢 (HSK 1, "thank
     // you") and every other plural off the list and into the assisted budget.
-    if (/(?:ing|ed)$/.test(t) && t.length > 4) { pos.set(t, 'verb'); return }
+    if (participle) { pos.set(t, 'verb'); return }
     // A comparative is known by its frame, not by -er: "is quieter", "even
     // deeper", "quieter than". Without the frame, -er is agentive or simply
     // part of the word, and corner is not a form of corn.
