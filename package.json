@@ -26,6 +26,7 @@
     "tts:integration": "node --env-file=.env.script tts-integration-check.mjs",
     "tts:retry-failed": "node --env-file=.env.script tts-generate.mjs --retry-failed",
     "verify:native-fonts": "node tools/verify-native-fonts.mjs",
+    "verify:pr": "npm run lint && npm test && npm run build && npm run build:public && npm run verify:public-bundle && node tools/verify-app-icons.mjs",
     "verify:public-bundle": "node tools/verify-public-bundle.mjs"
   },
   "dependencies": {

@@ -1,13 +1,15 @@
 name: CI
 
-# The gate. Lint, unit tests and build run on every pull request and on every
-# push to main.
+# The gate. `npm run verify:pr` runs on every pull request and on every push to
+# main. That npm script — not this file — is the definition of what the gate
+# is; see package.json.
 #
 # Before this existed the only PR check was Playwright (e2e.yml) — so the ~1,700
 # vitest specs, the ESLint baseline and the build itself never blocked a merge,
 # and since most work went straight to `main` (which auto-deploys to Vercel), a
-# red suite could reach real users. These three commands are the same ones
-# `/ship` runs locally; keep the two in step.
+# red suite could reach real users. `/ship` runs the same command, so a local
+# pass and a CI pass mean the same thing by construction rather than by anyone
+# remembering to keep two lists in step.
 #
 # Push is limited to main (matching e2e.yml): a branch with a PR used to run
 # the same job twice per commit — once for the push, once for the PR event —
@@ -42,36 +44,28 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Unit tests
-        run: npm test
-
+      # The whole gate, in one command. `npm run verify:pr` is the executable
+      # source of truth: CI runs it, `/ship` runs it, and an agent verifying its
+      # own work runs it — so none of them can pass a gate the others would
+      # fail. It used to be six steps open-coded here, which drifted: CLAUDE.md
+      # and /ship both still described "the three checks CI runs" long after
+      # this job grew to six.
+      #
+      # What it covers, in this order, and why the order is load-bearing:
+      #   1. lint            — 0 errors in src/
+      #   2. unit tests      — the full vitest suite
+      #   3. build           — the Sites variant, which also emits hq.html
+      #   4. build:public    — the bundle the App Store and Play actually ship
+      #   5. verify:public-bundle — nothing internal inside that bundle
+      #   6. verify-app-icons     — the assets the App Store would reject
+      # Steps 3 and 4 both write dist/client, and step 5 inspects whatever built
+      # last. Reordering them makes the guard check the wrong artifact and pass
+      # for the wrong reason. verification-contract.test.mjs pins the order.
+      #
       # No secrets: src/supabase.js only reads VITE_SUPABASE_* at runtime, so a
       # build with them unset still compiles. This checks the bundle, not config.
-      - name: Build
-        run: npm run build
-
-      # `npm run build` is the *Sites* variant — it emits hq.html alongside the
-      # app. The bundle the App Store and Play actually ship is `build:public`
-      # (DOJO_PUBLIC_BUILD=1), and until now no PR check ever ran it, so a
-      # store-only regression could pass every gate. It reuses dist/, so it runs
-      # after the Sites build rather than instead of it.
-      - name: Build (public / store bundle)
-        run: npm run build:public
-
-      # What must not be inside the store bundle, checked against the artifact
-      # rather than against the source: Dojo HQ and its localhost Claude bridge,
-      # the Sites-only entry points, and the personal identifier that once
-      # shipped from devTools.js (docs/RELEASE-BLOCKER-REMEDIATION.md §3).
-      # support@hanzi-dojo.com is the published address and stays allowed.
-      # The rules live in tools/verify-public-bundle.mjs and are unit-tested by
-      # public-bundle-guard.test.mjs.
-      - name: Verify the store bundle carries nothing internal
-        run: npm run verify:public-bundle
-
-      # The App Store rejects an iOS icon with alpha or padding, and the icon is
-      # authored by a generator — so the assets are checked, not assumed.
-      - name: Verify app icons
-        run: node tools/verify-app-icons.mjs
+      #
+      # Playwright is deliberately NOT here — it stays its own PR job in
+      # e2e.yml. Native (build:native + the font guard) is not here either yet.
+      - name: Verify (lint, tests, both builds, bundle + icon guards)
+        run: npm run verify:pr
