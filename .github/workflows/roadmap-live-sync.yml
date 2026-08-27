@@ -36,8 +36,10 @@ name: Roadmap live sync
 #   target is attempted before the run fails.
 #
 # Secrets (a target whose webhook is unset simply skips):
-#   DISCORD_ROADMAP_WEBHOOK  → #roadmap
-#   DISCORD_BACKLOG_WEBHOOK  → the private #backlog channel
+#   DISCORD_ROADMAP_WEBHOOK  → #roadmap — an ENVIRONMENT secret on
+#                              `roadmap-discord`, NOT a repository secret. See
+#                              the note on the job below for why that matters.
+#   DISCORD_BACKLOG_WEBHOOK  → the private #backlog channel, same environment
 #
 # The rendering lives in .github/scripts/roadmap-render.mjs and is covered by
 # roadmap-render.test.mjs; the invariants in this file are pinned by
@@ -73,6 +75,32 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # THE INTENDED CREDENTIAL BOUNDARY — declared here, NOT YET IN FORCE.
+    #
+    # The design: DISCORD_ROADMAP_WEBHOOK becomes an ENVIRONMENT secret on
+    # `roadmap-discord`, an environment restricted to `main` with no bypass
+    # branches. As of 2026-08-27 the webhook is still a REPOSITORY secret, which
+    # is handed to runs on every ref, so this declaration gates nothing yet. The
+    # secret migration is deferred by choice; see docs/AUTOMATION-AUTHORITY.md.
+    #
+    # This is what makes the fix hold against branches we will never update. ~75
+    # branches still carry the pre-fix version of this workflow — non-main push
+    # trigger, `contents: write`, a Discord PATCH/POST, and a push to main — and
+    # GitHub runs a workflow from the tree of the ref that was pushed, so those
+    # copies stay live no matter what `main` says. Rewriting them all is not a
+    # security boundary; any branch created before today, or restored from a
+    # fork or a stale clone, brings the old file back.
+    #
+    # An environment restricted to `main` is a boundary those branches cannot
+    # cross: a run on any other ref is not granted the secret, so the webhook is
+    # simply absent and the sync script skips instead of reaching Discord. Stale
+    # code may exist; stale authority may not.
+    #
+    # The equivalent boundary for `main` itself IS active: a ruleset with an
+    # empty bypass list rejects every direct push, so those branches can no
+    # longer copy their docs onto `main` no matter what their workflow attempts.
+    # Discord is the half still outstanding.
+    environment: roadmap-discord
     steps:
       # `on.push.branches` already restricts pushes, but workflow_dispatch can
       # be aimed at any branch from the Actions UI. That is the one remaining
