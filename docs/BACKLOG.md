@@ -513,6 +513,66 @@ Also fixed here: a determiner two tokens back was tagging a gerund as a noun, so
 after it and to one behind an adjective, not across another noun — but *"the
 meeting"* stays a noun.
 
+### New candidate set on the fixed upstream — the premise problem is solved, the density one is not (2026-08-27)
+
+`bundle-concrete-3` → `bundle-plans-2` / `bundle-plans-2j`. Caps unchanged
+(cost 16, off-list 2, words 8, per-sentence 2); `optionalMax` still null.
+
+**The premise, before and after.** Same pedagogical target family, same level,
+same models, same per-model count:
+
+| | situation | premise gate |
+|---|---|---|
+| bundle-1 | *"A friend asking for advice on a conditional life choice, such as whether to accept a new job."* | **cost 21, 4 unsayable** (advice, conditional, choice, asking) |
+| bundle-concrete-3 | *"A student sees it's raining, realizes he needs an umbrella, and thinks he should ask a classmate to borrow one."* | **OK — cost 0, 0 off-list** |
+
+Required 如果 / 该 / 需要, opportunity 被 / 中 / 认为.
+
+**Candidate matrix.** All twelve costed with the corrected matcher.
+
+| set | # | model | q | targets | cost | off | words | /sent | premise |
+|---|---|---|---|---|---|---|---|---|---|
+| before | 0 | qwen | 9 | 3/3 | 33 | 2 | 11 | 4 | accept a new job |
+| before | 1 | qwen | 8 | 3/3 | 44 | 6 | 14 | 3 | accept a new job |
+| before | 2 | qwen | 9 | 3/3 | 59 | 7 | 18 | 4 | accept a new job |
+| before | 3 | gpt-oss | 6 | 3/3 | 28 | 4 | 9 | 2 | accept a new job |
+| before | 4 | gpt-oss | 6 | 3/3 | 31 | 5 | 9 | 3 | accept a new job |
+| before | 5 | gpt-oss | 4 | 3/3 | 46 | 9 | 13 | 4 | accept a new job |
+| after | 0 | qwen | 9 | 3/3 | 40 | 6 | 13 | 4 | caught in the rain, no umbrella |
+| after | 1 | qwen | 6 | 3/3 | 35 | 7 | 14 | 4 | borrowing a coat from her mother |
+| after | 2 | qwen | 5 | 3/3 | 29 | 4 | 9 | 2 | a bag too heavy to carry |
+| after | 3 | gpt-oss | 6 | 3/3 | 49 | 8 | 17 | 5 | needs paper to print a report |
+| after | **4** | gpt-oss | 5 | 3/3 | **12** | **1** | **6** | **3** | **a locker he has lost the key to** |
+| after | 5 | gpt-oss | 9 | 3/3 | — | — | — | — | forgotten lunch — UNSCORABLE, plan written in Chinese |
+
+**Premise diversity is fixed.** Six candidates, six different scenes — rain,
+a borrowed coat, a heavy bag, printer paper, a locked locker, a forgotten
+lunch — against six paraphrases of one job offer.
+
+**No candidate is feasible yet, but the failure changed shape.** Before, every
+plan failed four or five caps at once by two to four times. After, candidate 4
+clears **four of five** — cost 12/16, off-list 1/2, assisted words 6/8 — and
+fails only per-sentence density, 3 against 2, in two sentences. Its assisted
+vocabulary is all defensible: locker (nothing in the corpus at any level),
+备用 spare, 钥匙 key, 条件 condition, 原来 original.
+
+Per-sentence density is a *writing* constraint, not a premise one: the same
+words spread over more sentences would clear it. That is the next thing to
+work on, and it is downstream of everything this audit was about.
+
+**Nothing here justifies moving a threshold.** No candidate is both
+high-quality and feasible: the two 9s are candidate 0 (cost 40) and candidate 5
+(unscorable). Calibration still waits for a viable set.
+
+**Two false zeros found and fixed while running this.** The premise gate scored
+a Chinese situation as cost 0 (`fab9-premise@2` — UNSCORED with a reason,
+cost null), and `assessShapeRisk` scored a Chinese *plan* as cost 0 with zero
+assisted words, which made it rank as the only feasible candidate in the set
+(`fab9-risk@9` — refuses above 50% Chinese in the beat prose, excluding cast
+names and quoted target words; a presence test would have thrown away three of
+the six frozen plans, which legitimately write "he 认为 the new job is
+dangerous"). Both were gates answering without evidence.
+
 ### Target-bundle selection moved upstream, and the eligible set is finally non-empty (2026-08-26)
 
 Four stored plans had been through placement viability and every one failed on
