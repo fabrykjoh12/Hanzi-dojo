@@ -388,7 +388,9 @@ mean the same thing by construction. `/ship` runs it too and refuses to commit
 if it fails.
 
 Two things it does not cover: **Playwright e2e is a separate CI job**
-(`e2e.yml`), and **native/store build verification is separate** for now.
+(`e2e.yml`), and **native artifact verification is separate** for now — the
+Capacitor wrapper and the iOS/Android builds. The store *web bundle* is
+covered; `build:public` is exactly that build.
 
 That command, plus read-only git (`status`, `diff`, `log`, `show`), the
 **read-only** Supabase MCP tools (`list_*`, `get_*`, `search_docs`), and —

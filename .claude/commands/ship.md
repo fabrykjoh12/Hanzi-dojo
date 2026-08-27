@@ -17,8 +17,10 @@ failure here is a failure that would block the merge anyway, so catching it now
 just saves a round trip.
 
 Two things it deliberately does not cover, so don't treat a green run as
-covering them: Playwright e2e is its own PR job (`e2e.yml`), and native/store
-build verification is separate.
+covering them: Playwright e2e is its own PR job (`e2e.yml`), and native
+artifact verification — the Capacitor wrapper and the iOS/Android builds — is
+separate. The store *web bundle* is covered: `build:public` is one of its
+stages.
 
 If it passes:
 

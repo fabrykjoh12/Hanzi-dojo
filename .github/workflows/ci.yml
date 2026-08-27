@@ -2,7 +2,7 @@ name: CI
 
 # The gate. `npm run verify:pr` runs on every pull request and on every push to
 # main. That npm script — not this file — is the definition of what the gate
-# is; see package.json.
+# is; read package.json to see what it covers.
 #
 # Before this existed the only PR check was Playwright (e2e.yml) — so the ~1,700
 # vitest specs, the ESLint baseline and the build itself never blocked a merge,
@@ -44,28 +44,22 @@ jobs:
           cache: npm
       - run: npm ci
 
-      # The whole gate, in one command. `npm run verify:pr` is the executable
-      # source of truth: CI runs it, `/ship` runs it, and an agent verifying its
-      # own work runs it — so none of them can pass a gate the others would
-      # fail. It used to be six steps open-coded here, which drifted: CLAUDE.md
-      # and /ship both still described "the three checks CI runs" long after
-      # this job grew to six.
+      # The whole gate, in one command. `npm run verify:pr` in package.json is
+      # the executable source of truth for what the gate IS — deliberately not
+      # restated here, because a second description is a second thing to drift.
+      # This job used to open-code its stages, and CLAUDE.md and /ship both went
+      # on describing "the three checks CI runs" long after it had grown to six.
       #
-      # What it covers, in this order, and why the order is load-bearing:
-      #   1. lint            — 0 errors in src/
-      #   2. unit tests      — the full vitest suite
-      #   3. build           — the Sites variant, which also emits hq.html
-      #   4. build:public    — the bundle the App Store and Play actually ship
-      #   5. verify:public-bundle — nothing internal inside that bundle
-      #   6. verify-app-icons     — the assets the App Store would reject
-      # Steps 3 and 4 both write dist/client, and step 5 inspects whatever built
-      # last. Reordering them makes the guard check the wrong artifact and pass
-      # for the wrong reason. verification-contract.test.mjs pins the order.
-      #
-      # No secrets: src/supabase.js only reads VITE_SUPABASE_* at runtime, so a
-      # build with them unset still compiles. This checks the bundle, not config.
+      # Two things worth knowing that the script cannot say itself:
+      #   * Its stage ORDER is load-bearing. The build variants share dist/, and
+      #     the bundle guard inspects whatever built last — so a reordering
+      #     makes it check the wrong artifact and pass for the wrong reason.
+      #     verification-contract.test.mjs pins that order and adjacency.
+      #   * No secrets are needed. src/supabase.js only reads VITE_SUPABASE_* at
+      #     runtime, so a build with them unset still compiles. This checks the
+      #     bundle, not the configuration.
       #
       # Playwright is deliberately NOT here — it stays its own PR job in
-      # e2e.yml. Native (build:native + the font guard) is not here either yet.
-      - name: Verify (lint, tests, both builds, bundle + icon guards)
+      # e2e.yml.
+      - name: Verify (npm run verify:pr)
         run: npm run verify:pr

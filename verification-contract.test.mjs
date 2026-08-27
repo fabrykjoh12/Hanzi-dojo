@@ -87,9 +87,12 @@ describe('package.json defines the canonical gate', () => {
   })
 
   it('does not absorb the jobs that are deliberately separate', () => {
-    // Playwright stays its own CI job (sandbox-flaky, needs a browser install);
-    // native/store build verification is separate too. Folding either in here
-    // would make every local /ship pay for them and blur what a green means.
+    // Playwright stays its own CI job (sandbox-flaky, needs a browser install),
+    // and native ARTIFACT verification — the Capacitor wrapper and the
+    // iOS/Android builds — is separate too. Note the store *web bundle* is not
+    // in that carve-out: `build:public` is a stage above. Folding either of
+    // these in would make every local /ship pay for them and blur what a green
+    // run actually means.
     const script = PKG.scripts['verify:pr']
     expect(script).not.toContain('playwright')
     expect(script).not.toContain('npm run e2e')
@@ -119,6 +122,16 @@ describe('CI runs the canonical gate and nothing of its own', () => {
   it('still installs dependencies first', () => {
     const commands = runCommands(CI)
     expect(commands.indexOf('npm ci')).toBeLessThan(commands.indexOf(CANONICAL))
+  })
+
+  it('does not re-create the stage list in its comments either', () => {
+    // A comment listing all six stages is not executable, but it is still a
+    // second description of the gate, and second descriptions drift — that is
+    // the whole failure this PR is fixing. Naming ONE stage in passing is fine
+    // (a comment may need to explain a particular guard); enumerating them is
+    // rebuilding the list package.json already owns.
+    const named = REQUIRED_STAGES.filter(stage => CI.includes(stage))
+    expect(named, 'ci.yml re-enumerates the gate: ' + named.join(', ')).toHaveLength(0)
   })
 })
 
@@ -154,6 +167,18 @@ describe('the docs point at the gate instead of restating it', () => {
     const section = CLAUDE_MD.slice(CLAUDE_MD.indexOf('## 8.'), CLAUDE_MD.indexOf('## 9.'))
     expect(section.toLowerCase()).toContain('playwright')
     expect(section.toLowerCase()).toContain('native')
+  })
+
+  it('does not describe the carve-out as covering the store build', () => {
+    // "native/store build verification is separate" was the original wording
+    // and it is false: `build:public` IS the store web bundle and IS a stage of
+    // verify:pr. What is separate is the native ARTIFACT — the Capacitor
+    // wrapper and the iOS/Android builds. Reading it the wrong way would send
+    // someone re-verifying a bundle the gate already covers, or worse, assuming
+    // the store bundle is unguarded.
+    for (const [name, doc] of [['CLAUDE.md', CLAUDE_MD], ['ship.md', SHIP], ['parallel.md', PARALLEL]]) {
+      expect(doc.toLowerCase(), name + ' calls the store build unverified').not.toContain('native/store')
+    }
   })
 })
 
