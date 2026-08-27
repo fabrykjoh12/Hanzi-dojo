@@ -17,7 +17,19 @@ import fs from 'node:fs'
 const PREPARE = fs.readFileSync('.github/workflows/gate3-prepare.yml', 'utf8')
 const APPLY = fs.readFileSync('.github/workflows/gate3-apply.yml', 'utf8')
 
-const APPROVED_SHA = 'd0dcc5171d048b603b8e9a5c05d1cebcef273870'
+// Commit A of the loader-contract + snapshot-contract fix.
+//
+// Every pin this replaces stays named here, because "which commit was the bad
+// one" is exactly the thing nobody should have to remember:
+//   d0dcc51  produced the poisoned Gate 3 run 33014914945 — its review-log
+//            query omitted previous_state, so its classification is wrong.
+//   6e6344b  proposed but never approved: it fixed the loader and left the
+//            snapshot unable to restore learning_step.
+const APPROVED_SHA = '5bb8b38383dfb8c4c45cb5b89c34cc3423ea790b'
+const SUPERSEDED_SHAS = [
+  'd0dcc5171d048b603b8e9a5c05d1cebcef273870',
+  '6e6344b31f94157c9b4708fca9a2ca3cf782b981',
+]
 const FINGERPRINT = 'F1BAEB3D8E327B506E95E11F8DC40418467B259A'
 
 const lineOf = (text, needle) => {
@@ -47,6 +59,20 @@ describe('the production-code pin is intact', () => {
       expect(wf).not.toContain('ref: ${{ inputs.')
       expect(wf).not.toContain('ref: ${{ github.event.inputs.')
     }
+  })
+
+  it('neither workflow still points at a superseded pin', () => {
+    for (const wf of [PREPARE, APPLY]) {
+      for (const sha of SUPERSEDED_SHAS) {
+        expect(wf).not.toContain(`APPROVED_MIGRATION_SHA: '${sha}'`)
+      }
+    }
+  })
+
+  it('Apply enforces the binding through the tested helper, not inline YAML logic', () => {
+    // checkBundleBinding is unit-tested; an inline JSON comparison is not.
+    expect(APPLY).toContain('checkBundleBinding')
+    expect(APPLY).toContain('approvedSha: process.env.APPROVED_MIGRATION_SHA')
   })
 
   it('both verify the checkout actually landed on the pin', () => {
@@ -137,6 +163,29 @@ describe('Prepare stays read-only and leak-guarded', () => {
     expect(PREPARE).toContain('SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}')
     expect(PREPARE).toContain('SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}')
     expect(PREPARE).not.toContain('secrets.SUPABASE_URL }}')
+  })
+})
+
+describe('Prepare parses the snapshot log the script actually prints', () => {
+  // A workflow that greps a script's stdout is a seam, and this gate has
+  // already been bitten once by a seam nobody exercised. The coverage
+  // cross-check is only a check if its regexes still match the printer.
+  const SCRIPT = fs.readFileSync('migrate-legacy-claims.mjs', 'utf8')
+  const patterns = [...PREPARE.matchAll(/num\(\/(.+?)\/\)/g)].map(m => m[1])
+
+  it('finds the three coverage regexes', () => {
+    expect(patterns).toHaveLength(3)
+  })
+
+  it('each regex matches a line the snapshot printer emits', () => {
+    for (const source of patterns) {
+      const label = source.split('\\s+')[0]        // e.g. "convert rows"
+      // The printer still emits that exact label...
+      expect(SCRIPT).toContain("'  " + label + " ")
+      // ...and the regex still finds the number after it.
+      const rendered = '  ' + label + '  ' + String(42).padStart(6)
+      expect(new RegExp(source).exec(rendered)?.[1]).toBe('42')
+    }
   })
 })
 
