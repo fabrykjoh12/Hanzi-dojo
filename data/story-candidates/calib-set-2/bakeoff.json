@@ -1,0 +1,4860 @@
+{
+  "generatedAt": "2026-08-27T12:23:41.653Z",
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bundle-L3-001",
+    "batchId": "bundle",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "如果",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "该",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "被",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "中",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "认为",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "A student sees it’s raining, realizes he needs an umbrella, and thinks he should ask a classmate to borrow one.",
+    "seasonSeed": null,
+    "series": null,
+    "composition": {
+      "bucket": "bundle",
+      "reason": "A student sees it’s raining, realizes he needs an umbrella, and thinks he should ask a classmate to borrow one.",
+      "hard": [
+        {
+          "word": "如果"
+        },
+        {
+          "word": "该"
+        },
+        {
+          "word": "需要"
+        }
+      ],
+      "soft": [
+        {
+          "word": "被"
+        },
+        {
+          "word": "中"
+        },
+        {
+          "word": "认为"
+        }
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "required": [
+    "如果",
+    "该",
+    "需要"
+  ],
+  "perModel": 8,
+  "lexicalPolicy": {
+    "version": "fab9-assist@1",
+    "inLevelShareTarget": 0.9,
+    "inLevelSharePreferred": 0.95,
+    "assistedWordsPreferred": 4,
+    "assistedWordsMax": 8,
+    "assistedPerBeatPreferred": 1,
+    "assistedPerBeatMax": null,
+    "distanceCost": {
+      "1": 1,
+      "2": 2,
+      "3": 4
+    },
+    "farCost": 6,
+    "offListCost": 4,
+    "costBudget": 16,
+    "offListMax": 2,
+    "necessityWeight": {
+      "CENTRAL_NECESSARY": 0.75,
+      "NATURAL_SUPPORT": 1,
+      "OPTIONAL_COMPLEXITY": 1.5
+    },
+    "optionalMax": 3,
+    "optionalCostMax": null,
+    "assistedPerSentencePreferred": 1,
+    "assistedPerSentenceMax": 2
+  },
+  "thresholds": {
+    "overall": 6,
+    "causal": 6,
+    "chronology": 6,
+    "targetFit": 5
+  },
+  "models": [
+    "groq:qwen/qwen3.6-27b:none",
+    "groq:openai/gpt-oss-120b:medium"
+  ],
+  "judge": "groq:qwen/qwen3.6-27b:none",
+  "contract": "fab9-transition@1",
+  "rejudgedFrom": null,
+  "judgeLog": [
+    {
+      "labels": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "ok": true,
+      "error": null,
+      "raw": "PLAN A: CAUSAL 9 CHRONOLOGY 9 PLAUSIBILITY 7 SIMPLICITY 10 TARGETFIT 9 SUITABILITY 9 CONTRADICTION no OVERALL 8 — Strong structure and natural language targets; sink resolves easily without a drain cleaner, reducing dramatic tension/realism slightly.\nPLAN B: CAUSAL 6 CHRONOLOGY 5 PLAUSIBILITY 6 SIMPLICITY 9 TARGETFIT 5 SUITABILITY 7 CONTRADICTION yes OVERALL 5 — Teleports between rooms; conditional '如果' is forced; \"no flour\" premise contradicts the title concept logic.\nPLAN C: CAUSAL 8 CHRONOLOGY 7 PLAUSIBILITY 5 SIMPLICITY 9 TARGETFIT 7 SUITABILITY 7 CONTRADICTION yes OVERALL 5 — Unclear how wet shoes appear in a car; conditional '如果' usage is weak despite setup.\nPLAN D: CAUSAL 8 CHRONOLOGY 9 PLAUSIBILITY 9 SIMPLICITY 8 TARGETFIT 7 SUITABILITY 9 CONTRADICTION no OVERALL 7 — Solid everyday logic; HSK vocabulary fits, though \"what should we do\" is a bit repetitive for '该' targeting."
+    },
+    {
+      "labels": [
+        "E",
+        "F",
+        "G",
+        "H"
+      ],
+      "ok": true,
+      "error": null,
+      "raw": "PLAN E: CAUSAL 10 CHRONOLOGY 10 PLAUSIBILITY 10 SIMPLICITY 10 TARGETFIT 9 SUITABILITY 10 CONTRADICTION no OVERALL 9 — Extremely tight logic, natural flow, and perfect HSK 3 vocabulary integration.\nPLAN F: CAUSAL 8 CHRONOLOGY 10 PLAUSIBILITY 4 SIMPLICITY 10 TARGETFIT 6 SUITABILITY 7 CONTRADICTION no OVERALL 6 — Awkward dialogue (\"how should I say\") breaks realism; target words feel forced into unnatural contexts.\nPLAN G: CAUSAL 7 CHRONOLOGY 10 PLAUSIBILITY 8 SIMPLICITY 9 TARGETFIT 5 SUITABILITY 8 CONTRADICTION no OVERALL 6 — Target words (especially 认为/该) are shoehorned into internal thoughts rather than natural speech acts, reducing pedagogical value.\nPLAN H: CAUSAL 9 CHRONOLOGY 10 PLAUSIBILITY 9 SIMPLICITY 10 TARGETFIT 8 SUITABILITY 9 CONTRADICTION yes OVERALL 8 — Strong plot but contradicts the target word list (missing 该 in beats, mentioned only in notes as an afterthought)."
+    },
+    {
+      "labels": [
+        "I",
+        "J",
+        "K",
+        "L"
+      ],
+      "ok": true,
+      "error": null,
+      "raw": "PLAN I: CAUSAL 10 CHRONOLOGY 10 PLAUSIBILITY 10 SIMPLICITY 10 TARGETFIT 10 SUITABILITY 10 CONTRADICTION no OVERALL 10 — Flawless cause-and-effect, perfect for HSK 3 scope and target words.\nPLAN J: CAUSAL 6 CHRONOLOGY 8 PLAUSIBILITY 10 SIMPLICITY 7 TARGETFIT 5 SUITABILITY 8 CONTRADICTION no OVERALL 6 — Weak causality; rain warning is irrelevant to getting the charger, resolving the problem too early.\nPLAN K: CAUSAL 4 CHRONOLOGY 9 PLAUSIBILITY 5 SIMPLICITY 9 TARGETFIT 6 SUITABILITY 7 CONTRADICTION no OVERALL 5 — Broken logic in Beat 2 (thinking vs. doing) and implausible self-repair of a lock with just a screwdriver.\nPLAN L: CAUSAL 9 CHRONOLOGY 10 PLAUSIBILITY 6 SIMPLICITY 8 TARGETFIT 8 SUITABILITY 9 CONTRADICTION no OVERALL 8 — Strong plot, though a loaner laptop is slightly lucky/convenient for a simple story, it works well pedagogically."
+    },
+    {
+      "labels": [
+        "M",
+        "N",
+        "O"
+      ],
+      "ok": true,
+      "error": null,
+      "raw": "PLAN M: CAUSAL 6 CHRONOLOGY 4 PLAUSIBILITY 7 SIMPLICITY 9 TARGETFIT 8 SUITABILITY 8 CONTRADICTION yes OVERALL 5 — Internal logic contradiction in Beat 5 destination (changes location to hallway immediately after charging in classroom) breaks chronology and causes issues.\nPLAN N: CAUSAL 8 CHRONOLOGY 7 PLAUSIBILITY 4 SIMPLICITY 6 TARGETFIT 7 SUITABILITY 3 CONTRADICTION no OVERALL 4 — Low plausibility (qipao for male character) and cultural mismatch for standard HSK3 reader; complex ironing subplot adds unnecessary friction.\nPLAN O: CAUSAL 8 CHRONOLOGY 8 PLAUSIBILITY 9 SIMPLICITY 9 TARGETFIT 9 SUITABILITY 9 CONTRADICTION no OVERALL 9 — Strong causal chain, perfect target word integration, high plausibility, and fits HSK3 constraints with no logical flaws."
+    }
+  ],
+  "rates": {
+    "groq:qwen/qwen3.6-27b:none": {
+      "n": 8,
+      "structural": 6,
+      "quality": 4,
+      "joint": 4,
+      "overall": [
+        8,
+        9,
+        6,
+        8,
+        5,
+        4,
+        8
+      ],
+      "buckets": {
+        "cast/speaker": 1,
+        "contradiction": 2,
+        "other": 1,
+        "implausible causality": 2
+      },
+      "transitionsStated": 7,
+      "transitionsRequired": 7,
+      "contractViolations": 0,
+      "adapterLosses": 0
+    },
+    "groq:openai/gpt-oss-120b:medium": {
+      "n": 8,
+      "structural": 8,
+      "quality": 5,
+      "joint": 5,
+      "overall": [
+        5,
+        6,
+        6,
+        5,
+        7,
+        5,
+        10,
+        9
+      ],
+      "buckets": {
+        "implausible causality": 2,
+        "contradiction": 2,
+        "chronology": 2
+      },
+      "transitionsStated": 16,
+      "transitionsRequired": 16,
+      "contractViolations": 0,
+      "adapterLosses": 0
+    }
+  },
+  "candidates": [
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 1,
+      "blueprint": {
+        "title": "The Rain and The Book",
+        "setting": "A university campus library and the sidewalk outside during a sudden afternoon thunderstorm.",
+        "cast": [],
+        "problem": "李明 realizes it is raining heavily and he does not have an umbrella, but he wants to meet 小红.",
+        "incitingEvent": "Look out the window and see heavy rain falling on the campus.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "3:00 PM",
+            "what": "李明 puts down his book and looks out the large window next to his desk. He sees heavy rain hitting the glass and the ground below.",
+            "because": "the story opens",
+            "targets": [
+              "看到",
+              "雨"
+            ],
+            "lines": 6,
+            "where": "Inside the university library study room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "3:02 PM",
+            "what": "李明 touches his bag and realizes he has no umbrella. He thinks about his plan to go home. He decides he cannot walk in this rain.",
+            "because": "the heavy rain prevents him from leaving without getting wet",
+            "targets": [
+              "需要",
+              "没有"
+            ],
+            "lines": 6,
+            "where": "Inside the university library study room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "3:05 PM",
+            "what": "李明 sees 小红 sitting at the next table. He remembers that 小红 has a big yellow umbrella in her bag. He gets an idea for a solution.",
+            "because": "he needs an umbrella and sees a classmate who has one",
+            "targets": [
+              "如果",
+              "有"
+            ],
+            "lines": 6,
+            "where": "Inside the university library study room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "3:06 PM",
+            "what": "李明 walks over to 小红's table. He asks 小红 if he can borrow her umbrella for a short time because he forgot his own.",
+            "because": "he identified 小红 as the person who can help him",
+            "targets": [
+              "借"
+            ],
+            "lines": 5,
+            "where": "Inside the university library study room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "3:07 PM",
+            "what": "小红 looks at her book, then smiles and gives the yellow umbrella to 李明. She says she will wait for the rain to stop inside.",
+            "because": "李明 asked politely and 小红 is a good friend",
+            "targets": [
+              "给",
+              "说"
+            ],
+            "lines": 5,
+            "where": "Inside the university library study room",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "李明 successfully borrows the umbrella and is able to leave the library without getting wet, resolving his problem of how to get through the rain.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "李明 realizes the physical necessity of an object to avoid wetness.",
+            "speaker": "李明",
+            "refersTo": "an umbrella",
+            "intent": "to acknowledge his lack of a required item"
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "李明 formulates a conditional plan: IF he asks, he can get the umbrella.",
+            "speaker": "李明",
+            "refersTo": "borrowing the umbrella",
+            "intent": "to plan the next action based on a possibility"
+          },
+          {
+            "word": "该",
+            "beat": 4,
+            "why": "Upon reflection during the walk, or implicitly in the asking, he feels he *should* ask now because waiting won't help. Or, more naturally, 小红 says 'You should go now before it gets worse.' Let's put it in beat 5.",
+            "speaker": "小红",
+            "refersTo": "leaving immediately",
+            "intent": "to give advice on timing"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "The Rain and The Book",
+        "setting": "A university campus library and the sidewalk outside during a sudden afternoon thunderstorm.",
+        "cast": [],
+        "problem": "李明 realizes it is raining heavily and he does not have an umbrella, but he wants to meet 小红.",
+        "incitingEvent": "Look out the window and see heavy rain falling on the campus.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "3:00 PM",
+            "location": "Inside the university library study room",
+            "what": "李明 puts down his book and looks out the large window next to his desk. He sees heavy rain hitting the glass and the ground below.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "看到",
+              "雨"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 2,
+            "when": "3:02 PM",
+            "location": "Inside the university library study room",
+            "what": "李明 touches his bag and realizes he has no umbrella. He thinks about his plan to go home. He decides he cannot walk in this rain.",
+            "because": "the heavy rain prevents him from leaving without getting wet",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要",
+              "没有"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 3,
+            "when": "3:05 PM",
+            "location": "Inside the university library study room",
+            "what": "李明 sees 小红 sitting at the next table. He remembers that 小红 has a big yellow umbrella in her bag. He gets an idea for a solution.",
+            "because": "he needs an umbrella and sees a classmate who has one",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果",
+              "有"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 4,
+            "when": "3:06 PM",
+            "location": "Inside the university library study room",
+            "what": "李明 walks over to 小红's table. He asks 小红 if he can borrow her umbrella for a short time because he forgot his own.",
+            "because": "he identified 小红 as the person who can help him",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "借"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 5,
+            "when": "3:07 PM",
+            "location": "Inside the university library study room",
+            "what": "小红 looks at her book, then smiles and gives the yellow umbrella to 李明. She says she will wait for the rain to stop inside.",
+            "because": "李明 asked politely and 小红 is a good friend",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "给",
+              "说"
+            ],
+            "lines": 5
+          }
+        ],
+        "resolution": "李明 successfully borrows the umbrella and is able to leave the library without getting wet, resolving his problem of how to get through the rain.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "李明 realizes the physical necessity of an object to avoid wetness.",
+            "speaker": "李明",
+            "refersTo": "an umbrella",
+            "intent": "to acknowledge his lack of a required item"
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "李明 formulates a conditional plan: IF he asks, he can get the umbrella.",
+            "speaker": "李明",
+            "refersTo": "borrowing the umbrella",
+            "intent": "to plan the next action based on a possibility"
+          },
+          {
+            "word": "该",
+            "beat": 4,
+            "why": "Upon reflection during the walk, or implicitly in the asking, he feels he *should* ask now because waiting won't help. Or, more naturally, 小红 says 'You should go now before it gets worse.' Let's put it in beat 5.",
+            "speaker": "小红",
+            "refersTo": "leaving immediately",
+            "intent": "to give advice on timing"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": false,
+        "failures": [
+          {
+            "code": "cast_size",
+            "message": "0 characters (need 2-3)"
+          }
+        ]
+      },
+      "transitions": {
+        "stated": 0,
+        "required": 0,
+        "violations": [],
+        "warnings": [],
+        "mapped": [],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 3147,
+      "tokens": {
+        "prompt": 1346,
+        "completion": 1057
+      },
+      "score": {
+        "label": "H",
+        "contradiction": true,
+        "overall": 8,
+        "reason": "Strong plot but contradicts the target word list (missing 该 in beats, mentioned only in notes as an afterthought).",
+        "causal": 9,
+        "chronology": 10,
+        "plausibility": 9,
+        "simplicity": 10,
+        "targetFit": 8,
+        "suitability": 9
+      },
+      "label": "H",
+      "qualityOk": false,
+      "jointOk": false,
+      "buckets": [
+        "cast/speaker",
+        "contradiction"
+      ],
+      "lexical": {
+        "cost": 29,
+        "offListWords": 2,
+        "assistedWords": 10,
+        "minWorstSentence": 1,
+        "byNecessity": {
+          "OPTIONAL_COMPLEXITY": {
+            "count": 5,
+            "cost": 23,
+            "words": [
+              "off:without",
+              "off:wet",
+              "识别",
+              "避免",
+              "客气"
+            ]
+          },
+          "CENTRAL_NECESSARY": {
+            "count": 3,
+            "cost": 4,
+            "words": [
+              "大型",
+              "窗户",
+              "感动"
+            ]
+          },
+          "NATURAL_SUPPORT": {
+            "count": 2,
+            "cost": 2,
+            "words": [
+              "主意",
+              "答案"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "without(off)",
+          "wet(off)",
+          "identified→识别",
+          "prevents→避免"
+        ]
+      }
+    },
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 2,
+      "blueprint": {
+        "title": "The Heavy Quilt",
+        "setting": "A cold winter afternoon in a shared apartment bedroom.",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明's bed is empty and cold because the heavy quilt is missing; he needs to find it to sleep.",
+        "incitingEvent": "李明 returns from school, takes off his coat, and touches his bed, realizing the 被 is gone.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "5:00 PM",
+            "what": "李明 enters his room. He opens his wardrobe and takes out his pajamas. He looks at the bed and is surprised.",
+            "because": "the story opens",
+            "targets": [
+              "被"
+            ],
+            "lines": 6,
+            "where": "Li Ming's bedroom",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "5:05 PM",
+            "what": "李明 looks around the room. He checks under the bed. There is no 被. He is cold and tired.",
+            "because": "He needs a 被 to sleep, but it is not on the bed.",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "Li Ming's bedroom",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "5:10 PM",
+            "what": "李明 walks out of his room. He stands in front of 小红's door. He thinks about knocking.",
+            "because": "He suspects 小红 might have taken the 被 by mistake.",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5,
+            "where": "Hallway outside Xiao Hong's door",
+            "arrivedHow": "李明 walks from his bedroom to the hallway."
+          },
+          {
+            "id": 4,
+            "when": "5:15 PM",
+            "what": "李明 knocks. 小红 opens the door. 李明 asks about the 被.",
+            "because": "He needs to confirm if 小红 has the 被.",
+            "targets": [],
+            "lines": 5,
+            "where": "Xiao Hong's bedroom",
+            "arrivedHow": "李明 knocks on 小红's door and enters."
+          },
+          {
+            "id": 5,
+            "when": "5:20 PM",
+            "what": "小红 points to the corner. The 被 is there. She explains she borrowed it last week and forgot. She says she 该 give it back.",
+            "because": "He found the 被.",
+            "targets": [
+              "该"
+            ],
+            "lines": 7,
+            "where": "Xiao Hong's bedroom",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "小红 gives the 被 back to 李明. 李明 is happy and goes to sleep.",
+        "targetPlan": [
+          {
+            "word": "被",
+            "beat": 1,
+            "why": "李明 looks at the bed and sees the object is missing.",
+            "speaker": "narrator",
+            "refersTo": "the quilt",
+            "intent": "Identify the missing object causing the problem."
+          },
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "李明 is cold and wants to sleep, expressing a physical necessity.",
+            "speaker": "李明",
+            "refersTo": "the need for a quilt",
+            "intent": "State why he is searching for the object."
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "李明 formulates a hypothetical condition before knocking.",
+            "speaker": "李明",
+            "refersTo": "the possibility of Xiao Hong having the quilt",
+            "intent": "Express uncertainty about whether to knock."
+          },
+          {
+            "word": "该",
+            "beat": 5,
+            "why": "小红 admits her mistake and states her duty.",
+            "speaker": "小红",
+            "refersTo": "the action of returning the quilt",
+            "intent": "Express obligation to fix the mistake."
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "The Heavy Quilt",
+        "setting": "A cold winter afternoon in a shared apartment bedroom.",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明's bed is empty and cold because the heavy quilt is missing; he needs to find it to sleep.",
+        "incitingEvent": "李明 returns from school, takes off his coat, and touches his bed, realizing the 被 is gone.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "5:00 PM",
+            "location": "Li Ming's bedroom",
+            "what": "李明 enters his room. He opens his wardrobe and takes out his pajamas. He looks at the bed and is surprised.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "被"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 2,
+            "when": "5:05 PM",
+            "location": "Li Ming's bedroom",
+            "what": "李明 looks around the room. He checks under the bed. There is no 被. He is cold and tired.",
+            "because": "He needs a 被 to sleep, but it is not on the bed.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 3,
+            "when": "5:10 PM",
+            "location": "Hallway outside Xiao Hong's door",
+            "what": "李明 walks out of his room. He stands in front of 小红's door. He thinks about knocking.",
+            "because": "He suspects 小红 might have taken the 被 by mistake.",
+            "transition_from_previous": "李明 walks from his bedroom to the hallway.",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "5:15 PM",
+            "location": "Xiao Hong's bedroom",
+            "what": "李明 knocks. 小红 opens the door. 李明 asks about the 被.",
+            "because": "He needs to confirm if 小红 has the 被.",
+            "transition_from_previous": "李明 knocks on 小红's door and enters.",
+            "targets": [],
+            "lines": 5
+          },
+          {
+            "id": 5,
+            "when": "5:20 PM",
+            "location": "Xiao Hong's bedroom",
+            "what": "小红 points to the corner. The 被 is there. She explains she borrowed it last week and forgot. She says she 该 give it back.",
+            "because": "He found the 被.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "该"
+            ],
+            "lines": 7
+          }
+        ],
+        "resolution": "小红 gives the 被 back to 李明. 李明 is happy and goes to sleep.",
+        "targetPlan": [
+          {
+            "word": "被",
+            "beat": 1,
+            "why": "李明 looks at the bed and sees the object is missing.",
+            "speaker": "narrator",
+            "refersTo": "the quilt",
+            "intent": "Identify the missing object causing the problem."
+          },
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "李明 is cold and wants to sleep, expressing a physical necessity.",
+            "speaker": "李明",
+            "refersTo": "the need for a quilt",
+            "intent": "State why he is searching for the object."
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "李明 formulates a hypothetical condition before knocking.",
+            "speaker": "李明",
+            "refersTo": "the possibility of Xiao Hong having the quilt",
+            "intent": "Express uncertainty about whether to knock."
+          },
+          {
+            "word": "该",
+            "beat": 5,
+            "why": "小红 admits her mistake and states her duty.",
+            "speaker": "小红",
+            "refersTo": "the action of returning the quilt",
+            "intent": "Express obligation to fix the mistake."
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 1,
+        "required": 1,
+        "violations": [],
+        "warnings": [
+          {
+            "beat": 4,
+            "code": "transition_within_place",
+            "message": "beat 4 describes a move inside \"Xiao Hong's bedroom\""
+          }
+        ],
+        "mapped": [
+          {
+            "beat": 3,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 4,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 7809,
+      "tokens": {
+        "prompt": 1414,
+        "completion": 1016
+      },
+      "score": {
+        "label": "O",
+        "contradiction": false,
+        "overall": 9,
+        "reason": "Strong causal chain, perfect target word integration, high plausibility, and fits HSK3 constraints with no logical flaws.",
+        "causal": 8,
+        "chronology": 8,
+        "plausibility": 9,
+        "simplicity": 9,
+        "targetFit": 9,
+        "suitability": 9
+      },
+      "label": "O",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": [],
+      "lexical": {
+        "cost": 41,
+        "offListWords": 7,
+        "assistedWords": 11,
+        "minWorstSentence": 1,
+        "byNecessity": {
+          "OPTIONAL_COMPLEXITY": {
+            "count": 3,
+            "cost": 15,
+            "words": [
+              "off:suspects",
+              "off:taken",
+              "确认"
+            ]
+          },
+          "NATURAL_SUPPORT": {
+            "count": 5,
+            "cost": 19,
+            "words": [
+              "off:wardrobe",
+              "off:pajamas",
+              "off:surprised",
+              "查询",
+              "off:knocking"
+            ]
+          },
+          "CENTRAL_NECESSARY": {
+            "count": 3,
+            "cost": 7,
+            "words": [
+              "off:points",
+              "角落",
+              "前后"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "suspects(off)",
+          "taken(off)",
+          "wardrobe(off)",
+          "pajamas(off)"
+        ]
+      }
+    },
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 3,
+      "blueprint": {
+        "title": "The Heavy Book",
+        "setting": "A university library and a bus stop on a Friday afternoon.",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 needs to transport many heavy reference books to the bus stop, but he only has one small backpack.",
+        "incitingEvent": "李明 finds that his backpack is too small and too weak to hold three large dictionaries.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Friday afternoon",
+            "what": "李明 is packing three large Chinese dictionaries into a small backpack. The zipper breaks because the books are too heavy.",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6,
+            "where": "University Library",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "Friday afternoon",
+            "what": "李明 looks around for help. He sees 小红 sitting nearby with a large, empty shopping bag next to her chair.",
+            "because": "李明 cannot carry all the books himself and needs a bigger container.",
+            "targets": [],
+            "lines": 4,
+            "where": "University Library",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "Friday afternoon",
+            "what": "李明 walks over to 小红’s desk. He explains his problem and asks if he can use her bag.",
+            "because": "李明 identified 小红 as a potential helper with a suitable object.",
+            "targets": [
+              "如果"
+            ],
+            "lines": 8,
+            "where": "University Library",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "Friday afternoon",
+            "what": "小红 thinks about the request. She decides that it is good to help a classmate. She agrees.",
+            "because": "李明 made a polite request.",
+            "targets": [
+              "该"
+            ],
+            "lines": 6,
+            "where": "University Library",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "Friday afternoon",
+            "what": "李明 thanks 小红. They wait for the bus together outside.",
+            "because": "The books are now packaged safely, and they need to leave the campus.",
+            "targets": [
+              "认为"
+            ],
+            "lines": 4,
+            "where": "Bus Stop near the Library",
+            "arrivedHow": "李明 and 小红 walk out of the library gates to the bus stop."
+          }
+        ],
+        "resolution": "李明 successfully boards the bus with his books, having used 小红’s bag as a temporary solution.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "To express the physical requirement of a bigger bag due to the broken zipper.",
+            "speaker": "李明",
+            "refersTo": "a bigger bag / help",
+            "intent": "stating a necessity"
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "To propose a conditional exchange: getting the bag in exchange for carrying it back later.",
+            "speaker": "李明",
+            "refersTo": "borrowing the bag",
+            "intent": "making an offer"
+          },
+          {
+            "word": "该",
+            "beat": 4,
+            "why": "To justify the decision to help based on social duty or moral obligation.",
+            "speaker": "小红",
+            "refersTo": "helping the classmate",
+            "intent": "justifying an action"
+          },
+          {
+            "word": "认为",
+            "beat": 5,
+            "why": "To express 小红's personal judgment that helping was the right thing to do.",
+            "speaker": "小红",
+            "refersTo": "the act of helping",
+            "intent": "expressing an opinion"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "The Heavy Book",
+        "setting": "A university library and a bus stop on a Friday afternoon.",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 needs to transport many heavy reference books to the bus stop, but he only has one small backpack.",
+        "incitingEvent": "李明 finds that his backpack is too small and too weak to hold three large dictionaries.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Friday afternoon",
+            "location": "University Library",
+            "what": "李明 is packing three large Chinese dictionaries into a small backpack. The zipper breaks because the books are too heavy.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 2,
+            "when": "Friday afternoon",
+            "location": "University Library",
+            "what": "李明 looks around for help. He sees 小红 sitting nearby with a large, empty shopping bag next to her chair.",
+            "because": "李明 cannot carry all the books himself and needs a bigger container.",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 4
+          },
+          {
+            "id": 3,
+            "when": "Friday afternoon",
+            "location": "University Library",
+            "what": "李明 walks over to 小红’s desk. He explains his problem and asks if he can use her bag.",
+            "because": "李明 identified 小红 as a potential helper with a suitable object.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果"
+            ],
+            "lines": 8
+          },
+          {
+            "id": 4,
+            "when": "Friday afternoon",
+            "location": "University Library",
+            "what": "小红 thinks about the request. She decides that it is good to help a classmate. She agrees.",
+            "because": "李明 made a polite request.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "该"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "Friday afternoon",
+            "location": "Bus Stop near the Library",
+            "what": "李明 thanks 小红. They wait for the bus together outside.",
+            "because": "The books are now packaged safely, and they need to leave the campus.",
+            "transition_from_previous": "李明 and 小红 walk out of the library gates to the bus stop.",
+            "targets": [
+              "认为"
+            ],
+            "lines": 4
+          }
+        ],
+        "resolution": "李明 successfully boards the bus with his books, having used 小红’s bag as a temporary solution.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "To express the physical requirement of a bigger bag due to the broken zipper.",
+            "speaker": "李明",
+            "refersTo": "a bigger bag / help",
+            "intent": "stating a necessity"
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "To propose a conditional exchange: getting the bag in exchange for carrying it back later.",
+            "speaker": "李明",
+            "refersTo": "borrowing the bag",
+            "intent": "making an offer"
+          },
+          {
+            "word": "该",
+            "beat": 4,
+            "why": "To justify the decision to help based on social duty or moral obligation.",
+            "speaker": "小红",
+            "refersTo": "helping the classmate",
+            "intent": "justifying an action"
+          },
+          {
+            "word": "认为",
+            "beat": 5,
+            "why": "To express 小红's personal judgment that helping was the right thing to do.",
+            "speaker": "小红",
+            "refersTo": "the act of helping",
+            "intent": "expressing an opinion"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 0,
+        "required": 0,
+        "violations": [],
+        "warnings": [
+          {
+            "beat": 5,
+            "code": "transition_within_place",
+            "message": "beat 5 describes a move inside \"Bus Stop near the Library\""
+          }
+        ],
+        "mapped": [
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 51534,
+      "tokens": {
+        "prompt": 1437,
+        "completion": 1000
+      },
+      "score": {
+        "label": "G",
+        "contradiction": false,
+        "overall": 6,
+        "reason": "Target words (especially 认为/该) are shoehorned into internal thoughts rather than natural speech acts, reducing pedagogical value.",
+        "causal": 7,
+        "chronology": 10,
+        "plausibility": 8,
+        "simplicity": 9,
+        "targetFit": 5,
+        "suitability": 8
+      },
+      "label": "G",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": [],
+      "lexical": {
+        "cost": 46,
+        "offListWords": 5,
+        "assistedWords": 13,
+        "minWorstSentence": 2,
+        "byNecessity": {
+          "OPTIONAL_COMPLEXITY": {
+            "count": 6,
+            "cost": 28,
+            "words": [
+              "off:bigger",
+              "off:container",
+              "识别",
+              "潜力",
+              "抱",
+              "客气"
+            ]
+          },
+          "NATURAL_SUPPORT": {
+            "count": 4,
+            "cost": 13,
+            "words": [
+              "off:zipper",
+              "off:breaks",
+              "off:shopping",
+              "空"
+            ]
+          },
+          "CENTRAL_NECESSARY": {
+            "count": 3,
+            "cost": 5,
+            "words": [
+              "大型",
+              "请求",
+              "前后"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "bigger(off)",
+          "container(off)",
+          "identified→识别",
+          "potential→潜力"
+        ]
+      }
+    },
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 4,
+      "blueprint": {
+        "title": "The Full Sink",
+        "setting": "Sunday morning, 小明's apartment kitchen",
+        "cast": [
+          "小明",
+          "妈妈"
+        ],
+        "problem": "The kitchen sink is clogged and overflowing with soapy water; 小明 needs to clean it but does not know how.",
+        "incitingEvent": "小明 tries to wash a bowl, but the water level rises instead of draining.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "8:00 AM",
+            "what": "小明 stands at the sink washing a blue bowl. The water stops draining and begins to overflow onto the counter.",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "Kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "8:02 AM",
+            "what": "小明 turns off the tap. He looks at the dirty water and thinks he **needs** a tool to fix the drain, but he only has his hands and a sponge.",
+            "because": "the overflow creates an immediate problem that requires a solution",
+            "targets": [
+              "需要"
+            ],
+            "lines": 4,
+            "where": "Kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "8:05 AM",
+            "what": "小明 walks out of the kitchen into the living room. He sees 妈妈 sitting on the sofa reading a book. He asks her for help.",
+            "because": "小明 cannot solve the problem alone and must seek assistance",
+            "targets": [],
+            "lines": 5,
+            "where": "Living Room",
+            "arrivedHow": "小明 walks from the kitchen to the living room"
+          },
+          {
+            "id": 4,
+            "when": "8:06 AM",
+            "what": "妈妈 closes her book. She **believes** that 小明 should handle small household problems by himself to learn. She tells him what he **should** do.",
+            "because": "小明 asked for help, prompting 妈妈 to evaluate the situation and respond",
+            "targets": [
+              "该",
+              "认为"
+            ],
+            "lines": 5,
+            "where": "Living Room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "8:10 AM",
+            "what": "小明 returns to the sink. He starts the tap again. He says, **if** the water flows, he will cook dinner; **if** not, he will call the repairman. The water drains quickly.",
+            "because": "妈妈's advice caused 小明 to try the simple fix first before calling for professional help",
+            "targets": [
+              "如果"
+            ],
+            "lines": 6,
+            "where": "Kitchen",
+            "arrivedHow": "小明 walks from the living room back to the kitchen"
+          },
+          {
+            "id": 6,
+            "when": "8:15 AM",
+            "what": "The sink is empty and clean. 小明 smiles and waves at 妈妈 in the living room. The problem is solved without calling anyone.",
+            "because": "the test in the previous beat was successful, resolving the central problem",
+            "targets": [],
+            "lines": 3,
+            "where": "Kitchen",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "The sink drains successfully after 小明 follows the implicit advice to try restarting the flow, proving he did not need a repairman.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "小明 recognizes the physical necessity of a tool or action to stop the overflow.",
+            "speaker": "小明",
+            "refersTo": "a way to clear the sink",
+            "intent": "to express his lack of resources"
+          },
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "Reinforces the specific gap between his current state (clogged sink) and desired state (clean sink).",
+            "speaker": "小明",
+            "refersTo": "help/a plunger",
+            "intent": "to define the problem"
+          },
+          {
+            "word": "该",
+            "beat": 4,
+            "why": "妈妈 is giving prescription/advice on duty or proper action.",
+            "speaker": "妈妈",
+            "refersTo": "cleaning the sink himself",
+            "intent": "to instruct"
+          },
+          {
+            "word": "认为",
+            "beat": 4,
+            "why": "To frame 妈妈's advice as her personal opinion/belief about his independence.",
+            "speaker": "妈妈",
+            "refersTo": "her judgment of the situation",
+            "intent": "to justify the advice"
+          },
+          {
+            "word": "如果",
+            "beat": 5,
+            "why": "小明 is testing a hypothesis. He sets up a conditional statement about the outcome of his action.",
+            "speaker": "小明",
+            "refersTo": "the water draining",
+            "intent": "to plan possible outcomes"
+          }
+        ],
+        "impossibleTargets": [
+          "被",
+          "中"
+        ]
+      },
+      "plan": {
+        "title": "The Full Sink",
+        "setting": "Sunday morning, 小明's apartment kitchen",
+        "cast": [
+          "小明",
+          "妈妈"
+        ],
+        "problem": "The kitchen sink is clogged and overflowing with soapy water; 小明 needs to clean it but does not know how.",
+        "incitingEvent": "小明 tries to wash a bowl, but the water level rises instead of draining.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "8:00 AM",
+            "location": "Kitchen",
+            "what": "小明 stands at the sink washing a blue bowl. The water stops draining and begins to overflow onto the counter.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "8:02 AM",
+            "location": "Kitchen",
+            "what": "小明 turns off the tap. He looks at the dirty water and thinks he **needs** a tool to fix the drain, but he only has his hands and a sponge.",
+            "because": "the overflow creates an immediate problem that requires a solution",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 4
+          },
+          {
+            "id": 3,
+            "when": "8:05 AM",
+            "location": "Living Room",
+            "what": "小明 walks out of the kitchen into the living room. He sees 妈妈 sitting on the sofa reading a book. He asks her for help.",
+            "because": "小明 cannot solve the problem alone and must seek assistance",
+            "transition_from_previous": "小明 walks from the kitchen to the living room",
+            "targets": [],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "8:06 AM",
+            "location": "Living Room",
+            "what": "妈妈 closes her book. She **believes** that 小明 should handle small household problems by himself to learn. She tells him what he **should** do.",
+            "because": "小明 asked for help, prompting 妈妈 to evaluate the situation and respond",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "该",
+              "认为"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 5,
+            "when": "8:10 AM",
+            "location": "Kitchen",
+            "what": "小明 returns to the sink. He starts the tap again. He says, **if** the water flows, he will cook dinner; **if** not, he will call the repairman. The water drains quickly.",
+            "because": "妈妈's advice caused 小明 to try the simple fix first before calling for professional help",
+            "transition_from_previous": "小明 walks from the living room back to the kitchen",
+            "targets": [
+              "如果"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 6,
+            "when": "8:15 AM",
+            "location": "Kitchen",
+            "what": "The sink is empty and clean. 小明 smiles and waves at 妈妈 in the living room. The problem is solved without calling anyone.",
+            "because": "the test in the previous beat was successful, resolving the central problem",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 3
+          }
+        ],
+        "resolution": "The sink drains successfully after 小明 follows the implicit advice to try restarting the flow, proving he did not need a repairman.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "小明 recognizes the physical necessity of a tool or action to stop the overflow.",
+            "speaker": "小明",
+            "refersTo": "a way to clear the sink",
+            "intent": "to express his lack of resources"
+          },
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "Reinforces the specific gap between his current state (clogged sink) and desired state (clean sink).",
+            "speaker": "小明",
+            "refersTo": "help/a plunger",
+            "intent": "to define the problem"
+          },
+          {
+            "word": "该",
+            "beat": 4,
+            "why": "妈妈 is giving prescription/advice on duty or proper action.",
+            "speaker": "妈妈",
+            "refersTo": "cleaning the sink himself",
+            "intent": "to instruct"
+          },
+          {
+            "word": "认为",
+            "beat": 4,
+            "why": "To frame 妈妈's advice as her personal opinion/belief about his independence.",
+            "speaker": "妈妈",
+            "refersTo": "her judgment of the situation",
+            "intent": "to justify the advice"
+          },
+          {
+            "word": "如果",
+            "beat": 5,
+            "why": "小明 is testing a hypothesis. He sets up a conditional statement about the outcome of his action.",
+            "speaker": "小明",
+            "refersTo": "the water draining",
+            "intent": "to plan possible outcomes"
+          }
+        ],
+        "impossibleTargets": [
+          "被",
+          "中"
+        ]
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 2,
+        "required": 2,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 3,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 21147,
+      "tokens": {
+        "prompt": 1458,
+        "completion": 1303
+      },
+      "score": {
+        "label": "A",
+        "contradiction": false,
+        "overall": 8,
+        "reason": "Strong structure and natural language targets; sink resolves easily without a drain cleaner, reducing dramatic tension/realism slightly.",
+        "causal": 9,
+        "chronology": 9,
+        "plausibility": 7,
+        "simplicity": 10,
+        "targetFit": 9,
+        "suitability": 9
+      },
+      "label": "A",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": [],
+      "lexical": {
+        "cost": 114,
+        "offListWords": 18,
+        "assistedWords": 33,
+        "minWorstSentence": 3,
+        "byNecessity": {
+          "OPTIONAL_COMPLEXITY": {
+            "count": 15,
+            "cost": 60,
+            "words": [
+              "off:creates",
+              "off:prompting",
+              "off:repairman",
+              "off:advice",
+              "off:fix",
+              "off:successful",
+              "中央",
+              "寻找",
+              "评价",
+              "直接",
+              "答案",
+              "情况",
+              "答应",
+              "使",
+              "职业"
+            ]
+          },
+          "NATURAL_SUPPORT": {
+            "count": 11,
+            "cost": 37,
+            "words": [
+              "off:draining",
+              "off:overflow",
+              "off:onto",
+              "off:counter",
+              "混",
+              "off:sponge",
+              "off:help",
+              "off:without",
+              "工具",
+              "挥",
+              "修理"
+            ]
+          },
+          "CENTRAL_NECESSARY": {
+            "count": 7,
+            "cost": 17,
+            "words": [
+              "off:sink",
+              "off:blue",
+              "off:bowl",
+              "off:tap",
+              "off:living",
+              "厨房",
+              "空"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "creates(off)",
+          "prompting(off)",
+          "repairman(off)",
+          "advice(off)"
+        ]
+      }
+    },
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 5,
+      "blueprint": null,
+      "plan": null,
+      "structural": {
+        "ok": false,
+        "failures": [
+          {
+            "code": "unparseable",
+            "message": "no JSON plan"
+          }
+        ]
+      },
+      "transitions": {
+        "stated": 0,
+        "required": 0,
+        "violations": [],
+        "warnings": [],
+        "mapped": [],
+        "adapterLoss": null
+      },
+      "raw": "{\n  \"title\": \"The Missing Key\",\n  \"setting\": \"Saturday afternoon, at 李明's home and front door\",\n  \"cast\": [\n    \"李明\",\n    \"妈妈\"\n  ],\n  \"problem\": \"李明 lost his house key and cannot get inside the apartment.\",\n  \"incitingEvent\": \"李明 arrives home from the park and discovers he does not have his key in his pocket.\",\n  \"beats\": [\n    {\n      \"id\": 1,\n      \"when\": \"Afternoon\",\n      \"location\": \"Apart building hallway\",\n      \"what\": \"李明 stands in front of his apartment door. He reaches into his pocket, but his hand is empty. He looks on the floor, but there is no key. He is worried because he is hungry and wants to go home.\",\n      \"because\": \"the story opens\",\n      \"transition_from_previous\": \"same_place\",\n      \"targets\": [\n        \"需要\"\n      ],\n      \"lines\": 4\n    },\n    {\n      \"id\": 2,\n      \"when\": \"Afternoon\",\n      \"location\": \"Apart building hallway\",\n      \"what\": \"李明 decides to look for his mother. He turns around and walks down the hallway to 妈妈's office building entrance. He thinks, 'If 妈妈 is busy, I have a problem.'\",\n      \"because\": \"李明 needs help to enter his home and cannot find the key.\",\n      \"transition_from_previous\": \"李明 walks from apartment door to office lobby\",\n      \"targets\": [\n        \"如果\"\n      ],\n      \"lines\": 5\n    },\n    {\n      \"id\": 3,\n      \"when\": \"Afternoon\",\n      \"location\": \"Office lobby\",\n      \"what\": \"李明 finds 妈妈 sitting at a desk. 李明 says, 'I lost my key. I need to go home.' 妈妈 looks at her watch and says, 'It is late. You should go",
+      "latencyMs": 38939,
+      "tokens": {
+        "prompt": 1480,
+        "completion": 1045
+      },
+      "score": null,
+      "qualityOk": false,
+      "jointOk": false,
+      "buckets": [
+        "other"
+      ]
+    },
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 6,
+      "blueprint": {
+        "title": "The Wet Shoes",
+        "setting": "Saturday afternoon at a parking garage under a university building",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 wants to go shopping with 小红, but his shoes are wet and broken inside his car, so he cannot walk properly.",
+        "incitingEvent": "李明 tries to walk out of the parking garage and feels pain because his shoe is broken and wet.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Afternoon",
+            "what": "李明 opens his car door and steps onto the concrete. He feels a cold, wet pressure in his right shoe.",
+            "because": "the story opens",
+            "targets": [],
+            "lines": 4,
+            "where": "Parking Garage",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "Afternoon",
+            "what": "李明 looks down. There is a hole in his right shoe and water is coming out. He cannot wear it.",
+            "because": "He felt pain and stopped to look at his foot.",
+            "targets": [],
+            "lines": 4,
+            "where": "Parking Garage",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "Afternoon",
+            "what": "小红 sees his problem. She tells him he needs to fix the situation before they go out.",
+            "because": "She sees him looking at his broken shoe and stopping in pain.",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "Parking Garage",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "Afternoon",
+            "what": "李明 thinks that if it rains again, his other shoe will get wet too. He worries about the trip.",
+            "because": "He is exposed to the outside environment near the garage exit and sees the sky.",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5,
+            "where": "Parking Garage",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "Afternoon",
+            "what": "Saying he should wait a moment, 李明 asks 小红 if she has an extra pair of shoes.",
+            "because": "He realizes he cannot walk far and asks for a solution to continue the plan.",
+            "targets": [
+              "该"
+            ],
+            "lines": 5,
+            "where": "Parking Garage",
+            "arrivedHow": ""
+          },
+          {
+            "id": 6,
+            "when": "Later",
+            "what": "小红 gives him her spare sneakers. 李明 puts them on and walks comfortably into the mall.",
+            "because": "小红 had a spare pair in her bag, solving the immediate obstacle.",
+            "targets": [],
+            "lines": 5,
+            "where": "Shopping Mall Entrance",
+            "arrivedHow": "李明 and 小红 walk to the mall entrance together."
+          }
+        ],
+        "resolution": "李明 puts on 小红's spare shoes and they go shopping successfully.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "To express the urgency of fixing the wet shoe before leaving.",
+            "speaker": "小红",
+            "refersTo": "The act of changing or fixing the shoe",
+            "intent": "To point out that action is required."
+          },
+          {
+            "word": "如果",
+            "beat": 4,
+            "why": "To speculate on a conditional negative outcome regarding the weather and the remaining good shoe.",
+            "speaker": "李明",
+            "refersTo": "Raining",
+            "intent": "To explain his worry about the future state of his feet."
+          },
+          {
+            "word": "该",
+            "beat": 5,
+            "why": "To suggest the correct or logical next step (asking for help/waivering) in a social context.",
+            "speaker": "李明",
+            "refersTo": "Waiting/Asking",
+            "intent": "To justify his request for shoes by stating it is the right thing to do."
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "The Wet Shoes",
+        "setting": "Saturday afternoon at a parking garage under a university building",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 wants to go shopping with 小红, but his shoes are wet and broken inside his car, so he cannot walk properly.",
+        "incitingEvent": "李明 tries to walk out of the parking garage and feels pain because his shoe is broken and wet.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Afternoon",
+            "location": "Parking Garage",
+            "what": "李明 opens his car door and steps onto the concrete. He feels a cold, wet pressure in his right shoe.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 4
+          },
+          {
+            "id": 2,
+            "when": "Afternoon",
+            "location": "Parking Garage",
+            "what": "李明 looks down. There is a hole in his right shoe and water is coming out. He cannot wear it.",
+            "because": "He felt pain and stopped to look at his foot.",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 4
+          },
+          {
+            "id": 3,
+            "when": "Afternoon",
+            "location": "Parking Garage",
+            "what": "小红 sees his problem. She tells him he needs to fix the situation before they go out.",
+            "because": "She sees him looking at his broken shoe and stopping in pain.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "Afternoon",
+            "location": "Parking Garage",
+            "what": "李明 thinks that if it rains again, his other shoe will get wet too. He worries about the trip.",
+            "because": "He is exposed to the outside environment near the garage exit and sees the sky.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 5,
+            "when": "Afternoon",
+            "location": "Parking Garage",
+            "what": "Saying he should wait a moment, 李明 asks 小红 if she has an extra pair of shoes.",
+            "because": "He realizes he cannot walk far and asks for a solution to continue the plan.",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "该"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 6,
+            "when": "Later",
+            "location": "Shopping Mall Entrance",
+            "what": "小红 gives him her spare sneakers. 李明 puts them on and walks comfortably into the mall.",
+            "because": "小红 had a spare pair in her bag, solving the immediate obstacle.",
+            "transition_from_previous": "李明 and 小红 walk to the mall entrance together.",
+            "targets": [],
+            "lines": 5
+          }
+        ],
+        "resolution": "李明 puts on 小红's spare shoes and they go shopping successfully.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "To express the urgency of fixing the wet shoe before leaving.",
+            "speaker": "小红",
+            "refersTo": "The act of changing or fixing the shoe",
+            "intent": "To point out that action is required."
+          },
+          {
+            "word": "如果",
+            "beat": 4,
+            "why": "To speculate on a conditional negative outcome regarding the weather and the remaining good shoe.",
+            "speaker": "李明",
+            "refersTo": "Raining",
+            "intent": "To explain his worry about the future state of his feet."
+          },
+          {
+            "word": "该",
+            "beat": 5,
+            "why": "To suggest the correct or logical next step (asking for help/waivering) in a social context.",
+            "speaker": "李明",
+            "refersTo": "Waiting/Asking",
+            "intent": "To justify his request for shoes by stating it is the right thing to do."
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 1,
+        "required": 1,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 6,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 19785,
+      "tokens": {
+        "prompt": 1480,
+        "completion": 1052
+      },
+      "score": {
+        "label": "C",
+        "contradiction": true,
+        "overall": 5,
+        "reason": "Unclear how wet shoes appear in a car; conditional '如果' usage is weak despite setup.",
+        "causal": 8,
+        "chronology": 7,
+        "plausibility": 5,
+        "simplicity": 9,
+        "targetFit": 7,
+        "suitability": 7
+      },
+      "label": "C",
+      "qualityOk": false,
+      "jointOk": false,
+      "buckets": [
+        "contradiction",
+        "implausible causality"
+      ],
+      "lexical": {
+        "cost": 64,
+        "offListWords": 7,
+        "assistedWords": 22,
+        "minWorstSentence": 2,
+        "byNecessity": {
+          "OPTIONAL_COMPLEXITY": {
+            "count": 11,
+            "cost": 40,
+            "words": [
+              "暴露",
+              "off:extra",
+              "off:pair",
+              "off:obstacle",
+              "车库",
+              "天空",
+              "出口",
+              "答案",
+              "接着",
+              "主意",
+              "直接"
+            ]
+          },
+          "NATURAL_SUPPORT": {
+            "count": 6,
+            "cost": 10,
+            "words": [
+              "off:wet",
+              "洞",
+              "压力",
+              "修理",
+              "情况",
+              "旅行"
+            ]
+          },
+          "CENTRAL_NECESSARY": {
+            "count": 5,
+            "cost": 14,
+            "words": [
+              "off:onto",
+              "off:saying",
+              "备用",
+              "off:sneakers",
+              "具体"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "exposed→暴露",
+          "extra(off)",
+          "pair(off)",
+          "obstacle(off)"
+        ]
+      }
+    },
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 7,
+      "blueprint": {
+        "title": "The Missing Qipao",
+        "setting": "Saturday afternoon; 小明's apartment",
+        "cast": [
+          "小明",
+          "妈妈"
+        ],
+        "problem": "小明 needs to wear his formal qipao for a photo, but he cannot find it and does not know how to look for it or what to do if he loses time.",
+        "incitingEvent": "小明 is rushed to get dressed for a formal portrait session, but the specific garment is not in his closet.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "2:00 PM",
+            "what": "小明 opens his cupboard and sees empty shelves where his qipao should be; he panics because the photo appointment is in one hour.",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6,
+            "where": "bedroom",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "2:05 PM",
+            "what": "小明 calls his mother into the room, showing the empty space and stating that he urgently requires the red qipao right now.",
+            "because": "he is alone and cannot find the item, so he seeks help from the person who manages their clothing",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "bedroom",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "2:08 PM",
+            "what": "妈妈 searches the bottom drawer and pulls out the qipao, explaining that it was covered by a large winter 被 (quilt) from last season.",
+            "because": "妈妈 was summoned and has knowledge of where items are stored after cleaning",
+            "targets": [
+              "被"
+            ],
+            "lines": 5,
+            "where": "bedroom",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "2:15 PM",
+            "what": "小明 examines the wrinkled qipao and says that 如果 (if) he does not iron it immediately, he will be late for the photographer.",
+            "because": "finding the item reveals a new sub-obstacle (wrinkles) that threatens the timeline",
+            "targets": [
+              "如果"
+            ],
+            "lines": 4,
+            "where": "bedroom",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "2:18 PM",
+            "what": "小明 quickly moves to the living room to plug in the ironing board, realizing he 该 (should) have checked the donated storage box before panicking.",
+            "because": "he has the garment but now needs the specific equipment (iron) located in the other room",
+            "targets": [
+              "该"
+            ],
+            "lines": 4,
+            "where": "living room",
+            "arrivedHow": "小明 picks up the qipao and walks from the bedroom to the living room"
+          },
+          {
+            "id": 6,
+            "when": "2:50 PM",
+            "what": "小明 smooths the final wrinkle, holding the neat qipao, satisfied that he is now ready to go.",
+            "because": "the ironing is complete, resolving the physical state of the garment",
+            "targets": [],
+            "lines": 4,
+            "where": "living room",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "The qipao is found and ironed, allowing 小明 to leave on time for his photo session.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "小明 realizes the absence of the item creates a demand for action; he needs it to proceed with his original plan.",
+            "speaker": "小明",
+            "refersTo": "the qipao",
+            "intent": "to express urgency and lack"
+          },
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "小明 states to 妈妈 that he requires her assistance or the object itself.",
+            "speaker": "小明",
+            "refersTo": "help/finding the qipao",
+            "intent": "to request aid"
+          },
+          {
+            "word": "被",
+            "beat": 3,
+            "why": "妈妈 explains the physical state of the hidden object; it was covered by a quilt.",
+            "speaker": "妈妈",
+            "refersTo": "the red qipao being hidden",
+            "intent": "to explain the location/cause of concealment"
+          },
+          {
+            "word": "如果",
+            "beat": 4,
+            "why": "小明 evaluates a potential consequence of delay; a conditional statement about being late.",
+            "speaker": "小明",
+            "refersTo": "the act of not ironing",
+            "intent": "to warn about a future negative outcome based on a condition"
+          },
+          {
+            "word": "该",
+            "beat": 5,
+            "why": "小明 reflects on his error; he expresses that he should have acted differently in the past to avoid this stress.",
+            "speaker": "小明",
+            "refersTo": "checking the storage box earlier",
+            "intent": "to self-critique or acknowledge duty/mistake"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "The Missing Qipao",
+        "setting": "Saturday afternoon; 小明's apartment",
+        "cast": [
+          "小明",
+          "妈妈"
+        ],
+        "problem": "小明 needs to wear his formal qipao for a photo, but he cannot find it and does not know how to look for it or what to do if he loses time.",
+        "incitingEvent": "小明 is rushed to get dressed for a formal portrait session, but the specific garment is not in his closet.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "2:00 PM",
+            "location": "bedroom",
+            "what": "小明 opens his cupboard and sees empty shelves where his qipao should be; he panics because the photo appointment is in one hour.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 2,
+            "when": "2:05 PM",
+            "location": "bedroom",
+            "what": "小明 calls his mother into the room, showing the empty space and stating that he urgently requires the red qipao right now.",
+            "because": "he is alone and cannot find the item, so he seeks help from the person who manages their clothing",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 3,
+            "when": "2:08 PM",
+            "location": "bedroom",
+            "what": "妈妈 searches the bottom drawer and pulls out the qipao, explaining that it was covered by a large winter 被 (quilt) from last season.",
+            "because": "妈妈 was summoned and has knowledge of where items are stored after cleaning",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "被"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "2:15 PM",
+            "location": "bedroom",
+            "what": "小明 examines the wrinkled qipao and says that 如果 (if) he does not iron it immediately, he will be late for the photographer.",
+            "because": "finding the item reveals a new sub-obstacle (wrinkles) that threatens the timeline",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果"
+            ],
+            "lines": 4
+          },
+          {
+            "id": 5,
+            "when": "2:18 PM",
+            "location": "living room",
+            "what": "小明 quickly moves to the living room to plug in the ironing board, realizing he 该 (should) have checked the donated storage box before panicking.",
+            "because": "he has the garment but now needs the specific equipment (iron) located in the other room",
+            "transition_from_previous": "小明 picks up the qipao and walks from the bedroom to the living room",
+            "targets": [
+              "该"
+            ],
+            "lines": 4
+          },
+          {
+            "id": 6,
+            "when": "2:50 PM",
+            "location": "living room",
+            "what": "小明 smooths the final wrinkle, holding the neat qipao, satisfied that he is now ready to go.",
+            "because": "the ironing is complete, resolving the physical state of the garment",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 4
+          }
+        ],
+        "resolution": "The qipao is found and ironed, allowing 小明 to leave on time for his photo session.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "小明 realizes the absence of the item creates a demand for action; he needs it to proceed with his original plan.",
+            "speaker": "小明",
+            "refersTo": "the qipao",
+            "intent": "to express urgency and lack"
+          },
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "小明 states to 妈妈 that he requires her assistance or the object itself.",
+            "speaker": "小明",
+            "refersTo": "help/finding the qipao",
+            "intent": "to request aid"
+          },
+          {
+            "word": "被",
+            "beat": 3,
+            "why": "妈妈 explains the physical state of the hidden object; it was covered by a quilt.",
+            "speaker": "妈妈",
+            "refersTo": "the red qipao being hidden",
+            "intent": "to explain the location/cause of concealment"
+          },
+          {
+            "word": "如果",
+            "beat": 4,
+            "why": "小明 evaluates a potential consequence of delay; a conditional statement about being late.",
+            "speaker": "小明",
+            "refersTo": "the act of not ironing",
+            "intent": "to warn about a future negative outcome based on a condition"
+          },
+          {
+            "word": "该",
+            "beat": 5,
+            "why": "小明 reflects on his error; he expresses that he should have acted differently in the past to avoid this stress.",
+            "speaker": "小明",
+            "refersTo": "checking the storage box earlier",
+            "intent": "to self-critique or acknowledge duty/mistake"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 1,
+        "required": 1,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 41214,
+      "tokens": {
+        "prompt": 1505,
+        "completion": 1341
+      },
+      "score": {
+        "label": "N",
+        "contradiction": false,
+        "overall": 4,
+        "reason": "Low plausibility (qipao for male character) and cultural mismatch for standard HSK3 reader; complex ironing subplot adds unnecessary friction.",
+        "causal": 8,
+        "chronology": 7,
+        "plausibility": 4,
+        "simplicity": 6,
+        "targetFit": 7,
+        "suitability": 3
+      },
+      "label": "N",
+      "qualityOk": false,
+      "jointOk": false,
+      "buckets": [
+        "implausible causality"
+      ],
+      "lexical": {
+        "cost": 131,
+        "offListWords": 22,
+        "assistedWords": 38,
+        "minWorstSentence": 3,
+        "byNecessity": {
+          "OPTIONAL_COMPLEXITY": {
+            "count": 18,
+            "cost": 80,
+            "words": [
+              "off:photo",
+              "off:summoned",
+              "off:reveals",
+              "off:sub",
+              "off:obstacle",
+              "off:threatens",
+              "off:timeline",
+              "off:panicking",
+              "off:located",
+              "寻找",
+              "服装",
+              "大型",
+              "存放",
+              "off:iron",
+              "立即",
+              "特有",
+              "设备",
+              "约会"
+            ]
+          },
+          "NATURAL_SUPPORT": {
+            "count": 1,
+            "cost": 4,
+            "words": [
+              "off:panics"
+            ]
+          },
+          "CENTRAL_NECESSARY": {
+            "count": 19,
+            "cost": 47,
+            "words": [
+              "off:shelves",
+              "off:qipao",
+              "off:stating",
+              "off:bottom",
+              "off:wrinkled",
+              "off:living",
+              "off:plug",
+              "off:board",
+              "查询",
+              "off:donated",
+              "off:storage",
+              "off:wrinkle",
+              "柜子",
+              "空间",
+              "搜",
+              "满足",
+              "空",
+              "拉",
+              "顺利"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "photo(off)",
+          "summoned(off)",
+          "reveals(off)",
+          "sub(off)"
+        ]
+      }
+    },
+    {
+      "model": "groq:qwen/qwen3.6-27b:none",
+      "attempt": 8,
+      "blueprint": {
+        "title": "The Broken Laptop",
+        "setting": "Saturday afternoon in Li Ming's apartment living room and a nearby electronics repair shop.",
+        "cast": [
+          "李明",
+          "小明"
+        ],
+        "problem": "李明's laptop is broken and he needs to finish an assignment by Sunday morning.",
+        "incitingEvent": "李明 tries to open his laptop to write a report, but the screen is cracked and black.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Saturday afternoon",
+            "what": "李明 sits on the sofa with his laptop. He presses the power button, but the screen shows nothing. He looks at his phone; it is 2:00 PM. He has a homework due on Sunday morning.",
+            "because": "the story opens",
+            "targets": [
+              "需要",
+              "如果"
+            ],
+            "lines": 6,
+            "where": "李明's living room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "Saturday afternoon",
+            "what": "李明 looks at the broken screen. He thinks he cannot wait until Monday to fix it. He decides he must go to the repair shop now. His neighbor 小明 is standing on the balcony next door and waves to him.",
+            "because": "the broken laptop creates an urgent need for a repair",
+            "targets": [
+              "认为"
+            ],
+            "lines": 5,
+            "where": "李明's living room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "Saturday afternoon",
+            "what": "李明 walks down the stairs and meets 小明 on the sidewalk. 李明 tells 小明 his laptop is broken. 小明 says he knows a good repair shop nearby. They decide to go together.",
+            "because": "李明 needs help finding a repair service",
+            "targets": [],
+            "lines": 5,
+            "where": "The street outside the apartments",
+            "arrivedHow": "李明 walks from his apartment to the street to meet 小明"
+          },
+          {
+            "id": 4,
+            "when": "Saturday late afternoon",
+            "what": "They enter the small shop. The clerk looks at the laptop. The clerk says the screen is bad. The clerk says he can fix it, but it will take two days. 李明 listens and looks worried.",
+            "because": "they traveled to the shop to seek a solution",
+            "targets": [
+              "该"
+            ],
+            "lines": 6,
+            "where": "The electronics repair shop",
+            "arrivedHow": "李明 and 小明 walk from the street into the repair shop"
+          },
+          {
+            "id": 5,
+            "when": "Saturday late afternoon",
+            "what": "李明 says that if he does not fix it today, he cannot finish his homework. 小明 suggests borrowing a computer from the shop for two days. The clerk agrees and gives 李明 an old notebook computer.",
+            "because": "the repair time is too long for the deadline",
+            "targets": [],
+            "lines": 6,
+            "where": "The electronics repair shop",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "李明 gets a working loaner computer and can finish his homework.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 realizes he must have a functioning computer to complete his task.",
+            "speaker": "李明",
+            "refersTo": "a working computer",
+            "intent": "to express necessity for the assignment"
+          },
+          {
+            "word": "如果",
+            "beat": 1,
+            "why": "李明 considers the conditional situation: if he doesn't act now, he fails.",
+            "speaker": "李明",
+            "refersTo": "not fixing the computer immediately",
+            "intent": "to formulate a conditional worry"
+          },
+          {
+            "word": "认为",
+            "beat": 2,
+            "why": "李明 forms an opinion about the urgency of the situation.",
+            "speaker": "李明",
+            "refersTo": "the necessity of going now",
+            "intent": "to state his belief/decision"
+          },
+          {
+            "word": "该",
+            "beat": 4,
+            "why": "The clerk or 小明 states what is appropriate or expected regarding the repair process.",
+            "speaker": "小明",
+            "refersTo": "the repair timeline",
+            "intent": "to advise on the proper course of action"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "The Broken Laptop",
+        "setting": "Saturday afternoon in Li Ming's apartment living room and a nearby electronics repair shop.",
+        "cast": [
+          "李明",
+          "小明"
+        ],
+        "problem": "李明's laptop is broken and he needs to finish an assignment by Sunday morning.",
+        "incitingEvent": "李明 tries to open his laptop to write a report, but the screen is cracked and black.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Saturday afternoon",
+            "location": "李明's living room",
+            "what": "李明 sits on the sofa with his laptop. He presses the power button, but the screen shows nothing. He looks at his phone; it is 2:00 PM. He has a homework due on Sunday morning.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要",
+              "如果"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 2,
+            "when": "Saturday afternoon",
+            "location": "李明's living room",
+            "what": "李明 looks at the broken screen. He thinks he cannot wait until Monday to fix it. He decides he must go to the repair shop now. His neighbor 小明 is standing on the balcony next door and waves to him.",
+            "because": "the broken laptop creates an urgent need for a repair",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "认为"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 3,
+            "when": "Saturday afternoon",
+            "location": "The street outside the apartments",
+            "what": "李明 walks down the stairs and meets 小明 on the sidewalk. 李明 tells 小明 his laptop is broken. 小明 says he knows a good repair shop nearby. They decide to go together.",
+            "because": "李明 needs help finding a repair service",
+            "transition_from_previous": "李明 walks from his apartment to the street to meet 小明",
+            "targets": [],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "Saturday late afternoon",
+            "location": "The electronics repair shop",
+            "what": "They enter the small shop. The clerk looks at the laptop. The clerk says the screen is bad. The clerk says he can fix it, but it will take two days. 李明 listens and looks worried.",
+            "because": "they traveled to the shop to seek a solution",
+            "transition_from_previous": "李明 and 小明 walk from the street into the repair shop",
+            "targets": [
+              "该"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "Saturday late afternoon",
+            "location": "The electronics repair shop",
+            "what": "李明 says that if he does not fix it today, he cannot finish his homework. 小明 suggests borrowing a computer from the shop for two days. The clerk agrees and gives 李明 an old notebook computer.",
+            "because": "the repair time is too long for the deadline",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 6
+          }
+        ],
+        "resolution": "李明 gets a working loaner computer and can finish his homework.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 realizes he must have a functioning computer to complete his task.",
+            "speaker": "李明",
+            "refersTo": "a working computer",
+            "intent": "to express necessity for the assignment"
+          },
+          {
+            "word": "如果",
+            "beat": 1,
+            "why": "李明 considers the conditional situation: if he doesn't act now, he fails.",
+            "speaker": "李明",
+            "refersTo": "not fixing the computer immediately",
+            "intent": "to formulate a conditional worry"
+          },
+          {
+            "word": "认为",
+            "beat": 2,
+            "why": "李明 forms an opinion about the urgency of the situation.",
+            "speaker": "李明",
+            "refersTo": "the necessity of going now",
+            "intent": "to state his belief/decision"
+          },
+          {
+            "word": "该",
+            "beat": 4,
+            "why": "The clerk or 小明 states what is appropriate or expected regarding the repair process.",
+            "speaker": "小明",
+            "refersTo": "the repair timeline",
+            "intent": "to advise on the proper course of action"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 2,
+        "required": 2,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 3,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 4,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 18487,
+      "tokens": {
+        "prompt": 1530,
+        "completion": 1088
+      },
+      "score": {
+        "label": "L",
+        "contradiction": false,
+        "overall": 8,
+        "reason": "Strong plot, though a loaner laptop is slightly lucky/convenient for a simple story, it works well pedagogically.",
+        "causal": 9,
+        "chronology": 10,
+        "plausibility": 6,
+        "simplicity": 8,
+        "targetFit": 8,
+        "suitability": 9
+      },
+      "label": "L",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": [],
+      "lexical": {
+        "cost": 63,
+        "offListWords": 10,
+        "assistedWords": 20,
+        "minWorstSentence": 2,
+        "byNecessity": {
+          "OPTIONAL_COMPLEXITY": {
+            "count": 4,
+            "cost": 14,
+            "words": [
+              "期限",
+              "创造",
+              "寻找",
+              "答案"
+            ]
+          },
+          "NATURAL_SUPPORT": {
+            "count": 14,
+            "cost": 43,
+            "words": [
+              "off:pm",
+              "off:due",
+              "off:morning",
+              "off:monday",
+              "off:repair",
+              "off:balcony",
+              "off:clerk",
+              "off:agrees",
+              "off:screen",
+              "力量",
+              "键",
+              "挥",
+              "压",
+              "修理"
+            ]
+          },
+          "CENTRAL_NECESSARY": {
+            "count": 2,
+            "cost": 6,
+            "words": [
+              "off:laptop",
+              "人行道"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "deadline→期限",
+          "pm(off)",
+          "due(off)",
+          "morning(off)"
+        ]
+      }
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:medium",
+      "attempt": 1,
+      "blueprint": {
+        "title": "Fixing the bike lock before the park",
+        "setting": "A modern Chinese apartment in the morning, then the park in the afternoon",
+        "cast": [
+          "小明",
+          "妈妈"
+        ],
+        "problem": "The bike lock is broken and needs to be repaired before 小明 can ride to the park.",
+        "incitingEvent": "小明 sees the broken lock on his bike while getting ready for school.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Morning, before breakfast",
+            "what": "小明 notices the bike lock is broken and realizes he lacks a tool.",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "Kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "Morning, just after noticing the lock",
+            "what": "小明 thinks about the consequence of not fixing it.",
+            "because": "he has just discovered the problem",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5,
+            "where": "Hallway",
+            "arrivedHow": "小明 walks from Kitchen to Hallway"
+          },
+          {
+            "id": 3,
+            "when": "Morning, shortly after thinking",
+            "what": "小明 asks 妈妈 what he should do.",
+            "because": "he wants advice and help",
+            "targets": [
+              "该"
+            ],
+            "lines": 6,
+            "where": "Living room",
+            "arrivedHow": "小明 walks from Hallway to Living room"
+          },
+          {
+            "id": 4,
+            "when": "Morning, after the question",
+            "what": "妈妈 gives him a screwdriver and reminds him of the condition.",
+            "because": "she heard his request",
+            "targets": [
+              "如果",
+              "需要"
+            ],
+            "lines": 6,
+            "where": "Living room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "Afternoon, after fixing the lock",
+            "what": "小明 fixes the lock with the screwdriver and rides the bike to the park.",
+            "because": "the lock is now repaired",
+            "targets": [],
+            "lines": 6,
+            "where": "Park entrance",
+            "arrivedHow": "小明 walks from Living room to Park entrance"
+          }
+        ],
+        "resolution": "The bike lock is repaired, 小明 rides his bike to the park and enjoys the afternoon.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "小明 realizes he does not have a screwdriver and must ask for one.",
+            "speaker": "小明",
+            "refersTo": "螺丝刀",
+            "intent": "express a need for a tool"
+          },
+          {
+            "word": "如果",
+            "beat": 2,
+            "why": "小明 considers the consequence of not fixing the lock.",
+            "speaker": "小明",
+            "refersTo": "去公园",
+            "intent": "state a conditional situation"
+          },
+          {
+            "word": "该",
+            "beat": 3,
+            "why": "小明 asks what he should do about the broken lock.",
+            "speaker": "小明",
+            "refersTo": "修锁",
+            "intent": "seek advice about the proper action"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Fixing the bike lock before the park",
+        "setting": "A modern Chinese apartment in the morning, then the park in the afternoon",
+        "cast": [
+          "小明",
+          "妈妈"
+        ],
+        "problem": "The bike lock is broken and needs to be repaired before 小明 can ride to the park.",
+        "incitingEvent": "小明 sees the broken lock on his bike while getting ready for school.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Morning, before breakfast",
+            "location": "Kitchen",
+            "what": "小明 notices the bike lock is broken and realizes he lacks a tool.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "Morning, just after noticing the lock",
+            "location": "Hallway",
+            "what": "小明 thinks about the consequence of not fixing it.",
+            "because": "he has just discovered the problem",
+            "transition_from_previous": "小明 walks from Kitchen to Hallway",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 3,
+            "when": "Morning, shortly after thinking",
+            "location": "Living room",
+            "what": "小明 asks 妈妈 what he should do.",
+            "because": "he wants advice and help",
+            "transition_from_previous": "小明 walks from Hallway to Living room",
+            "targets": [
+              "该"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 4,
+            "when": "Morning, after the question",
+            "location": "Living room",
+            "what": "妈妈 gives him a screwdriver and reminds him of the condition.",
+            "because": "she heard his request",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果",
+              "需要"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "Afternoon, after fixing the lock",
+            "location": "Park entrance",
+            "what": "小明 fixes the lock with the screwdriver and rides the bike to the park.",
+            "because": "the lock is now repaired",
+            "transition_from_previous": "小明 walks from Living room to Park entrance",
+            "targets": [],
+            "lines": 6
+          }
+        ],
+        "resolution": "The bike lock is repaired, 小明 rides his bike to the park and enjoys the afternoon.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "小明 realizes he does not have a screwdriver and must ask for one.",
+            "speaker": "小明",
+            "refersTo": "螺丝刀",
+            "intent": "express a need for a tool"
+          },
+          {
+            "word": "如果",
+            "beat": 2,
+            "why": "小明 considers the consequence of not fixing the lock.",
+            "speaker": "小明",
+            "refersTo": "去公园",
+            "intent": "state a conditional situation"
+          },
+          {
+            "word": "该",
+            "beat": 3,
+            "why": "小明 asks what he should do about the broken lock.",
+            "speaker": "小明",
+            "refersTo": "修锁",
+            "intent": "seek advice about the proper action"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 3,
+        "required": 3,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 2,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 3,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 4318,
+      "tokens": {
+        "prompt": 1560,
+        "completion": 1927
+      },
+      "score": {
+        "label": "K",
+        "contradiction": false,
+        "overall": 5,
+        "reason": "Broken logic in Beat 2 (thinking vs. doing) and implausible self-repair of a lock with just a screwdriver.",
+        "causal": 4,
+        "chronology": 9,
+        "plausibility": 5,
+        "simplicity": 9,
+        "targetFit": 6,
+        "suitability": 7
+      },
+      "label": "K",
+      "qualityOk": false,
+      "jointOk": false,
+      "buckets": [
+        "implausible causality"
+      ],
+      "lexical": {
+        "cost": 24,
+        "offListWords": 3,
+        "assistedWords": 11,
+        "minWorstSentence": 1,
+        "byNecessity": {
+          "OPTIONAL_COMPLEXITY": {
+            "count": 2,
+            "cost": 9,
+            "words": [
+              "off:advice",
+              "请求"
+            ]
+          },
+          "CENTRAL_NECESSARY": {
+            "count": 9,
+            "cost": 15,
+            "words": [
+              "off:consequence",
+              "off:screwdriver",
+              "锁",
+              "工具",
+              "缺",
+              "修理",
+              "提醒",
+              "条件",
+              "乘坐"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "advice(off)",
+          "consequence(off)",
+          "screwdriver(off)",
+          "request→请求"
+        ]
+      }
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:medium",
+      "attempt": 2,
+      "blueprint": {
+        "title": "Borrowing a charger before the bus",
+        "setting": "A modern apartment building, morning",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明's phone battery is low and he needs to charge it before catching the bus.",
+        "incitingEvent": "李明 discovers his phone shows 5% battery.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "07:10",
+            "what": "Phone battery shows 5%, indicating it is almost dead",
+            "because": "the story opens",
+            "targets": [],
+            "lines": 5,
+            "where": "李明's bedroom",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "07:12",
+            "what": "李明 asks 小红 if he can borrow her charger",
+            "because": "battery low, so he needs a charger",
+            "targets": [
+              "需要",
+              "该"
+            ],
+            "lines": 6,
+            "where": "Kitchen",
+            "arrivedHow": "李明 walks from bedroom to kitchen"
+          },
+          {
+            "id": 3,
+            "when": "07:13",
+            "what": "小红 replies that she can lend it, and says 如果外面在下雨，他可能会迟到",
+            "because": "李明 asked for charger",
+            "targets": [
+              "如果"
+            ],
+            "lines": 6,
+            "where": "Kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "07:14",
+            "what": "李明 takes the charger and heads to the bus stop",
+            "because": "he got the charger",
+            "targets": [],
+            "lines": 5,
+            "where": "Hallway",
+            "arrivedHow": "李明 walks from kitchen to hallway"
+          },
+          {
+            "id": 5,
+            "when": "07:18",
+            "what": "李明 plugs in phone, battery starts charging, so he can wait for bus",
+            "because": "he has charger",
+            "targets": [],
+            "lines": 6,
+            "where": "Bus stop",
+            "arrivedHow": "李明 walks from hallway to bus stop"
+          }
+        ],
+        "resolution": "李明's phone begins charging, so he can catch the bus without worry.",
+        "targetPlan": [
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "小红 uses a conditional to warn about rain affecting the bus schedule",
+            "speaker": "小红",
+            "refersTo": "possible rain and bus delay",
+            "intent": "to indicate a possible consequence"
+          },
+          {
+            "word": "该",
+            "beat": 2,
+            "why": "李明 thinks he should ask 小红 for the charger",
+            "speaker": "李明",
+            "refersTo": "the action of asking for the charger",
+            "intent": "to express that it is appropriate/should"
+          },
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "李明 states his need for a charger",
+            "speaker": "李明",
+            "refersTo": "the charger",
+            "intent": "to express necessity"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Borrowing a charger before the bus",
+        "setting": "A modern apartment building, morning",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明's phone battery is low and he needs to charge it before catching the bus.",
+        "incitingEvent": "李明 discovers his phone shows 5% battery.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "07:10",
+            "location": "李明's bedroom",
+            "what": "Phone battery shows 5%, indicating it is almost dead",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "07:12",
+            "location": "Kitchen",
+            "what": "李明 asks 小红 if he can borrow her charger",
+            "because": "battery low, so he needs a charger",
+            "transition_from_previous": "李明 walks from bedroom to kitchen",
+            "targets": [
+              "需要",
+              "该"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 3,
+            "when": "07:13",
+            "location": "Kitchen",
+            "what": "小红 replies that she can lend it, and says 如果外面在下雨，他可能会迟到",
+            "because": "李明 asked for charger",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 4,
+            "when": "07:14",
+            "location": "Hallway",
+            "what": "李明 takes the charger and heads to the bus stop",
+            "because": "he got the charger",
+            "transition_from_previous": "李明 walks from kitchen to hallway",
+            "targets": [],
+            "lines": 5
+          },
+          {
+            "id": 5,
+            "when": "07:18",
+            "location": "Bus stop",
+            "what": "李明 plugs in phone, battery starts charging, so he can wait for bus",
+            "because": "he has charger",
+            "transition_from_previous": "李明 walks from hallway to bus stop",
+            "targets": [],
+            "lines": 6
+          }
+        ],
+        "resolution": "李明's phone begins charging, so he can catch the bus without worry.",
+        "targetPlan": [
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "小红 uses a conditional to warn about rain affecting the bus schedule",
+            "speaker": "小红",
+            "refersTo": "possible rain and bus delay",
+            "intent": "to indicate a possible consequence"
+          },
+          {
+            "word": "该",
+            "beat": 2,
+            "why": "李明 thinks he should ask 小红 for the charger",
+            "speaker": "李明",
+            "refersTo": "the action of asking for the charger",
+            "intent": "to express that it is appropriate/should"
+          },
+          {
+            "word": "需要",
+            "beat": 2,
+            "why": "李明 states his need for a charger",
+            "speaker": "李明",
+            "refersTo": "the charger",
+            "intent": "to express necessity"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 3,
+        "required": 3,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 2,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 4,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 17937,
+      "tokens": {
+        "prompt": 1580,
+        "completion": 2187
+      },
+      "score": {
+        "label": "J",
+        "contradiction": false,
+        "overall": 6,
+        "reason": "Weak causality; rain warning is irrelevant to getting the charger, resolving the problem too early.",
+        "causal": 6,
+        "chronology": 8,
+        "plausibility": 10,
+        "simplicity": 7,
+        "targetFit": 5,
+        "suitability": 8
+      },
+      "label": "J",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": [],
+      "lexical": {
+        "cost": 15,
+        "offListWords": 3,
+        "assistedWords": 6,
+        "minWorstSentence": 1,
+        "byNecessity": {
+          "CENTRAL_NECESSARY": {
+            "count": 5,
+            "cost": 12,
+            "words": [
+              "off:dead",
+              "off:plugs",
+              "闯",
+              "电池",
+              "指出"
+            ]
+          },
+          "OPTIONAL_COMPLEXITY": {
+            "count": 1,
+            "cost": 3,
+            "words": [
+              "off:charger"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "dead(off)",
+          "charger(off)",
+          "plugs(off)",
+          "charging→闯"
+        ]
+      }
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:medium",
+      "attempt": 3,
+      "blueprint": {
+        "title": "Borrowing Chopsticks in the Cafeteria",
+        "setting": "School cafeteria, lunchtime, today",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 has no chopsticks to eat his lunch.",
+        "incitingEvent": "李明 opens his lunch box and discovers he forgot his chopsticks.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "10:30 am",
+            "what": "李明 opens his lunch box, finds no chopsticks, and feels hungry.",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "李明's seat, cafeteria",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "10:32 am",
+            "what": "李明 looks around, sees 小红 across the aisle with a set of chopsticks and thinks, \"如果我向小红借筷子，她会帮我吗？\"",
+            "because": "李明 needs chopsticks and looks for a possible source",
+            "targets": [
+              "如果"
+            ],
+            "lines": 6,
+            "where": "李明's seat, cafeteria",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "10:33 am",
+            "what": "李明 walks over and says, \"小红，我该怎么说才能借到你的筷子？\"",
+            "because": "李明 needs to ask 小红 directly",
+            "targets": [
+              "该"
+            ],
+            "lines": 5,
+            "where": "小红's table, cafeteria",
+            "arrivedHow": "李明 walks from his seat to 小红's table"
+          },
+          {
+            "id": 4,
+            "when": "10:34 am",
+            "what": "小红 smiles and replies, \"当然可以，我也需要把筷子用完后还给老师。\" She hands a pair of chopsticks to 李明.",
+            "because": "小红 agrees to help after 李明 asks",
+            "targets": [],
+            "lines": 6,
+            "where": "小红's table, cafeteria",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "10:35 am",
+            "what": "李明 returns to his seat, uses the borrowed chopsticks, eats his lunch, and thanks 小红.",
+            "because": "李明 now has chopsticks and can finish his meal",
+            "targets": [],
+            "lines": 6,
+            "where": "李明's seat, cafeteria",
+            "arrivedHow": "李明 returns to his seat with borrowed chopsticks"
+          }
+        ],
+        "resolution": "李明 eats his lunch successfully, so the problem of lacking chopsticks is resolved.",
+        "targetPlan": [
+          {
+            "word": "如果",
+            "beat": 2,
+            "why": "李明 is wondering about the possibility of borrowing chopsticks.",
+            "speaker": "李明",
+            "refersTo": "borrowing chopsticks from 小红",
+            "intent": "express a conditional thought"
+          },
+          {
+            "word": "该",
+            "beat": 3,
+            "why": "李明 asks how he should phrase his request politely.",
+            "speaker": "李明",
+            "refersTo": "the proper way to ask for chopsticks",
+            "intent": "ask for guidance"
+          },
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 realizes he lacks an essential utensil for his meal.",
+            "speaker": "李明",
+            "refersTo": "the missing chopsticks",
+            "intent": "state a necessity"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Borrowing Chopsticks in the Cafeteria",
+        "setting": "School cafeteria, lunchtime, today",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 has no chopsticks to eat his lunch.",
+        "incitingEvent": "李明 opens his lunch box and discovers he forgot his chopsticks.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "10:30 am",
+            "location": "李明's seat, cafeteria",
+            "what": "李明 opens his lunch box, finds no chopsticks, and feels hungry.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "10:32 am",
+            "location": "李明's seat, cafeteria",
+            "what": "李明 looks around, sees 小红 across the aisle with a set of chopsticks and thinks, \"如果我向小红借筷子，她会帮我吗？\"",
+            "because": "李明 needs chopsticks and looks for a possible source",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 3,
+            "when": "10:33 am",
+            "location": "小红's table, cafeteria",
+            "what": "李明 walks over and says, \"小红，我该怎么说才能借到你的筷子？\"",
+            "because": "李明 needs to ask 小红 directly",
+            "transition_from_previous": "李明 walks from his seat to 小红's table",
+            "targets": [
+              "该"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "10:34 am",
+            "location": "小红's table, cafeteria",
+            "what": "小红 smiles and replies, \"当然可以，我也需要把筷子用完后还给老师。\" She hands a pair of chopsticks to 李明.",
+            "because": "小红 agrees to help after 李明 asks",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "10:35 am",
+            "location": "李明's seat, cafeteria",
+            "what": "李明 returns to his seat, uses the borrowed chopsticks, eats his lunch, and thanks 小红.",
+            "because": "李明 now has chopsticks and can finish his meal",
+            "transition_from_previous": "李明 returns to his seat with borrowed chopsticks",
+            "targets": [],
+            "lines": 6
+          }
+        ],
+        "resolution": "李明 eats his lunch successfully, so the problem of lacking chopsticks is resolved.",
+        "targetPlan": [
+          {
+            "word": "如果",
+            "beat": 2,
+            "why": "李明 is wondering about the possibility of borrowing chopsticks.",
+            "speaker": "李明",
+            "refersTo": "borrowing chopsticks from 小红",
+            "intent": "express a conditional thought"
+          },
+          {
+            "word": "该",
+            "beat": 3,
+            "why": "李明 asks how he should phrase his request politely.",
+            "speaker": "李明",
+            "refersTo": "the proper way to ask for chopsticks",
+            "intent": "ask for guidance"
+          },
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 realizes he lacks an essential utensil for his meal.",
+            "speaker": "李明",
+            "refersTo": "the missing chopsticks",
+            "intent": "state a necessity"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 0,
+        "required": 0,
+        "violations": [],
+        "warnings": [
+          {
+            "beat": 3,
+            "code": "transition_within_place",
+            "message": "beat 3 describes a move inside \"小红's table, cafeteria\""
+          },
+          {
+            "beat": 5,
+            "code": "transition_within_place",
+            "message": "beat 5 describes a move inside \"李明's seat, cafeteria\""
+          }
+        ],
+        "mapped": [
+          {
+            "beat": 3,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 60131,
+      "tokens": {
+        "prompt": 1599,
+        "completion": 2230
+      },
+      "score": {
+        "label": "F",
+        "contradiction": false,
+        "overall": 6,
+        "reason": "Awkward dialogue (\"how should I say\") breaks realism; target words feel forced into unnatural contexts.",
+        "causal": 8,
+        "chronology": 10,
+        "plausibility": 4,
+        "simplicity": 10,
+        "targetFit": 6,
+        "suitability": 7
+      },
+      "label": "F",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": [
+        "implausible causality"
+      ],
+      "lexical": {
+        "cost": 18,
+        "offListWords": 2,
+        "assistedWords": 8,
+        "minWorstSentence": 1,
+        "byNecessity": {
+          "CENTRAL_NECESSARY": {
+            "count": 6,
+            "cost": 13,
+            "words": [
+              "走廊",
+              "off:pair",
+              "off:borrowed",
+              "集合",
+              "前后",
+              "座"
+            ]
+          },
+          "OPTIONAL_COMPLEXITY": {
+            "count": 2,
+            "cost": 5,
+            "words": [
+              "来源",
+              "直接"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "aisle→走廊",
+          "source→来源",
+          "pair(off)",
+          "borrowed(off)"
+        ]
+      }
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:medium",
+      "attempt": 4,
+      "blueprint": {
+        "title": "Baking a birthday cake without flour",
+        "setting": "李明's apartment, Saturday morning",
+        "cast": [
+          "李明",
+          "小红",
+          "妈妈"
+        ],
+        "problem": "李明 needs flour to bake his mother's birthday cake",
+        "incitingEvent": "李明 discovers there is no flour in the kitchen",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Saturday morning, early",
+            "what": "李明 finds the flour jar empty",
+            "because": "the story opens",
+            "targets": [],
+            "lines": 5,
+            "where": "kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "shortly after, still in the kitchen",
+            "what": "李明 decides he must ask someone for flour",
+            "because": "he realized he has no flour",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5,
+            "where": "kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "a few minutes later",
+            "what": "李明 asks 小红 for a little flour",
+            "because": "he decided to ask for help",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6,
+            "where": "living room",
+            "arrivedHow": "李明 walks downstairs to the living room"
+          },
+          {
+            "id": 4,
+            "when": "immediately after getting flour",
+            "what": "they bring the flour back and start mixing the batter",
+            "because": "they now have flour",
+            "targets": [
+              "该"
+            ],
+            "lines": 6,
+            "where": "kitchen",
+            "arrivedHow": "李明 and 小红 walk upstairs to the kitchen"
+          },
+          {
+            "id": 5,
+            "when": "late morning, kitchen still",
+            "what": "the cake finishes baking and 李明 gives it to 妈妈",
+            "because": "the batter was mixed and baked",
+            "targets": [],
+            "lines": 6,
+            "where": "kitchen",
+            "arrivedHow": ""
+          }
+        ],
+        "resolution": "李明 successfully bakes the birthday cake and 妈妈 is happy",
+        "targetPlan": [
+          {
+            "word": "如果",
+            "beat": 2,
+            "why": "李明 wonders what to do if he has no flour",
+            "speaker": "李明",
+            "refersTo": "the missing flour",
+            "intent": "pose a conditional situation"
+          },
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "李明 tells 小红 he needs a little flour",
+            "speaker": "李明",
+            "refersTo": "flour",
+            "intent": "express a need"
+          },
+          {
+            "word": "该",
+            "beat": 4,
+            "why": "李明 says it is time to start mixing the batter",
+            "speaker": "李明",
+            "refersTo": "starting the mixing step",
+            "intent": "indicate what should be done"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Baking a birthday cake without flour",
+        "setting": "李明's apartment, Saturday morning",
+        "cast": [
+          "李明",
+          "小红",
+          "妈妈"
+        ],
+        "problem": "李明 needs flour to bake his mother's birthday cake",
+        "incitingEvent": "李明 discovers there is no flour in the kitchen",
+        "beats": [
+          {
+            "id": 1,
+            "when": "Saturday morning, early",
+            "location": "kitchen",
+            "what": "李明 finds the flour jar empty",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "shortly after, still in the kitchen",
+            "location": "kitchen",
+            "what": "李明 decides he must ask someone for flour",
+            "because": "he realized he has no flour",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 3,
+            "when": "a few minutes later",
+            "location": "living room",
+            "what": "李明 asks 小红 for a little flour",
+            "because": "he decided to ask for help",
+            "transition_from_previous": "李明 walks downstairs to the living room",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 4,
+            "when": "immediately after getting flour",
+            "location": "kitchen",
+            "what": "they bring the flour back and start mixing the batter",
+            "because": "they now have flour",
+            "transition_from_previous": "李明 and 小红 walk upstairs to the kitchen",
+            "targets": [
+              "该"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "late morning, kitchen still",
+            "location": "kitchen",
+            "what": "the cake finishes baking and 李明 gives it to 妈妈",
+            "because": "the batter was mixed and baked",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 6
+          }
+        ],
+        "resolution": "李明 successfully bakes the birthday cake and 妈妈 is happy",
+        "targetPlan": [
+          {
+            "word": "如果",
+            "beat": 2,
+            "why": "李明 wonders what to do if he has no flour",
+            "speaker": "李明",
+            "refersTo": "the missing flour",
+            "intent": "pose a conditional situation"
+          },
+          {
+            "word": "需要",
+            "beat": 3,
+            "why": "李明 tells 小红 he needs a little flour",
+            "speaker": "李明",
+            "refersTo": "flour",
+            "intent": "express a need"
+          },
+          {
+            "word": "该",
+            "beat": 4,
+            "why": "李明 says it is time to start mixing the batter",
+            "speaker": "李明",
+            "refersTo": "starting the mixing step",
+            "intent": "indicate what should be done"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 2,
+        "required": 2,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 3,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 4,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 59317,
+      "tokens": {
+        "prompt": 1611,
+        "completion": 1786
+      },
+      "score": {
+        "label": "B",
+        "contradiction": true,
+        "overall": 5,
+        "reason": "Teleports between rooms; conditional '如果' is forced; \"no flour\" premise contradicts the title concept logic.",
+        "causal": 6,
+        "chronology": 5,
+        "plausibility": 6,
+        "simplicity": 9,
+        "targetFit": 5,
+        "suitability": 7
+      },
+      "label": "B",
+      "qualityOk": false,
+      "jointOk": false,
+      "buckets": [
+        "contradiction",
+        "chronology"
+      ],
+      "lexical": {
+        "cost": 17,
+        "offListWords": 2,
+        "assistedWords": 7,
+        "minWorstSentence": 1,
+        "byNecessity": {
+          "CENTRAL_NECESSARY": {
+            "count": 7,
+            "cost": 17,
+            "words": [
+              "面粉",
+              "罐",
+              "混合",
+              "off:batter",
+              "off:finishes",
+              "空",
+              "烤"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "flour→面粉",
+          "jar→罐",
+          "mixing/mixed→混合",
+          "batter(off)"
+        ]
+      }
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:medium",
+      "attempt": 5,
+      "blueprint": {
+        "title": "Forgot the laundry detergent",
+        "setting": "A university dorm and shared kitchen, weekday morning",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 discovers there is no laundry detergent for his washing",
+        "incitingEvent": "李明 opens his cabinet and finds the detergent missing",
+        "beats": [
+          {
+            "id": 1,
+            "when": "7:00 am",
+            "what": "李明 looks for laundry detergent and realizes it is gone",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "李明's dorm room",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "7:05 am",
+            "what": "李明 walks to the kitchen and checks the detergent shelf",
+            "because": "he needs detergent to wash his clothes",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5,
+            "where": "shared kitchen",
+            "arrivedHow": "李明 walks from his dorm to the kitchen"
+          },
+          {
+            "id": 3,
+            "when": "7:07 am",
+            "what": "李明 sees 小红 washing clothes and asks her for a little detergent",
+            "because": "he has no detergent and hopes 小红 has some extra",
+            "targets": [
+              "该"
+            ],
+            "lines": 6,
+            "where": "shared kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "7:08 am",
+            "what": "小红 gives 李明 a small cup of detergent and they start the washing together",
+            "because": "小红 agreed to help after hearing the request",
+            "targets": [],
+            "lines": 6,
+            "where": "shared kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "7:15 am",
+            "what": "李明 returns, adds the detergent to his washing machine and starts the cycle",
+            "because": "the detergent problem has been solved",
+            "targets": [],
+            "lines": 6,
+            "where": "李明's dorm room",
+            "arrivedHow": "李明 and 小红 walk back to the dorm"
+          }
+        ],
+        "resolution": "李明 now has detergent, the laundry can be washed, and the day can continue smoothly",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 discovers he has no detergent and expresses that he needs it",
+            "speaker": "李明",
+            "refersTo": "laundry detergent",
+            "intent": "state a necessity"
+          },
+          {
+            "word": "如果",
+            "beat": 2,
+            "why": "李明 thinks about the consequence of not having detergent",
+            "speaker": "李明",
+            "refersTo": "the missing detergent",
+            "intent": "introduce a conditional situation"
+          },
+          {
+            "word": "该",
+            "beat": 3,
+            "why": "李明 asks 小红 what they should do about the missing detergent",
+            "speaker": "李明",
+            "refersTo": "the next step to obtain detergent",
+            "intent": "ask for advice / suggest a course of action"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Forgot the laundry detergent",
+        "setting": "A university dorm and shared kitchen, weekday morning",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 discovers there is no laundry detergent for his washing",
+        "incitingEvent": "李明 opens his cabinet and finds the detergent missing",
+        "beats": [
+          {
+            "id": 1,
+            "when": "7:00 am",
+            "location": "李明's dorm room",
+            "what": "李明 looks for laundry detergent and realizes it is gone",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "7:05 am",
+            "location": "shared kitchen",
+            "what": "李明 walks to the kitchen and checks the detergent shelf",
+            "because": "he needs detergent to wash his clothes",
+            "transition_from_previous": "李明 walks from his dorm to the kitchen",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 3,
+            "when": "7:07 am",
+            "location": "shared kitchen",
+            "what": "李明 sees 小红 washing clothes and asks her for a little detergent",
+            "because": "he has no detergent and hopes 小红 has some extra",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "该"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 4,
+            "when": "7:08 am",
+            "location": "shared kitchen",
+            "what": "小红 gives 李明 a small cup of detergent and they start the washing together",
+            "because": "小红 agreed to help after hearing the request",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "7:15 am",
+            "location": "李明's dorm room",
+            "what": "李明 returns, adds the detergent to his washing machine and starts the cycle",
+            "because": "the detergent problem has been solved",
+            "transition_from_previous": "李明 and 小红 walk back to the dorm",
+            "targets": [],
+            "lines": 6
+          }
+        ],
+        "resolution": "李明 now has detergent, the laundry can be washed, and the day can continue smoothly",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 discovers he has no detergent and expresses that he needs it",
+            "speaker": "李明",
+            "refersTo": "laundry detergent",
+            "intent": "state a necessity"
+          },
+          {
+            "word": "如果",
+            "beat": 2,
+            "why": "李明 thinks about the consequence of not having detergent",
+            "speaker": "李明",
+            "refersTo": "the missing detergent",
+            "intent": "introduce a conditional situation"
+          },
+          {
+            "word": "该",
+            "beat": 3,
+            "why": "李明 asks 小红 what they should do about the missing detergent",
+            "speaker": "李明",
+            "refersTo": "the next step to obtain detergent",
+            "intent": "ask for advice / suggest a course of action"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 2,
+        "required": 2,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 2,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 17352,
+      "tokens": {
+        "prompt": 1623,
+        "completion": 1433
+      },
+      "score": {
+        "label": "D",
+        "contradiction": false,
+        "overall": 7,
+        "reason": "Solid everyday logic; HSK vocabulary fits, though \"what should we do\" is a bit repetitive for '该' targeting.",
+        "causal": 8,
+        "chronology": 9,
+        "plausibility": 9,
+        "simplicity": 8,
+        "targetFit": 7,
+        "suitability": 9
+      },
+      "label": "D",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": [],
+      "lexical": {
+        "cost": 28,
+        "offListWords": 5,
+        "assistedWords": 9,
+        "minWorstSentence": 1,
+        "byNecessity": {
+          "OPTIONAL_COMPLEXITY": {
+            "count": 2,
+            "cost": 9,
+            "words": [
+              "off:extra",
+              "请求"
+            ]
+          },
+          "CENTRAL_NECESSARY": {
+            "count": 7,
+            "cost": 19,
+            "words": [
+              "off:laundry",
+              "off:detergent",
+              "off:gone",
+              "查询",
+              "off:shelf",
+              "添",
+              "厨房"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "extra(off)",
+          "laundry(off)",
+          "detergent(off)",
+          "gone(off)"
+        ]
+      }
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:medium",
+      "attempt": 6,
+      "blueprint": {
+        "title": "Borrowing a charger at school",
+        "setting": "A Chinese middle school, weekday morning",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明's phone battery is low and he needs to charge it before class.",
+        "incitingEvent": "李明 sees his phone battery warning.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning",
+            "what": "李明 checks his phone and sees the battery is low.",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6,
+            "where": "hallway",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "shortly after",
+            "what": "李明 decides he should ask 小红 for a charger.",
+            "because": "he realized his phone needs power",
+            "targets": [
+              "该"
+            ],
+            "lines": 6,
+            "where": "hallway",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "a few minutes later",
+            "what": "李明 walks to 小红's desk and asks if she can lend her charger.",
+            "because": "he decided to ask her",
+            "targets": [
+              "如果"
+            ],
+            "lines": 6,
+            "where": "classroom",
+            "arrivedHow": "李明 walks to the classroom"
+          },
+          {
+            "id": 4,
+            "when": "immediately",
+            "what": "小红 says she can lend the charger and they plug the phone in.",
+            "because": "她 agrees to help",
+            "targets": [],
+            "lines": 5,
+            "where": "classroom",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "after a short time",
+            "what": "李明's phone is charging, he feels relieved and thanks 小红.",
+            "because": "the charger works",
+            "targets": [],
+            "lines": 5,
+            "where": "hallway",
+            "arrivedHow": "李明 and 小红 walk back to the hallway"
+          }
+        ],
+        "resolution": "李明's phone gets charged enough, so he can attend class without worry.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 notices the low battery and states the need to charge.",
+            "speaker": "李明",
+            "refersTo": "phone battery",
+            "intent": "express necessity"
+          },
+          {
+            "word": "该",
+            "beat": 2,
+            "why": "李明 is deciding what action he should take.",
+            "speaker": "李明",
+            "refersTo": "asking 小红 for a charger",
+            "intent": "indicate what he ought to do"
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "李明 warns about a possible problem if he cannot charge.",
+            "speaker": "李明",
+            "refersTo": "missing charger leading to trouble in class",
+            "intent": "state a conditional"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Borrowing a charger at school",
+        "setting": "A Chinese middle school, weekday morning",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明's phone battery is low and he needs to charge it before class.",
+        "incitingEvent": "李明 sees his phone battery warning.",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning",
+            "location": "hallway",
+            "what": "李明 checks his phone and sees the battery is low.",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 2,
+            "when": "shortly after",
+            "location": "hallway",
+            "what": "李明 decides he should ask 小红 for a charger.",
+            "because": "he realized his phone needs power",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "该"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 3,
+            "when": "a few minutes later",
+            "location": "classroom",
+            "what": "李明 walks to 小红's desk and asks if she can lend her charger.",
+            "because": "he decided to ask her",
+            "transition_from_previous": "李明 walks to the classroom",
+            "targets": [
+              "如果"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 4,
+            "when": "immediately",
+            "location": "classroom",
+            "what": "小红 says she can lend the charger and they plug the phone in.",
+            "because": "她 agrees to help",
+            "transition_from_previous": "same_place",
+            "targets": [],
+            "lines": 5
+          },
+          {
+            "id": 5,
+            "when": "after a short time",
+            "location": "hallway",
+            "what": "李明's phone is charging, he feels relieved and thanks 小红.",
+            "because": "the charger works",
+            "transition_from_previous": "李明 and 小红 walk back to the hallway",
+            "targets": [],
+            "lines": 5
+          }
+        ],
+        "resolution": "李明's phone gets charged enough, so he can attend class without worry.",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 notices the low battery and states the need to charge.",
+            "speaker": "李明",
+            "refersTo": "phone battery",
+            "intent": "express necessity"
+          },
+          {
+            "word": "该",
+            "beat": 2,
+            "why": "李明 is deciding what action he should take.",
+            "speaker": "李明",
+            "refersTo": "asking 小红 for a charger",
+            "intent": "indicate what he ought to do"
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "李明 warns about a possible problem if he cannot charge.",
+            "speaker": "李明",
+            "refersTo": "missing charger leading to trouble in class",
+            "intent": "state a conditional"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 2,
+        "required": 2,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 3,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 42837,
+      "tokens": {
+        "prompt": 1635,
+        "completion": 1981
+      },
+      "score": {
+        "label": "M",
+        "contradiction": true,
+        "overall": 5,
+        "reason": "Internal logic contradiction in Beat 5 destination (changes location to hallway immediately after charging in classroom) breaks chronology and causes issues.",
+        "causal": 6,
+        "chronology": 4,
+        "plausibility": 7,
+        "simplicity": 9,
+        "targetFit": 8,
+        "suitability": 8
+      },
+      "label": "M",
+      "qualityOk": false,
+      "jointOk": false,
+      "buckets": [
+        "contradiction",
+        "chronology"
+      ],
+      "lexical": {
+        "cost": 17,
+        "offListWords": 2,
+        "assistedWords": 6,
+        "minWorstSentence": 1,
+        "byNecessity": {
+          "CENTRAL_NECESSARY": {
+            "count": 5,
+            "cost": 14,
+            "words": [
+              "查询",
+              "off:charger",
+              "off:plug",
+              "闯",
+              "电池"
+            ]
+          },
+          "OPTIONAL_COMPLEXITY": {
+            "count": 1,
+            "cost": 3,
+            "words": [
+              "力量"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "checks→查询",
+          "charger(off)",
+          "power→力量",
+          "plug(off)"
+        ]
+      }
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:medium",
+      "attempt": 7,
+      "blueprint": {
+        "title": "Borrowing Money for a Snack",
+        "setting": "School cafeteria, morning",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 has no wallet and cannot buy a snack",
+        "incitingEvent": "李明 reaches the snack counter and discovers his wallet is missing",
+        "beats": [
+          {
+            "id": 1,
+            "when": "8:05 AM",
+            "what": "李明 checks his pocket, finds no wallet, realizes he cannot pay",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6,
+            "where": "café entrance, near snack counter",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "8:06 AM",
+            "what": "李明 thinks he should ask 小红 for a little money",
+            "because": "because he needs money to buy a snack",
+            "targets": [
+              "该",
+              "如果"
+            ],
+            "lines": 6,
+            "where": "café entrance, still",
+            "arrivedHow": ""
+          },
+          {
+            "id": 3,
+            "when": "8:07 AM",
+            "what": "李明 walks to 小红's table and says he needs a few coins",
+            "because": "because he decided to ask for help",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "café table where 小红 is sitting",
+            "arrivedHow": "李明 walks from the counter to 小红's table"
+          },
+          {
+            "id": 4,
+            "when": "8:08 AM",
+            "what": "小红 agrees, saying that if 李明 returns the money tomorrow, she will be fine",
+            "because": "because she heard his request",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5,
+            "where": "same table",
+            "arrivedHow": ""
+          },
+          {
+            "id": 5,
+            "when": "8:10 AM",
+            "what": "李明 uses the borrowed coins, buys a snack, thanks 小红, and the problem is solved",
+            "because": "because he now has money",
+            "targets": [],
+            "lines": 6,
+            "where": "snack counter",
+            "arrivedHow": "李明 returns to the counter with the coins"
+          }
+        ],
+        "resolution": "李明 gets the snack and thanks 小红, so the missing‑wallet problem is resolved",
+        "targetPlan": [
+          {
+            "word": "如果",
+            "beat": 4,
+            "why": "小红 wants to set a condition for lending money",
+            "speaker": "小红",
+            "refersTo": "the repayment tomorrow",
+            "intent": "to say 'if you give it back tomorrow, that's fine'"
+          },
+          {
+            "word": "该",
+            "beat": 2,
+            "why": "李明 is deciding what he ought to do",
+            "speaker": "李明",
+            "refersTo": "asking 小红 for money",
+            "intent": "to express that he should ask"
+          },
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 discovers he lacks money to buy the snack",
+            "speaker": "李明",
+            "refersTo": "money",
+            "intent": "to state that he needs money"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Borrowing Money for a Snack",
+        "setting": "School cafeteria, morning",
+        "cast": [
+          "李明",
+          "小红"
+        ],
+        "problem": "李明 has no wallet and cannot buy a snack",
+        "incitingEvent": "李明 reaches the snack counter and discovers his wallet is missing",
+        "beats": [
+          {
+            "id": 1,
+            "when": "8:05 AM",
+            "location": "café entrance, near snack counter",
+            "what": "李明 checks his pocket, finds no wallet, realizes he cannot pay",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 2,
+            "when": "8:06 AM",
+            "location": "café entrance, still",
+            "what": "李明 thinks he should ask 小红 for a little money",
+            "because": "because he needs money to buy a snack",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "该",
+              "如果"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 3,
+            "when": "8:07 AM",
+            "location": "café table where 小红 is sitting",
+            "what": "李明 walks to 小红's table and says he needs a few coins",
+            "because": "because he decided to ask for help",
+            "transition_from_previous": "李明 walks from the counter to 小红's table",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "8:08 AM",
+            "location": "same table",
+            "what": "小红 agrees, saying that if 李明 returns the money tomorrow, she will be fine",
+            "because": "because she heard his request",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 5,
+            "when": "8:10 AM",
+            "location": "snack counter",
+            "what": "李明 uses the borrowed coins, buys a snack, thanks 小红, and the problem is solved",
+            "because": "because he now has money",
+            "transition_from_previous": "李明 returns to the counter with the coins",
+            "targets": [],
+            "lines": 6
+          }
+        ],
+        "resolution": "李明 gets the snack and thanks 小红, so the missing‑wallet problem is resolved",
+        "targetPlan": [
+          {
+            "word": "如果",
+            "beat": 4,
+            "why": "小红 wants to set a condition for lending money",
+            "speaker": "小红",
+            "refersTo": "the repayment tomorrow",
+            "intent": "to say 'if you give it back tomorrow, that's fine'"
+          },
+          {
+            "word": "该",
+            "beat": 2,
+            "why": "李明 is deciding what he ought to do",
+            "speaker": "李明",
+            "refersTo": "asking 小红 for money",
+            "intent": "to express that he should ask"
+          },
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 discovers he lacks money to buy the snack",
+            "speaker": "李明",
+            "refersTo": "money",
+            "intent": "to state that he needs money"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 1,
+        "required": 1,
+        "violations": [],
+        "warnings": [
+          {
+            "beat": 3,
+            "code": "transition_within_place",
+            "message": "beat 3 describes a move inside \"café table where 小红 is sitting\""
+          }
+        ],
+        "mapped": [
+          {
+            "beat": 3,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 61197,
+      "tokens": {
+        "prompt": 1651,
+        "completion": 2482
+      },
+      "score": {
+        "label": "I",
+        "contradiction": false,
+        "overall": 10,
+        "reason": "Flawless cause-and-effect, perfect for HSK 3 scope and target words.",
+        "causal": 10,
+        "chronology": 10,
+        "plausibility": 10,
+        "simplicity": 10,
+        "targetFit": 10,
+        "suitability": 10
+      },
+      "label": "I",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": [],
+      "lexical": {
+        "cost": 32,
+        "offListWords": 5,
+        "assistedWords": 11,
+        "minWorstSentence": 1,
+        "byNecessity": {
+          "OPTIONAL_COMPLEXITY": {
+            "count": 4,
+            "cost": 12,
+            "words": [
+              "回报",
+              "请求",
+              "美好",
+              "小吃"
+            ]
+          },
+          "CENTRAL_NECESSARY": {
+            "count": 7,
+            "cost": 20,
+            "words": [
+              "查询",
+              "off:finds",
+              "off:wallet",
+              "off:coins",
+              "off:saying",
+              "off:borrowed",
+              "口袋"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "returns→回报",
+          "checks→查询",
+          "finds(off)",
+          "wallet(off)"
+        ]
+      }
+    },
+    {
+      "model": "groq:openai/gpt-oss-120b:medium",
+      "attempt": 8,
+      "blueprint": {
+        "title": "Phone Battery Low",
+        "setting": "A family apartment, weekday morning",
+        "cast": [
+          "李明",
+          "妈妈"
+        ],
+        "problem": "李明's phone battery is low and must be charged before class",
+        "incitingEvent": "李明 sees the low‑battery warning on his phone",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning",
+            "what": "李明 notices his phone battery is low",
+            "because": "the story opens",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5,
+            "where": "bedroom",
+            "arrivedHow": ""
+          },
+          {
+            "id": 2,
+            "when": "shortly after",
+            "what": "李明 walks to the kitchen where 妈妈 is cooking and thinks he should ask her for a charger",
+            "because": "because he needs a charger, he goes to the kitchen",
+            "targets": [
+              "该"
+            ],
+            "lines": 6,
+            "where": "kitchen",
+            "arrivedHow": "李明 walks to kitchen"
+          },
+          {
+            "id": 3,
+            "when": "moments later",
+            "what": "妈妈 tells 李明 that if he wants to charge the phone, he must get the charger from the living room",
+            "because": "because he asks his mother, she gives him instruction",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5,
+            "where": "kitchen",
+            "arrivedHow": ""
+          },
+          {
+            "id": 4,
+            "when": "a minute later",
+            "what": "李明 walks to the living room, finds the charger under the couch, and picks it up",
+            "because": "because he follows 妈妈's instruction, he goes to the living room",
+            "targets": [],
+            "lines": 6,
+            "where": "living room",
+            "arrivedHow": "李明 walks to living room"
+          },
+          {
+            "id": 5,
+            "when": "immediately after",
+            "what": "李明 returns to the bedroom, plugs the charger into his phone, and the battery starts charging",
+            "because": "because he has the charger, he returns to charge the phone",
+            "targets": [],
+            "lines": 6,
+            "where": "bedroom",
+            "arrivedHow": "李明 walks back to bedroom"
+          }
+        ],
+        "resolution": "李明's phone begins charging, so he can attend his class on time",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 sees the low‑battery icon and realizes the phone needs power",
+            "speaker": "李明",
+            "refersTo": "phone battery",
+            "intent": "state a necessity"
+          },
+          {
+            "word": "该",
+            "beat": 2,
+            "why": "李明 thinks he should ask his mother for help",
+            "speaker": "李明",
+            "refersTo": "asking for charger",
+            "intent": "express what he ought to do"
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "妈妈 gives a condition for getting the charger",
+            "speaker": "妈妈",
+            "refersTo": "the condition of going to the living room",
+            "intent": "present a conditional clause"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "plan": {
+        "title": "Phone Battery Low",
+        "setting": "A family apartment, weekday morning",
+        "cast": [
+          "李明",
+          "妈妈"
+        ],
+        "problem": "李明's phone battery is low and must be charged before class",
+        "incitingEvent": "李明 sees the low‑battery warning on his phone",
+        "beats": [
+          {
+            "id": 1,
+            "when": "morning",
+            "location": "bedroom",
+            "what": "李明 notices his phone battery is low",
+            "because": "the story opens",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "需要"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 2,
+            "when": "shortly after",
+            "location": "kitchen",
+            "what": "李明 walks to the kitchen where 妈妈 is cooking and thinks he should ask her for a charger",
+            "because": "because he needs a charger, he goes to the kitchen",
+            "transition_from_previous": "李明 walks to kitchen",
+            "targets": [
+              "该"
+            ],
+            "lines": 6
+          },
+          {
+            "id": 3,
+            "when": "moments later",
+            "location": "kitchen",
+            "what": "妈妈 tells 李明 that if he wants to charge the phone, he must get the charger from the living room",
+            "because": "because he asks his mother, she gives him instruction",
+            "transition_from_previous": "same_place",
+            "targets": [
+              "如果"
+            ],
+            "lines": 5
+          },
+          {
+            "id": 4,
+            "when": "a minute later",
+            "location": "living room",
+            "what": "李明 walks to the living room, finds the charger under the couch, and picks it up",
+            "because": "because he follows 妈妈's instruction, he goes to the living room",
+            "transition_from_previous": "李明 walks to living room",
+            "targets": [],
+            "lines": 6
+          },
+          {
+            "id": 5,
+            "when": "immediately after",
+            "location": "bedroom",
+            "what": "李明 returns to the bedroom, plugs the charger into his phone, and the battery starts charging",
+            "because": "because he has the charger, he returns to charge the phone",
+            "transition_from_previous": "李明 walks back to bedroom",
+            "targets": [],
+            "lines": 6
+          }
+        ],
+        "resolution": "李明's phone begins charging, so he can attend his class on time",
+        "targetPlan": [
+          {
+            "word": "需要",
+            "beat": 1,
+            "why": "李明 sees the low‑battery icon and realizes the phone needs power",
+            "speaker": "李明",
+            "refersTo": "phone battery",
+            "intent": "state a necessity"
+          },
+          {
+            "word": "该",
+            "beat": 2,
+            "why": "李明 thinks he should ask his mother for help",
+            "speaker": "李明",
+            "refersTo": "asking for charger",
+            "intent": "express what he ought to do"
+          },
+          {
+            "word": "如果",
+            "beat": 3,
+            "why": "妈妈 gives a condition for getting the charger",
+            "speaker": "妈妈",
+            "refersTo": "the condition of going to the living room",
+            "intent": "present a conditional clause"
+          }
+        ],
+        "impossibleTargets": []
+      },
+      "structural": {
+        "ok": true,
+        "failures": []
+      },
+      "transitions": {
+        "stated": 3,
+        "required": 3,
+        "violations": [],
+        "warnings": [],
+        "mapped": [
+          {
+            "beat": 2,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 4,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          },
+          {
+            "beat": 5,
+            "from": "transition_from_previous",
+            "to": "arrivedHow"
+          }
+        ],
+        "adapterLoss": null
+      },
+      "raw": null,
+      "latencyMs": 58899,
+      "tokens": {
+        "prompt": 1663,
+        "completion": 1946
+      },
+      "score": {
+        "label": "E",
+        "contradiction": false,
+        "overall": 9,
+        "reason": "Extremely tight logic, natural flow, and perfect HSK 3 vocabulary integration.",
+        "causal": 10,
+        "chronology": 10,
+        "plausibility": 10,
+        "simplicity": 10,
+        "targetFit": 9,
+        "suitability": 10
+      },
+      "label": "E",
+      "qualityOk": true,
+      "jointOk": true,
+      "buckets": [],
+      "lexical": {
+        "cost": 26,
+        "offListWords": 5,
+        "assistedWords": 9,
+        "minWorstSentence": 1,
+        "byNecessity": {
+          "OPTIONAL_COMPLEXITY": {
+            "count": 3,
+            "cost": 12,
+            "words": [
+              "off:instruction",
+              "闯",
+              "off:living"
+            ]
+          },
+          "CENTRAL_NECESSARY": {
+            "count": 6,
+            "cost": 14,
+            "words": [
+              "off:charger",
+              "off:couch",
+              "off:plugs",
+              "电池",
+              "卧室",
+              "厨房"
+            ]
+          }
+        },
+        "classification": "LEXICALLY_UNSAFE",
+        "feasible": false,
+        "targetCoverage": "3/3",
+        "worst": [
+          "instruction(off)",
+          "charger(off)",
+          "charge/charging→闯",
+          "living(off)"
+        ]
+      }
+    }
+  ]
+}
