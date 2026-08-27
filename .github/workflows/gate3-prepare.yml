@@ -17,8 +17,10 @@ name: Gate 3 — Prepare (read-only)
 #
 # ── WHY EVERYTHING IS ENCRYPTED, AND WHY NOTHING IS PIPED TO THE LOG ───────
 # Hanzi-dojo is a PUBLIC repository. Job logs and artifacts are readable by
-# anyone on the internet. The snapshot is a complete copy of ~800 user card
-# rows; the manifest carries account ids, card ids and real grade history.
+# anyone on the internet. The snapshot holds every column this migration can
+# write, for every row it can touch — the account id, the card id, and the real
+# scheduler state of ~800 user rows. The manifest carries account ids, card ids
+# and real grade history.
 #
 #   snapshot  -> GPG PUBLIC-KEY encrypted to a recipient whose private key
 #                exists only on the maintainer's machine. CI cannot decrypt it,
@@ -55,7 +57,7 @@ concurrency:
 env:
   # The ONLY commit this migration may run. Set in a reviewed commit; never an
   # input. See ops/README-gate3-snapshot-key.md.
-  APPROVED_MIGRATION_SHA: 'd0dcc5171d048b603b8e9a5c05d1cebcef273870'
+  APPROVED_MIGRATION_SHA: '5bb8b38383dfb8c4c45cb5b89c34cc3423ea790b'
   # The snapshot recipient key is CONTROL-PLANE data, not migration code, so it
   # is taken from the dispatch revision of the default branch rather than from
   # the pinned commit — it was committed after that commit was frozen, and
