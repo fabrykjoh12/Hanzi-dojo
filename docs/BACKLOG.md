@@ -742,6 +742,76 @@ and "card" (卡) are both in level, but the realization needs the compound 公�
 which is not. **Concept-level feasibility does not guarantee compound-level
 sayability**, and that gap is only visible once something is written.
 
+### The vocabulary source is the blocker, and it is not four rows (2026-08-27)
+
+`storyVocabAudit.mjs` runs every published story through the reader's own
+matcher. Across **204 stories: 652 occurrences of text a learner already meets
+and cannot tap.** The classes exist only to say where the repair belongs.
+
+| class | runs | occurrences | repair layer | examples |
+|---|---|---|---|---|
+| **COMPONENT_ONLY** | 57 | **368** | **source data** | 钟 (in 分钟 H1) · 话 (说话/电话 H1) · 午 (中午 H1) · 没 (没有 H1) · 纸 (报纸 H3) · 关 (没关系 H1) |
+| **ABSENT** | 61 | 278 | content | 岛, 缸, 秧苗, 田螺 — the story reached outside the course |
+| **NAME** | 1 | 6 | segmentation | an undetected proper name |
+
+**COMPONENT_ONLY must not be repaired in the evidence layer.** The character is
+in the course only inside a compound, and knowing 火车 ("train") does not teach
+火 ("fire"). Treating containment as knowledge is the synonym-bridge mistake
+with characters instead of glosses. Every row stores its host compounds as the
+provenance for the claim.
+
+**A narrow gloss is invisible to this audit** — the reader segments 不见 and 被
+perfectly well. It breaks only the English-concept matcher, so `glossCoverage()`
+checks it separately, sense by sense.
+
+| word | HSK | stored gloss | what is missing | class |
+|---|---|---|---|---|
+| 被 | 3 | *"quilt; to cover (with)"* | the passive marker | narrow gloss |
+| 不见 | 3 | *"not to see; not to meet"* | "gone / missing" — published stories already write 苹果不见了 | narrow gloss |
+| 卡 | 3 | reading **kǎ**, gloss *"to stop; to block"* | the gloss belongs to the **qiǎ** reading — reading and sense disagree | reading↔gloss mismatch |
+| 没 | — | **no row at all** (只有 没有) | ordinary negation; blocks 手机没电 | COMPONENT_ONLY |
+| 公交 | — | no row (公交车 is HSK 2) | blocks 公交卡, the central object of a plan scored feasible | COMPONENT_ONLY |
+
+**Provenance cannot be recovered: `source_id` is NULL on all 4,998 Chinese
+rows**, `category` on all of them, and `part_of_speech` on all but the 300 HSK 1
+rows. So "identify the canonical source" has no answer in the data. The HSK 3+
+glosses are recognisably raw CC-CEDICT strings (*"sofa (loanword); (Internet
+slang) the first reply or replier to a forum post"*); HSK 1's are short and
+curated. Recording provenance is a prerequisite for ever re-deriving a gloss.
+
+**No vocabulary row was changed.** Adding rows or reglossing is a curriculum
+decision; the audit exists so it can be made on numbers.
+
+### Harness: resumable, quota-aware, and sampled identically (2026-08-27)
+
+- Successful realizations are cached by a hash of (plan, blueprint, manifest,
+  writer, sampling, line target, scaffold budget, module versions). A rerun
+  reuses what worked rather than spending quota on it again.
+- A 429 is relabelled **INCOMPLETE_QUOTA**, never a writer failure, and the run
+  reports which plans have every writer realized. `llmDirect` already honoured
+  Retry-After with a bounded 240s cap, so production needed no change.
+- `directProvider` takes an optional `sampling`; the bakeoff sends
+  **temperature 1.0 / top_p 1.0 to both writers**. That is the documented
+  OpenAI-compatible default, so behaviour is unchanged — it only guarantees the
+  two models are sampled identically. Production still sends neither field.
+
+**Judge: Gemini is not operational** — both `gemini-2.5-flash` and
+`gemini-2.5-pro` return HTTP 429 *"Your prepayment credit…"*. The judge stays
+`gpt-oss-20b`, which is the **same family as candidate writer gpt-oss-120b**;
+no SWITCH decision may rest on that judge alone.
+
+**Wrong-language plans are now rejected deterministically.** The share of prose
+that is Chinese, once cast names and quoted target words are removed, checked on
+the BEATS as their own group — one plan had an English one-line `problem` and
+entirely Chinese beats, and averaging the two let the English dilute it. Across
+all 36 stored plans the validator and the lexical gate now agree 36/36. The
+planner gets one bounded retry for this failure only.
+
+**Still no paired realized stories.** `paired-1` ended INCOMPLETE_QUOTA with 0/1
+pairs complete: qwen produced a one-character title (伞, correctly rejected) and
+gpt-oss hit a 429 asking for 666 more seconds. Writer recommendation remains
+**INSUFFICIENT EVIDENCE**.
+
 ### Target-bundle selection moved upstream, and the eligible set is finally non-empty (2026-08-26)
 
 Four stored plans had been through placement viability and every one failed on
