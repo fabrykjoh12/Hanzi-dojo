@@ -53,14 +53,31 @@ YAML says.
 
 ### 2. Canonical `main` — a ruleset with an empty bypass list
 
-No workflow pushes `main`. The last one that did was `needs-testing-sync.yml`,
-which committed its Discord thread-id map there; it now writes an orphan branch
-instead (below). That matters because a ruleset is only as strong as its bypass
-list, and a GitHub Actions bypass wide enough for one job is wide enough for
-**every** workflow on **every** branch — including the 75.
+Two statements here, and the difference between them matters:
 
-`workflow-authority.test.mjs` fails if any workflow reintroduces a push to
-`main`, so the ruleset never needs an exception added back.
+**Repository code** — no workflow *explicitly names* `main` as a push target.
+The last one that did was `needs-testing-sync.yml`, which committed its Discord
+thread-id map there; it now writes an orphan branch instead (below).
+
+**But four workflows still resolve their push target dynamically** from the ref
+they were dispatched on, so dispatching one from `main` pushes `main`. See the
+section below. Repository code cannot prevent that — the target is only known at
+run time.
+
+**The resource boundary** — the `main` ruleset, with an **empty bypass list**,
+rejects every direct workflow push to `main` at the server, dynamic ones
+included. That is what actually holds the line, and it holds without knowing
+anything about the workflow attempting the push.
+
+Both halves are needed. The code change is what lets the bypass list stay empty:
+a ruleset is only as strong as that list, and a GitHub Actions bypass wide enough
+for one job is wide enough for **every** workflow on **every** branch — including
+the 75. `workflow-authority.test.mjs` fails if any workflow reintroduces an
+explicit `main` target, so the exception never needs adding back.
+
+What that test does **not** claim is "no workflow can push `main`". It cannot:
+that is a property of the ruleset, which lives in GitHub settings rather than in
+this repository.
 
 ## Canonical content vs. mutable state
 
@@ -83,31 +100,36 @@ Discord) and the commit is rebuilt. Never force-pushed — the losing side holds
 real thread ids, and abandoning them would orphan live threads testers have
 already replied to.
 
-## The four that push their own ref
-
-Separate from the above, and unresolved by design:
+## The four dynamic writers
 
 `content-utils.yml`, `llm-bench.yml`, `story-pilot.yml` and `vocab-complete.yml`
 push `HEAD:${GITHUB_REF_NAME}` (or a bare `git push`) — whatever ref the run was
 dispatched on. Dispatch one from `main`, which is the Actions UI default, and it
 commits to `main`. The word "main" never appears in them, so they do not look
-like main-writers on inspection.
+like main-writers on inspection, and no static check can rule the case out.
 
-They are content workflows whose job is committing generated data, and pushing
-to `main` may be exactly what their operator wants. That is a content-pipeline
-decision, not a security one, so they are **listed** rather than changed —
-`workflow-authority.test.mjs` pins the set at exactly these four, so a fifth
-cannot appear without a deliberate decision.
+They are content workflows whose job is committing generated data, so where that
+data should land is a content-pipeline decision rather than a containment one.
+They are **listed** rather than changed. `workflow-authority.test.mjs` pins the
+set at exactly these four, so a fifth cannot appear without a deliberate
+decision.
 
-**Before enabling the `main` ruleset, know that these four will start failing at
-push time when dispatched from `main`.** `vocab-complete.yml --task build` is the
-one most likely to be noticed: it rebuilds the HSK word lists and commits them.
-Either dispatch them from a branch and open a PR, or convert them to the
-`automation/*` pattern.
+**Temporary operational behaviour, not the end state.** Once the `main` ruleset
+is enabled these four will *fail at push time* when dispatched from `main` —
+after doing their work, which is wasteful and confusing. That is accepted for
+now because failing closed beats mutating `main`. `vocab-complete.yml --task
+build` is the one most likely to be noticed: it rebuilds the HSK word lists and
+commits them.
+
+The follow-up, deliberately out of scope for the containment change, is to give
+each one an explicit refusal when `github.ref` is `main`, or convert it to
+generate on a branch and open a pull request.
 
 ## Adding a workflow that needs to write something
 
 1. **Writing to `main`? Don't.** Open a pull request, or write to `automation/*`.
+   Check the *resolved* target, not the literal string: `HEAD:${GITHUB_REF_NAME}`
+   and a bare `git push` both become `main` when dispatched from `main`.
 2. **Touching canonical Discord state?** Put it in the `roadmap-discord`
    environment and use environment secrets.
 3. **Needs `contents: write`?** Say in a comment which refs it may advance, and
@@ -117,7 +139,16 @@ Either dispatch them from a branch and open a PR, or convert them to the
 
 ## What is deliberately not claimed
 
-This does not make the stale branches safe to run. It makes them **unable to
-mutate canonical state**. They can still fail loudly, waste a runner, or post to
-a channel whose webhook was left as a repository secret. Deleting the merged
-ones is worthwhile hygiene — it is just not what is holding the line.
+This does not make the stale branches safe to run, and it is not self-executing.
+
+What holds is conditional on the external configuration existing: the
+`roadmap-discord` environment must be restricted to `main` **and** the
+repository-level webhook secrets deleted, or the environment is decorative; the
+`main` ruleset must exist with an empty bypass list, or dynamic pushes to `main`
+still land. Until both are in place, the repository changes here reduce the
+number of write-paths but close nothing.
+
+Once they are, stale branches become **unable to mutate canonical state** — but
+they can still fail loudly, waste a runner, or post to any channel whose webhook
+was left as a repository secret. Deleting the merged ones is worthwhile hygiene;
+it is just not what is holding the line.

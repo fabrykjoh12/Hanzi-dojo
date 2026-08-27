@@ -32,7 +32,26 @@ const executable = text => text.split('\n').filter(l => !/^\s*#/.test(l)).join('
 const ROADMAP = readFileSync(DIR + '/roadmap-live-sync.yml', 'utf8')
 const NEEDS_TESTING = readFileSync(DIR + '/needs-testing-sync.yml', 'utf8')
 
-describe('no workflow can push to main', () => {
+// THE REPOSITORY-CODE INVARIANT — what this file can actually prove.
+//
+//   No workflow explicitly targets `main` as a push destination, and every
+//   workflow whose push target is dynamic (resolved from the dispatched ref) is
+//   enumerated here and cannot grow silently.
+//
+// It is deliberately NOT "no workflow can push main". That stronger statement
+// is false today: the four dynamic writers below resolve their target from
+// `github.ref_name`, so dispatching one from `main` pushes `main`. Repository
+// code alone cannot prevent that.
+//
+// THE RESOURCE-LEVEL INVARIANT — what actually stops them, once configured:
+//
+//   The `main` ruleset with an empty bypass list rejects every direct workflow
+//   push to `main`, dynamic ones included, at the server.
+//
+// That one lives in GitHub settings, not in this repository, so nothing here
+// can assert it. Keeping the two apart is the point: a test named for a
+// guarantee it does not provide is worse than no test.
+describe('repository code never explicitly targets main', () => {
   it('finds the workflows to check', () => {
     // A rename or a moved directory must not turn this file into a no-op.
     expect(WORKFLOWS.length).toBeGreaterThan(10)
@@ -40,12 +59,15 @@ describe('no workflow can push to main', () => {
     expect(NAMES).toContain('needs-testing-sync.yml')
   })
 
-  it('no workflow pushes a ref to main, in any spelling', () => {
+  it('no workflow names main as a push target, in any spelling', () => {
     // needs-testing-sync.yml was the last one that did:
     //   git push origin HEAD:main
     // With that gone, the main ruleset needs no GitHub Actions bypass — and a
     // bypass wide enough for one job is wide enough for every workflow on every
     // branch, including the 75 stale ones.
+    //
+    // Scope: this catches a LITERAL main target only. Dynamic targets are the
+    // separate assertion below.
     const FORMS = [
       /git\s+push[^\n]*\bHEAD:main\b/,
       /git\s+push[^\n]*\bHEAD:refs\/heads\/main\b/,
@@ -62,21 +84,27 @@ describe('no workflow can push to main', () => {
     }
   })
 
-  it('the set of workflows that push their OWN ref is exactly the known four', () => {
-    // A second, subtler class. These push `HEAD:${GITHUB_REF_NAME}` (or a bare
-    // `git push`), which resolves to whatever ref the run was dispatched on —
-    // and `main` is the default selection in the Actions UI. They are not
-    // caught by the literal-"main" patterns above because the word never
-    // appears.
+  it('the set of DYNAMIC push targets is exactly the four known writers', () => {
+    // The second class, and the reason the describe above is worded the way it
+    // is. These push `HEAD:${GITHUB_REF_NAME}` (or a bare `git push`), which
+    // resolves to whatever ref the run was dispatched on — and `main` is the
+    // default selection in the Actions UI. The word "main" never appears, so
+    // the literal patterns above cannot see them.
     //
-    // They are content workflows that commit generated data, and committing to
-    // main may well be what their operator intends. They are listed here rather
-    // than fixed because changing them is a content-pipeline decision, not a
-    // security one — and because the `main` ruleset with an empty bypass list
-    // stops them at the server regardless of what this repository says.
+    // CONSEQUENCE, STATED PLAINLY: dispatched from `main` today, each of these
+    // pushes `main`. Repository code does not prevent it. The `main` ruleset
+    // with an empty bypass list is what prevents it, server-side, once
+    // configured — and after that these four FAIL at push time when dispatched
+    // from `main`. That is accepted temporary operational behaviour, not the
+    // end state; the follow-up is to make them refuse a `main` dispatch or
+    // generate to a branch and open a PR.
     //
-    // What this assertion buys: the class cannot grow silently. A new workflow
-    // that pushes its own ref fails here and gets a deliberate decision.
+    // They are content workflows that commit generated data, so where that data
+    // should land is a content-pipeline decision, out of scope for containment.
+    //
+    // What this assertion buys: the class cannot grow silently. A fifth dynamic
+    // writer fails here and gets a deliberate decision instead of arriving
+    // unnoticed.
     const REF_RELATIVE = ['content-utils.yml', 'llm-bench.yml', 'story-pilot.yml', 'vocab-complete.yml']
     const found = WORKFLOWS
       .filter(({ text }) => {
