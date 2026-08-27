@@ -11,7 +11,7 @@ on:
         description: What to run
         type: choice
         default: story-images-apply
-        options: [story-images-apply, publish-held, fix-collisions, fix-vocab-kanji, fix-vocab-kanji-apply, manhua-art-fetch, manhua-publish, check-published]
+        options: [story-images-apply, publish-held, fix-collisions, fix-vocab-kanji, fix-vocab-kanji-apply, manhua-art-fetch, manhua-publish, check-published, content-integrity, content-integrity-accept]
       language:
         description: "publish-held only: language of the level to publish"
         type: string
@@ -91,6 +91,15 @@ jobs:
           fi
           if [ "$TASK" = "fix-collisions" ]; then
             node publish-stories.mjs --language "$LANGUAGE" --system "$SYSTEM" --level "$LEVEL" --fix-collisions --apply
+          fi
+          if [ "$TASK" = "content-integrity" ]; then
+            # Directional: existing debt may shrink, new debt fails the run.
+            node check-content-integrity.mjs
+          fi
+          if [ "$TASK" = "content-integrity-accept" ]; then
+            # The explicit, reviewed action that ACCEPTS new debt. Never run by
+            # CI on its own — the diff has to be read by a person.
+            node check-content-integrity.mjs --update-baseline
           fi
           if [ "$TASK" = "check-published" ]; then
             node check-published-stories.mjs
