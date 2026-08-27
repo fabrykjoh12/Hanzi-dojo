@@ -29,6 +29,7 @@ import {
 import { adaptShape, adapterLostSomething, SHAPE_CONTRACT_VERSION } from './storySemanticShape.mjs'
 import { directProvider } from './llmDirect.mjs'
 import { levelConfig } from './storyLevels.mjs'
+import { assessShapeRisk, buildLexicalIndexes, ASSISTED_POLICY } from './storyLexicalRisk.mjs'
 
 const args = process.argv.slice(2)
 const arg = (name, def) => { const i = args.indexOf('--' + name); return i !== -1 && args[i + 1] != null ? args[i + 1] : def }
@@ -255,6 +256,61 @@ for (const c of candidates) {
   c.buckets = taxonomy(c)
 }
 
+// ── Lexical feasibility, BEFORE any quality ranking ─────────────────────────
+// The six frozen plans all passed structural and most passed quality, and
+// every one of them was lexically impossible. Ranking by story quality first
+// meant the ranking was over a set that could not be written, so feasibility
+// is reported first and a candidate that fails it is rejected — never rescued
+// by moving a threshold.
+const vocabMapFull = {}
+for (const v of vocab) if (v && v.word && !vocabMapFull[v.word]) vocabMapFull[v.word] = v
+let lexIndexes = null
+try { lexIndexes = buildLexicalIndexes(vocabMapFull, level) } catch (err) {
+  console.error('lexical gate unavailable: ' + String(err.message || err))
+}
+if (lexIndexes) {
+  console.log('\n' + '='.repeat(78))
+  console.log('LEXICAL FEASIBILITY — reported before quality, because an infeasible plan cannot be ranked')
+  console.log('='.repeat(78))
+  const P = ASSISTED_POLICY
+  console.log('caps: cost<=' + P.costBudget + '  offList<=' + P.offListMax + '  words<=' + P.assistedWordsMax
+    + '  perSentence<=' + P.assistedPerSentenceMax + '  (optionalMax ' + (P.optionalMax == null ? 'off' : P.optionalMax) + ')')
+  console.log('\nlbl  targets  cost  off  words  /sent  central     support     optional    FEASIBLE  major unsupported')
+  for (const c of candidates) {
+    if (!c.blueprint) continue
+    let rep = null
+    try { rep = assessShapeRisk({ blueprint: c.blueprint, manifest, vocabMap: vocabMapFull, indexes: lexIndexes }) } catch { continue }
+    const b = rep.budget
+    const n = b.byNecessity || {}
+    const cell = (k) => { const x = n[k] || { count: 0, cost: 0 }; return (x.count + '× ' + x.cost).padEnd(12) }
+    const planned = new Set((c.blueprint.targetPlan || []).map(t => t.word))
+    const covered = required.filter(w => planned.has(w)).length
+    const feasible = rep.classification !== 'LEXICALLY_UNSAFE'
+    const worst = rep.assisted.slice().sort((x, y) => y.cost - x.cost).slice(0, 4)
+      .map(a => (a.concepts || [a.concept]).join('/') + (a.offList ? '(off)' : '→' + a.word))
+    c.lexical = {
+      cost: b.cost, offListWords: b.offListWords, assistedWords: b.assistedWords,
+      maxPerSentence: b.maxPerSentence, byNecessity: n, classification: rep.classification,
+      feasible, targetCoverage: covered + '/' + required.length, worst,
+    }
+    console.log('  ' + String(c.label || '-').padEnd(5) + (covered + '/' + required.length).padEnd(9)
+      + String(b.cost).padEnd(6) + String(b.offListWords).padEnd(5) + String(b.assistedWords).padEnd(7)
+      + String(b.maxPerSentence).padEnd(7)
+      + cell('CENTRAL_NECESSARY') + cell('NATURAL_SUPPORT') + cell('OPTIONAL_COMPLEXITY')
+      + (feasible ? 'YES     ' : 'no      ').padEnd(10) + worst.join(', ').slice(0, 44))
+  }
+  const feasible = candidates.filter(c => c.lexical && c.lexical.feasible)
+  console.log('\n' + feasible.length + '/' + candidates.filter(c => c.blueprint).length
+    + ' candidates are lexically feasible' + (feasible.length ? ': ' + feasible.map(c => c.label).join(', ') : ''
+      + ' — do NOT raise a threshold to change this number'))
+  // Premise diversity: what each candidate actually chose to be about.
+  console.log('\nPREMISES (materially different, or six paraphrases of one?)')
+  for (const c of candidates) {
+    if (!c.blueprint) continue
+    console.log('  ' + String(c.label || '-').padEnd(5) + String(c.blueprint.problem || '').slice(0, 96))
+  }
+}
+
 // ── Report ──────────────────────────────────────────────────────────────────
 console.log('\n' + '='.repeat(78))
 console.log('PLANNER BAKEOFF — ' + manifest.id + ', ' + perModel + ' candidates per model')
@@ -306,6 +362,7 @@ writeFileSync(join(outDir, 'bakeoff.json'), JSON.stringify({
   manifest: activeManifest,
   required: stored ? stored.required : required,
   perModel: stored ? stored.perModel : perModel,
+  lexicalPolicy: ASSISTED_POLICY,
   thresholds: BLUEPRINT_QUALITY,
   models: stored ? stored.models : modelSpecs,
   judge: judgeSpec,
