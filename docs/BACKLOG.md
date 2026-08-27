@@ -1,9 +1,10 @@
 # 🛠️ Engineering backlog
 
 Granular fixes, tech-debt, and ops tasks. **Internal — not community-facing.**
-The public plan lives in [`ROADMAP.md`](../ROADMAP.md), which auto-posts to the
-`#roadmap` Discord channel; keep raw bug detail and dashboard-only steps here so
-that stays clean. Move items to **Done** as they land (or promote user-facing
+The public plan lives in [`ROADMAP.md`](../ROADMAP.md), which posts to the
+`#roadmap` Discord channel once merged to `main`; keep raw bug detail and
+dashboard-only steps here so that stays clean. (This file has its own pinned
+post in the private `#backlog` channel, on the same merge-to-`main` trigger.) Move items to **Done** as they land (or promote user-facing
 ones to the roadmap).
 
 Active milestone, task assignments, ownership boundaries and merge order live in
@@ -425,6 +426,322 @@ are job-offer deliberations, because the target bundle put them there. A story
 whose subject is an abstract negotiation cannot be told in HSK 3 vocabulary, and
 no threshold should be bent to pretend otherwise. **The next move is the bundle
 and the planner brief, not the policy.**
+
+### The premise was infeasible before any plan existed (2026-08-27)
+
+Traced the exact bundle behind frozen plans A-F end to end. The bundle is
+`bundle-1`; its `situation` becomes `manifest.theme` verbatim in
+`planner-bakeoff.mjs`, and `storyShapePrompt` printed it as `Theme:`.
+
+| target | reading | gloss | HSK | how it entered | kind |
+|---|---|---|---|---|---|
+| 如果 | rú guǒ | *if; in case* | 3 | judged ROLE — "essential for presenting the dilemma" | target/reinforcement |
+| 需要 | xū yào | *to need; to want; to demand; to require* | 3 | judged ROLE — "establishes the protagonist's requirement" | target/reinforcement |
+| 认为 | rèn wéi | *to believe; to think; to consider; to feel* | 3 | judged ROLE — "provides the internal perspective" | target/reinforcement |
+
+Deferred from the same pool: 被, 中, 该, 像, 生活. The pool is the next eight
+unlearned HSK 3 words by `sort_order`; there was no support vocabulary and no
+planner-added target. **All three targets are in level and carry ZERO lexical
+cost.** The vocabulary was never the problem.
+
+**Where the expensive concepts entered.** The bundle judge saw glosses only
+(`fab9-bundle@1` — no examples, no senses) and answered:
+
+> SITUATION: A friend asking for advice on a conditional life choice, such as
+> whether to accept a new job.
+
+Costed with the corrected matcher that one sentence is **21 points with four
+unsayable words** (advice, conditional, choice, asking) before a beat exists.
+Split of the assisted cost across all six plans:
+
+| origin | charges | cost | share | words |
+|---|---|---|---|---|
+| target vocabulary | 0 | **0** | 0% | — |
+| the premise sentence | 16 | **62** | 26% | job 22, advice 21, conditional 12, choice 7 |
+| planner elaboration | 59 | **180** | 74% | offer 16, details 7, provides 6, prompting 6, hesitation 6, conflict 6, options 6, guidance 6, pros, cons |
+
+**Both stages are defective, and the bundle one is causal.** The judge deferred
+被 *because* it was "a concrete noun unrelated to the abstract/social themes of
+other words" — it actively selected against concreteness — and nothing in
+`bundlePrompt` asked whether the situation could be SAID at the level. The
+planner then spent three times as much again inside the frame it was handed.
+
+**Semantic necessity: none of it is required by the targets.** Scored with the
+same model, the identical three words in a concrete premise:
+
+| premise | cost | off-list |
+|---|---|---|
+| *"A friend asking for advice on a conditional life choice…"* (actual) | **21** | 4 |
+| *"It is raining and one of them needs an umbrella to go home"* | **0** | 0 |
+| *"A bicycle is broken and they think about how to get to school"* | **0** | 0 |
+| *"Someone lost a key and they need to find it"* | **1** | 0 |
+| *"They weigh the pros and cons of a difficult decision"* | **18** | 4 |
+
+**The planner brief, and the smallest generic reason all six collapsed.** Four
+things, none of them about job offers:
+
+1. `Theme:` was printed as a bare requirement, so the planner had no licence to
+   reframe it.
+2. The theme carried a worked example — *"such as whether to accept a new
+   job"* — which acted as a template. All six used a job.
+3. The concreteness rule named only specialist **concrete** nouns (tools,
+   equipment, machinery, food names). It never fired, because nothing in these
+   plans was specialist. The class that broke them was the opposite one:
+   abstractions with no picture behind them.
+4. `const prompt = storyShapePrompt(...)` was built **once, outside the sampling
+   loop**. Six candidates were six temperature samples of one premise —
+   materially different premises were not something the harness could produce.
+
+**The fix.** `storyPremiseRisk.mjs` (`fab9-premise@1`) scores a situation with
+the story gate's own matcher and cost model — no second heuristic, no
+forbidden-topic list. A premise is a sentence of English and the gate already
+knows what one costs. Its budget is deliberately tiny (cost 4, one off-list
+word) because whatever the premise costs, every beat elaborating it costs again.
+`target-bundle` runs it on whatever the judge returns and stores the verdict;
+`bundlePrompt` (`fab9-bundle@3`) asks for a scene rather than a topic and
+refuses the worked example; `storyShapePrompt` offers the theme as a suggestion
+that may be abandoned, names abstract nouns as unsayable alongside specialist
+ones, and requires every beat to contain something photographable;
+`planner-bakeoff` builds the prompt per attempt and tells each one what the
+earlier attempts already used.
+
+`planner-bakeoff` now reports **lexical feasibility before story quality** —
+five of six frozen plans passed quality while being impossible to write, so the
+ranking was over a set that could not exist.
+
+Also fixed here: a determiner two tokens back was tagging a gerund as a noun, so
+*"a friend ASKING for help"* put 问 out of reach. A determiner binds to the word
+after it and to one behind an adjective, not across another noun — but *"the
+meeting"* stays a noun.
+
+### New candidate set on the fixed upstream — the premise problem is solved, the density one is not (2026-08-27)
+
+`bundle-concrete-3` → `bundle-plans-2` / `bundle-plans-2j`. Caps unchanged
+(cost 16, off-list 2, words 8, per-sentence 2); `optionalMax` still null.
+
+**The premise, before and after.** Same pedagogical target family, same level,
+same models, same per-model count:
+
+| | situation | premise gate |
+|---|---|---|
+| bundle-1 | *"A friend asking for advice on a conditional life choice, such as whether to accept a new job."* | **cost 21, 4 unsayable** (advice, conditional, choice, asking) |
+| bundle-concrete-3 | *"A student sees it's raining, realizes he needs an umbrella, and thinks he should ask a classmate to borrow one."* | **OK — cost 0, 0 off-list** |
+
+Required 如果 / 该 / 需要, opportunity 被 / 中 / 认为.
+
+**Candidate matrix.** All twelve costed with the corrected matcher.
+
+| set | # | model | q | targets | cost | off | words | /sent | premise |
+|---|---|---|---|---|---|---|---|---|---|
+| before | 0 | qwen | 9 | 3/3 | 33 | 2 | 11 | 4 | accept a new job |
+| before | 1 | qwen | 8 | 3/3 | 44 | 6 | 14 | 3 | accept a new job |
+| before | 2 | qwen | 9 | 3/3 | 59 | 7 | 18 | 4 | accept a new job |
+| before | 3 | gpt-oss | 6 | 3/3 | 28 | 4 | 9 | 2 | accept a new job |
+| before | 4 | gpt-oss | 6 | 3/3 | 31 | 5 | 9 | 3 | accept a new job |
+| before | 5 | gpt-oss | 4 | 3/3 | 46 | 9 | 13 | 4 | accept a new job |
+| after | 0 | qwen | 9 | 3/3 | 40 | 6 | 13 | 4 | caught in the rain, no umbrella |
+| after | 1 | qwen | 6 | 3/3 | 35 | 7 | 14 | 4 | borrowing a coat from her mother |
+| after | 2 | qwen | 5 | 3/3 | 29 | 4 | 9 | 2 | a bag too heavy to carry |
+| after | 3 | gpt-oss | 6 | 3/3 | 49 | 8 | 17 | 5 | needs paper to print a report |
+| after | **4** | gpt-oss | 5 | 3/3 | **12** | **1** | **6** | **3** | **a locker he has lost the key to** |
+| after | 5 | gpt-oss | 9 | 3/3 | — | — | — | — | forgotten lunch — UNSCORABLE, plan written in Chinese |
+
+**Premise diversity is fixed.** Six candidates, six different scenes — rain,
+a borrowed coat, a heavy bag, printer paper, a locked locker, a forgotten
+lunch — against six paraphrases of one job offer.
+
+**No candidate is feasible yet, but the failure changed shape.** Before, every
+plan failed four or five caps at once by two to four times. After, candidate 4
+clears **four of five** — cost 12/16, off-list 1/2, assisted words 6/8 — and
+fails only per-sentence density, 3 against 2, in two sentences. Its assisted
+vocabulary is all defensible: locker (nothing in the corpus at any level),
+备用 spare, 钥匙 key, 条件 condition, 原来 original.
+
+Per-sentence density is a *writing* constraint, not a premise one: the same
+words spread over more sentences would clear it. That is the next thing to
+work on, and it is downstream of everything this audit was about.
+
+**Nothing here justifies moving a threshold.** No candidate is both
+high-quality and feasible: the two 9s are candidate 0 (cost 40) and candidate 5
+(unscorable). Calibration still waits for a viable set.
+
+**Two false zeros found and fixed while running this.** The premise gate scored
+a Chinese situation as cost 0 (`fab9-premise@2` — UNSCORED with a reason,
+cost null), and `assessShapeRisk` scored a Chinese *plan* as cost 0 with zero
+assisted words, which made it rank as the only feasible candidate in the set
+(`fab9-risk@9` — refuses above 50% Chinese in the beat prose, excluding cast
+names and quoted target words; a presence test would have thrown away three of
+the six frozen plans, which legitimately write "he 认为 the new job is
+dangerous"). Both were gates answering without evidence.
+
+### Sentence density was measured on the planning representation (2026-08-27)
+
+Candidate E of `bundle-plans-2` was the boundary case — cost 12/16, off-list
+1/2, assisted words 6/8, clearing everything except density 3/2. The two
+offending "sentences":
+
+| beat | lines | the beat's whole `what` | the three concepts |
+|---|---|---|---|
+| 1 | **6** | *"李明 tries to open his locker and finds the key missing"* | locker (off-list, CENTRAL, 3) · key (钥匙 HSK4 +1, CENTRAL, 1) · missing (想念 HSK5 +2, CENTRAL, 2) |
+| 5 | **5** | *"李明 opens his locker with the spare key and stores his books"* | locker (off-list, CENTRAL, 3) · spare (备用 HSK6 +3, CENTRAL, 3) · key (钥匙 HSK4 +1, CENTRAL, 1) |
+
+**What the cap measured.** `sentences()` splits the beat's `what` on English
+punctuation `[.!?;]`. Every beat's `what` is a ONE-SENTENCE SUMMARY of a beat
+that becomes five or six Mandarin lines, so "sentence 1" was the whole beat.
+The cap was reading a property of the English planning representation and
+reporting it as a property of the reader's experience — and it silently
+duplicated `assistedPerBeatMax` under a second name.
+
+**Verdict: B, a measurement-layer defect.** Both clauses are compound ("… *and*
+finds the key missing"), and neither set of three has to share a Mandarin
+sentence: 他想打开柜子。/ 钥匙不见了。is two sentences with two taps between them,
+inside a beat that has six lines to use.
+
+**The fix.** No Mandarin exists at plan time, so the plan cannot know which
+concepts share a sentence — but it does state how many lines the beat becomes,
+and that is enough for a lower bound: A distinct assisted words over N lines put
+at least `ceil(A/N)` in the worst line however they are distributed. The plan
+now rejects only what is impossible to write within the cap, and reports
+`minWorstSentence` instead of a `maxPerSentence` it never measured. A beat with
+no declared line count is still treated as one sentence. Real per-line density
+belongs at realization, where real lines exist — `storyRepairPlanner` already
+computes per-line facts there.
+
+**`assistedPerBeatMax` is the same defect, one layer up.** Over 60 observed
+beats (mean 5.2 lines), a cap of 2 assisted words per beat implies **0.38
+assisted words per line** against a per-sentence cap of 2.00 — it is 19% as
+permissive as the check it duplicates. **25 of those 60 beats exceed it, and
+zero of them exceed the corrected per-sentence bound.** It asserts a beat is one
+sentence, which is exactly what was just disproved. Left unchanged: relaxing it
+would admit candidate E, and that decision needs the maintainer.
+
+### The calibration set could not be built (2026-08-27)
+
+`calib-set-1` added 8 more candidates on the same cost-0 premise (2 models × 5,
+qwen + gpt-oss). Combined with `bundle-plans-2j`: **14 candidates, 11 scorable,
+0 feasible.** §7 asked for at least 3 feasible and 3 infeasible; the set is
+uniformly infeasible, so the policy sweep §8 asks for cannot be run.
+
+| dimension | fires | uniquely rejects | min observed | cap |
+|---|---|---|---|---|
+| `costBudget` | 10/11 | 0 | 12 | 16 |
+| `offListMax` | 9/11 | 0 | 1 | 2 |
+| `assistedWordsMax` | 10/11 | 0 | 6 | 8 |
+| `assistedPerBeatMax` | 10/11 | **1** (candidate E) | 2 | 2 |
+| `minWorstSentence` | **0/11** | 0 | 1 | 2 |
+| `optionalMax` | — | — | — | null |
+
+**Cost does not track quality.** The three plans scoring 9 cost 40, 25 and 23;
+the two cheapest (12 and 29) both score 5. That is the correct relationship for
+two independent gates — the cost gate protects comprehensibility, not story
+quality — but it means quality cannot be used as the yardstick for calibrating
+it. **The yardstick has to be a realized story a learner can actually read, and
+none exists yet.** Until one does, every threshold is a guess, which is what the
+maintainer's own sequencing already said.
+
+**Empirically justified today:** `minWorstSentence` is provably correct but
+inactive (0/11 — its regressions show it rejects a genuinely impossible beat).
+No other dimension has been shown to separate a desirable plan from an
+undesirable one, because nothing in the set is desirable-and-feasible.
+`optionalMax` stays null.
+
+**Planner compliance defect, separate:** 4 of 14 candidates (29%) wrote the plan
+in Chinese despite the brief's first line being *"Write NO Chinese sentences:
+this is a plan, in English"*. They are now correctly UNSCORABLE rather than
+free, but they are wasted generations.
+
+**Gloss-coverage gap, separate (same class as 被):** *missing* matches 想念 HSK5
+*"to miss; to remember with longing"* — the wrong sense. The corpus says
+"missing/gone" with 不见了 (不见 is HSK 3, and published stories use it: 苹果不见了),
+but 不见's gloss is *"not to see; not to meet"*, so nothing in the data can reach
+it. Costs candidate E 2 points and one assisted word. Not patched.
+
+### assistedPerBeatMax removed; writer bakeoff built; no realized story yet (2026-08-27)
+
+**`assistedPerBeatMax` had no independent invariant, and is gone from the
+gate.** A beat is five or six Mandarin lines, so "at most N assisted words per
+beat" asserts a beat is one sentence — the error `minWorstSentence` was built to
+replace. Over 60 observed beats (mean 5.2 lines) a cap of 2 implied **0.38
+assisted words per line** against a per-sentence cap of 2.00, rejected 25 of
+those beats, and **zero of them violated the line-normalized bound**. Everything
+it could legitimately protect is already covered: sentence crowding by
+`minWorstSentence`, whole-story load by `assistedWordsMax`. It is now
+`null` and reported as `budget.maxPerBeat`. No replacement number was invented.
+
+**Feasible plans exist.** 35 candidates across four batches on the same cost-0
+premise; with only semantically justified gates, **3 are feasible** and the rest
+are not — no threshold was moved to get there.
+
+| plan | model | q | cost | off | words | minWorst | premise |
+|---|---|---|---|---|---|---|---|
+| calib-3 **B** | gpt-oss | **9** | 15 | 2 | 6 | 1 | caught in the rain, needs an umbrella |
+| calib-3 **C** | gpt-oss | 5 | 16 | 2 | 7 | 1 | forgot his bus card |
+| 2j **E** | gpt-oss | 5 | 12 | 1 | 6 | 1 | locker he has lost the key to |
+| calib-3 A | gpt-oss | 9 | 37 | 7 | 13 | 1 | phone battery low — INFEASIBLE |
+| calib-2 A | qwen | 8 | 114 | 18 | 33 | 3 | clogged sink — INFEASIBLE |
+| calib-2 N | qwen | 4 | 131 | 22 | 38 | 3 | formal qipao photo — INFEASIBLE |
+
+**Models as configured.** Planner and writer are both dispatch inputs with no
+committed default; the established A3 configuration is **`groq:qwen/qwen3.6-27b`
+with `reasoning_effort: none` for realization and judging**, `gpt-oss-120b` for
+planning comparison and line-repair fallback. **No `temperature` or `top_p` is
+sent at all** — `llmDirect.mjs` posts only `model`, `max_tokens`, `messages` and
+optionally `reasoning_effort`, so generation runs at the provider default.
+Groq offers exactly three usable text models (`qwen3.6-27b`, `gpt-oss-120b`,
+`gpt-oss-20b`); Gemini is wired into `llmDirect` and its key is present, but it
+has **never been generation-probed** — a probe was dispatched and did not land.
+
+**Writer bakeoff: harness done, evidence not.** `writer-bakeoff.mjs` freezes a
+plan, hands the identical plan/manifest/vocabulary/brief to every writer, shuffles
+the outputs into W1..Wn by a key derived from the PLAN (so a writer is W1 on one
+plan and W2 on the next), stores the mapping in the artifact rather than beside
+the stories, and judges blind with a model that is not one of the writers.
+`storyRealizedDensity.mjs` reads a finished story the way the reader does and
+reports per-line taps; `compareDensity` classifies the plan-time bound against
+it as AGREE / FALSE_POSITIVE / FALSE_NEGATIVE.
+
+**Five runs produced zero realized stories.** Each found a real defect, all now
+fixed, and the last was pure quota exhaustion:
+
+| run | what stopped it | disposition |
+|---|---|---|
+| writer-bake-1 | scaffold's 400-token budget is spent on thinking by a reasoning model | fixed — `--scaffold-tokens`, default 900 |
+| writer-bake-2 | 把 (HSK 3) rejected as an uninvited *character*: its gloss says "to hold a **baby** in position for defecation" | fixed — a word names a person only when a person IS one of its senses |
+| writer-bake-3 | 2 of 4 HTTP 429; 1 qwen `repair_drift`; 1 correct rejection of an infeasible plan's 充电 (HSK 5) | rate limit + a real qwen compliance failure |
+| writer-bake-4 | title 李明和小红 rejected as "1 characters" — `analyzeStory` skips names, so only 和 was counted | fixed — length is the length of the title |
+| writer-bake-5 | both writers HTTP 429, provider asking 518s and 1022s more | quota exhausted; infrastructure, not model evidence |
+
+So the writer question is **INSUFFICIENT EVIDENCE**. Nothing comparable was
+produced: no story reached the deterministic checks, so §9's plan-time vs
+realized comparison has no data either.
+
+**Planner language compliance (separate from writing quality):**
+
+| planner | plans in Chinese despite an English-only contract | structural PASS |
+|---|---|---|
+| qwen3.6-27b | **0/14 (0%)** | 11/14 (79%) |
+| gpt-oss-120b | **3/22 (14%)** | 19/22 (86%) |
+
+gpt-oss writes the cheaper, more concrete plans (all three feasible ones) and is
+the one that ignores the output-language contract. qwen never does, and its
+plans cost two to eight times more. These are different failures in different
+models, and neither says anything about either model as a *writer*.
+
+**Source-data defects found here, all the same family as 被** — the vocabulary
+row cannot express a word the language plainly has, so nothing downstream can
+reach it:
+
+| item | what is in the corpus | what is missing |
+|---|---|---|
+| 被 | *"quilt; to cover (with)"* | the passive marker, its primary HSK 3 sense |
+| 不见 | *"not to see; not to meet"* | "gone / missing" — published stories already use 苹果不见了 |
+| 没 | **absent entirely** (only 没有) | the ordinary negation, which blocks titles like 手机没电 |
+| 公交 | absent (公交车 is HSK 2) | blocks 公交卡, the central object of a plan scored feasible |
+
+The last one is worth its own note: plan C scored feasible because "bus" (公交车)
+and "card" (卡) are both in level, but the realization needs the compound 公交卡,
+which is not. **Concept-level feasibility does not guarantee compound-level
+sayability**, and that gap is only visible once something is written.
 
 ### Target-bundle selection moved upstream, and the eligible set is finally non-empty (2026-08-26)
 
@@ -1230,6 +1547,7 @@ advertising ID, no monetization of any kind, paused JP/RU tracks cannot leak
 - [x] **Public story links — APPLIED (verified in prod 2026-08-07: `public_story` function exists).** Original entry: apply migration `supabase/migrations/20260716000000_add_public_story.sql` in the Supabase SQL editor. It adds the anon-callable `security-definer` RPC `public_story(uuid)` (returns one published story + its language's active vocab capped to the story's level). Until applied, `/read/:id` shows the "story not found" state (a `console.error` fires so it's diagnosable). Smoke-test: `POST $VITE_SUPABASE_URL/rest/v1/rpc/public_story` with the anon key and a published story UUID → JSON with `title` + `vocab_pool`; an unpublished id → `null`.
 
 ## Done
+- [x] **A working branch can no longer overwrite `ROADMAP.md` / `docs/BACKLOG.md` on `main`.** `roadmap-live-sync.yml` used to run on branch pushes and copy those two files onto `main` with `git checkout <branch> -- <file>` + `git push` — no PR, no merge, whole-file replacement, last writer wins. It lost real content: `42e367a` deleted 83 lines of this file that `27358b5` had added from another branch an hour earlier, and `015fe1e` restored them. The workflow now runs on `main` only, holds `contents: read`, runs no git command at all, and just edits the pinned Discord messages from the canonical revision. The renderer moved out of inline `awk` into `.github/scripts/roadmap-render.mjs` (byte-identical output, now with specs); `roadmap-sync.test.mjs` fails if `contents: write`, a `git push`, a `branches-ignore` trigger or an off-`main` dispatch ever comes back. `discord-notify.yml` lost its duplicate roadmap/backlog steps — it carried a *second* renderer PATCHing the *same* pinned messages, so the channel flipped between two renderings depending on which workflow ran last.
 - [x] **#needs-testing Discord feed** — `docs/TESTING.md` mirrors to a Discord **forum** channel, one thread per item (stable-id keyed, edited in place, ✅ when checked off), so testers can react/reply per item. `scripts/needs-testing-discord.mjs` (pure parser unit-tested) + `.github/workflows/needs-testing-sync.yml` (fires on push to main touching `docs/TESTING.md`). *(one-time: make #needs-testing a FORUM channel, add its webhook as secret `DISCORD_TESTING_WEBHOOK`; skips until set.)*
 - [x] **Public story links** — signed-out `/read/:id` page: pick a level → "you'd understand ~X%" (canonical `calculateStoryReadability`) → teaser lines with known/new highlighting → signup gate; the reader's share card now links here. Anon funnel events (`public_story_viewed/level_picked/signup_clicked`) feed the dashboard. Pure logic in `src/publicStoryHelpers.js` + `readStoryId` in `routes.js` (tested); page code-split (lazy). *(needs the migration above applied)*
 - [x] Onboarding language cards render equal width — the longer "Русский" label no longer stretches the Russian card past the two CJK cards (`src/Onboarding.jsx`).
