@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-21T14:11:22.861Z",
+  "generatedAt": "2026-08-27T12:24:09.750Z",
   "keyPresence": {
     "GEMINI_API_KEY": {
       "present": true,
@@ -30,7 +30,7 @@
     "gemini": {
       "ok": true,
       "status": 200,
-      "latencyMs": 413,
+      "latencyMs": 156,
       "models": [
         "antigravity-preview-05-2026",
         "deep-research-max-preview-04-2026",
@@ -56,6 +56,7 @@
         "gemini-3.1-pro-preview-customtools",
         "gemini-3.5-flash",
         "gemini-3.5-flash-lite",
+        "gemini-3.5-transcribe",
         "gemini-3.6-flash",
         "gemini-3.7-flash",
         "gemini-flash-latest",
@@ -74,7 +75,7 @@
     "groq": {
       "ok": true,
       "status": 200,
-      "latencyMs": 78,
+      "latencyMs": 187,
       "models": [
         "allam-2-7b",
         "canopylabs/orpheus-arabic-saudi",
@@ -87,6 +88,7 @@
         "openai/gpt-oss-20b",
         "openai/gpt-oss-safeguard-20b",
         "qwen/qwen3.6-27b",
+        "qwen/qwen3.8-27b",
         "whisper-large-v3",
         "whisper-large-v3-turbo"
       ]
@@ -95,58 +97,28 @@
   "probePrompt": "Write exactly 3 short lines of simple Chinese (HSK 3 level) about a neighbour helping with a plan.\nBoth of these words must appear: 邻居、打算\nOutput plain text only: 3 lines, one sentence per line, no numbering, no explanation, no pinyin, no English.",
   "results": [
     {
-      "provider": "groq",
-      "model": "openai/gpt-oss-120b",
-      "ok": true,
-      "status": 200,
-      "latencyMs": 2180,
-      "finishReason": "stop",
-      "promptTokens": 136,
-      "completionTokens": 952,
-      "chinese": true,
-      "lineCount": 3,
-      "wordsPresent": [
-        "邻居",
-        "打算"
-      ],
-      "followedFormat": true,
-      "output": "我的邻居帮助我做打算。  \n我和邻居一起讨论明天的打算。  \n他们的邻居也愿意帮助我的打算。",
-      "apiError": null
-    },
-    {
-      "provider": "groq",
-      "model": "qwen/qwen3.6-27b",
+      "provider": "gemini",
+      "model": "gemini-2.5-pro",
       "ok": false,
-      "status": 200,
-      "latencyMs": 4337,
-      "finishReason": "length",
-      "promptTokens": 74,
-      "completionTokens": 2000,
-      "chinese": false,
-      "lineCount": 0,
-      "wordsPresent": [],
-      "followedFormat": false,
-      "output": "",
-      "apiError": "empty content (finish_reason=length)"
+      "status": 429,
+      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
+      "latencyMs": 161
     },
     {
-      "provider": "groq",
-      "model": "openai/gpt-oss-20b",
-      "ok": true,
-      "status": 200,
-      "latencyMs": 1007,
-      "finishReason": "stop",
-      "promptTokens": 136,
-      "completionTokens": 700,
-      "chinese": true,
-      "lineCount": 3,
-      "wordsPresent": [
-        "邻居",
-        "打算"
-      ],
-      "followedFormat": true,
-      "output": "邻居说他打算帮我搬家。  \n我们一起讨论了搬家的打算。  \n邻居也打算一起去买东西。",
-      "apiError": null
+      "provider": "gemini",
+      "model": "gemini-3.1-pro-preview",
+      "ok": false,
+      "status": 429,
+      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
+      "latencyMs": 155
+    },
+    {
+      "provider": "gemini",
+      "model": "gemini-3.6-flash",
+      "ok": false,
+      "status": 429,
+      "apiError": "[{\n  \"error\": {\n    \"code\": 429,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai.google.dev/gemini-api/docs/billing#prepay. \",\n    \"status\": \"RESOURCE_EXHAUSTED\"\n  }\n}\n]",
+      "latencyMs": 126
     }
   ]
 }
