@@ -1013,3 +1013,58 @@ describe('bridge evidence — the frozen negative corpus', () => {
     expect(r.words).toContain('邮件')
   })
 })
+
+// bundle-plans-2 candidate F wrote its plan in Chinese — 小明打开书包，发现午饭
+// 盒子不见了 — against a brief that says "Write NO Chinese sentences: this is a
+// plan, in English". This gate reads English concepts, found none, and reported
+// cost 0 with zero assisted words. It ranked as the only feasible plan in the
+// set. A gate with no evidence must refuse rather than answer.
+describe('a plan this gate cannot read is UNSAFE, not free', () => {
+  const vocabMap = {
+    好: { level: 1, meaning: 'good' }, 人: { level: 1, meaning: 'person' },
+    书: { level: 1, meaning: 'book' }, 家: { level: 1, meaning: 'home' },
+    水: { level: 1, meaning: 'water' }, 天: { level: 1, meaning: 'day; sky' },
+  }
+  const manifest = { level: 1, speakers: ['李明', '小红'], targets: [] }
+  const chinese = {
+    cast: ['李明', '小红'],
+    targetPlan: [],
+    beats: [{ id: 1, what: '小明打开书包，发现午饭盒子不见了，感到很饿', because: 'the story opens' }],
+  }
+  const english = {
+    cast: ['李明', '小红'],
+    targetPlan: [],
+    beats: [{ id: 1, what: '李明 opens his bag and finds the water is gone', because: 'the story opens' }],
+  }
+
+  it('refuses a plan written in Chinese instead of scoring it as costless', () => {
+    const r = assessShape({ blueprint: chinese, manifest, vocabMap })
+    expect(r.classification).toBe(FEASIBILITY.UNSAFE)
+    expect(r.unscorable).toMatch(/prose is Chinese/)
+    // null, not 0: nothing was measured.
+    expect(r.budget.cost).toBeNull()
+    expect(r.budget.assistedWords).toBeNull()
+  })
+
+  it('a Chinese NAME in an English plan is still an English plan', () => {
+    // Every plan names its cast in Chinese — that is the closed-cast contract,
+    // and it must not trip the refusal.
+    const r = assessShape({ blueprint: english, manifest, vocabMap })
+    expect(r.unscorable).toBeUndefined()
+    expect(r.budget.cost).not.toBeNull()
+  })
+
+  it('a plan may QUOTE the target word it is placing', () => {
+    // Three of the six frozen plans write "he 认为 the job is dangerous" — an
+    // English plan naming the Chinese word it puts there. A presence test
+    // refused all three and hid their real cost behind a null.
+    const quoting = {
+      cast: ['李明', '小红'],
+      targetPlan: [],
+      beats: [{ id: 1, what: '李明 explains that he 认为 the water is gone, and 小红 asks about the book', because: 'the story opens' }],
+    }
+    const r = assessShape({ blueprint: quoting, manifest: { ...manifest, targets: [{ word: '认为' }] }, vocabMap })
+    expect(r.unscorable).toBeUndefined()
+    expect(r.budget.cost).not.toBeNull()
+  })
+})

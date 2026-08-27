@@ -42,7 +42,7 @@ const ROMANIZED = (() => {
   return out
 })()
 
-export const RISK_VERSION = 'fab9-risk@8'
+export const RISK_VERSION = 'fab9-risk@9'
 
 export const RISK = { LOW: 'LOW', MEDIUM: 'MEDIUM', HIGH: 'HIGH' }
 
@@ -965,6 +965,37 @@ export function assessShapeRisk({ blueprint, manifest, vocabMap, policy = ASSIST
   const built = indexes || buildLexicalIndexes(vocabMap, manifest.level)
   const { corpus, index, fullIndex, synonyms, inLevelWords } = built
   const names = [...(blueprint.cast || []), ...(manifest.speakers || [])]
+  // The shape planner is told to write the plan in ENGLISH — someone else
+  // writes the Chinese. bundle-plans-2 had one candidate whose beats were
+  // Chinese prose; this gate reads English concepts, found none, summed an
+  // empty list and reported cost 0 with zero assisted words. It read as the
+  // only feasible plan in the set. A gate with no evidence must refuse, not
+  // answer: the plan is not scorable, which is not the same as cheap.
+  // Presence of Chinese is not the test — every plan names its cast in Chinese,
+  // and a plan legitimately quotes the target word it is placing ("he 认为 the
+  // job is dangerous"). What is unscorable is a plan whose PROSE is Chinese, so
+  // the test is the share of it that remains once names and targets are removed.
+  const quoted = new Set([...names.join(''), ...((manifest.targets || []).map(t => t.word).join(''))])
+  const beatText = (blueprint.beats || []).map(b => String((b && b.what) || '')).join(' ')
+  const foreign = [...beatText].filter(ch => /[\u4e00-\u9fff]/.test(ch) && !quoted.has(ch)).length
+  const solid = beatText.replace(/\s+/g, '').length
+  if (solid > 0 && foreign / solid > 0.5) {
+    return {
+      version: RISK_VERSION,
+      risk: RISK.HIGH,
+      classification: FEASIBILITY.UNSAFE,
+      unscorable: 'the plan\'s prose is Chinese (' + Math.round((foreign / solid) * 100)
+        + '% of it), so this gate has nothing to score',
+      beats: [],
+      assisted: [],
+      routes: [],
+      budget: { cost: null, offListWords: null, assistedWords: null, maxPerBeat: null, maxPerSentence: null, byNecessity: {}, clusteredSentences: [] },
+      highBeats: [],
+      blocking: [],
+      corpus,
+      policy: withPolicy(policy),
+    }
+  }
   const beats = (blueprint.beats || []).map(beat => assessBeatRisk({
     beat,
     entries: (blueprint.targetPlan || []).filter(t => Number(t.beat) === beat.id),
