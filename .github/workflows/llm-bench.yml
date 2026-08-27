@@ -663,10 +663,15 @@ jobs:
             case "$JUDGE" in (*[!A-Za-z0-9._/:-]*) echo "bad judge"; exit 1;; esac
             JUDGE_FLAG="--judge $JUDGE"
           fi
+          # Explicit and IDENTICAL for every writer. 1.0/1.0 is the documented
+          # OpenAI-compatible default, so this changes no behaviour — it only
+          # guarantees both models are sampled the same way, which is the
+          # difference between comparing models and comparing configurations.
           node writer-bakeoff.mjs \
             --input reports/story-corpus-dump.json \
             --shape-from "$MANIFEST" --labels "$LABELS" \
             --writers "$WRITERS" $JUDGE_FLAG \
+            --temperature 1.0 --top-p 1.0 \
             --lines "$LINES" --out "data/story-candidates/$PREFIX"
 
       - name: Show reports
