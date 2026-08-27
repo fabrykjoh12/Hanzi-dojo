@@ -283,6 +283,20 @@ a time): `DISCORD_ANNOUNCE_WEBHOOK`, `DISCORD_ROADMAP_WEBHOOK`,
 `DISCORD_BACKLOG_WEBHOOK`. Use a **private** channel for `#backlog` — it carries
 internal bug and ops detail.
 
+### The webhooks are scoped to `main`, not to the repository
+
+`roadmap-live-sync.yml` runs in the **`roadmap-discord`** GitHub Environment,
+restricted to `main` with no bypass branches, and the two webhooks are
+**environment** secrets rather than repository secrets.
+
+That is deliberate and load-bearing. GitHub runs a workflow from the tree of the
+ref that was pushed, so the ~75 branches created before the sync was fixed still
+carry a version that posts to Discord and pushes to `main` — and always will. An
+environment scoped to `main` is a boundary they cannot cross: a run on any other
+ref is never granted the webhook, so the old workflow executes, finds nothing to
+authenticate with, and skips. Full reasoning in
+[`docs/AUTOMATION-AUTHORITY.md`](AUTOMATION-AUTHORITY.md).
+
 ### The pinned messages are addressed by a committed id
 
 `roadmap-live-sync.yml` edits an existing message; it never creates one. The

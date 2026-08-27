@@ -37,6 +37,30 @@ const withoutComments = text => text
 const SYNC_YAML = withoutComments(SYNC)
 const NOTIFY_YAML = withoutComments(NOTIFY)
 
+describe('the credential boundary: a main-scoped environment', () => {
+  it('runs in the roadmap-discord environment', () => {
+    // This is what makes the PR #222 fix hold against branches that will never
+    // be updated. ~75 branches still carry the pre-fix copy of this workflow,
+    // and GitHub runs a workflow from the tree of the ref that was pushed — so
+    // those copies stay live no matter what main says. One of them reverted PR
+    // #222's own documentation within the hour of it merging, then twice more.
+    //
+    // The webhooks are ENVIRONMENT secrets on `roadmap-discord`, which is
+    // restricted to main with no bypass branches. A run on any other ref is not
+    // granted them: the stale workflow still executes, finds no webhook, and
+    // skips. It cannot reach Discord because it has no credential to reach
+    // Discord with. See docs/AUTOMATION-AUTHORITY.md.
+    expect(SYNC_YAML).toMatch(/environment:\s*roadmap-discord/)
+  })
+
+  it('binds the environment to the job that holds the secrets', () => {
+    // An `environment:` on the wrong job would gate nothing.
+    const job = SYNC_YAML.slice(SYNC_YAML.indexOf('jobs:'))
+    expect(job).toMatch(/environment:\s*roadmap-discord[\s\S]*?steps:/)
+    expect(job).toMatch(/DISCORD_ROADMAP_WEBHOOK:\s*\$\{\{\s*secrets\./)
+  })
+})
+
 describe('the sync workflow cannot write to the repository', () => {
   it('does not request contents: write', () => {
     expect(SYNC_YAML).not.toContain('contents: write')

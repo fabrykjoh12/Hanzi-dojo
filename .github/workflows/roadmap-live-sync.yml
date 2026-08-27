@@ -36,8 +36,10 @@ name: Roadmap live sync
 #   target is attempted before the run fails.
 #
 # Secrets (a target whose webhook is unset simply skips):
-#   DISCORD_ROADMAP_WEBHOOK  → #roadmap
-#   DISCORD_BACKLOG_WEBHOOK  → the private #backlog channel
+#   DISCORD_ROADMAP_WEBHOOK  → #roadmap — an ENVIRONMENT secret on
+#                              `roadmap-discord`, NOT a repository secret. See
+#                              the note on the job below for why that matters.
+#   DISCORD_BACKLOG_WEBHOOK  → the private #backlog channel, same environment
 #
 # The rendering lives in .github/scripts/roadmap-render.mjs and is covered by
 # roadmap-render.test.mjs; the invariants in this file are pinned by
@@ -73,6 +75,23 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 5
+    # THE CREDENTIAL BOUNDARY. DISCORD_ROADMAP_WEBHOOK is an ENVIRONMENT secret
+    # on `roadmap-discord`, not a repository secret, and that environment is
+    # restricted to `main` with no bypass branches.
+    #
+    # This is what makes the fix hold against branches we will never update. ~75
+    # branches still carry the pre-fix version of this workflow — non-main push
+    # trigger, `contents: write`, a Discord PATCH/POST, and a push to main — and
+    # GitHub runs a workflow from the tree of the ref that was pushed, so those
+    # copies stay live no matter what `main` says. Rewriting them all is not a
+    # security boundary; any branch created before today, or restored from a
+    # fork or a stale clone, brings the old file back.
+    #
+    # An environment restricted to `main` is a boundary those branches cannot
+    # cross: a run on any other ref is not granted the secret, so the webhook is
+    # simply absent and the sync script skips instead of reaching Discord. Stale
+    # code may exist; stale authority may not. See docs/AUTOMATION-AUTHORITY.md.
+    environment: roadmap-discord
     steps:
       # `on.push.branches` already restricts pushes, but workflow_dispatch can
       # be aimed at any branch from the Actions UI. That is the one remaining

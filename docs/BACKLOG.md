@@ -1,9 +1,10 @@
 # 🛠️ Engineering backlog
 
 Granular fixes, tech-debt, and ops tasks. **Internal — not community-facing.**
-The public plan lives in [`ROADMAP.md`](../ROADMAP.md), which auto-posts to the
-`#roadmap` Discord channel; keep raw bug detail and dashboard-only steps here so
-that stays clean. Move items to **Done** as they land (or promote user-facing
+The public plan lives in [`ROADMAP.md`](../ROADMAP.md), which posts to the
+`#roadmap` Discord channel once merged to `main`; keep raw bug detail and
+dashboard-only steps here so that stays clean. (This file has its own pinned
+post in the private `#backlog` channel, on the same merge-to-`main` trigger.) Move items to **Done** as they land (or promote user-facing
 ones to the roadmap).
 
 Active milestone, task assignments, ownership boundaries and merge order live in
@@ -1317,6 +1318,7 @@ advertising ID, no monetization of any kind, paused JP/RU tracks cannot leak
 - [x] **Public story links — APPLIED (verified in prod 2026-08-07: `public_story` function exists).** Original entry: apply migration `supabase/migrations/20260716000000_add_public_story.sql` in the Supabase SQL editor. It adds the anon-callable `security-definer` RPC `public_story(uuid)` (returns one published story + its language's active vocab capped to the story's level). Until applied, `/read/:id` shows the "story not found" state (a `console.error` fires so it's diagnosable). Smoke-test: `POST $VITE_SUPABASE_URL/rest/v1/rpc/public_story` with the anon key and a published story UUID → JSON with `title` + `vocab_pool`; an unpublished id → `null`.
 
 ## Done
+- [x] **A working branch can no longer overwrite `ROADMAP.md` / `docs/BACKLOG.md` on `main`.** `roadmap-live-sync.yml` used to run on branch pushes and copy those two files onto `main` with `git checkout <branch> -- <file>` + `git push` — no PR, no merge, whole-file replacement, last writer wins. It lost real content: `42e367a` deleted 83 lines of this file that `27358b5` had added from another branch an hour earlier, and `015fe1e` restored them. The workflow now runs on `main` only, holds `contents: read`, runs no git command at all, and just edits the pinned Discord messages from the canonical revision. The renderer moved out of inline `awk` into `.github/scripts/roadmap-render.mjs` (byte-identical output, now with specs); `roadmap-sync.test.mjs` fails if `contents: write`, a `git push`, a `branches-ignore` trigger or an off-`main` dispatch ever comes back. `discord-notify.yml` lost its duplicate roadmap/backlog steps — it carried a *second* renderer PATCHing the *same* pinned messages, so the channel flipped between two renderings depending on which workflow ran last.
 - [x] **#needs-testing Discord feed** — `docs/TESTING.md` mirrors to a Discord **forum** channel, one thread per item (stable-id keyed, edited in place, ✅ when checked off), so testers can react/reply per item. `scripts/needs-testing-discord.mjs` (pure parser unit-tested) + `.github/workflows/needs-testing-sync.yml` (fires on push to main touching `docs/TESTING.md`). *(one-time: make #needs-testing a FORUM channel, add its webhook as secret `DISCORD_TESTING_WEBHOOK`; skips until set.)*
 - [x] **Public story links** — signed-out `/read/:id` page: pick a level → "you'd understand ~X%" (canonical `calculateStoryReadability`) → teaser lines with known/new highlighting → signup gate; the reader's share card now links here. Anon funnel events (`public_story_viewed/level_picked/signup_clicked`) feed the dashboard. Pure logic in `src/publicStoryHelpers.js` + `readStoryId` in `routes.js` (tested); page code-split (lazy). *(needs the migration above applied)*
 - [x] Onboarding language cards render equal width — the longer "Русский" label no longer stretches the Russian card past the two CJK cards (`src/Onboarding.jsx`).

@@ -1,18 +1,44 @@
 name: Needs-testing sync
 
-# Mirrors docs/TESTING.md to the #needs-testing Discord FORUM channel — one thread
-# per item — so testers can react ✅ / reply per item. Threads are edited in place
-# via stable ids tracked in .github/needs-testing.ids.json.
+# Mirrors docs/TESTING.md to the #needs-testing Discord FORUM channel — one
+# thread per item — so testers can react ✅ / reply per item. Threads are edited
+# in place via stable ids, so an edit to TESTING.md updates a thread rather than
+# posting a second one.
 #
-# Triggers on push to main (i.e. when a TESTING.md change merges) — reliable,
-# unlike chaining off a GITHUB_TOKEN push. Also runnable manually.
+# WHERE THE TWO KINDS OF DATA LIVE
 #
-# One-time setup:
-#   1. Make #needs-testing a FORUM channel in Discord.
+#   main                            canonical: docs/TESTING.md and the scripts
+#   automation/needs-testing-state  mutable: the Discord id map, and NOTHING else
+#
+# This split is the point of the workflow's current shape. It used to commit the
+# id map back to `main` with `git push origin HEAD:main` — the last workflow
+# write-path into the canonical branch, and the one thing that would have forced
+# the `main` ruleset to carve out a GitHub Actions bypass. A bypass wide enough
+# for this job is wide enough for any workflow on any branch, including the
+# stale ones still carrying old, dangerous versions of themselves.
+#
+# So canonical content is READ from main and never written, and mutable state is
+# written to a ref that is not main. The ruleset needs no exception.
+#
+# The state branch is an ORPHAN with a single file. Its tree is assembled with
+# `git mktree` from exactly one blob, so it cannot contain source, docs or
+# workflows — that is a property of how the commit is built, not a rule someone
+# has to remember. It has no parent in main's history and never merges back.
+#
+# BOOTSTRAP (automatic, once)
+#
+# If the state branch does not exist, the first run seeds it from main's
+# .github/needs-testing.ids.json, which holds the 18 threads created before this
+# redesign. Seeding rather than starting empty is what stops that first run from
+# posting a duplicate thread for every existing item. After bootstrap, main's
+# copy is a frozen historical seed and is never written again.
+#
+# One-time Discord setup:
+#   1. Make #needs-testing a FORUM channel.
 #   2. Channel ⚙ → Integrations → Webhooks → New Webhook → copy URL.
-#   3. GitHub → repo Settings → Secrets and variables → Actions → new secret
+#   3. GitHub → Settings → Secrets and variables → Actions → new secret
 #        DISCORD_TESTING_WEBHOOK = that webhook URL.
-#   Until the secret exists, the step simply skips.
+#   Until the secret exists, the sync step simply skips.
 
 on:
   workflow_dispatch: {}
@@ -20,38 +46,108 @@ on:
     branches: [main]
     paths:
       - docs/TESTING.md
+      - scripts/needs-testing-discord.mjs
+      - scripts/needs-testing-state.mjs
+      - .github/workflows/needs-testing-sync.yml
 
+# `contents: write` is required — but only to advance refs/heads/automation/*.
+# workflow-authority.test.mjs asserts this job pushes no other ref, and in
+# particular never main.
 permissions:
   contents: write
 
+# Serialise runs. Two concurrent syncs would both create threads for new items;
+# the compare-and-swap below is the second line of defence, this is the first.
 concurrency:
   group: needs-testing-sync
   cancel-in-progress: false
 
+env:
+  STATE_BRANCH: automation/needs-testing-state
+  STATE_FILE: needs-testing.ids.json
+  SEED_FILE: .github/needs-testing.ids.json
+
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
+      # Canonical source, always from main: the checklist and the scripts.
       - name: Checkout main
         uses: actions/checkout@v4
         with:
           ref: main
-          fetch-depth: 0
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+
+      - name: Load the id map from the state branch
+        run: |
+          set -euo pipefail
+          if git fetch -q origin "refs/heads/$STATE_BRANCH" 2>/dev/null; then
+            git show "FETCH_HEAD:$STATE_FILE" > /tmp/state.json
+            echo "loaded $(git rev-parse --short FETCH_HEAD) from $STATE_BRANCH"
+          else
+            # First run: seed from main's frozen copy so the threads that already
+            # exist in Discord are recognised instead of duplicated.
+            cp "$SEED_FILE" /tmp/state.json
+            echo "state branch absent — bootstrapping from $SEED_FILE"
+          fi
+          node --input-type=module -e "
+            import { readFile } from 'node:fs/promises'
+            import { parseIdMap } from './scripts/needs-testing-state.mjs'
+            const m = parseIdMap(await readFile('/tmp/state.json', 'utf8'), 'loaded id map')
+            process.stdout.write('id map validated: ' + Object.keys(m).length + ' entries\n')
+          "
+
       - name: Post needs-testing items to Discord
         env:
           DISCORD_TESTING_WEBHOOK: ${{ secrets.DISCORD_TESTING_WEBHOOK }}
+          TESTING_IDS: /tmp/state.json
+        run: node scripts/needs-testing-discord.mjs
+
+      # Compare-and-swap onto the state branch. The tree is built from one blob,
+      # so this commit physically cannot carry anything but the id map. On a
+      # rejected push the remote map is merged in (remote wins for ids both
+      # sides know — those threads already exist) and the commit is rebuilt.
+      # Never force-push: the losing side holds real thread ids.
+      - name: Persist the id map to the state branch
         run: |
           set -euo pipefail
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          node scripts/needs-testing-discord.mjs
-          git add .github/needs-testing.ids.json 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "No id-map changes to persist"
-          else
-            git commit -m "chore: track needs-testing Discord thread ids [skip ci]"
-            git push origin HEAD:main
-          fi
+
+          for attempt in 1 2 3; do
+            if git fetch -q origin "refs/heads/$STATE_BRANCH" 2>/dev/null; then
+              parent="$(git rev-parse FETCH_HEAD)"
+              git show "$parent:$STATE_FILE" > /tmp/remote.json
+              node scripts/needs-testing-state.mjs merge /tmp/remote.json /tmp/state.json /tmp/merged.json
+            else
+              parent=""
+              node scripts/needs-testing-state.mjs merge /dev/null /tmp/state.json /tmp/merged.json
+            fi
+
+            blob="$(git hash-object -w /tmp/merged.json)"
+            tree="$(printf '100644 blob %s\t%s\n' "$blob" "$STATE_FILE" | git mktree)"
+
+            if [ -n "$parent" ] && [ "$tree" = "$(git rev-parse "$parent^{tree}")" ]; then
+              echo "id map unchanged — nothing to persist"
+              exit 0
+            fi
+
+            if [ -n "$parent" ]; then
+              commit="$(git commit-tree "$tree" -p "$parent" -m 'chore(state): needs-testing Discord thread ids')"
+            else
+              commit="$(git commit-tree "$tree" -m 'chore(state): seed needs-testing Discord thread ids')"
+            fi
+
+            if git push origin "$commit:refs/heads/$STATE_BRANCH"; then
+              echo "persisted $(git rev-parse --short "$commit") to $STATE_BRANCH"
+              exit 0
+            fi
+            echo "$STATE_BRANCH moved under us — re-merging (attempt $attempt)"
+          done
+
+          echo "::error::Could not persist the id map after 3 attempts."
+          exit 1
