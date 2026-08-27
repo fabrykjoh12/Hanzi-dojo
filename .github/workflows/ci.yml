@@ -1,13 +1,15 @@
 name: CI
 
-# The gate. Lint, unit tests and build run on every pull request and on every
-# push to main.
+# The gate. `npm run verify:pr` runs on every pull request and on every push to
+# main. That npm script — not this file — is the definition of what the gate
+# is; read package.json to see what it covers.
 #
 # Before this existed the only PR check was Playwright (e2e.yml) — so the ~1,700
 # vitest specs, the ESLint baseline and the build itself never blocked a merge,
 # and since most work went straight to `main` (which auto-deploys to Vercel), a
-# red suite could reach real users. These three commands are the same ones
-# `/ship` runs locally; keep the two in step.
+# red suite could reach real users. `/ship` runs the same command, so a local
+# pass and a CI pass mean the same thing by construction rather than by anyone
+# remembering to keep two lists in step.
 #
 # Push is limited to main (matching e2e.yml): a branch with a PR used to run
 # the same job twice per commit — once for the push, once for the PR event —
@@ -42,36 +44,22 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
-      - name: Unit tests
-        run: npm test
-
-      # No secrets: src/supabase.js only reads VITE_SUPABASE_* at runtime, so a
-      # build with them unset still compiles. This checks the bundle, not config.
-      - name: Build
-        run: npm run build
-
-      # `npm run build` is the *Sites* variant — it emits hq.html alongside the
-      # app. The bundle the App Store and Play actually ship is `build:public`
-      # (DOJO_PUBLIC_BUILD=1), and until now no PR check ever ran it, so a
-      # store-only regression could pass every gate. It reuses dist/, so it runs
-      # after the Sites build rather than instead of it.
-      - name: Build (public / store bundle)
-        run: npm run build:public
-
-      # What must not be inside the store bundle, checked against the artifact
-      # rather than against the source: Dojo HQ and its localhost Claude bridge,
-      # the Sites-only entry points, and the personal identifier that once
-      # shipped from devTools.js (docs/RELEASE-BLOCKER-REMEDIATION.md §3).
-      # support@hanzi-dojo.com is the published address and stays allowed.
-      # The rules live in tools/verify-public-bundle.mjs and are unit-tested by
-      # public-bundle-guard.test.mjs.
-      - name: Verify the store bundle carries nothing internal
-        run: npm run verify:public-bundle
-
-      # The App Store rejects an iOS icon with alpha or padding, and the icon is
-      # authored by a generator — so the assets are checked, not assumed.
-      - name: Verify app icons
-        run: node tools/verify-app-icons.mjs
+      # The whole gate, in one command. `npm run verify:pr` in package.json is
+      # the executable source of truth for what the gate IS — deliberately not
+      # restated here, because a second description is a second thing to drift.
+      # This job used to open-code its stages, and CLAUDE.md and /ship both went
+      # on describing "the three checks CI runs" long after it had grown to six.
+      #
+      # Two things worth knowing that the script cannot say itself:
+      #   * Its stage ORDER is load-bearing. The build variants share dist/, and
+      #     the bundle guard inspects whatever built last — so a reordering
+      #     makes it check the wrong artifact and pass for the wrong reason.
+      #     verification-contract.test.mjs pins that order and adjacency.
+      #   * No secrets are needed. src/supabase.js only reads VITE_SUPABASE_* at
+      #     runtime, so a build with them unset still compiles. This checks the
+      #     bundle, not the configuration.
+      #
+      # Playwright is deliberately NOT here — it stays its own PR job in
+      # e2e.yml.
+      - name: Verify (npm run verify:pr)
+        run: npm run verify:pr

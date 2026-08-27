@@ -372,17 +372,27 @@ skill and this file disagree, **this file wins** — see `.claude/skills/VENDORE
 
 ## 8. Workflow — how a change gets shipped
 
-**Before you commit, run all three:**
+**Before you commit, run the canonical gate:**
 
 ```bash
-npm run lint     # must be 0 errors in src/
-npm test         # vitest — ~1,700 unit tests across 129 files
-npm run build    # the build is the source of truth
+npm run verify:pr
 ```
 
-`/ship` does this for you and refuses to commit if any step fails.
+It covers lint, the unit tests, the Sites build, the public/store build, the
+store-bundle guard and the app-icon guard — in that order, because the two
+builds share `dist/` and the guards inspect whatever built last. The definition
+lives in `package.json`; don't restate it here or run the stages by hand.
 
-Those three, plus read-only git (`status`, `diff`, `log`, `show`), the
+**CI's `check` job runs exactly this command**, so a local pass and a CI pass
+mean the same thing by construction. `/ship` runs it too and refuses to commit
+if it fails.
+
+Two things it does not cover: **Playwright e2e is a separate CI job**
+(`e2e.yml`), and **native artifact verification is separate** for now — the
+Capacitor wrapper and the iOS/Android builds. The store *web bundle* is
+covered; `build:public` is exactly that build.
+
+That command, plus read-only git (`status`, `diff`, `log`, `show`), the
 **read-only** Supabase MCP tools (`list_*`, `get_*`, `search_docs`), and —
 since 2026-07-28 — **`execute_sql` and `apply_migration`**, are allow-listed in
 `.claude/settings.json` so they run without a prompt. **`git push`,
@@ -423,7 +433,7 @@ longer stops on a permission prompt for every single image. The other
 Higgsfield tools (video, audio, publishing, TikTok, websites) still prompt —
 add one to the allow list only when a real task keeps hitting it.
 
-**CI runs the same three on every pull request and every push to `main`**
+**CI runs `verify:pr` on every pull request and every push to `main`**
 (`.github/workflows/ci.yml`), plus Playwright e2e on PRs
 (`.github/workflows/e2e.yml`) — one `check` run + one `playwright` run per PR
 commit, usually green in ~3 minutes. A branch pushed WITHOUT a PR gets no CI.
@@ -466,7 +476,7 @@ what `git log` and `docs/CHANGELOG.md` are for.
 
 | Command | What it does |
 |---------|-------------|
-| `/ship` | Lint + test + build, then commit and push |
+| `/ship` | `npm run verify:pr`, then commit and push |
 | `/parallel` | Run several unrelated tasks at once in worktrees, then integrate, verify and report once |
 | `/unlock` | Marks the current testing level's cards Easy, to preview the unlocked state |
 | `/reset` | Resets language progress to level 1, to test the fresh-start experience |

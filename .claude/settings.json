@@ -1,6 +1,7 @@
 {
   "permissions": {
     "allow": [
+      "Bash(npm run verify:pr)",
       "Bash(npm run lint)",
       "Bash(npm test)",
       "Bash(npm run build)",

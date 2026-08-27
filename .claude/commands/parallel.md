@@ -36,14 +36,16 @@ Run the non-colliding tasks concurrently, each with `isolation: "worktree"` so
 they get separate checkouts and cannot stomp each other.
 
 Give every agent this context:
-- Read `CLAUDE.md` first — especially §6 coding rules (no TypeScript, no complex
-  regex, inline style objects only, no `localStorage`, no `<form>`) and §7
-  Supabase safety rules.
+- **Read `CLAUDE.md` in full before touching anything.** §6 coding rules and §7
+  Supabase safety rules are stated there and nowhere else — work from the file,
+  never from a summary of it. (This command deliberately does not restate them.
+  It used to, and the copy went stale: agents were being handed prohibitions
+  that `CLAUDE.md` had already retracted.)
 - Extract logic into a plain `.js` module with a `.test.js` beside it rather than
   adding another branch inside a big component (§3).
 - A bug fix ships with the regression test that would have caught it.
-- Must finish with `npm run lint` (0 errors), `npm test`, and `npm run build`
-  all passing. Do not commit otherwise.
+- Must finish with `npm run verify:pr` passing. Do not commit otherwise, and do
+  not substitute a subset of it.
 - Do not push, do not open a PR, do not edit `ROADMAP.md` — the parent handles
   integration.
 
@@ -51,8 +53,8 @@ Give every agent this context:
 
 When the agents return, do this yourself — don't hand it back to the user:
 1. Bring the work together on the current branch, one task at a time.
-2. Run `npm run lint`, `npm test`, `npm run build` on the combined result. The
-   agents each verified in isolation; the combination is unverified until now.
+2. Run `npm run verify:pr` on the combined result. The agents each verified in
+   isolation; the combination is unverified until now.
 3. Fix anything the merge broke.
 4. Update `ROADMAP.md` once, covering everything that landed.
 5. Commit (one commit per task, descriptive titles — they become the Discord
