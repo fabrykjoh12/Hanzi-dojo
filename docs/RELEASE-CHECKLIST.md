@@ -52,8 +52,8 @@ it silently.
 
 ## 4 · Docs gate (every meaningful change)
 
-- [ ] `ROADMAP.md` moved/added its line — it syncs to Discord instantly, so
-      write it in user-facing language.
+- [ ] `ROADMAP.md` moved/added its line — it posts to Discord as soon as this
+      merges to `main`, so write it in user-facing language.
 - [ ] `docs/BACKLOG.md` updated if a known issue was fixed or found.
 - [ ] Commit + PR titles are descriptive — the merge posts them to
       #announcements.

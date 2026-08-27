@@ -30,6 +30,7 @@ Rules:
   me to open a PR.
 - If there is nothing to commit, say so instead of making an empty commit.
 - If the change added a feature or fixed something users see, remind me to move
-  the matching item in `ROADMAP.md` (it syncs live to Discord).
+  the matching item in `ROADMAP.md` (it posts to Discord once this merges to
+  `main`, so it needs to read as user-facing language).
 - Only update `CLAUDE.md` if a *rule or convention* changed — not to record what
   happened this session. That's what `git log` is for.

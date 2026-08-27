@@ -36,7 +36,7 @@ still get full detail — they are read once, on purpose.
 | [`docs/STORY-BIBLE.md`](docs/STORY-BIBLE.md) | The story universe: world rules, cast, how a season is made. Machine half: `data/story-canon.chinese.json` | Writing or reviewing stories |
 | [`docs/DEPLOY.md`](docs/DEPLOY.md) | Env vars, hosting, routing, PWA, secrets, failure cheat-sheet | Something is broken in prod |
 | [`docs/TESTING.md`](docs/TESTING.md) | What needs manual testing on a real device | Before asking testers |
-| [`ROADMAP.md`](ROADMAP.md) | Public plan — **auto-syncs to Discord** | Starting or finishing work |
+| [`ROADMAP.md`](ROADMAP.md) | Public plan — **posts to Discord once merged to `main`** | Starting or finishing work |
 | [`docs/BACKLOG.md`](docs/BACKLOG.md) | Engineering backlog, known issues, tech debt | Picking up a fix |
 | [`TASKS.md`](TASKS.md) | The owner's own list, in Norwegian. **Edited through DojoHQ, not by hand** — `tools/dojo-bridge.mjs` has it in `WRITABLE_DOCUMENTS` and DojoHQ renders it as a tab, so do not delete or restructure it | Checking what the owner personally wants next |
 | [`docs/PM-BOARD.md`](docs/PM-BOARD.md) | Current milestone, ownership, merge order | Coordinating parallel work |
@@ -47,7 +47,7 @@ still get full detail — they are read once, on purpose.
 | [`docs/TESTERS.md`](docs/TESTERS.md) | Who tests, and how they're briefed | Organising a test round |
 | [`docs/STORE-LISTING.md`](docs/STORE-LISTING.md) | Play/App Store listing copy, screenshot shot list, App Review notes, Data Safety answers — **owner-editable draft** | Filling in the store consoles |
 | [`docs/APPLE-SETUP.md`](docs/APPLE-SETUP.md) | Step-by-step Apple portal + Supabase setup for Sign in with Apple — written to hand to whoever has portal access | Wiring up Apple sign-in |
-| [`docs/DISCORD.md`](docs/DISCORD.md) | Server layout, webhooks, the sync workflows | Changing anything Discord-facing |
+| [`docs/DISCORD.md`](docs/DISCORD.md) | Server layout, webhooks, and the two workflows that post to it | Changing anything Discord-facing |
 | [`docs/DOJO-BRIDGE.md`](docs/DOJO-BRIDGE.md) | The `tools/` bridge | Working on DojoHQ |
 | [`docs/STORY_EXPERIENCE_AUDIT.md`](docs/STORY_EXPERIENCE_AUDIT.md) | Long-form audit of the reading experience | Reworking the reader |
 | [`docs/DATABASE.md`](docs/DATABASE.md) | Older schema notes — **`docs/ARCHITECTURE.md` is the current source of truth**; last touched 2026-07-02 | Rarely; prefer ARCHITECTURE.md |
@@ -72,21 +72,26 @@ the code to match it, and do not cite it as a requirement. The code is the truth
 about what exists; `docs/ARCHITECTURE.md` is the truth about how it is meant to
 fit together.
 
-### Keep the roadmap current (every task — it is live in Discord)
+### Keep the roadmap current (every task — it reaches Discord on merge)
 
 Whenever we finish or start a meaningful piece of work, edit **`ROADMAP.md`** in
 the same change: move finished items to **✅ Shipped**, add newly started/planned
 work under **🚧 Now** / **🔜 Next**. Treat this as part of "done", not optional
 bookkeeping — the roadmap is the community's live view of progress.
 
-**It syncs to Discord instantly, no manual merge:** any change to `ROADMAP.md`
-(or the internal `docs/BACKLOG.md`) on a working branch is auto-copied to `main`
-by `.github/workflows/roadmap-live-sync.yml`, and that `main` push triggers
-`.github/workflows/discord-notify.yml`, which edits the pinned **#roadmap** (and
-**#backlog**) message in place. So you never wait for the feature PR to merge.
-That sync only ever moves those two doc files to `main`, never code. A merge to
-`main` also posts the changelog to **#announcements** — so write descriptive
-commit and PR titles.
+**Discord updates when the change reaches `main` — like everything else.** Edit
+`ROADMAP.md` and `docs/BACKLOG.md` on your branch, in the same commit as the work;
+they go through branch → PR → merge like any other file. Once the merge lands on
+`main`, `.github/workflows/roadmap-live-sync.yml` edits the pinned **#roadmap**
+(and **#backlog**) message in place from the canonical version. A merge to `main`
+also posts the changelog to **#announcements** — so write descriptive commit and
+PR titles.
+
+*(Until 2026-08-26 a branch push copied those two files straight onto `main` so
+Discord updated before the PR merged. It bought a few hours of latency at the
+price of branches overwriting each other's roadmap edits on `main`, which
+happened repeatedly and lost real content. The docs now follow the normal
+lifecycle; nothing but a merge changes `main`.)*
 
 ---
 

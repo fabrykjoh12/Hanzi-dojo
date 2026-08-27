@@ -1,119 +1,99 @@
 name: Roadmap live sync
 
-# Keeps the community roadmap live in Discord with no manual merge step.
+# Mirrors the CANONICAL ROADMAP.md and docs/BACKLOG.md — the versions on main —
+# into their pinned Discord messages, editing each message in place.
 #
-# When ROADMAP.md (or the internal docs/BACKLOG.md) changes on ANY branch other
-# than main, this:
-#   1. edits the pinned #roadmap / #backlog Discord message IN PLACE, and
-#   2. copies JUST those doc files onto main (so the repo's main stays current).
+# WHAT CHANGED, AND WHY IT MATTERS
 #
-# Why this workflow posts to Discord directly (instead of letting
-# discord-notify.yml do it on the main push): a push made with GITHUB_TOKEN does
-# NOT trigger other workflows, and by the time the feature PR merges the doc is
-# already synced to main — so discord-notify saw no diff and skipped. Posting
-# here, where the freshly-edited doc lives, is the reliable path.
+# This workflow used to run on pushes to NON-main branches. It copied that
+# branch's two doc files onto main with `git checkout <branch> -- <file>` and
+# pushed, so a branch could change main without a PR, a review or a merge. The
+# copy was a whole-file replacement, not a merge, so the last branch to push
+# won and any newer content on main was silently reverted. That is not
+# hypothetical: 42e367a deleted 83 lines of docs/BACKLOG.md that 27358b5 had
+# added from another branch, and 015fe1e restored them an hour later.
 #
-# Discord embed descriptions cap at 4096 chars, so we render a CONDENSED view:
-# section headings + item titles only (descriptions dropped), and the long
-# Shipped/Done lists are capped. The full detail always lives in the repo files.
+# The rule now is the ordinary one, with no exception for docs:
 #
-# Safety: only ROADMAP.md, docs/BACKLOG.md, and the Discord message-id files are
-# ever written to main here — never source. It cannot move feature work to main.
+#     branch → PR → merge → main → Discord
+#
+# A non-main branch cannot reach main here, because this workflow no longer
+# writes anything at all. It has `contents: read`, runs no git command, and
+# only ever PATCHes an existing Discord message. Editing the roadmap on a
+# feature branch is normal work; the community sees it when the PR merges.
+#
+# ID FILES ARE CONFIGURATION, NOT STATE
+#
+# .github/roadmap-message.id and .github/backlog-message.id name the messages to
+# edit. They are read, never written. If one is missing or Discord rejects the
+# edit, the run FAILS with instructions rather than quietly posting a fresh
+# message and committing its id back to main — the old behaviour, and another
+# way a workflow mutated the repository behind everyone's back.
+#
+#   .github/backlog-message.id does not exist yet. Until someone bootstraps it
+#   (see .github/scripts/roadmap-sync.mjs), the backlog target fails loudly
+#   whenever DISCORD_BACKLOG_WEBHOOK is set. The roadmap still syncs — every
+#   target is attempted before the run fails.
+#
+# Secrets (a target whose webhook is unset simply skips):
+#   DISCORD_ROADMAP_WEBHOOK  → #roadmap
+#   DISCORD_BACKLOG_WEBHOOK  → the private #backlog channel
+#
+# The rendering lives in .github/scripts/roadmap-render.mjs and is covered by
+# roadmap-render.test.mjs; the invariants in this file are pinned by
+# roadmap-sync.test.mjs. Both run in `npm test`.
 
 on:
-  workflow_dispatch: {}   # manual "re-sync the Discord roadmap now"
   push:
-    branches-ignore:
-      - main
+    branches: [main]
     paths:
       - ROADMAP.md
       - docs/BACKLOG.md
+      - .github/roadmap-message.id
+      - .github/backlog-message.id
+      - .github/scripts/roadmap-render.mjs
+      - .github/scripts/roadmap-sync.mjs
+      - .github/workflows/roadmap-live-sync.yml
+  workflow_dispatch: {}   # manual "re-sync Discord from main now"
 
+# Read-only. This workflow has no reason to write to the repository, and the
+# absence of `contents: write` is what makes that structural rather than a
+# promise. roadmap-sync.test.mjs fails if it ever comes back.
 permissions:
-  contents: write
+  contents: read
 
+# One at a time, newest wins: a run started by an older main push is cancelled
+# by a newer one, so Discord can never be overwritten with stale content by a
+# run that happened to finish late.
 concurrency:
   group: roadmap-live-sync
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   sync:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
-      - name: Checkout main
-        uses: actions/checkout@v4
-        with:
-          ref: main
-          fetch-depth: 0
-
-      - name: Update Discord + sync docs to main
-        env:
-          SRC_BRANCH: ${{ github.ref_name }}
-          ROADMAP_WEBHOOK: ${{ secrets.DISCORD_ROADMAP_WEBHOOK }}
-          BACKLOG_WEBHOOK: ${{ secrets.DISCORD_BACKLOG_WEBHOOK }}
+      # `on.push.branches` already restricts pushes, but workflow_dispatch can
+      # be aimed at any branch from the Actions UI. That is the one remaining
+      # way a branch could put its own doc text into the community channel, so
+      # it is refused explicitly rather than left to convention.
+      - name: Refuse to sync from anything but main
+        if: github.ref != 'refs/heads/main'
         run: |
-          set -euo pipefail
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git fetch origin "$SRC_BRANCH"
+          echo "::error::Discord is synced from main only. This run is on ${{ github.ref }}."
+          echo "Merge the change to main and the sync runs on its own."
+          exit 1
 
-          # Bring the branch's doc versions into the (main) working tree.
-          for f in ROADMAP.md docs/BACKLOG.md; do
-            if git cat-file -e "origin/$SRC_BRANCH:$f" 2>/dev/null; then
-              git checkout "origin/$SRC_BRANCH" -- "$f"
-            fi
-          done
+      # The canonical revision, and the only thing this job reads.
+      - uses: actions/checkout@v4
 
-          # Condensed render: headings → bold, item titles only (drop the "— …"
-          # description), and cap long Shipped/Done lists so it fits one embed.
-          render() {
-            awk '
-              /^---/ { exit }
-              /^## / { started=1; sub(/^## /,""); inship=($0 ~ /Shipped|Done/)?1:0; sc=0; print "\n**" $0 "**"; next }
-              started != 1 { next }
-              /^\*\*/ { print "\n__" $0 "__"; next }
-              /^- \[[xX ]\] / {
-                l=$0
-                if (l ~ /^- \[ \] /) sub(/^- \[ \] /,"• ",l); else sub(/^- \[[xX]\] /,"✅ ",l)
-                sub(/ — .*/,"",l); sub(/ \*\(new\)\*/,"",l)
-                if (inship) { sc++; if (sc<=10) print l; else if (sc==11) print "• …and more — see the repo" }
-                else print l
-                next
-              }
-              { next }
-            ' "$1"
-          }
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
 
-          post_discord() {  # file  webhook  title  color  id_file
-            file="$1"; webhook="$2"; title="$3"; color="$4"; idfile="$5"
-            if [ -z "$webhook" ]; then echo "No webhook for $title — skipping"; return 0; fi
-            if [ ! -f "$file" ]; then echo "$file missing — skipping $title"; return 0; fi
-            desc="$(render "$file")"
-            desc="${desc:0:4096}"
-            if [ -z "$desc" ]; then echo "Rendered $title empty — skipping"; return 0; fi
-            payload=$(jq -n --arg d "$desc" --arg t "$title" --argjson c "$color" \
-              '{embeds:[{title:$t, description:$d, color:$c, footer:{text:"Updates automatically when the roadmap changes"}}]}')
-            mid=""; [ -f "$idfile" ] && mid="$(cat "$idfile")"
-            if [ -n "$mid" ]; then
-              code=$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH \
-                -H "Content-Type: application/json" -d "$payload" "$webhook/messages/$mid")
-              if [ "$code" = "200" ]; then echo "Edited $title message $mid"; return 0; fi
-              echo "$title edit returned $code — posting a fresh message"
-            fi
-            newid=$(curl -sS -X POST -H "Content-Type: application/json" -d "$payload" "$webhook?wait=true" | jq -r '.id')
-            if [ -n "$newid" ] && [ "$newid" != "null" ]; then
-              echo "$newid" > "$idfile"; git add "$idfile"; echo "Posted new $title message $newid"
-            fi
-          }
-
-          post_discord ROADMAP.md "$ROADMAP_WEBHOOK" "🗺️ Hanzi Dojo Roadmap" 12073508 .github/roadmap-message.id
-          post_discord docs/BACKLOG.md "$BACKLOG_WEBHOOK" "🛠️ Engineering backlog" 6982195 .github/backlog-message.id
-
-          # Persist the doc sync (and any new message-id) to main.
-          git add ROADMAP.md docs/BACKLOG.md 2>/dev/null || true
-          if git diff --cached --quiet; then
-            echo "Nothing to persist to main"
-          else
-            git commit -m "docs: sync roadmap/backlog to main + Discord (from $SRC_BRANCH)"
-            git push origin HEAD:main
-          fi
+      - name: Edit the pinned Discord messages
+        env:
+          DISCORD_ROADMAP_WEBHOOK: ${{ secrets.DISCORD_ROADMAP_WEBHOOK }}
+          DISCORD_BACKLOG_WEBHOOK: ${{ secrets.DISCORD_BACKLOG_WEBHOOK }}
+        run: node .github/scripts/roadmap-sync.mjs
