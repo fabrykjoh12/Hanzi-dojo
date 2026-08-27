@@ -40,16 +40,25 @@ side of it. So the capability is closed at the resource, not at the caller.
 
 ## The two boundaries
 
-### 1. Canonical Discord state — a `main`-scoped environment
+### 1. Canonical Discord state — a `main`-scoped environment (DESIGNED, NOT YET ENFORCED)
 
-`roadmap-live-sync.yml` runs under the **`roadmap-discord`** GitHub Environment,
-which is restricted to `main` with no bypass branches. The Discord webhooks are
-**environment** secrets, not repository secrets.
+`roadmap-live-sync.yml` declares the **`roadmap-discord`** GitHub Environment.
+The intent is that the environment is restricted to `main` with no bypass
+branches and the Discord webhooks live in it as **environment** secrets rather
+than repository secrets — at which point a run on any other ref is not granted
+them, and the old workflow on a stale branch executes, finds no webhook, and
+skips. It would be unable to reach Discord for want of a credential, whatever
+its own YAML said.
 
-A run on any other ref is not granted them. The old workflow on a stale branch
-still executes — and finds no webhook, so it skips. It cannot reach Discord
-because it has no credential to reach Discord with, regardless of what its own
-YAML says.
+**That is the design, and it is not in force yet.** The environment declaration
+is inert while `DISCORD_ROADMAP_WEBHOOK` remains a repository secret, because a
+repository secret is handed to runs on every ref. Until the secret is moved into
+the environment *and* the repository-level copy deleted, a stale branch can
+still rewrite the pinned `#roadmap` message.
+
+The migration is a maintenance step deferred by choice, not an oversight. The
+code is already shaped for it, so finishing it is a settings change with no
+accompanying pull request.
 
 ### 2. Canonical `main` — a ruleset with an empty bypass list
 
@@ -139,16 +148,28 @@ generate on a branch and open a pull request.
 
 ## What is deliberately not claimed
 
-This does not make the stale branches safe to run, and it is not self-executing.
+Each boundary is only real once its external configuration exists. As of
+2026-08-27 one of the two is:
 
-What holds is conditional on the external configuration existing: the
-`roadmap-discord` environment must be restricted to `main` **and** the
-repository-level webhook secrets deleted, or the environment is decorative; the
-`main` ruleset must exist with an empty bypass list, or dynamic pushes to `main`
-still land. Until both are in place, the repository changes here reduce the
-number of write-paths but close nothing.
+| Boundary | Status |
+|---|---|
+| **`main`** — ruleset, empty bypass list | ✅ **Active.** `main` reports `protected: true`; deletions and force pushes blocked; PR required; `check` + `playwright` required; no bypass, `current_user_can_bypass = never` |
+| **Roadmap Discord** — `roadmap-discord` environment | ⚠️ **Designed in code, not yet enforced.** The workflow declares the environment, but the webhook is still a **repository** secret, so it is handed to runs on any ref |
 
-Once they are, stale branches become **unable to mutate canonical state** — but
-they can still fail loudly, waste a runner, or post to any channel whose webhook
-was left as a repository secret. Deleting the merged ones is worthwhile hygiene;
-it is just not what is holding the line.
+So, precisely:
+
+- A stale branch **can no longer mutate `main`.** The ruleset rejects the push
+  at the server whatever the branch's workflow says.
+- A stale branch **can still mutate the roadmap Discord message**, because its
+  old workflow reads `DISCORD_ROADMAP_WEBHOOK` and that secret is still
+  repository-scoped. The `environment:` declaration does nothing until the
+  secret moves into the environment and the repository-level copy is deleted.
+
+That migration is deliberately deferred — it is a maintenance step, not a code
+change, and the code is already shaped for it. Until it happens, treat the
+pinned `#roadmap` message as writable by any branch, and do not describe Discord
+containment as complete.
+
+Beyond that, this does not make stale branches safe to run: they can still fail
+loudly and waste a runner. Deleting the merged ones is worthwhile hygiene; it is
+just not what is holding the line.

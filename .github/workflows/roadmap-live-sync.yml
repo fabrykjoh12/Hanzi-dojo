@@ -75,9 +75,13 @@ jobs:
   sync:
     runs-on: ubuntu-latest
     timeout-minutes: 5
-    # THE CREDENTIAL BOUNDARY. DISCORD_ROADMAP_WEBHOOK is an ENVIRONMENT secret
-    # on `roadmap-discord`, not a repository secret, and that environment is
-    # restricted to `main` with no bypass branches.
+    # THE INTENDED CREDENTIAL BOUNDARY — declared here, NOT YET IN FORCE.
+    #
+    # The design: DISCORD_ROADMAP_WEBHOOK becomes an ENVIRONMENT secret on
+    # `roadmap-discord`, an environment restricted to `main` with no bypass
+    # branches. As of 2026-08-27 the webhook is still a REPOSITORY secret, which
+    # is handed to runs on every ref, so this declaration gates nothing yet. The
+    # secret migration is deferred by choice; see docs/AUTOMATION-AUTHORITY.md.
     #
     # This is what makes the fix hold against branches we will never update. ~75
     # branches still carry the pre-fix version of this workflow — non-main push
@@ -90,7 +94,12 @@ jobs:
     # An environment restricted to `main` is a boundary those branches cannot
     # cross: a run on any other ref is not granted the secret, so the webhook is
     # simply absent and the sync script skips instead of reaching Discord. Stale
-    # code may exist; stale authority may not. See docs/AUTOMATION-AUTHORITY.md.
+    # code may exist; stale authority may not.
+    #
+    # The equivalent boundary for `main` itself IS active: a ruleset with an
+    # empty bypass list rejects every direct push, so those branches can no
+    # longer copy their docs onto `main` no matter what their workflow attempts.
+    # Discord is the half still outstanding.
     environment: roadmap-discord
     steps:
       # `on.push.branches` already restricts pushes, but workflow_dispatch can

@@ -283,18 +283,24 @@ a time): `DISCORD_ANNOUNCE_WEBHOOK`, `DISCORD_ROADMAP_WEBHOOK`,
 `DISCORD_BACKLOG_WEBHOOK`. Use a **private** channel for `#backlog` — it carries
 internal bug and ops detail.
 
-### The webhooks are scoped to `main`, not to the repository
+### The webhooks should be scoped to `main` — the code is ready, the secret is not
 
-`roadmap-live-sync.yml` runs in the **`roadmap-discord`** GitHub Environment,
-restricted to `main` with no bypass branches, and the two webhooks are
-**environment** secrets rather than repository secrets.
+`roadmap-live-sync.yml` declares the **`roadmap-discord`** GitHub Environment.
+Once that environment is restricted to `main` and the two webhooks live in it as
+**environment** secrets, a run on any other ref is never granted them: the old
+workflow executes, finds nothing to authenticate with, and skips.
 
-That is deliberate and load-bearing. GitHub runs a workflow from the tree of the
-ref that was pushed, so the ~75 branches created before the sync was fixed still
-carry a version that posts to Discord and pushes to `main` — and always will. An
-environment scoped to `main` is a boundary they cannot cross: a run on any other
-ref is never granted the webhook, so the old workflow executes, finds nothing to
-authenticate with, and skips. Full reasoning in
+That matters because GitHub runs a workflow from the tree of the ref that was
+pushed, so the ~75 branches created before the sync was fixed still carry a
+version that posts to Discord — and always will.
+
+⚠️ **As of 2026-08-27 this is not yet in force.** The webhooks are still
+**repository** secrets, which every ref receives, so the environment declaration
+gates nothing and a stale branch can still rewrite the pinned `#roadmap`
+message. Finishing it is a settings change with no pull request: move
+`DISCORD_ROADMAP_WEBHOOK` into the environment and delete the repository-level
+copy. (The `main` half of the same problem *is* closed — a ruleset with an empty
+bypass list now rejects every direct push.) Full reasoning in
 [`docs/AUTOMATION-AUTHORITY.md`](AUTOMATION-AUTHORITY.md).
 
 ### The pinned messages are addressed by a committed id
