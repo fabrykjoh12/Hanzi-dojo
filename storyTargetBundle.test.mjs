@@ -235,3 +235,42 @@ describe('the situation must be a scene, not an English summary of one', () => {
     expect(prompt).toMatch(/no example/)
   })
 })
+
+// bundle-concrete-1 was truncated after the per-word verdicts: no BUNDLE line,
+// no SITUATION. Topping up from nothing then produced a confident-looking
+// selection of 被 — the known vocabulary content defect — and 中, two words the
+// model was never asked whether they belong in one story.
+describe('a truncated judgement selects nothing', () => {
+  const pool = [
+    { word: '被', level: 3 }, { word: '中', level: 3 },
+    { word: '如果', level: 3 }, { word: '需要', level: 3 },
+  ]
+  const roles = pool.map(p => ({ word: p.word, hasRole: true, reason: 'a verdict' }))
+
+  it('refuses to top up when no BUNDLE was stated', () => {
+    const r = selectBundle({ roles, bundle: null, situation: '' }, { pool })
+    expect(r.stated).toBe(false)
+    expect(r.required).toEqual([])
+    expect(r.toppedUp).toEqual([])
+    expect(r.enough).toBe(false)
+    expect(r.incomplete).toMatch(/never stated a BUNDLE/)
+    // Every word waits for the story it belongs in, rather than two being
+    // conscripted into one nobody proposed.
+    expect(r.deferred).toHaveLength(pool.length)
+  })
+
+  it('still tops up a bundle that was stated but is too thin', () => {
+    const r = selectBundle({ roles, bundle: ['如果'], situation: 'It is raining.' }, { pool })
+    expect(r.stated).toBe(true)
+    expect(r.incomplete).toBeNull()
+    expect(r.required).toContain('如果')
+    expect(r.toppedUp.length).toBeGreaterThan(0)
+  })
+
+  it('a parsed judgement with no BUNDLE line has bundle null, not empty', () => {
+    const out = ['如果: ROLE | introduces a condition.', '需要: ROLE | states a need.'].join('\n')
+    const j = parseBundleJudgment(out, ['如果', '需要'])
+    expect(j.roles).toHaveLength(2)
+    expect(j.bundle).toBeNull()
+  })
+})

@@ -167,15 +167,23 @@ export function selectBundle(judgement, { pool, policy = BUNDLE_POLICY } = {}) {
   const rest = storyable.filter(r => !proposed.has(r.word)).sort((a, b) => b.priority - a.priority)
 
   const required = inBundle.slice(0, p.requiredMax)
+  // A judgement that never stated a BUNDLE is not a judgement. bundle-concrete-1
+  // was truncated after the per-word verdicts, and topping up from nothing
+  // produced a confident-looking selection of 被 (the known content defect) and
+  // 中 — words the model was never asked whether they cohere. Question 2 is the
+  // whole point of this stage; without an answer to it there is no selection.
+  const stated = Boolean(judgement && judgement.bundle)
   // Only top up from words the model did NOT put in one story if the bundle is
   // too small to be worth writing — and say so, because that is a compromise.
   const toppedUp = []
-  while (required.length < p.requiredMin && rest.length) {
+  while (stated && required.length < p.requiredMin && rest.length) {
     const next = rest.shift()
     toppedUp.push(next.word)
     required.push(next)
   }
-  const opportunity = [...inBundle.slice(p.requiredMax), ...rest].slice(0, p.opportunityMax)
+  // No stated bundle means no opportunity either: an opportunity is a word the
+  // model judged storyable AND left out of a bundle it actually proposed.
+  const opportunity = stated ? [...inBundle.slice(p.requiredMax), ...rest].slice(0, p.opportunityMax) : []
   const opportunityWords = new Set(opportunity.map(r => r.word))
 
   const disposition = rows.map(r => ({
@@ -193,7 +201,9 @@ export function selectBundle(judgement, { pool, policy = BUNDLE_POLICY } = {}) {
     opportunity: opportunity.map(r => r.word),
     deferred: disposition.filter(d => d.bundle === BUNDLE.DEFERRED).map(d => d.word),
     toppedUp,
-    enough: required.length >= p.requiredMin,
+    stated,
+    enough: stated && required.length >= p.requiredMin,
+    incomplete: stated ? null : 'the judgement never stated a BUNDLE — nothing was selected',
     rows: disposition,
   }
 }

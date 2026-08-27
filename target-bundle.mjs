@@ -78,11 +78,17 @@ let judgement = null
 let rawOut = null
 let error = null
 try {
-  rawOut = await provider.send({ kind: 'bundle', prompt: bundlePrompt({ pool, levelName, meanings, senses }), maxTokens: 1400 })
+  rawOut = await provider.send({ kind: 'bundle', prompt: bundlePrompt({ pool, levelName, meanings, senses }), maxTokens: 2600 })
   judgement = parseBundleJudgment(rawOut, pool.map(p => p.word))
   if (!judgement) error = 'the judgement did not parse'
 } catch (err) { error = String((err && err.message) || err).slice(0, 300) }
 if (error) console.error('\nbundle judgement failed: ' + error)
+// A response that stops before BUNDLE:/SITUATION: is a truncation, and the
+// per-word verdicts above it are not a selection.
+if (judgement && !judgement.bundle) {
+  console.error('\nJUDGEMENT INCOMPLETE — no BUNDLE line. The response ended after the per-word verdicts')
+  console.error('(likely finish_reason=length). Nothing is selected; re-run with more tokens.')
+}
 
 const lexIndexes = buildLexicalIndexes(vocabMap, level)
 const selection = selectBundle(judgement || { roles: [], bundle: [], situation: '' }, { pool })
@@ -117,7 +123,8 @@ console.log('\nREQUIRED:    ' + (selection.required.join('、') || '(none)'))
 console.log('OPPORTUNITY: ' + (selection.opportunity.join('、') || '(none)'))
 console.log('DEFERRED:    ' + (selection.deferred.join('、') || '(none)'))
 if (selection.toppedUp.length) console.log('(topped up with ' + selection.toppedUp.join('、') + ' — the proposed bundle was under the minimum)')
-if (!selection.enough) console.log('\nBUNDLE_TOO_THIN: fewer than ' + selection.policy.requiredMin + ' words have a role here')
+if (selection.incomplete) console.log('\nNO SELECTION: ' + selection.incomplete)
+else if (!selection.enough) console.log('\nBUNDLE_TOO_THIN: fewer than ' + selection.policy.requiredMin + ' words have a role here')
 
 mkdirSync(outDir, { recursive: true })
 writeFileSync(join(outDir, 'bundle.json'), JSON.stringify({
