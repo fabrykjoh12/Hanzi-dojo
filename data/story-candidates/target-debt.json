@@ -1,49 +1,49 @@
 {
   "被": {
-    "timesDeferred": 2,
+    "timesDeferred": 0,
     "lastDeferredAt": "2026-08-26",
-    "lastSelectedAt": null,
-    "lastContextualExposure": null
+    "lastSelectedAt": "2026-08-27",
+    "lastContextualExposure": "2026-08-27"
   },
   "中": {
-    "timesDeferred": 2,
+    "timesDeferred": 0,
     "lastDeferredAt": "2026-08-26",
-    "lastSelectedAt": null,
-    "lastContextualExposure": null
+    "lastSelectedAt": "2026-08-27",
+    "lastContextualExposure": "2026-08-27"
   },
   "如果": {
-    "timesDeferred": 0,
-    "lastDeferredAt": null,
+    "timesDeferred": 1,
+    "lastDeferredAt": "2026-08-27",
     "lastSelectedAt": "2026-08-26",
     "lastContextualExposure": "2026-08-26"
   },
   "该": {
-    "timesDeferred": 2,
+    "timesDeferred": 0,
     "lastDeferredAt": "2026-08-26",
-    "lastSelectedAt": null,
+    "lastSelectedAt": "2026-08-27",
     "lastContextualExposure": null
   },
   "需要": {
-    "timesDeferred": 0,
-    "lastDeferredAt": null,
+    "timesDeferred": 1,
+    "lastDeferredAt": "2026-08-27",
     "lastSelectedAt": "2026-08-26",
     "lastContextualExposure": "2026-08-26"
   },
   "像": {
-    "timesDeferred": 2,
+    "timesDeferred": 0,
     "lastDeferredAt": "2026-08-26",
-    "lastSelectedAt": null,
+    "lastSelectedAt": "2026-08-27",
     "lastContextualExposure": null
   },
   "认为": {
-    "timesDeferred": 1,
+    "timesDeferred": 0,
     "lastDeferredAt": "2026-08-26",
-    "lastSelectedAt": "2026-08-26",
+    "lastSelectedAt": "2026-08-27",
     "lastContextualExposure": "2026-08-26"
   },
   "生活": {
-    "timesDeferred": 2,
-    "lastDeferredAt": "2026-08-26",
+    "timesDeferred": 3,
+    "lastDeferredAt": "2026-08-27",
     "lastSelectedAt": null,
     "lastContextualExposure": null
   }
