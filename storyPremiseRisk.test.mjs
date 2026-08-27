@@ -111,6 +111,30 @@ describe('assessPremise — a situation is scored before it becomes a theme', ()
     expect(r.cheapest.verdict).not.toBe(PREMISE.UNSCORED)
   })
 
+  it('LOCKED: 如果 / 需要 / 认为 are never the source of the lexical burden', () => {
+    // The whole bundle → planner audit turned on this: the three targets of
+    // the frozen bundle cost ZERO, and every point of the six plans' 242-point
+    // assisted cost came from the premise (62) and the planner's elaboration
+    // of it (180). If this ever fails, the audit's conclusion is wrong and the
+    // upstream fixes were aimed at the wrong layer.
+    // The targets are never charged, whatever else the premise costs.
+    for (const text of [
+      'A friend needs an umbrella if it rains, and thinks he should go home.',
+      'She thinks the school is far and needs a bicycle if it rains.',
+      'He thinks the job is a conditional choice and needs advice.',
+    ]) {
+      const charged = score(text).assisted.map(a => a.concept)
+      for (const c of ['need', 'needs', 'think', 'thinks', 'if']) {
+        expect(charged, text + ' — ' + c).not.toContain(c)
+      }
+    }
+    // And a premise built only from them is free.
+    expect(score('A friend needs an umbrella if it rains, and thinks he should go home.').verdict).toBe(PREMISE.OK)
+    // The third one above is still rejected — for job / choice / advice, which
+    // is the whole point: the burden was never the targets.
+    expect(score('He thinks the job is a conditional choice and needs advice.').verdict).toBe(PREMISE.UNSAYABLE)
+  })
+
   it('is versioned', () => {
     expect(PREMISE_VERSION).toBe('fab9-premise@2')
     expect(score('It is raining.').version).toBe(PREMISE_VERSION)
