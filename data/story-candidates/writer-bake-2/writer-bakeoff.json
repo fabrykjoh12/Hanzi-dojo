@@ -1,0 +1,898 @@
+{
+  "schema": "writer-bakeoff@1",
+  "generatedAt": "2026-08-27T12:43:52.513Z",
+  "manifest": {
+    "schema": "story-manifest@1",
+    "id": "bundle-L3-001",
+    "batchId": "bundle",
+    "language": "chinese",
+    "system": "hsk_3",
+    "level": 3,
+    "presentation": "paced",
+    "targets": [
+      {
+        "word": "如果",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "该",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "需要",
+        "min": 2,
+        "max": 4
+      },
+      {
+        "word": "被",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "中",
+        "min": 1,
+        "max": 4
+      },
+      {
+        "word": "认为",
+        "min": 1,
+        "max": 4
+      }
+    ],
+    "difficulty": {
+      "maxOutOfLevelDistinct": 3,
+      "maxOutOfLevelCharShare": 0.07,
+      "reviewMaxOutOfLevelCharShare": 0.105,
+      "maxUnknownDistinct": 2,
+      "maxUnknownCharShare": 0.07
+    },
+    "length": {
+      "minLines": 14,
+      "maxLines": 38,
+      "draftLines": [
+        22,
+        30
+      ],
+      "maxLineChars": 34
+    },
+    "quality": {
+      "maxRepeatedTrigramShare": 0.165,
+      "nearDuplicate": {
+        "warn": {
+          "jaccard": 0.3,
+          "containment": 0.6
+        },
+        "fail": {
+          "jaccard": 0.55,
+          "containment": 0.85
+        }
+      }
+    },
+    "speakers": [
+      "李明",
+      "小红",
+      "小明",
+      "妈妈"
+    ],
+    "extraNames": [
+      "大毛"
+    ],
+    "theme": "A student sees it’s raining, realizes he needs an umbrella, and thinks he should ask a classmate to borrow one.",
+    "seasonSeed": null,
+    "series": null,
+    "composition": {
+      "bucket": "bundle",
+      "reason": "A student sees it’s raining, realizes he needs an umbrella, and thinks he should ask a classmate to borrow one.",
+      "hard": [
+        {
+          "word": "如果"
+        },
+        {
+          "word": "该"
+        },
+        {
+          "word": "需要"
+        }
+      ],
+      "soft": [
+        {
+          "word": "被"
+        },
+        {
+          "word": "中"
+        },
+        {
+          "word": "认为"
+        }
+      ]
+    },
+    "forbidden": {
+      "words": [],
+      "topics": []
+    }
+  },
+  "totalLines": 26,
+  "scaffoldVersion": "fab9-scaffold@3",
+  "beatVersion": "fab9-beats@2",
+  "realizedVersion": "fab9-realized@1",
+  "beatLimits": {
+    "unknownDistinct": 1,
+    "outOfLevelCharShare": 0.08,
+    "maxTargetOccurrences": 3
+  },
+  "beatQuality": {
+    "overall": 6,
+    "natural": 6,
+    "continuity": 5,
+    "integration": 5
+  },
+  "lexicalPolicy": {
+    "version": "fab9-assist@1",
+    "inLevelShareTarget": 0.9,
+    "inLevelSharePreferred": 0.95,
+    "assistedWordsPreferred": 4,
+    "assistedWordsMax": 8,
+    "assistedPerBeatPreferred": 1,
+    "assistedPerBeatMax": null,
+    "distanceCost": {
+      "1": 1,
+      "2": 2,
+      "3": 4
+    },
+    "farCost": 6,
+    "offListCost": 4,
+    "costBudget": 16,
+    "offListMax": 2,
+    "necessityWeight": {
+      "CENTRAL_NECESSARY": 0.75,
+      "NATURAL_SUPPORT": 1,
+      "OPTIONAL_COMPLEXITY": 1.5
+    },
+    "optionalMax": 3,
+    "optionalCostMax": null,
+    "assistedPerSentencePreferred": 1,
+    "assistedPerSentenceMax": 2
+  },
+  "writers": [
+    "groq:qwen/qwen3.6-27b:none",
+    "groq:openai/gpt-oss-120b:low"
+  ],
+  "judge": "groq:openai/gpt-oss-20b",
+  "anonMapping": [
+    {
+      "key": "B|groq:qwen/qwen3.6-27b:none",
+      "anon": "W1"
+    },
+    {
+      "key": "B|groq:openai/gpt-oss-120b:low",
+      "anon": "W2"
+    },
+    {
+      "key": "C|groq:openai/gpt-oss-120b:low",
+      "anon": "W1"
+    },
+    {
+      "key": "C|groq:qwen/qwen3.6-27b:none",
+      "anon": "W2"
+    },
+    {
+      "key": "A|groq:openai/gpt-oss-120b:low",
+      "anon": "W1"
+    },
+    {
+      "key": "A|groq:qwen/qwen3.6-27b:none",
+      "anon": "W2"
+    }
+  ],
+  "plans": [
+    {
+      "label": "B",
+      "planner": "groq:openai/gpt-oss-120b:medium",
+      "quality": 9,
+      "problem": "李明 needs an umbrella because it starts to rain.",
+      "risk": {
+        "classification": "ASSISTED_OOL",
+        "budget": {
+          "nominalLevel": 3,
+          "assistedWords": 6,
+          "cost": 15,
+          "costBudget": 16,
+          "byNecessity": {
+            "CENTRAL_NECESSARY": {
+              "count": 6,
+              "cost": 15,
+              "words": [
+                "黑暗",
+                "备用",
+                "off:stays",
+                "off:dry",
+                "收集",
+                "院子"
+              ]
+            }
+          },
+          "minWorstSentence": 1,
+          "maxPerBeat": 2,
+          "crowdedBeats": [],
+          "clusteredSentences": [],
+          "offListWords": 2,
+          "offListMax": 2,
+          "inLevelShareTarget": 0.9,
+          "inLevelSharePreferred": 0.95,
+          "measuredOn": "the finished draft, by the deterministic validator",
+          "breaches": [],
+          "notes": [
+            "above the comfortable 4 assisted words, still inside the 8 allowed",
+            "beat 1 carries 2 assisted words over undefined lines",
+            "beat 5 carries 2 assisted words over undefined lines"
+          ]
+        }
+      }
+    },
+    {
+      "label": "C",
+      "planner": "groq:openai/gpt-oss-120b:medium",
+      "quality": 5,
+      "problem": "李明 forgot his bus card and cannot take the bus home",
+      "risk": {
+        "classification": "ASSISTED_OOL",
+        "budget": {
+          "nominalLevel": 3,
+          "assistedWords": 7,
+          "cost": 16,
+          "costBudget": 16,
+          "byNecessity": {
+            "CENTRAL_NECESSARY": {
+              "count": 5,
+              "cost": 12,
+              "words": [
+                "查询",
+                "off:options",
+                "off:boards",
+                "口袋",
+                "提醒"
+              ]
+            },
+            "OPTIONAL_COMPLEXITY": {
+              "count": 2,
+              "cost": 4,
+              "words": [
+                "乘坐",
+                "及时"
+              ]
+            }
+          },
+          "minWorstSentence": 1,
+          "maxPerBeat": 2,
+          "crowdedBeats": [],
+          "clusteredSentences": [],
+          "offListWords": 2,
+          "offListMax": 2,
+          "inLevelShareTarget": 0.9,
+          "inLevelSharePreferred": 0.95,
+          "measuredOn": "the finished draft, by the deterministic validator",
+          "breaches": [],
+          "notes": [
+            "above the comfortable 4 assisted words, still inside the 8 allowed",
+            "beat 1 carries 2 assisted words over undefined lines"
+          ]
+        }
+      }
+    },
+    {
+      "label": "A",
+      "planner": "groq:openai/gpt-oss-120b:medium",
+      "quality": 9,
+      "problem": "李明's phone battery is low and he needs to charge it",
+      "risk": {
+        "classification": "LEXICALLY_UNSAFE",
+        "budget": {
+          "nominalLevel": 3,
+          "assistedWords": 13,
+          "cost": 37,
+          "costBudget": 16,
+          "byNecessity": {
+            "OPTIONAL_COMPLEXITY": {
+              "count": 3,
+              "cost": 11,
+              "words": [
+                "off:plug",
+                "请求",
+                "答案"
+              ]
+            },
+            "CENTRAL_NECESSARY": {
+              "count": 10,
+              "cost": 26,
+              "words": [
+                "off:icon",
+                "off:screen",
+                "off:dim",
+                "off:charger",
+                "off:plugged",
+                "off:outlet",
+                "闯",
+                "电池",
+                "力量",
+                "前后"
+              ]
+            }
+          },
+          "minWorstSentence": 1,
+          "maxPerBeat": 4,
+          "crowdedBeats": [],
+          "clusteredSentences": [],
+          "offListWords": 7,
+          "offListMax": 2,
+          "inLevelShareTarget": 0.9,
+          "inLevelSharePreferred": 0.95,
+          "measuredOn": "the finished draft, by the deterministic validator",
+          "breaches": [
+            "13 words above the level (max 8)",
+            "an assisted-vocabulary cost of 37 (budget 16) — distance above the level is charged, so a few far words cost more than several near ones",
+            "7 words the learner list does not carry at all (max 2) — those reach the deterministic validator as UNKNOWN words, and it is strict about them"
+          ],
+          "notes": [
+            "beat 1 carries 4 assisted words over undefined lines",
+            "beat 2 carries 3 assisted words over undefined lines",
+            "beat 4 carries 3 assisted words over undefined lines",
+            "beat 5 carries 2 assisted words over undefined lines"
+          ]
+        }
+      }
+    }
+  ],
+  "runs": [
+    {
+      "plan": "B",
+      "writerSpec": "groq:qwen/qwen3.6-27b:none",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "scaffold": {
+        "ok": false,
+        "log": [
+          {
+            "piece": "title",
+            "beat": null,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "雨伞",
+            "why": ""
+          },
+          {
+            "piece": "sketch",
+            "beat": 1,
+            "word": "需要",
+            "attempt": 1,
+            "ok": false,
+            "output": "天要下雨，我需要一把伞。",
+            "why": "introduces 把, who is not in this story. The people are: 李明、小红"
+          },
+          {
+            "piece": "sketch",
+            "beat": 1,
+            "word": "需要",
+            "attempt": 2,
+            "ok": false,
+            "output": "我需要一把伞。",
+            "why": "introduces 把, who is not in this story. The people are: 李明、小红"
+          }
+        ]
+      },
+      "detail": "sketch/1, sketch/1",
+      "firstReason": "sketch/1: introduces 把, who is not in this story. The people are: 李明、小红  [got: 天要下雨，我需要一把伞。]",
+      "scaffoldCode": "TARGET_SCAFFOLD_FAILED",
+      "latencyMs": 1516,
+      "tokens": {
+        "prompt": 4275,
+        "completion": 31
+      },
+      "usage": {
+        "requests": 3,
+        "failures": 0,
+        "promptTokens": 4275,
+        "completionTokens": 31,
+        "latencyMsTotal": 1422,
+        "rateLimit429s": 0,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 0
+      },
+      "anon": "W1"
+    },
+    {
+      "plan": "B",
+      "writerSpec": "groq:openai/gpt-oss-120b:low",
+      "ok": false,
+      "code": "BEAT_REALIZATION_FAILED",
+      "scaffold": {
+        "ok": true,
+        "log": [
+          {
+            "piece": "title",
+            "beat": null,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "李明借伞",
+            "why": ""
+          },
+          {
+            "piece": "sketch",
+            "beat": 1,
+            "word": "需要",
+            "attempt": 1,
+            "ok": true,
+            "output": "我需要雨伞。",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 1,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "学校,上午,下雨,雨伞,需要,发现",
+            "why": ""
+          },
+          {
+            "piece": "sketch",
+            "beat": 2,
+            "word": "该",
+            "attempt": 1,
+            "ok": false,
+            "output": "我该向小红要雨伞吧。",
+            "why": "non-vocabulary text: 向"
+          },
+          {
+            "piece": "sketch",
+            "beat": 2,
+            "word": "该",
+            "attempt": 2,
+            "ok": true,
+            "output": "我该问小红要雨伞吧。",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 2,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "教室,早上,下雨,应该,问,雨伞",
+            "why": ""
+          },
+          {
+            "piece": "sketch",
+            "beat": 3,
+            "word": "如果",
+            "attempt": 1,
+            "ok": true,
+            "output": "如果下雨，我可以借给你雨伞。",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 3,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "教室,早上,进去,不久,要,说,雨伞,借,可以",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 4,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "伞,给,他,一起,走,回,学校,早上",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 5,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "雨,打伞,谢谢,帮忙,题",
+            "why": ""
+          }
+        ]
+      },
+      "detail": "beat 1 could not be written acceptably in 2 attempts",
+      "failedBeat": 1,
+      "latencyMs": 138837,
+      "tokens": {
+        "prompt": 16660,
+        "completion": 3221
+      },
+      "usage": {
+        "requests": 15,
+        "failures": 3,
+        "promptTokens": 16660,
+        "completionTokens": 3221,
+        "latencyMsTotal": 11855,
+        "rateLimit429s": 3,
+        "throttleWaitMs": 104526,
+        "retryAfterWaitMs": 22000
+      },
+      "anon": "W2"
+    },
+    {
+      "plan": "C",
+      "writerSpec": "groq:qwen/qwen3.6-27b:none",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "scaffold": {
+        "ok": false,
+        "log": [
+          {
+            "piece": "title",
+            "beat": null,
+            "word": null,
+            "attempt": 1,
+            "ok": false,
+            "output": "借公交卡",
+            "why": "above-level vocabulary: 公 (HSK 6)、交 (HSK 4)"
+          },
+          {
+            "piece": "title",
+            "beat": null,
+            "word": null,
+            "attempt": 2,
+            "ok": false,
+            "output": "李小明的朋友",
+            "why": "non-vocabulary text: 李"
+          }
+        ]
+      },
+      "detail": "title, title",
+      "firstReason": "title: above-level vocabulary: 公 (HSK 6)、交 (HSK 4)  [got: 借公交卡]",
+      "scaffoldCode": "TITLE_SCAFFOLD_FAILED",
+      "latencyMs": 1464,
+      "tokens": {
+        "prompt": 2480,
+        "completion": 18
+      },
+      "usage": {
+        "requests": 2,
+        "failures": 0,
+        "promptTokens": 2480,
+        "completionTokens": 18,
+        "latencyMsTotal": 1450,
+        "rateLimit429s": 0,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 0
+      },
+      "anon": "W2"
+    },
+    {
+      "plan": "C",
+      "writerSpec": "groq:openai/gpt-oss-120b:low",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "scaffold": {
+        "ok": false,
+        "log": [
+          {
+            "piece": "title",
+            "beat": null,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "忘记卡的李明",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 1,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "口袋,看,卡,没有,八点",
+            "why": ""
+          },
+          {
+            "piece": "sketch",
+            "beat": 2,
+            "word": "如果",
+            "attempt": 1,
+            "ok": false,
+            "output": "如果我的公交卡丢了，我就请小红帮忙。",
+            "why": "above-level vocabulary: 公、交"
+          },
+          {
+            "piece": "sketch",
+            "beat": 2,
+            "word": "如果",
+            "attempt": 2,
+            "ok": true,
+            "output": "如果我的公交车卡丢了，我就请小红帮忙。",
+            "why": ""
+          },
+          {
+            "piece": "sketch",
+            "beat": 2,
+            "word": "该",
+            "attempt": 1,
+            "ok": true,
+            "output": "我该问小红帮助。",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 2,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "认为,决定,问,帮忙,门,八点",
+            "why": ""
+          },
+          {
+            "piece": "sketch",
+            "beat": 3,
+            "word": "需要",
+            "attempt": 1,
+            "ok": true,
+            "output": "我需要借你的卡，可以吗？",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 3,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "学校,门,早上,八点,零三分,公交车",
+            "why": ""
+          },
+          {
+            "piece": "sketch",
+            "beat": 4,
+            "word": "该",
+            "attempt": 1,
+            "ok": false,
+            "output": "该把卡片还回去。",
+            "why": "above-level vocabulary: 卡片"
+          },
+          {
+            "piece": "sketch",
+            "beat": 4,
+            "word": "该",
+            "attempt": 2,
+            "ok": false,
+            "output": "该把卡片还回去。",
+            "why": "above-level vocabulary: 卡片"
+          }
+        ]
+      },
+      "detail": "sketch/2, sketch/4, sketch/4",
+      "firstReason": "sketch/2: above-level vocabulary: 公、交  [got: 如果我的公交卡丢了，我就请小红帮忙。]",
+      "scaffoldCode": "TARGET_SCAFFOLD_FAILED",
+      "latencyMs": 130246,
+      "tokens": {
+        "prompt": 15110,
+        "completion": 2504
+      },
+      "usage": {
+        "requests": 13,
+        "failures": 3,
+        "promptTokens": 15110,
+        "completionTokens": 2504,
+        "latencyMsTotal": 9205,
+        "rateLimit429s": 3,
+        "throttleWaitMs": 87699,
+        "retryAfterWaitMs": 33000
+      },
+      "anon": "W1"
+    },
+    {
+      "plan": "A",
+      "writerSpec": "groq:qwen/qwen3.6-27b:none",
+      "ok": false,
+      "code": "BEAT_REALIZATION_FAILED",
+      "scaffold": {
+        "ok": true,
+        "log": [
+          {
+            "piece": "title",
+            "beat": null,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "李明的电话",
+            "why": ""
+          },
+          {
+            "piece": "sketch",
+            "beat": 1,
+            "word": "需要",
+            "attempt": 1,
+            "ok": false,
+            "output": "我需要充电器。",
+            "why": "non-vocabulary text: 器; above-level vocabulary: 充电"
+          },
+          {
+            "piece": "sketch",
+            "beat": 1,
+            "word": "需要",
+            "attempt": 2,
+            "ok": true,
+            "output": "我需要电。",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 1,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "学校,上课,上午,发现,然后,暗",
+            "why": ""
+          },
+          {
+            "piece": "sketch",
+            "beat": 2,
+            "word": "如果",
+            "attempt": 1,
+            "ok": false,
+            "output": "如果你的手机没电了",
+            "why": "non-vocabulary text: 没"
+          },
+          {
+            "piece": "sketch",
+            "beat": 2,
+            "word": "如果",
+            "attempt": 2,
+            "ok": true,
+            "output": "如果你的手机没有电",
+            "why": ""
+          },
+          {
+            "piece": "sketch",
+            "beat": 2,
+            "word": "该",
+            "attempt": 1,
+            "ok": false,
+            "output": "我该问你借充电器吗",
+            "why": "non-vocabulary text: 器; above-level vocabulary: 充电"
+          },
+          {
+            "piece": "sketch",
+            "beat": 2,
+            "word": "该",
+            "attempt": 2,
+            "ok": true,
+            "output": "我该问你借钱吗",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 2,
+            "word": null,
+            "attempt": 1,
+            "ok": false,
+            "output": "看,坐,充电线",
+            "why": "only 2 usable word(s) — \"充电线\": not standard vocabulary"
+          },
+          {
+            "piece": "anchors",
+            "beat": 2,
+            "word": null,
+            "attempt": 2,
+            "ok": true,
+            "output": "看,然后,发现,在,坐",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 3,
+            "word": null,
+            "attempt": 1,
+            "ok": false,
+            "output": "走廊,充电器,借,上,李,红",
+            "why": "only 2 usable word(s) — \"走廊\": 走廊 is HSK 6, above the story level; \"充电器\": not standard vocabulary; \"李\": a piece of 李明, not a word of its own; \"红\": a piece of 小红, not a word of its own"
+          },
+          {
+            "piece": "anchors",
+            "beat": 3,
+            "word": null,
+            "attempt": 2,
+            "ok": true,
+            "output": "你好,可以,借,充电器,谢谢",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 4,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "后来,然后,走,到,给,充电器",
+            "why": ""
+          },
+          {
+            "piece": "anchors",
+            "beat": 5,
+            "word": null,
+            "attempt": 1,
+            "ok": true,
+            "output": "图书馆,手机,充电,谢谢,她",
+            "why": ""
+          }
+        ]
+      },
+      "detail": "beat 1 could not be written acceptably in 2 attempts",
+      "failedBeat": 1,
+      "latencyMs": 183457,
+      "tokens": {
+        "prompt": 22869,
+        "completion": 392
+      },
+      "usage": {
+        "requests": 16,
+        "failures": 0,
+        "promptTokens": 22869,
+        "completionTokens": 392,
+        "latencyMsTotal": 10943,
+        "rateLimit429s": 0,
+        "throttleWaitMs": 171933,
+        "retryAfterWaitMs": 0
+      },
+      "anon": "W2"
+    },
+    {
+      "plan": "A",
+      "writerSpec": "groq:openai/gpt-oss-120b:low",
+      "ok": false,
+      "code": "SCAFFOLD_FAILED",
+      "scaffold": {
+        "ok": false,
+        "log": [
+          {
+            "piece": "title",
+            "beat": null,
+            "word": null,
+            "attempt": 1,
+            "ok": false,
+            "output": "手机没电",
+            "why": "non-vocabulary text: 没"
+          },
+          {
+            "piece": "title",
+            "beat": null,
+            "word": null,
+            "attempt": 2,
+            "ok": false,
+            "output": "手机充电",
+            "why": "above-level vocabulary: 充电 (HSK 5)"
+          }
+        ]
+      },
+      "detail": "title, title",
+      "firstReason": "title: non-vocabulary text: 没  [got: 手机没电]",
+      "scaffoldCode": "TITLE_SCAFFOLD_FAILED",
+      "latencyMs": 782,
+      "tokens": {
+        "prompt": 2498,
+        "completion": 186
+      },
+      "usage": {
+        "requests": 2,
+        "failures": 0,
+        "promptTokens": 2498,
+        "completionTokens": 186,
+        "latencyMsTotal": 768,
+        "rateLimit429s": 0,
+        "throttleWaitMs": 0,
+        "retryAfterWaitMs": 0
+      },
+      "anon": "W1"
+    }
+  ],
+  "densityChecks": [],
+  "judgeLog": []
+}
