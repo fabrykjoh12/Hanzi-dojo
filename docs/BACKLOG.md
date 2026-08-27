@@ -426,6 +426,93 @@ whose subject is an abstract negotiation cannot be told in HSK 3 vocabulary, and
 no threshold should be bent to pretend otherwise. **The next move is the bundle
 and the planner brief, not the policy.**
 
+### The premise was infeasible before any plan existed (2026-08-27)
+
+Traced the exact bundle behind frozen plans A-F end to end. The bundle is
+`bundle-1`; its `situation` becomes `manifest.theme` verbatim in
+`planner-bakeoff.mjs`, and `storyShapePrompt` printed it as `Theme:`.
+
+| target | reading | gloss | HSK | how it entered | kind |
+|---|---|---|---|---|---|
+| 如果 | rú guǒ | *if; in case* | 3 | judged ROLE — "essential for presenting the dilemma" | target/reinforcement |
+| 需要 | xū yào | *to need; to want; to demand; to require* | 3 | judged ROLE — "establishes the protagonist's requirement" | target/reinforcement |
+| 认为 | rèn wéi | *to believe; to think; to consider; to feel* | 3 | judged ROLE — "provides the internal perspective" | target/reinforcement |
+
+Deferred from the same pool: 被, 中, 该, 像, 生活. The pool is the next eight
+unlearned HSK 3 words by `sort_order`; there was no support vocabulary and no
+planner-added target. **All three targets are in level and carry ZERO lexical
+cost.** The vocabulary was never the problem.
+
+**Where the expensive concepts entered.** The bundle judge saw glosses only
+(`fab9-bundle@1` — no examples, no senses) and answered:
+
+> SITUATION: A friend asking for advice on a conditional life choice, such as
+> whether to accept a new job.
+
+Costed with the corrected matcher that one sentence is **21 points with four
+unsayable words** (advice, conditional, choice, asking) before a beat exists.
+Split of the assisted cost across all six plans:
+
+| origin | charges | cost | share | words |
+|---|---|---|---|---|
+| target vocabulary | 0 | **0** | 0% | — |
+| the premise sentence | 16 | **62** | 26% | job 22, advice 21, conditional 12, choice 7 |
+| planner elaboration | 59 | **180** | 74% | offer 16, details 7, provides 6, prompting 6, hesitation 6, conflict 6, options 6, guidance 6, pros, cons |
+
+**Both stages are defective, and the bundle one is causal.** The judge deferred
+被 *because* it was "a concrete noun unrelated to the abstract/social themes of
+other words" — it actively selected against concreteness — and nothing in
+`bundlePrompt` asked whether the situation could be SAID at the level. The
+planner then spent three times as much again inside the frame it was handed.
+
+**Semantic necessity: none of it is required by the targets.** Scored with the
+same model, the identical three words in a concrete premise:
+
+| premise | cost | off-list |
+|---|---|---|
+| *"A friend asking for advice on a conditional life choice…"* (actual) | **21** | 4 |
+| *"It is raining and one of them needs an umbrella to go home"* | **0** | 0 |
+| *"A bicycle is broken and they think about how to get to school"* | **0** | 0 |
+| *"Someone lost a key and they need to find it"* | **1** | 0 |
+| *"They weigh the pros and cons of a difficult decision"* | **18** | 4 |
+
+**The planner brief, and the smallest generic reason all six collapsed.** Four
+things, none of them about job offers:
+
+1. `Theme:` was printed as a bare requirement, so the planner had no licence to
+   reframe it.
+2. The theme carried a worked example — *"such as whether to accept a new
+   job"* — which acted as a template. All six used a job.
+3. The concreteness rule named only specialist **concrete** nouns (tools,
+   equipment, machinery, food names). It never fired, because nothing in these
+   plans was specialist. The class that broke them was the opposite one:
+   abstractions with no picture behind them.
+4. `const prompt = storyShapePrompt(...)` was built **once, outside the sampling
+   loop**. Six candidates were six temperature samples of one premise —
+   materially different premises were not something the harness could produce.
+
+**The fix.** `storyPremiseRisk.mjs` (`fab9-premise@1`) scores a situation with
+the story gate's own matcher and cost model — no second heuristic, no
+forbidden-topic list. A premise is a sentence of English and the gate already
+knows what one costs. Its budget is deliberately tiny (cost 4, one off-list
+word) because whatever the premise costs, every beat elaborating it costs again.
+`target-bundle` runs it on whatever the judge returns and stores the verdict;
+`bundlePrompt` (`fab9-bundle@3`) asks for a scene rather than a topic and
+refuses the worked example; `storyShapePrompt` offers the theme as a suggestion
+that may be abandoned, names abstract nouns as unsayable alongside specialist
+ones, and requires every beat to contain something photographable;
+`planner-bakeoff` builds the prompt per attempt and tells each one what the
+earlier attempts already used.
+
+`planner-bakeoff` now reports **lexical feasibility before story quality** —
+five of six frozen plans passed quality while being impossible to write, so the
+ranking was over a set that could not exist.
+
+Also fixed here: a determiner two tokens back was tagging a gerund as a noun, so
+*"a friend ASKING for help"* put 问 out of reach. A determiner binds to the word
+after it and to one behind an adjective, not across another noun — but *"the
+meeting"* stays a noun.
+
 ### Target-bundle selection moved upstream, and the eligible set is finally non-empty (2026-08-26)
 
 Four stored plans had been through placement viability and every one failed on
