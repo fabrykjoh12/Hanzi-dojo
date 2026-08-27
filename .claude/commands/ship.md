@@ -1,30 +1,41 @@
 Verify the current changes and ship them to GitHub.
 
-Run all three checks, in order, and show me the output of each:
+Run the canonical verification and show me the output:
 
-1. `npm run lint` — must report **0 errors in `src/`**.
-2. `npm test` — the full vitest suite. Every spec must pass.
-3. `npm run build` — must succeed.
+```bash
+npm run verify:pr
+```
 
-If ANY of the three fails, STOP. Do not commit. Show me what failed and fix it
-first. These are the same three checks CI runs (`.github/workflows/ci.yml`), so a
-failure here is a failure that would block the merge anyway — catching it now
+That one command IS the gate — CI's `check` job runs exactly it
+(`.github/workflows/ci.yml`), so a pass here and a pass there mean the same
+thing. Don't run its stages individually and don't substitute a shorter set;
+`package.json` defines what it covers, and that definition is allowed to grow
+without this file changing.
+
+If it fails, STOP. Do not commit. Show me what failed and fix it first — a
+failure here is a failure that would block the merge anyway, so catching it now
 just saves a round trip.
 
-If all three pass:
+Two things it deliberately does not cover, so don't treat a green run as
+covering them: Playwright e2e is its own PR job (`e2e.yml`), and native
+artifact verification — the Capacitor wrapper and the iOS/Android builds — is
+separate. The store *web bundle* is covered: `build:public` is one of its
+stages.
 
-4. Show me `git status` and `git diff --stat` so I can see what's about to ship.
-5. Suggest a short, specific commit message based on what changed (or ask me for
+If it passes:
+
+1. Show me `git status` and `git diff --stat` so I can see what's about to ship.
+2. Suggest a short, specific commit message based on what changed (or ask me for
    one). It becomes the Discord #announcements text when this reaches `main` —
    write it for a reader, not a machine.
-6. Stage **explicitly by path** — `git add <the files you changed>`. Never
+3. Stage **explicitly by path** — `git add <the files you changed>`. Never
    `git add .`: it sweeps up scratch files, local env files and half-finished
    work that happen not to be gitignored.
-7. Commit, then `git push -u origin <current-branch>`.
-8. Confirm the push succeeded and print the branch name.
+4. Commit, then `git push -u origin <current-branch>`.
+5. Confirm the push succeeded and print the branch name.
 
 Rules:
-- Never commit without all three checks passing first.
+- Never commit without `npm run verify:pr` passing first.
 - **Never push directly to `main`.** A push to `main` deploys to real users
   immediately. If I'm on `main`, create a branch first and push that, then tell
   me to open a PR.
