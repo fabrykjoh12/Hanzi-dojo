@@ -812,6 +812,96 @@ pairs complete: qwen produced a one-character title (伞, correctly rejected) an
 gpt-oss hit a 429 asking for 666 more seconds. Writer recommendation remains
 **INSUFFICIENT EVIDENCE**.
 
+### Provenance traced, and the corpus incident reclassified (2026-08-27)
+
+**`source_id` root cause.** Nothing ever wrote it. `seed-vocab.mjs` inserts
+`{language, system, level, sort_order, word, reading, reading_plain, meaning,
+audio_path, is_active}` — `source_id` is not in the payload, and no other code
+path touches it. The column has no DDL in the repo either: the earliest
+migration is `20260605213000_add_progress_reset_function.sql`, so the
+`vocabulary` table predates `supabase/migrations/` and was created outside git.
+Every `source_id` reference in the codebase belongs to `tts_audio` / `tts_jobs`,
+a different column entirely.
+
+**Source provenance IS deterministically recoverable — from the repository, not
+the database.** The chain is committed:
+
+`complete.json` (drkameleon/complete-hsk-vocabulary, MIT) → `build-hsk-vocab.mjs`
+→ `src/hskBuild.js` → `data/hsk{3,4,5,6}.json` → `seed-vocab.mjs` → DB.
+
+| | rows | mapping |
+|---|---|---|
+| HSK 3–6 | **4,494 (90.0%)** | joins by `word` to a committed build artifact, and **every gloss is still byte-identical** — the DB was never edited after seeding |
+| HSK 1–2 | 497 | `data/hsk{1,2}-vocab-snapshot.json`, word+reading only, a **different and earlier origin** |
+| — | 4 | no committed artifact at all: 可, 声, 协议 (H5), 节奏 (H6) |
+
+So two sources were combined, and a backfill keyed on `word` is deterministic
+for 90% of rows. **Not designed or run** — nothing was mutated.
+
+*Terminology, kept separate from here on:* **source provenance** is which
+dataset a row came from. **Lexical-evidence provenance** is why a matcher fired
+(分钟 → 钟). They are different things and the word was being overloaded.
+
+**The 652-occurrence reclassification.** The previous report called every
+component-of-a-compound run a source-data defect. Split against the curriculum
+source itself, the conclusion changes materially:
+
+| class | unique forms | occurrences | stories | repair layer |
+|---|---|---|---|---|
+| **CURRICULUM_ROW_MISSING** | **1** | **3** | 3 | ingestion |
+| MORPHEME_OF_COMPOUND | 56 | 365 | 114 | story content / curriculum decision |
+| OUT_OF_CURRICULUM | 62 | 284 | 103 | story content |
+| SEGMENTATION | 0 | 0 | 0 | — |
+| CANON_ENTITY | 1 | 6 | — | permitted, not a defect |
+
+**转 is the only true ingestion loss** — listed in
+`data/hsk3-vocab-snapshot.json`, absent from the database. The four
+hand-found words are not what they looked like:
+
+| word | actual class | why |
+|---|---|---|
+| 没 | MORPHEME_OF_COMPOUND | the curriculum source does not list it standalone either — HSK 3.0 teaches 没有 |
+| 公交 | **not untappable at all** | the reader resolves 公交车; the earlier claim came from the plan-time concept matcher, not from anything a learner sees |
+| 不见 | never appears in this audit | the reader segments it; the defect is the narrow gloss alone |
+| 被 | never appears in this audit | same |
+
+**So the 652 occurrences are overwhelmingly a story-content problem, not a
+vocabulary-ingestion one.** Adding rows would fix 3 of them.
+
+**Reading ↔ gloss coherence: two definite, and the generic detector does not
+work.** 卡 (reading `kǎ`, gloss *"to stop; to block"* — the **qiǎ** sense —
+example 她是卡门 *"She's Carmen"*, a transliteration: all three disagree) and 行
+(reading `háng`, gloss *"row; line"*, example 行。*"All right."* — the **xíng**
+sense). Both verified by reading the row; both already wrong in the committed
+`data/hsk3.json`, so they entered at build time.
+
+An automated detector over all 836 single-character rows — does the gloss share
+a content word with its own example translation? — flags **475 (57%)**, almost
+all false positives: grammatical particles (的, 了, 吗, 呢) whose translations
+naturally contain no gloss word, and ordinary paraphrase (看 *"to see"* → *"I
+like to watch movies"*). **Precision is unusable and the list is not shipped.**
+
+**An external reading-per-sense authority is required — and it was available and
+discarded.** `src/hskBuild.js` does `const form = (entry?.forms || [])[0]`, and
+the dataset stores one form *per reading/sense group*. Taking `forms[0]` throws
+away every alternative reading and its meanings, which is exactly the pairing
+needed to detect this class. Re-running the build while keeping all forms makes
+the audit deterministic; nothing else does.
+
+**Title minimum was an accidental assumption.** `TITLE_BOUNDS.min` was 2. The
+published corpus already ships one-character titles — 岛 and 疼 — so the Reader
+and card UI render them, and no product or design document states a minimum.
+Now 1. Whether one character makes a good title is a quality question, not a
+format rule.
+
+**Publishability invariant.** Every learner-facing Mandarin token in a published
+story must resolve through the same segmentation and lookup path the Reader uses,
+or be a canonical entity recognised by the Reader's own name path. Implemented by
+reusing `untappableRuns()` — production `segmentLine`, production matcher, names
+and segmenter — because an invariant enforced against a copy of the logic tests
+the copy. **Blast radius: 142 of 204 published stories would fail, 62 pass.** Not
+enforced anywhere; enforcing it today would make the repository unbuildable.
+
 ### Target-bundle selection moved upstream, and the eligible set is finally non-empty (2026-08-26)
 
 Four stored plans had been through placement viability and every one failed on
