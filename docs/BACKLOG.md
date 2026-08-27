@@ -573,6 +573,88 @@ names and quoted target words; a presence test would have thrown away three of
 the six frozen plans, which legitimately write "he 认为 the new job is
 dangerous"). Both were gates answering without evidence.
 
+### Sentence density was measured on the planning representation (2026-08-27)
+
+Candidate E of `bundle-plans-2` was the boundary case — cost 12/16, off-list
+1/2, assisted words 6/8, clearing everything except density 3/2. The two
+offending "sentences":
+
+| beat | lines | the beat's whole `what` | the three concepts |
+|---|---|---|---|
+| 1 | **6** | *"李明 tries to open his locker and finds the key missing"* | locker (off-list, CENTRAL, 3) · key (钥匙 HSK4 +1, CENTRAL, 1) · missing (想念 HSK5 +2, CENTRAL, 2) |
+| 5 | **5** | *"李明 opens his locker with the spare key and stores his books"* | locker (off-list, CENTRAL, 3) · spare (备用 HSK6 +3, CENTRAL, 3) · key (钥匙 HSK4 +1, CENTRAL, 1) |
+
+**What the cap measured.** `sentences()` splits the beat's `what` on English
+punctuation `[.!?;]`. Every beat's `what` is a ONE-SENTENCE SUMMARY of a beat
+that becomes five or six Mandarin lines, so "sentence 1" was the whole beat.
+The cap was reading a property of the English planning representation and
+reporting it as a property of the reader's experience — and it silently
+duplicated `assistedPerBeatMax` under a second name.
+
+**Verdict: B, a measurement-layer defect.** Both clauses are compound ("… *and*
+finds the key missing"), and neither set of three has to share a Mandarin
+sentence: 他想打开柜子。/ 钥匙不见了。is two sentences with two taps between them,
+inside a beat that has six lines to use.
+
+**The fix.** No Mandarin exists at plan time, so the plan cannot know which
+concepts share a sentence — but it does state how many lines the beat becomes,
+and that is enough for a lower bound: A distinct assisted words over N lines put
+at least `ceil(A/N)` in the worst line however they are distributed. The plan
+now rejects only what is impossible to write within the cap, and reports
+`minWorstSentence` instead of a `maxPerSentence` it never measured. A beat with
+no declared line count is still treated as one sentence. Real per-line density
+belongs at realization, where real lines exist — `storyRepairPlanner` already
+computes per-line facts there.
+
+**`assistedPerBeatMax` is the same defect, one layer up.** Over 60 observed
+beats (mean 5.2 lines), a cap of 2 assisted words per beat implies **0.38
+assisted words per line** against a per-sentence cap of 2.00 — it is 19% as
+permissive as the check it duplicates. **25 of those 60 beats exceed it, and
+zero of them exceed the corrected per-sentence bound.** It asserts a beat is one
+sentence, which is exactly what was just disproved. Left unchanged: relaxing it
+would admit candidate E, and that decision needs the maintainer.
+
+### The calibration set could not be built (2026-08-27)
+
+`calib-set-1` added 8 more candidates on the same cost-0 premise (2 models × 5,
+qwen + gpt-oss). Combined with `bundle-plans-2j`: **14 candidates, 11 scorable,
+0 feasible.** §7 asked for at least 3 feasible and 3 infeasible; the set is
+uniformly infeasible, so the policy sweep §8 asks for cannot be run.
+
+| dimension | fires | uniquely rejects | min observed | cap |
+|---|---|---|---|---|
+| `costBudget` | 10/11 | 0 | 12 | 16 |
+| `offListMax` | 9/11 | 0 | 1 | 2 |
+| `assistedWordsMax` | 10/11 | 0 | 6 | 8 |
+| `assistedPerBeatMax` | 10/11 | **1** (candidate E) | 2 | 2 |
+| `minWorstSentence` | **0/11** | 0 | 1 | 2 |
+| `optionalMax` | — | — | — | null |
+
+**Cost does not track quality.** The three plans scoring 9 cost 40, 25 and 23;
+the two cheapest (12 and 29) both score 5. That is the correct relationship for
+two independent gates — the cost gate protects comprehensibility, not story
+quality — but it means quality cannot be used as the yardstick for calibrating
+it. **The yardstick has to be a realized story a learner can actually read, and
+none exists yet.** Until one does, every threshold is a guess, which is what the
+maintainer's own sequencing already said.
+
+**Empirically justified today:** `minWorstSentence` is provably correct but
+inactive (0/11 — its regressions show it rejects a genuinely impossible beat).
+No other dimension has been shown to separate a desirable plan from an
+undesirable one, because nothing in the set is desirable-and-feasible.
+`optionalMax` stays null.
+
+**Planner compliance defect, separate:** 4 of 14 candidates (29%) wrote the plan
+in Chinese despite the brief's first line being *"Write NO Chinese sentences:
+this is a plan, in English"*. They are now correctly UNSCORABLE rather than
+free, but they are wasted generations.
+
+**Gloss-coverage gap, separate (same class as 被):** *missing* matches 想念 HSK5
+*"to miss; to remember with longing"* — the wrong sense. The corpus says
+"missing/gone" with 不见了 (不见 is HSK 3, and published stories use it: 苹果不见了),
+but 不见's gloss is *"not to see; not to meet"*, so nothing in the data can reach
+it. Costs candidate E 2 points and one assisted word. Not patched.
+
 ### Target-bundle selection moved upstream, and the eligible set is finally non-empty (2026-08-26)
 
 Four stored plans had been through placement viability and every one failed on
