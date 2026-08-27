@@ -30,8 +30,8 @@
     "lastContextualExposure": "2026-08-27"
   },
   "像": {
-    "timesDeferred": 0,
-    "lastDeferredAt": "2026-08-26",
+    "timesDeferred": 1,
+    "lastDeferredAt": "2026-08-27",
     "lastSelectedAt": "2026-08-27",
     "lastContextualExposure": null
   },
@@ -42,7 +42,7 @@
     "lastContextualExposure": "2026-08-27"
   },
   "生活": {
-    "timesDeferred": 4,
+    "timesDeferred": 5,
     "lastDeferredAt": "2026-08-27",
     "lastSelectedAt": null,
     "lastContextualExposure": null
