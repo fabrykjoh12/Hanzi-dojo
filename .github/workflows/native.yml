@@ -198,24 +198,49 @@ jobs:
         run: |
           set -euo pipefail
 
-          # A broken detector must not read as "nothing to do". If change
-          # detection did not succeed we know nothing, so we fail.
-          if [ "$DETECT" != "success" ]; then
-            echo "::error::native change detection did not succeed (result: $DETECT)"
-            exit 1
+          # AN EXACT TRUTH TABLE, FAIL-CLOSED. Exactly two combinations pass:
+          #
+          #   DETECT   NATIVE   VERIFY    result
+          #   success  true     success   PASS — changes were verified
+          #   success  false    skipped   PASS — nothing native to verify
+          #   anything else                FAIL
+          #
+          # Everything else fails, and that deliberately includes NATIVE being
+          # empty or some value nobody anticipated. An unset output is what you
+          # get when the detector step is deleted, renamed, or crashes before
+          # writing GITHUB_OUTPUT — and "" must never read as "nothing to do".
+          # A gate that guesses on unknown input is not a gate.
+          # Normalise first. `set -u` would otherwise abort with "unbound
+          # variable" when an output is missing — still a failure, which is the
+          # right direction, but an error message that says nothing about the
+          # gate. Default them to empty and let the table below reject them
+          # with a diagnostic a reader can act on.
+          DETECT="${DETECT:-}"
+          VERIFY="${VERIFY:-}"
+          NATIVE="${NATIVE:-}"
+          echo "detect=$DETECT native=$NATIVE verify=$VERIFY"
+
+          if [ "$DETECT" = "success" ] && [ "$NATIVE" = "true" ] && [ "$VERIFY" = "success" ]; then
+            echo "native gate: PASS — native-sensitive changes were verified."
+            exit 0
           fi
 
-          case "$VERIFY" in
-            success)
-              echo "native gate: PASS — native-sensitive changes verified." ;;
-            skipped)
-              # Only legitimate when the detector actually said false.
-              if [ "$NATIVE" = "true" ]; then
-                echo "::error::native verification was skipped even though native changes were detected"
-                exit 1
-              fi
-              echo "native gate: PASS — no native-sensitive changes in this pull request." ;;
-            *)
-              echo "::error::native verification did not pass (result: $VERIFY)"
-              exit 1 ;;
-          esac
+          if [ "$DETECT" = "success" ] && [ "$NATIVE" = "false" ] && [ "$VERIFY" = "skipped" ]; then
+            echo "native gate: PASS — no native-sensitive changes in this pull request."
+            exit 0
+          fi
+
+          # Name the most likely cause, then fail regardless.
+          if [ "$DETECT" != "success" ]; then
+            echo "::error::native change detection did not succeed (result: $DETECT)"
+          elif [ "$NATIVE" != "true" ] && [ "$NATIVE" != "false" ]; then
+            echo "::error::native change detection produced no usable answer (native='$NATIVE')"
+          elif [ "$NATIVE" = "true" ] && [ "$VERIFY" = "skipped" ]; then
+            echo "::error::native verification was skipped even though native changes were detected"
+          elif [ "$NATIVE" = "false" ] && [ "$VERIFY" != "skipped" ]; then
+            echo "::error::native verification ran ($VERIFY) although no native changes were detected"
+          else
+            echo "::error::native verification did not pass (result: $VERIFY)"
+          fi
+          echo "::error::native gate: FAIL (detect=$DETECT native=$NATIVE verify=$VERIFY)"
+          exit 1

@@ -85,8 +85,17 @@ export const REQUIRED_NATIVE_FILES = [
   'ios/App/App.xcodeproj/project.pbxproj',
 ]
 
+/**
+ * The major from an npm range, or null when there isn't one to read.
+ *
+ * Handles the ordinary forms (`^8.5.0`, `~8.1`, `8`, `>=8.0.0`). Returns null
+ * for anything whose major cannot be determined — `workspace:*`, `file:../x`,
+ * `github:owner/repo`, `npm:alias@1`, `*`, `latest`. Callers must treat null as
+ * a VIOLATION, not as "skip this one": an unreadable version is exactly when
+ * you cannot claim the packages agree.
+ */
 const majorOf = (range) => {
-  const m = String(range || '').match(/(\d+)\./)
+  const m = String(range || '').match(/^[\s^~>=<v]*(\d+)(?:[.\s]|$)/)
   return m ? m[1] : null
 }
 
@@ -163,12 +172,24 @@ export function findShellViolations({
 
   // Every first-party runtime @capacitor/* package is measured against core,
   // not merely against each other — core is the runtime the rest load into.
+  //
+  // FAIL CLOSED on an unreadable version. `workspace:*`, `file:../local-copy`
+  // and friends have no major to compare, and skipping them would let the one
+  // package most likely to be pinned oddly slip through the rule entirely.
   const coreMajor = majorOf(deps['@capacitor/core'])
-  if (!coreMajor) {
-    if ('@capacitor/core' in deps) out.push('could not read a major version from @capacitor/core')
-  } else {
-    const skewed = capacitorRuntimePackages(deps)
-      .filter(name => name !== '@capacitor/core')
+  if ('@capacitor/core' in deps && !coreMajor) {
+    out.push('could not read a major version from @capacitor/core (' + deps['@capacitor/core'] +
+      ') — the agreement rule cannot run, so nothing is verified')
+  } else if (coreMajor) {
+    const others = capacitorRuntimePackages(deps).filter(name => name !== '@capacitor/core')
+
+    const unreadable = others.filter(name => !majorOf(deps[name]))
+    if (unreadable.length) {
+      out.push('unreadable Capacitor version(s), cannot be checked against @capacitor/core@' +
+        coreMajor + ': ' + unreadable.map(n => n + '@' + deps[n]).join(', '))
+    }
+
+    const skewed = others
       .map(name => ({ name, major: majorOf(deps[name]) }))
       .filter(p => p.major && p.major !== coreMajor)
     if (skewed.length) {

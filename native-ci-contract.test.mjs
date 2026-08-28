@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 
 // The native verification TIER's contract: what runs it, what it covers, what
 // it must stay out of, and — the part that took a correction — the shape that
@@ -144,6 +145,101 @@ describe('the gate is always present and safe to require', () => {
 
   it('verifies unconditionally when the event is not a pull request', () => {
     expect(NATIVE_YAML).toMatch(/github\.event_name.*!=.*pull_request/)
+  })
+})
+
+/**
+ * The native-gate step's shell body, lifted out of the YAML so the truth table
+ * can be EXECUTED rather than pattern-matched. The body reads $DETECT, $VERIFY
+ * and $NATIVE from the environment and contains no `${{ }}` expressions, so it
+ * runs as-is under bash.
+ */
+function gateScript() {
+  const lines = NATIVE.split('\n')
+  const start = lines.findIndex(l => l.includes('Report the native gate'))
+  expect(start, 'native-gate step not found').toBeGreaterThan(-1)
+  const runAt = lines.findIndex((l, i) => i > start && /^\s*run: \|/.test(l))
+  expect(runAt, 'native-gate has no run block').toBeGreaterThan(-1)
+  const indent = lines[runAt].match(/^\s*/)[0].length + 2
+  const body = []
+  for (let i = runAt + 1; i < lines.length; i++) {
+    const l = lines[i]
+    if (l.trim() === '') { body.push(''); continue }
+    if (l.match(/^\s*/)[0].length < indent) break
+    body.push(l.slice(indent))
+  }
+  const script = body.join('\n')
+  expect(script, 'extracted gate script looks empty').toContain('native gate')
+  expect(script, 'gate script must not depend on workflow expressions').not.toContain('${{')
+  return script
+}
+
+/** Run the real gate body with a given detect/native/verify combination. */
+function runGate({ DETECT, VERIFY, NATIVE: nativeOut }) {
+  const env = { PATH: process.env.PATH, DETECT, VERIFY }
+  if (nativeOut !== undefined) env.NATIVE = nativeOut
+  const r = spawnSync('bash', ['-c', gateScript()], { env, encoding: 'utf8' })
+  return { code: r.status, out: (r.stdout || '') + (r.stderr || '') }
+}
+
+describe('the gate enforces an exact truth table, fail-closed', () => {
+  it('PASSES the two legitimate combinations, and only those', () => {
+    expect(runGate({ DETECT: 'success', NATIVE: 'true', VERIFY: 'success' }).code).toBe(0)
+    expect(runGate({ DETECT: 'success', NATIVE: 'false', VERIFY: 'skipped' }).code).toBe(0)
+  })
+
+  it('FAILS every other combination of the three known values', () => {
+    const DETECTS = ['success', 'failure', 'cancelled', 'skipped', '']
+    const NATIVES = ['true', 'false', '', 'TRUE', 'yes', 'maybe', '1']
+    const VERIFIES = ['success', 'failure', 'cancelled', 'skipped', '']
+    const PASSING = new Set(['success|true|success', 'success|false|skipped'])
+    const wrongly = []
+    for (const d of DETECTS) {
+      for (const n of NATIVES) {
+        for (const v of VERIFIES) {
+          const key = [d, n, v].join('|')
+          const { code } = runGate({ DETECT: d, NATIVE: n, VERIFY: v })
+          const shouldPass = PASSING.has(key)
+          if (shouldPass && code !== 0) wrongly.push('should PASS but failed: ' + key)
+          if (!shouldPass && code === 0) wrongly.push('should FAIL but passed: ' + key)
+        }
+      }
+    }
+    expect(wrongly, wrongly.join('; ')).toEqual([])
+  })
+
+  it('FAILS when the detector output is missing entirely', () => {
+    // What you get when the detect step is deleted, renamed, or dies before
+    // writing GITHUB_OUTPUT. An unset output must never read as "nothing to do".
+    const r = runGate({ DETECT: 'success', VERIFY: 'skipped' })   // NATIVE unset
+    expect(r.code).not.toBe(0)
+    expect(r.out).toMatch(/no usable answer|FAIL/)
+  })
+
+  it('FAILS on an unknown detector value', () => {
+    const r = runGate({ DETECT: 'success', NATIVE: 'probably', VERIFY: 'skipped' })
+    expect(r.code).not.toBe(0)
+    expect(r.out).toMatch(/no usable answer/)
+  })
+
+  it('FAILS when verification was skipped despite native changes', () => {
+    const r = runGate({ DETECT: 'success', NATIVE: 'true', VERIFY: 'skipped' })
+    expect(r.code).not.toBe(0)
+    expect(r.out).toMatch(/skipped even though native changes were detected/)
+  })
+
+  it('FAILS when verification ran despite no native changes', () => {
+    // The two jobs disagreeing in either direction is a broken gate.
+    const r = runGate({ DETECT: 'success', NATIVE: 'false', VERIFY: 'success' })
+    expect(r.code).not.toBe(0)
+  })
+
+  it('FAILS when change detection itself did not succeed', () => {
+    for (const d of ['failure', 'cancelled', 'skipped']) {
+      const r = runGate({ DETECT: d, NATIVE: 'false', VERIFY: 'skipped' })
+      expect(r.code, 'detect=' + d + ' should fail').not.toBe(0)
+      expect(r.out).toMatch(/change detection did not succeed/)
+    }
   })
 })
 

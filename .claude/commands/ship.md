@@ -18,10 +18,20 @@ just saves a round trip.
 
 Two things it deliberately does not cover, so don't treat a green run as
 covering them: Playwright e2e is its own PR job (`e2e.yml`), and the native
-artifact has its own tier — `npm run verify:native`, run in CI by `native.yml`.
-If the change touches the Capacitor shell, the fonts, or anything under
-`android/` or `ios/`, run that too. The store *web bundle* is covered here:
-`build:public` is one of these stages.
+artifact has its own tier — `npm run verify:native`.
+
+**Run `npm run verify:native` too if the change touches any of:**
+`src/**` (every screen compiles into the store bundle) · `public/**` ·
+`android/**` · `ios/**` · `package.json` / `package-lock.json` ·
+`vite.config.js` · `index.html` · `capacitor.config.json` · the font modules
+(`nativeFonts.mjs`, `fetch-webfonts.mjs`) · the verifiers under `tools/`.
+
+CI enforces the same list: `native.yml` runs on every PR, decides internally
+whether those paths moved, and reports a `native-gate` status either way. So a
+missed local run shows up there rather than at a release cut.
+
+The store *web bundle* is covered here already: `build:public` is one of the
+`verify:pr` stages.
 
 If it passes:
 

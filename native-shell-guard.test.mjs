@@ -174,6 +174,43 @@ describe('every first-party Capacitor package agrees with core', () => {
     expect(findShellViolations(shell).join()).toMatch(/missing Capacitor package: @capacitor\/ios/)
   })
 
+  it('FAILS CLOSED on an unreadable version rather than skipping it', () => {
+    // workspace:* has no major to compare. Silently ignoring it would let the
+    // one package most likely to be pinned oddly — a local override during
+    // debugging, say — slip out of the rule entirely and get committed.
+    const shell = good()
+    shell.packageJson.dependencies['@capacitor/keyboard'] = 'workspace:*'
+    const found = findShellViolations(shell).join()
+    expect(found).toMatch(/unreadable Capacitor version/)
+    expect(found).toMatch(/@capacitor\/keyboard@workspace:\*/)
+  })
+
+  it('fails closed on every unreadable spec form, not just workspace:', () => {
+    for (const spec of ['file:../local-capacitor', 'github:owner/repo', '*', 'latest', 'npm:alias@1']) {
+      const shell = good()
+      shell.packageJson.dependencies['@capacitor/browser'] = spec
+      expect(findShellViolations(shell).join(), 'not caught: ' + spec)
+        .toMatch(/unreadable Capacitor version/)
+    }
+  })
+
+  it('fails when CORE itself has an unreadable version', () => {
+    // Without a core major there is no baseline, so the rule cannot run at all
+    // — which must be a violation, not a silent pass for every package.
+    const shell = good()
+    shell.packageJson.dependencies['@capacitor/core'] = 'workspace:*'
+    expect(findShellViolations(shell).join())
+      .toMatch(/could not read a major version from @capacitor\/core/)
+  })
+
+  it('still accepts the ordinary range spellings', () => {
+    for (const spec of ['^8.5.0', '~8.1', '8', '8.x', '>=8.0.0', 'v8.1.0']) {
+      const shell = good()
+      shell.packageJson.dependencies['@capacitor/app'] = spec
+      expect(findShellViolations(shell), 'wrongly rejected: ' + spec).toEqual([])
+    }
+  })
+
   it('excludes @capacitor/assets, which is tooling on its own train', () => {
     // 3.x against an 8.x runtime in the real repo — including it would make the
     // rule fail permanently, and a permanently-failing rule gets deleted.
