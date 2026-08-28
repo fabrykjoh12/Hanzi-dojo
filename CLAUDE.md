@@ -388,10 +388,16 @@ lives in `package.json`; don't restate it here or run the stages by hand.
 mean the same thing by construction. `/ship` runs it too and refuses to commit
 if it fails.
 
-Two things it does not cover: **Playwright e2e is a separate CI job**
-(`e2e.yml`), and **native artifact verification is separate** for now — the
-Capacitor wrapper and the iOS/Android builds. The store *web bundle* is
-covered; `build:public` is exactly that build.
+Two things it does not cover, each with its own tier:
+
+- **Playwright e2e** — a separate CI job (`e2e.yml`).
+- **The native artifact** — `npm run verify:native` (shell agreement, the store
+  build, and a real-browser proof that it never contacts Google Fonts). It runs
+  in `native.yml`, path-filtered to native-sensitive files, and is deliberately
+  out of `verify:pr` so a docs typo doesn't pay for a store build. The store
+  *web bundle* is already covered above; `build:public` is exactly that build.
+  A full gradle/Xcode build stays dispatch-only (`android-build.yml`,
+  `ios-testflight.yml`).
 
 That command, plus read-only git (`status`, `diff`, `log`, `show`), the
 **read-only** Supabase MCP tools (`list_*`, `get_*`, `search_docs`), and —

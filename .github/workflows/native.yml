@@ -1,0 +1,104 @@
+name: Native
+
+# The native verification tier: the checks that protect the iOS/Android app
+# rather than the web bundle. Separate from ci.yml on purpose.
+#
+# WHY IT IS ITS OWN WORKFLOW
+#
+# `npm run verify:pr` runs on every pull request and must stay fast, so the
+# native tier is not folded into it — the store build, a Chromium download and a
+# real page load would be paid for by every documentation typo. But GitHub
+# applies `paths:` per WORKFLOW, not per job, so a path-filtered native job
+# cannot live inside ci.yml without also filtering `check`. Hence a second file.
+#
+# WHAT IT CATCHES THAT NOTHING ELSE DOES
+#
+#   * build:native failing outright — the dojo-native-fonts plugin THROWS when
+#     it finds no Google Fonts tags to strip, which is what happens the moment
+#     index.html changes shape. No other job runs that build.
+#   * the store bundle phoning Google for fonts on cold launch, observed from a
+#     real browser rather than inferred from a grep.
+#   * capacitor.config.json, vite, package.json and the two native projects
+#     drifting out of agreement — wrong webDir, mismatched bundle ids, mixed
+#     Capacitor majors, a build:native that forgot DOJO_PUBLIC_BUILD=1.
+#   * `cap sync` breaking for either platform.
+#
+# ⚠️ DO NOT ADD THIS TO THE REQUIRED CHECKS on the `main` ruleset. It is
+# path-filtered, so on a PR that touches no native path it never runs — and a
+# required check that never runs blocks the pull request forever. `check` and
+# `playwright` are the required pair; this one is advisory and reviewers read it.
+#
+# native-ci-contract.test.mjs pins the path filter, the stage order, and the
+# separation from verify:pr.
+
+on:
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      # The build inputs that decide what the store app contains.
+      - package.json
+      - package-lock.json
+      - vite.config.js
+      - index.html
+      # The font pipeline — the half of the native build with its own guard.
+      - nativeFonts.mjs
+      - fetch-webfonts.mjs
+      - src/webfonts.css
+      - src/fontLoader.js
+      - src/main.jsx
+      # The shell itself.
+      - capacitor.config.json
+      - src/nativeShell.js
+      - android/**
+      - ios/**
+      # The verifiers, so a change to a guard re-runs the guard.
+      - tools/verify-native-fonts.mjs
+      - tools/verify-native-shell.mjs
+      - tools/verify-app-icons.mjs
+      - .github/workflows/native.yml
+
+concurrency:
+  group: native-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+
+      # REQUIRED, not an optimisation. verify:native-fonts loads the built
+      # bundle in a real browser to prove no Google Fonts request is made on
+      # cold launch. Its `playwright` import resolves from @playwright/test, so
+      # its "skip if playwright is missing" branch never fires here — it goes
+      # straight to chromium.launch(), which THROWS uncaught if no browser has
+      # been downloaded. Without this step the whole job fails with a stack
+      # trace about a missing executable rather than a font problem.
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # Shell agreement first: it needs no build and fails in milliseconds, so a
+      # mismatched bundle id does not cost a full native build to discover.
+      # Then the native build, then the runtime font proof against it.
+      - name: Verify the native tier
+        run: npm run verify:native
+
+      # `cap sync` is what actually assembles the native projects. It needs
+      # neither the Android SDK nor CocoaPods for the copy/update pass, runs in
+      # under a second, and catches plugin and config drift that no static check
+      # sees. It runs after verify:native so it syncs the real store bundle.
+      - name: Capacitor sync (android)
+        run: npx cap sync android
+      - name: Capacitor sync (ios)
+        run: npx cap sync ios
