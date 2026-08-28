@@ -1,17 +1,22 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, existsSync } from 'node:fs'
 
-// The native verification TIER's contract: what runs it, what it covers, and
-// what it must stay out of.
+// The native verification TIER's contract: what runs it, what it covers, what
+// it must stay out of, and — the part that took a correction — the shape that
+// lets it be required without deadlocking unrelated pull requests.
 //
-// Two failure modes this exists to prevent, both of which look like nothing is
+// Three failure modes this exists to prevent, all of which look like nothing is
 // wrong until a release cut:
 //
-//   1. The native tier silently stops covering a native input. `paths:` is an
-//      allow-list — a file not named there simply never triggers the job, and
-//      no test fails. So the list is pinned here.
+//   1. The tier stops covering a native input. Coverage is an allow-list; a
+//      file nobody listed never triggers it, and no test fails. That is exactly
+//      how src/App.jsx — compiled into the store bundle — sat outside native
+//      coverage while a hand-picked list of "native-looking" files sat inside.
 //   2. Native work creeps into `npm run verify:pr`, making every documentation
 //      typo pay for a store build and a Chromium download.
+//   3. The gate becomes unrequireable. A workflow-level `paths:` filter posts
+//      no status at all on a non-native pull request, so requiring it blocks
+//      that pull request forever.
 
 const NATIVE_WF = '.github/workflows/native.yml'
 const NATIVE = readFileSync(NATIVE_WF, 'utf8')
@@ -25,28 +30,23 @@ const NATIVE_YAML = executable(NATIVE)
 const stagesOf = script => script.split('&&').map(s => s.trim()).filter(Boolean)
 
 /**
- * Every repository input that can change what the store app contains or how it
- * is assembled. A native-sensitive file missing from native.yml's `paths:` is a
- * silent coverage hole, so this list is the contract.
+ * Directory-level coverage, on purpose. `src/` is the whole app — every screen
+ * in it compiles into the store bundle — and `public/` ships verbatim. Naming
+ * individual source files here is the narrowing this contract forbids.
  */
-const NATIVE_SENSITIVE_PATHS = [
-  'package.json',
-  'package-lock.json',
-  'vite.config.js',
-  'index.html',
-  'nativeFonts.mjs',
-  'fetch-webfonts.mjs',
-  'src/webfonts.css',
-  'src/fontLoader.js',
-  'src/main.jsx',
-  'capacitor.config.json',
-  'src/nativeShell.js',
-  'android/**',
-  'ios/**',
-  'tools/verify-native-fonts.mjs',
-  'tools/verify-native-shell.mjs',
-  'tools/verify-app-icons.mjs',
-  '.github/workflows/native.yml',
+const REQUIRED_DIRECTORY_COVERAGE = ['^src/', '^public/', '^android/', '^ios/']
+
+const REQUIRED_FILE_COVERAGE = [
+  '^package\\.json$',
+  '^package-lock\\.json$',
+  '^vite\\.config\\.js$',
+  '^index\\.html$',
+  '^capacitor\\.config\\.json$',
+  '^nativeFonts\\.mjs$',
+  '^fetch-webfonts\\.mjs$',
+  '^tools/verify-native-fonts\\.mjs$',
+  '^tools/verify-native-shell\\.mjs$',
+  '^tools/verify-app-icons\\.mjs$',
 ]
 
 const REQUIRED_NATIVE_STAGES = [
@@ -88,44 +88,100 @@ describe('native stays out of the fast PR gate', () => {
   })
 
   it('ci.yml does not run the native tier', () => {
-    // ci.yml's check job is a required status check and runs on every PR. The
-    // native tier is path-filtered and must not be attached to it.
+    // ci.yml's check job is a required status check on every PR; the expensive
+    // native work must not be attached to it.
     expect(executable(CI)).not.toContain('verify:native')
     expect(executable(CI)).not.toContain('build:native')
   })
 
   it('the two tiers are different workflows', () => {
-    // `paths:` applies per workflow, not per job, so a path-filtered native job
-    // inside ci.yml would filter the required `check` job too.
     expect(existsSync(NATIVE_WF)).toBe(true)
     expect(NATIVE_YAML).toContain('npm run verify:native')
   })
 })
 
-describe('the path filter is the coverage contract', () => {
-  it('filters pull requests by path at all', () => {
-    expect(NATIVE_YAML).toMatch(/pull_request:\s*\n\s*paths:/)
+describe('the gate is always present and safe to require', () => {
+  it('has no workflow-level paths filter on pull_request', () => {
+    // THE correction. A `paths:` filter means the workflow does not run at all
+    // on a non-native pull request, so no status is posted, so requiring it
+    // blocks that pull request forever. Filtering must happen INSIDE instead.
+    const prBlock = NATIVE_YAML.slice(NATIVE_YAML.indexOf('pull_request:'), NATIVE_YAML.indexOf('concurrency:'))
+    expect(prBlock).not.toContain('paths:')
   })
 
-  it('covers every native-sensitive input', () => {
-    // The silent-hole check. Adding a native input without adding it here means
-    // changes to it never run the native tier, and nothing else notices.
-    const missing = NATIVE_SENSITIVE_PATHS.filter(p => !NATIVE_YAML.includes('- ' + p))
-    expect(missing, 'native.yml paths: is missing ' + missing.join(', ')).toEqual([])
-  })
-
-  it('every filtered path still exists in the repository', () => {
-    // A filter entry for a file that was renamed or deleted is dead weight that
-    // reads like coverage.
-    for (const p of NATIVE_SENSITIVE_PATHS) {
-      if (p.includes('*')) { expect(existsSync(p.split('/**')[0])).toBe(true); continue }
-      expect(existsSync(p), 'filtered path no longer exists: ' + p).toBe(true)
+  it('declares the three jobs the design needs', () => {
+    for (const job of ['changes:', 'verify:', 'native-gate:']) {
+      expect(NATIVE_YAML).toContain(job)
     }
   })
 
-  it('runs unfiltered on main and on manual dispatch', () => {
-    // Path filters apply to the PR trigger only: a merge to main must verify
-    // the native tier regardless of which files moved.
+  it('runs native-gate unconditionally, after both other jobs', () => {
+    const gate = NATIVE_YAML.slice(NATIVE_YAML.indexOf('native-gate:'))
+    expect(gate).toMatch(/needs: \[changes, verify\]/)
+    expect(gate).toMatch(/if: always\(\)/)
+  })
+
+  it('gates the expensive job on the detector, not on a path filter', () => {
+    expect(NATIVE_YAML).toMatch(/if: needs\.changes\.outputs\.native == 'true'/)
+  })
+
+  it('fails the gate when verification failed or was cancelled', () => {
+    const gate = NATIVE_YAML.slice(NATIVE_YAML.indexOf('native-gate:'))
+    expect(gate).toContain('native verification did not pass')
+    expect(gate).toMatch(/exit 1/)
+  })
+
+  it('fails the gate when change detection itself failed', () => {
+    // A broken detector must never read as "nothing to do".
+    const gate = NATIVE_YAML.slice(NATIVE_YAML.indexOf('native-gate:'))
+    expect(gate).toContain('native change detection did not succeed')
+  })
+
+  it('refuses a skip that contradicts the detector', () => {
+    const gate = NATIVE_YAML.slice(NATIVE_YAML.indexOf('native-gate:'))
+    expect(gate).toContain('skipped even though native changes were detected')
+  })
+
+  it('verifies unconditionally when the event is not a pull request', () => {
+    expect(NATIVE_YAML).toMatch(/github\.event_name.*!=.*pull_request/)
+  })
+})
+
+describe('coverage is conservative and cannot be narrowed', () => {
+  it('covers whole source directories rather than named files', () => {
+    for (const dir of REQUIRED_DIRECTORY_COVERAGE) {
+      expect(NATIVE_YAML, 'detector lost directory coverage: ' + dir).toContain(dir)
+    }
+  })
+
+  it('names no individual file under src/ or public/', () => {
+    // The anti-narrowing rule, and the point of the correction. Replacing
+    // `^src/` with "the native-looking ones" is how src/App.jsx and
+    // src/Auth.jsx ended up uncovered while shipping in the store bundle.
+    const detector = NATIVE_YAML.slice(NATIVE_YAML.indexOf('PATTERNS='), NATIVE_YAML.indexOf('CHANGED='))
+    const narrowed = [...detector.matchAll(/\^(src|public)\/\S+/g)].map(m => m[0])
+    expect(narrowed, 'detector narrowed to individual files: ' + narrowed.join(', ')).toEqual([])
+  })
+
+  it('covers the build, manifest and verifier inputs', () => {
+    for (const file of REQUIRED_FILE_COVERAGE) {
+      expect(NATIVE_YAML, 'detector lost coverage: ' + file).toContain(file)
+    }
+  })
+
+  it('every covered path still exists in the repository', () => {
+    const real = p => p.replace(/^\^/, '').replace(/\$$/, '').replace(/\\/g, '')
+    for (const p of [...REQUIRED_DIRECTORY_COVERAGE, ...REQUIRED_FILE_COVERAGE]) {
+      expect(existsSync(real(p)), 'covered path no longer exists: ' + real(p)).toBe(true)
+    }
+  })
+
+  it('diffs against the pull request base to decide', () => {
+    expect(NATIVE_YAML).toContain('git diff --name-only')
+    expect(NATIVE_YAML).toContain('fetch-depth: 0')
+  })
+
+  it('still runs on main and on manual dispatch', () => {
     expect(NATIVE_YAML).toMatch(/push:\s*\n\s*branches: \[main\]/)
     expect(NATIVE_YAML).toContain('workflow_dispatch')
   })
@@ -157,6 +213,18 @@ describe('the native job can actually run its own checks', () => {
     expect(NATIVE_YAML).toContain('npx cap sync ios')
     expect(NATIVE_YAML.indexOf('npm run verify:native'))
       .toBeLessThan(NATIVE_YAML.indexOf('npx cap sync android'))
+  })
+
+  it('proves the sync produced no tracked changes', () => {
+    // A successful `cap sync` only proves the command ran. If it CHANGED
+    // tracked files, the committed native projects were stale relative to the
+    // config that generates them — ios/App/CapApp-SPM/Package.swift is tracked
+    // and regenerated on every sync, so this is a live risk.
+    expect(NATIVE_YAML).toMatch(/git diff --quiet -- android ios/)
+    const proof = NATIVE_YAML.slice(NATIVE_YAML.indexOf('git diff --quiet -- android ios'))
+    expect(proof).toMatch(/exit 1/)
+    expect(NATIVE_YAML.indexOf('npx cap sync ios'))
+      .toBeLessThan(NATIVE_YAML.indexOf('git diff --quiet -- android ios'))
   })
 
   it('is read-only and cancels superseded runs off main', () => {

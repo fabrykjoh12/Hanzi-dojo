@@ -5,7 +5,8 @@ import {
   viteOutDir,
   iosBundleIds,
   androidIds,
-  LOCKSTEP_PACKAGES,
+  capacitorRuntimePackages,
+  MAJOR_CHECK_EXCLUDED,
   REQUIRED_NATIVE_FILES,
 } from './tools/verify-native-shell.mjs'
 
@@ -29,13 +30,19 @@ const good = () => ({
       'build:native': 'cross-env DOJO_PUBLIC_BUILD=1 DOJO_NATIVE_BUILD=1 vite build',
       'cap:sync': 'npm run build:native && cap sync',
     },
-    dependencies: { '@capacitor/core': '^8.5.0' },
+    dependencies: {
+      '@capacitor/core': '^8.5.0',
+      '@capacitor/app': '^8.1.1',
+      '@capacitor/browser': '^8.0.4',
+      '@capacitor/keyboard': '^8.0.5',
+      '@capacitor/status-bar': '^8.0.3',
+      '@capacitor-community/apple-sign-in': '^7.1.0',
+    },
     devDependencies: {
       '@capacitor/cli': '^8.5.0',
       '@capacitor/android': '^8.5.0',
       '@capacitor/ios': '^8.5.0',
       '@capacitor/assets': '^3.0.5',
-      '@capacitor-community/apple-sign-in': '^7.1.0',
     },
   },
   androidGradle: 'namespace = "com.example.app"\n        applicationId "com.example.app"',
@@ -122,12 +129,43 @@ describe('the app identity must agree in all four places', () => {
   })
 })
 
-describe('Capacitor packages move in lockstep', () => {
-  it('catches a mixed major', () => {
+describe('every first-party Capacitor package agrees with core', () => {
+  it('covers the platforms AND the plugins, not just the four obvious ones', () => {
+    // The correction: the rule used to check only core/cli/android/ios, so a
+    // plugin bumped alone — the likeliest skew of all — passed silently.
+    const deps = { ...PKG.dependencies, ...PKG.devDependencies }
+    const covered = capacitorRuntimePackages(deps)
+    for (const plugin of ['@capacitor/app', '@capacitor/browser', '@capacitor/keyboard', '@capacitor/status-bar']) {
+      expect(covered, 'plugin not covered by the major rule: ' + plugin).toContain(plugin)
+    }
+    for (const platform of ['@capacitor/core', '@capacitor/cli', '@capacitor/android', '@capacitor/ios']) {
+      expect(covered).toContain(platform)
+    }
+  })
+
+  it('catches a platform bumped away from core', () => {
     const shell = good()
-    shell.devDependencies = undefined
     shell.packageJson.devDependencies['@capacitor/android'] = '^7.4.0'
-    expect(findShellViolations(shell).join()).toMatch(/span majors 7 and 8/)
+    expect(findShellViolations(shell).join())
+      .toMatch(/disagree with @capacitor\/core@8: @capacitor\/android@7/)
+  })
+
+  it('catches a PLUGIN bumped away from core', () => {
+    // A plugin loads into the same native runtime as core; a major behind is
+    // undefined behaviour that surfaces as a crash on device, not a build error.
+    const shell = good()
+    shell.packageJson.dependencies['@capacitor/keyboard'] = '^7.0.1'
+    expect(findShellViolations(shell).join())
+      .toMatch(/disagree with @capacitor\/core@8: @capacitor\/keyboard@7/)
+  })
+
+  it('reports every skewed package, not just the first', () => {
+    const shell = good()
+    shell.packageJson.dependencies['@capacitor/app'] = '^7.0.0'
+    shell.packageJson.dependencies['@capacitor/browser'] = '^6.0.0'
+    const found = findShellViolations(shell).join()
+    expect(found).toMatch(/@capacitor\/app@7/)
+    expect(found).toMatch(/@capacitor\/browser@6/)
   })
 
   it('catches a missing Capacitor package', () => {
@@ -136,14 +174,23 @@ describe('Capacitor packages move in lockstep', () => {
     expect(findShellViolations(shell).join()).toMatch(/missing Capacitor package: @capacitor\/ios/)
   })
 
-  it('does not drag in the independently-versioned packages', () => {
-    // @capacitor/assets is tooling at 3.x and @capacitor-community/* ships on
-    // its own train at 7.x. Both sit beside core at 8.x in the real repo, so a
-    // naive "all @capacitor* agree" rule would fail permanently and be deleted.
-    expect(LOCKSTEP_PACKAGES).not.toContain('@capacitor/assets')
+  it('excludes @capacitor/assets, which is tooling on its own train', () => {
+    // 3.x against an 8.x runtime in the real repo — including it would make the
+    // rule fail permanently, and a permanently-failing rule gets deleted.
+    expect(MAJOR_CHECK_EXCLUDED).toContain('@capacitor/assets')
+    expect(capacitorRuntimePackages({ '@capacitor/assets': '^3.0.5' })).toEqual([])
     const shell = good()
     shell.packageJson.devDependencies['@capacitor/assets'] = '^3.0.5'
-    shell.packageJson.devDependencies['@capacitor-community/apple-sign-in'] = '^7.1.0'
+    expect(findShellViolations(shell)).toEqual([])
+  })
+
+  it('never considers the @capacitor-community scope', () => {
+    // A third-party plugin at 7.x beside core at 8.x. The Capacitor CLI warns
+    // about it during `cap sync`, which is the right place for it — this rule
+    // is about packages whose version we control.
+    expect(capacitorRuntimePackages({ '@capacitor-community/apple-sign-in': '^7.1.0' })).toEqual([])
+    const shell = good()
+    shell.packageJson.dependencies['@capacitor-community/apple-sign-in'] = '^7.1.0'
     expect(findShellViolations(shell)).toEqual([])
   })
 })

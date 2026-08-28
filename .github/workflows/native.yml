@@ -1,17 +1,32 @@
 name: Native
 
 # The native verification tier: the checks that protect the iOS/Android app
-# rather than the web bundle. Separate from ci.yml on purpose.
+# rather than the web bundle.
 #
-# WHY IT IS ITS OWN WORKFLOW
+# THE SHAPE, AND WHY IT IS THIS SHAPE
 #
-# `npm run verify:pr` runs on every pull request and must stay fast, so the
-# native tier is not folded into it — the store build, a Chromium download and a
-# real page load would be paid for by every documentation typo. But GitHub
-# applies `paths:` per WORKFLOW, not per job, so a path-filtered native job
-# cannot live inside ci.yml without also filtering `check`. Hence a second file.
+# This workflow runs on EVERY pull request. It decides for itself whether the
+# change touches anything the store app is built from, runs the expensive
+# verification only when it does, and always ends in a `native-gate` job that
+# reports a status either way.
 #
-# WHAT IT CATCHES THAT NOTHING ELSE DOES
+# The obvious design — a workflow-level `paths:` filter — cannot be required.
+# GitHub applies `paths:` per WORKFLOW, so on a pull request touching no native
+# path the workflow never runs, no status is ever posted, and a required check
+# that never reports blocks that pull request forever. So the filtering moved
+# inside: the trigger is unconditional and the SKIPPING is a job-level decision.
+#
+#   changes      cheap. diffs against the base ref, sets native=true|false.
+#   verify       the expensive tier. runs only when native=true.
+#   native-gate  always runs. green when verify passed OR was legitimately
+#                skipped; red when verify failed, was cancelled, or when change
+#                detection itself failed.
+#
+# `native-gate` is therefore safe to require on `main`: it reports on every
+# pull request, including ones with no native changes. Do NOT require `changes`
+# or `verify` — those are the conditional jobs.
+#
+# WHAT THE TIER CATCHES THAT NOTHING ELSE DOES
 #
 #   * build:native failing outright — the dojo-native-fonts plugin THROWS when
 #     it finds no Google Fonts tags to strip, which is what happens the moment
@@ -19,45 +34,19 @@ name: Native
 #   * the store bundle phoning Google for fonts on cold launch, observed from a
 #     real browser rather than inferred from a grep.
 #   * capacitor.config.json, vite, package.json and the two native projects
-#     drifting out of agreement — wrong webDir, mismatched bundle ids, mixed
-#     Capacitor majors, a build:native that forgot DOJO_PUBLIC_BUILD=1.
-#   * `cap sync` breaking for either platform.
+#     drifting apart — wrong webDir, mismatched bundle ids, a Capacitor plugin
+#     bumped away from core, a build:native that forgot DOJO_PUBLIC_BUILD=1.
+#   * `cap sync` changing TRACKED files, which means the native projects
+#     committed to the repository were stale relative to the config.
 #
-# ⚠️ DO NOT ADD THIS TO THE REQUIRED CHECKS on the `main` ruleset. It is
-# path-filtered, so on a PR that touches no native path it never runs — and a
-# required check that never runs blocks the pull request forever. `check` and
-# `playwright` are the required pair; this one is advisory and reviewers read it.
-#
-# native-ci-contract.test.mjs pins the path filter, the stage order, and the
-# separation from verify:pr.
+# native-ci-contract.test.mjs pins the gate's shape, the coverage list, the
+# stage order, and the separation from verify:pr.
 
 on:
   workflow_dispatch: {}
   push:
     branches: [main]
   pull_request:
-    paths:
-      # The build inputs that decide what the store app contains.
-      - package.json
-      - package-lock.json
-      - vite.config.js
-      - index.html
-      # The font pipeline — the half of the native build with its own guard.
-      - nativeFonts.mjs
-      - fetch-webfonts.mjs
-      - src/webfonts.css
-      - src/fontLoader.js
-      - src/main.jsx
-      # The shell itself.
-      - capacitor.config.json
-      - src/nativeShell.js
-      - android/**
-      - ios/**
-      # The verifiers, so a change to a guard re-runs the guard.
-      - tools/verify-native-fonts.mjs
-      - tools/verify-native-shell.mjs
-      - tools/verify-app-icons.mjs
-      - .github/workflows/native.yml
 
 concurrency:
   group: native-${{ github.ref }}
@@ -67,7 +56,77 @@ permissions:
   contents: read
 
 jobs:
-  native:
+  # Which files did this pull request touch, and does the store app care?
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      native: ${{ steps.detect.outputs.native }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect native-sensitive changes
+        id: detect
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+          HEAD: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+
+          # Anything but a pull request verifies unconditionally: a merge to
+          # main, or a manual dispatch, is never the place to be clever.
+          if [ "${{ github.event_name }}" != "pull_request" ]; then
+            echo "native=true" >> "$GITHUB_OUTPUT"
+            echo "event is ${{ github.event_name }} — verifying unconditionally"
+            exit 0
+          fi
+
+          # Conservative by construction: whole directories, not a hand-picked
+          # list of files. src/ IS the app — every screen in it compiles into
+          # the store bundle — and public/ ships verbatim. A narrower list is
+          # exactly how src/App.jsx sat outside native coverage before.
+          PATTERNS='
+          ^src/
+          ^public/
+          ^android/
+          ^ios/
+          ^package\.json$
+          ^package-lock\.json$
+          ^vite\.config\.js$
+          ^index\.html$
+          ^capacitor\.config\.json$
+          ^nativeFonts\.mjs$
+          ^fetch-webfonts\.mjs$
+          ^tools/verify-native-fonts\.mjs$
+          ^tools/verify-native-shell\.mjs$
+          ^tools/verify-app-icons\.mjs$
+          ^\.github/workflows/native\.yml$
+          '
+
+          CHANGED="$(git diff --name-only "$BASE" "$HEAD")"
+          echo "changed files: $(printf '%s\n' "$CHANGED" | grep -c . || true)"
+
+          MATCHED=""
+          for p in $PATTERNS; do
+            HIT="$(printf '%s\n' "$CHANGED" | grep -E "$p" || true)"
+            if [ -n "$HIT" ]; then MATCHED="$MATCHED$HIT
+          "; fi
+          done
+
+          if [ -n "$(printf '%s' "$MATCHED" | tr -d '[:space:]')" ]; then
+            echo "native=true" >> "$GITHUB_OUTPUT"
+            echo "native-sensitive files changed:"
+            printf '%s\n' "$MATCHED" | grep . | sort -u | sed 's/^/  /'
+          else
+            echo "native=false" >> "$GITHUB_OUTPUT"
+            echo "no native-sensitive files changed — the native tier will be skipped"
+          fi
+
+  verify:
+    needs: changes
+    if: needs.changes.outputs.native == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -81,24 +140,82 @@ jobs:
       # REQUIRED, not an optimisation. verify:native-fonts loads the built
       # bundle in a real browser to prove no Google Fonts request is made on
       # cold launch. Its `playwright` import resolves from @playwright/test, so
-      # its "skip if playwright is missing" branch never fires here — it goes
+      # its "skip if playwright is missing" branch never fires — it goes
       # straight to chromium.launch(), which THROWS uncaught if no browser has
-      # been downloaded. Without this step the whole job fails with a stack
-      # trace about a missing executable rather than a font problem.
+      # been downloaded. Without this the job fails with a missing-executable
+      # stack trace rather than anything about fonts.
       - name: Install Playwright browser
         run: npx playwright install --with-deps chromium
 
-      # Shell agreement first: it needs no build and fails in milliseconds, so a
-      # mismatched bundle id does not cost a full native build to discover.
-      # Then the native build, then the runtime font proof against it.
+      # Shell agreement first: no build needed, fails in milliseconds, so a
+      # mismatched bundle id does not cost a native build to discover.
       - name: Verify the native tier
         run: npm run verify:native
 
-      # `cap sync` is what actually assembles the native projects. It needs
-      # neither the Android SDK nor CocoaPods for the copy/update pass, runs in
-      # under a second, and catches plugin and config drift that no static check
-      # sees. It runs after verify:native so it syncs the real store bundle.
+      # `cap sync` assembles the native projects from the config and the built
+      # bundle. It needs neither the Android SDK nor CocoaPods for the
+      # copy/update pass and runs in well under a second.
       - name: Capacitor sync (android)
         run: npx cap sync android
       - name: Capacitor sync (ios)
         run: npx cap sync ios
+
+      # A successful sync only proves the command ran. What matters is whether
+      # it CHANGED anything tracked: if it did, the native projects committed to
+      # the repository were stale relative to the config that generates them,
+      # and the next person to open Xcode gets a surprise diff.
+      #
+      # Scope, honestly: ios/App/CapApp-SPM/Package.swift is tracked and
+      # regenerated from the installed plugin set on every sync, so a plugin
+      # added without running cap:sync is caught here. Most other sync output —
+      # the copied web assets, the generated capacitor.config.json inside each
+      # project — is gitignored, so this cannot speak to it.
+      - name: Prove the checked-in native projects were already in sync
+        run: |
+          set -euo pipefail
+          if ! git diff --quiet -- android ios; then
+            echo '::error::cap sync modified tracked files under android/ or ios/.'
+            echo 'The committed native projects are stale. Run `npm run cap:sync` locally and commit the result.'
+            git --no-pager diff --stat -- android ios
+            git --no-pager diff -- android ios | head -200
+            exit 1
+          fi
+          echo "cap sync produced no tracked changes — the committed native projects were already in sync."
+
+  # ALWAYS runs, on every pull request, whether or not the tier was needed.
+  # This is the job that is safe to require on main.
+  native-gate:
+    needs: [changes, verify]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Report the native gate
+        env:
+          DETECT: ${{ needs.changes.result }}
+          VERIFY: ${{ needs.verify.result }}
+          NATIVE: ${{ needs.changes.outputs.native }}
+        run: |
+          set -euo pipefail
+
+          # A broken detector must not read as "nothing to do". If change
+          # detection did not succeed we know nothing, so we fail.
+          if [ "$DETECT" != "success" ]; then
+            echo "::error::native change detection did not succeed (result: $DETECT)"
+            exit 1
+          fi
+
+          case "$VERIFY" in
+            success)
+              echo "native gate: PASS — native-sensitive changes verified." ;;
+            skipped)
+              # Only legitimate when the detector actually said false.
+              if [ "$NATIVE" = "true" ]; then
+                echo "::error::native verification was skipped even though native changes were detected"
+                exit 1
+              fi
+              echo "native gate: PASS — no native-sensitive changes in this pull request." ;;
+            *)
+              echo "::error::native verification did not pass (result: $VERIFY)"
+              exit 1 ;;
+          esac

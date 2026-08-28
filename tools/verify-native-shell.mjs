@@ -20,10 +20,11 @@
 //                     rejects the upload, or worse, until it is accepted as a
 //                     DIFFERENT app.
 //
-//   plugin majors     @capacitor/core, cli, android and ios are one product
-//                     released in lockstep. A mixed major is undefined
-//                     behaviour that usually shows up as a runtime crash on
-//                     device rather than a build error.
+//   plugin majors     EVERY first-party @capacitor/* package — the platforms
+//                     AND the plugins — must agree with core's major. They are
+//                     one product released in lockstep, and a plugin bumped
+//                     alone is the likeliest skew of all: undefined behaviour
+//                     that surfaces as a crash on device, not a build error.
 //
 //   build:native      MUST also set DOJO_PUBLIC_BUILD=1. Without it the native
 //                     bundle is a SITES build, which carries Dojo HQ and its
@@ -40,18 +41,43 @@
 import { readFile } from 'node:fs/promises'
 import process from 'node:process'
 
-/** The Capacitor packages that are one product and must share a major. */
-export const LOCKSTEP_PACKAGES = [
+/**
+ * First-party Capacitor packages that must exist. Their absence is a broken
+ * shell, not a version question.
+ */
+export const REQUIRED_CAPACITOR_PACKAGES = [
   '@capacitor/core',
   '@capacitor/cli',
   '@capacitor/android',
   '@capacitor/ios',
 ]
 
-// Deliberately excluded from the lockstep rule:
-//   @capacitor/assets      tooling, versioned independently (3.x today)
-//   @capacitor-community/* third-party plugins with their own release trains
-export const LOCKSTEP_EXCLUDED = ['@capacitor/assets', '@capacitor-community/']
+/**
+ * Excluded from the major-agreement rule, for a stated reason:
+ *
+ *   @capacitor/assets   build-time tooling on its own release train (3.x
+ *                       against an 8.x runtime), never shipped in the app.
+ *
+ * Anything else under `@capacitor/` is first-party runtime and IS checked —
+ * deliberately including the plugins (app, browser, keyboard, status-bar),
+ * which load into the same native runtime as core and are the packages most
+ * likely to be bumped alone.
+ */
+export const MAJOR_CHECK_EXCLUDED = ['@capacitor/assets']
+
+/**
+ * `@capacitor-community/*` is a different scope: third-party plugins on
+ * independent release trains. Never part of this rule.
+ */
+export const THIRD_PARTY_SCOPE = '@capacitor-community/'
+
+/** Every first-party runtime @capacitor/* package in the manifest. */
+export function capacitorRuntimePackages(deps) {
+  return Object.keys(deps || {})
+    .filter(name => name.startsWith('@capacitor/'))
+    .filter(name => !MAJOR_CHECK_EXCLUDED.includes(name))
+    .sort()
+}
 
 export const REQUIRED_NATIVE_FILES = [
   'capacitor.config.json',
@@ -131,15 +157,24 @@ export function findShellViolations({
     }
   }
 
-  const majors = new Map()
-  for (const pkg of LOCKSTEP_PACKAGES) {
-    if (!(pkg in deps)) { out.push('missing Capacitor package: ' + pkg); continue }
-    majors.set(pkg, majorOf(deps[pkg]))
+  for (const pkg of REQUIRED_CAPACITOR_PACKAGES) {
+    if (!(pkg in deps)) out.push('missing Capacitor package: ' + pkg)
   }
-  const distinct = [...new Set([...majors.values()].filter(Boolean))]
-  if (distinct.length > 1) {
-    out.push('Capacitor packages span majors ' + distinct.sort().join(' and ') + ': ' +
-      [...majors].map(([p, m]) => p + '@' + m).join(', '))
+
+  // Every first-party runtime @capacitor/* package is measured against core,
+  // not merely against each other — core is the runtime the rest load into.
+  const coreMajor = majorOf(deps['@capacitor/core'])
+  if (!coreMajor) {
+    if ('@capacitor/core' in deps) out.push('could not read a major version from @capacitor/core')
+  } else {
+    const skewed = capacitorRuntimePackages(deps)
+      .filter(name => name !== '@capacitor/core')
+      .map(name => ({ name, major: majorOf(deps[name]) }))
+      .filter(p => p.major && p.major !== coreMajor)
+    if (skewed.length) {
+      out.push('Capacitor packages disagree with @capacitor/core@' + coreMajor + ': ' +
+        skewed.map(p => p.name + '@' + p.major).join(', '))
+    }
   }
 
   const buildNative = scripts['build:native'] || ''
