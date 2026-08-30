@@ -112,6 +112,19 @@ export const RISK_LEVELS = ['r0', 'r1', 'r2', 'r3', 'r4']
  * production_effect. Where a role and a contract disagree, the contract is
  * narrower and the contract wins.
  */
+/**
+ * The ONE role-model schema version this validator understands.
+ *
+ * Matched exactly, not as a floor. A floor ("any version >= 1") reads as
+ * permissive but is the unsafe direction: a v2 model written for a loader that
+ * does not exist yet would be interpreted by the v1 rules, silently, and
+ * whatever v2 added — a field that narrows a role, a new separation rule —
+ * would be ignored rather than enforced. Refusing an unknown version is the
+ * fail-closed reading: bump this constant in the same change that teaches the
+ * loader the new shape.
+ */
+export const ROLE_MODEL_VERSION = 1
+
 /** Documentation a role must carry to be choosable at all. */
 const ROLE_REQUIRED_TEXT = ['purpose', 'mental_model']
 const ROLE_REQUIRED_LISTS = ['authority', 'non_authority', 'owns_examples', 'hand_off_examples']
@@ -148,8 +161,9 @@ function loadRoleModel() {
   }
 
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) refuse('is not a JSON object')
-  if (!Number.isInteger(parsed.version) || parsed.version < 1) {
-    refuse('version must be a positive integer (got ' + JSON.stringify(parsed.version) + ')')
+  if (parsed.version !== ROLE_MODEL_VERSION) {
+    refuse('unsupported role-model schema version ' + JSON.stringify(parsed.version) +
+      '; this validator understands version ' + ROLE_MODEL_VERSION + ' only')
   }
   if (!Array.isArray(parsed.roles) || parsed.roles.length === 0) {
     refuse('has no roles')

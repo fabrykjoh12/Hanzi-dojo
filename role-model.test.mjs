@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
   ROLE_MODEL,
+  ROLE_MODEL_VERSION,
   OWNER_ROLES,
   ROLES_FILE,
   ALWAYS_FORBIDDEN,
@@ -448,8 +449,7 @@ describe('THE LOADER FAILS CLOSED: a malformed model stops the tool', () => {
     'not an object': '[]',
     'a bare array of roles': JSON.stringify(model().roles),
     'a missing version': mutate(m => { delete m.version }),
-    'a non-integer version': mutate(m => { m.version = '1' }),
-    'a zero version': mutate(m => { m.version = 0 }),
+    'a null version': mutate(m => { m.version = null }),
     'no roles key': mutate(m => { delete m.roles }),
     'an empty roles array': mutate(m => { m.roles = [] }),
     'a role that is not an object': mutate(m => { m.roles[0] = 'product-app' }),
@@ -485,6 +485,63 @@ describe('THE LOADER FAILS CLOSED: a malformed model stops the tool', () => {
         .not.toMatch(/contract\(s\) valid/)
     })
   }
+
+  describe('the schema version is matched EXACTLY, not as a floor', () => {
+    // A floor ("any version >= 1") reads as permissive but is the unsafe
+    // direction: a v2 model written for a loader that does not exist yet would
+    // be interpreted by the v1 rules, silently, and whatever v2 added — a field
+    // that narrows a role, a new separation rule — would be ignored rather than
+    // enforced. The unknown version is exactly the case that must stop the tool.
+    const versionCases = [
+      ['0 — below the supported version', 0],
+      ['"1" — the right number as a string', '1'],
+      ['2 — the next version, whose rules this loader does not know', 2],
+      ['999 — a far-future version', 999],
+      ['1.5 — a non-integer', 1.5],
+      ['true', true],
+    ]
+
+    for (const [label, version] of versionCases) {
+      it('refuses version ' + label, () => {
+        expect(version, 'fixture equals the supported version').not.toBe(ROLE_MODEL_VERSION)
+        const r = runWith(mutate(m => { m.version = version }))
+        expect(r.status, 'exited 0 with version ' + JSON.stringify(version)).not.toBe(0)
+        expect(r.stderr).toMatch(/unsupported role-model schema version/)
+        // The message has to name both halves, or it cannot be acted on.
+        expect(r.stderr, 'does not name the offending version').toContain(JSON.stringify(version))
+        expect(r.stderr, 'does not name the supported version')
+          .toContain('understands version ' + ROLE_MODEL_VERSION)
+        expect(r.stdout).not.toMatch(/contract\(s\) valid/)
+      })
+    }
+
+    it('accepts the version the canonical model actually declares', () => {
+      // The other half of the guard: exact matching must not have locked out
+      // the real model. If this and the cases above both pass, the accepted set
+      // is exactly {ROLE_MODEL_VERSION}.
+      expect(ROLE_MODEL.version).toBe(ROLE_MODEL_VERSION)
+      const r = runWith(mutate(m => { m.version = ROLE_MODEL_VERSION }))
+      expect(r.status, r.stderr).toBe(0)
+    })
+
+    it('refuses to SEAL against an unsupported version', () => {
+      // --seal writes files. A v2 model read by v1 rules would stamp digests
+      // certified against a schema the validator does not understand.
+      const dir = sandbox(mutate(m => { m.version = 2 }))
+      try {
+        const r = spawnSync('node', [VALIDATOR, '--seal'], { cwd: dir, encoding: 'utf8' })
+        expect(r.status).not.toBe(0)
+        expect(r.stderr).toMatch(/unsupported role-model schema version/)
+      } finally {
+        rmSync(dir, { recursive: true, force: true })
+      }
+    })
+
+    it('the constant is declared once, not spread through the loader', () => {
+      expect(VALIDATOR_SRC).toMatch(/export const ROLE_MODEL_VERSION = \d+/)
+      expect(VALIDATOR_SRC).toContain('parsed.version !== ROLE_MODEL_VERSION')
+    })
+  })
 
   it('refuses to SEAL with a malformed model too', () => {
     // --seal writes files. If the loader let a broken model through, sealing

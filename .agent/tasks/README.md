@@ -121,10 +121,16 @@ governance happens outside an implementing task, exactly as task-contract
 definition changes already do.
 
 The validator **refuses to run** against a malformed model rather than deriving
-a short or empty enum from it: bad JSON, a bad version, no roles, a duplicate or
-non-kebab id, a missing documentation field, or a missing separation rule all
-stop the tool at load with a message naming the fault. It enforces the model's
-*shape* only — the role ids themselves live in `roles.json` and nowhere else.
+a short or empty enum from it: bad JSON, an unsupported schema version, no
+roles, a duplicate or non-kebab id, a missing documentation field, or a missing
+separation rule all stop the tool at load with a message naming the fault.
+`version` is matched **exactly** against the one schema the validator
+understands — not as a floor — so a future `version: 2` model refuses rather
+than being silently read by the v1 rules. Bump `ROLE_MODEL_VERSION` in the same
+change that teaches the loader the new shape.
+
+It enforces the model's *shape* only — the role ids themselves live in
+`roles.json` and nowhere else.
 
 Each role there carries its purpose, its authority, its explicit
 **non**-authority, and worked examples of what it owns and what it must hand
