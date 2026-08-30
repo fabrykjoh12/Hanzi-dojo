@@ -10,6 +10,7 @@ import {
   BINDING_FIELDS,
   OPTIONAL_FIELDS,
   PRODUCTION_EFFECTS,
+  WRITE_SIDE_PRODUCTION_EFFECTS,
   RISK_LEVELS,
   pathGrammarError,
   TOKEN,
@@ -146,10 +147,13 @@ describe('risk is closed to the canonical control-plane levels', () => {
 
   it('stays orthogonal to production_effect', () => {
     // Different questions: risk is the authority the WORK carries,
-    // production_effect what MERGING it does. A migration written but not
-    // applied is r3 / database; a docs typo on main is r0 / deploy-on-merge.
+    // production_effect the maximum effect it is PERMITTED to cause. Migration
+    // code written but not applied is r3 / none — high-impact semantics, but
+    // writing it touches nothing live. A docs typo on main is r0 /
+    // deploy-on-merge.
     expect(violations(reseal({ ...good(), risk: 'r3', production_effect: 'none' }))).toEqual([])
     expect(violations(reseal({ ...good(), risk: 'r0', production_effect: 'deploy-on-merge' }))).toEqual([])
+    expect(violations(reseal({ ...good(), risk: 'r4', production_effect: 'database' }))).toEqual([])
   })
 })
 
@@ -176,12 +180,76 @@ describe('owner_role is constrained but NOT yet frozen', () => {
     expect(TOKEN.test('workflow-engineer')).toBe(true)
   })
 
-  it('keeps production_effect closed, because it is not a contested taxonomy', () => {
-    expect(violations(reseal({ ...good(), production_effect: 'probably-fine' })).join())
-      .toMatch(/production_effect must be one of/)
+})
+
+describe('production_effect is the MAXIMUM effect the task may cause', () => {
+  // Definition: the maximum direct production effect this task is permitted to
+  // cause, whether during execution or as an automatic consequence of merge.
+  //
+  // The earlier definition — "what merging does" — contradicted its own example
+  // (an unapplied migration marked "database"). Writing migration code causes
+  // no production effect until someone applies it.
+
+  it('is exactly the six canonical values, including read-only', () => {
+    expect(PRODUCTION_EFFECTS).toEqual([
+      'none', 'read-only', 'deploy-on-merge', 'database', 'store-release', 'external-service',
+    ])
+  })
+
+  it('accepts read-only', () => {
+    // The value that was missing: a production audit that inspects live state
+    // and mutates nothing had no honest way to say so — "none" understated the
+    // access, every other value overstated it.
+    expect(violations(reseal({ ...good(), production_effect: 'read-only' }))).toEqual([])
+  })
+
+  it('accepts every canonical value', () => {
     for (const fx of PRODUCTION_EFFECTS) {
-      expect(violations(reseal({ ...good(), production_effect: fx }))).toEqual([])
+      expect(violations(reseal({ ...good(), production_effect: fx })), fx).toEqual([])
     }
+  })
+
+  it('rejects arbitrary values', () => {
+    for (const bad of ['probably-fine', 'readonly', 'read_only', 'READ-ONLY', 'write', 'db', 'prod', '', 'none ']) {
+      expect(violations(reseal({ ...good(), production_effect: bad })).join(), JSON.stringify(bad))
+        .toMatch(/production_effect must be one of/)
+    }
+  })
+
+  it('rejects a missing or non-string value', () => {
+    const c = good()
+    delete c.production_effect
+    expect(violations(c).join()).toMatch(/missing required field: production_effect/)
+    for (const bad of [null, 3, [], {}]) {
+      expect(violations(reseal({ ...good(), production_effect: bad })).join(), JSON.stringify(bad))
+        .toMatch(/production_effect must be one of/)
+    }
+  })
+
+  it('names the write-side values, so "split it" has something to point at', () => {
+    expect(WRITE_SIDE_PRODUCTION_EFFECTS).toEqual(['database', 'store-release', 'external-service'])
+    for (const fx of WRITE_SIDE_PRODUCTION_EFFECTS) expect(PRODUCTION_EFFECTS).toContain(fx)
+    expect(WRITE_SIDE_PRODUCTION_EFFECTS).not.toContain('read-only')
+    expect(WRITE_SIDE_PRODUCTION_EFFECTS).not.toContain('none')
+  })
+
+  it('the README documents the definition and every worked case', () => {
+    const readme = readFileSync(TASKS_DIR + '/README.md', 'utf8')
+    expect(readme).toMatch(/maximum direct production effect/i)
+    expect(readme).toMatch(/during execution or as an automatic consequence of merge/i)
+    for (const fx of PRODUCTION_EFFECTS) expect(readme, 'README omits ' + fx).toContain('`' + fx + '`')
+    expect(readme).toMatch(/read-only production audit/i)
+    expect(readme).toMatch(/Apply task/i)
+    expect(readme).toMatch(/split/i)
+  })
+
+  it('the README no longer claims an unapplied migration is "database"', () => {
+    // THE CONTRADICTION. It must be stated as none, and the only remaining
+    // mentions of the old claim must be the correction itself.
+    const readme = readFileSync(TASKS_DIR + '/README.md', 'utf8')
+    expect(readme).toMatch(/Migration code only, explicitly not applied.*`none`/)
+    expect(readme).not.toMatch(/written but not applied is `r3` with\s*`production_effect: "database"`/)
+    expect(readme).not.toMatch(/unapplied migration.*→.*`database`/)
   })
 })
 
@@ -547,12 +615,22 @@ describe('the contracts committed to this repository', () => {
     }
   })
 
+  it('every committed contract carries a canonical production_effect', () => {
+    for (const n of files) {
+      const c = JSON.parse(readFileSync(dir + '/' + n, 'utf8'))
+      expect(PRODUCTION_EFFECTS, n + ' has production_effect ' + c.production_effect)
+        .toContain(c.production_effect)
+    }
+  })
+
   it('dynamic-ref-writers is r3, because it changes workflow authority', () => {
     // CI/workflow authority is r3 by the model, even though merging the task
     // itself has no production effect — the two fields answer different
     // questions and this contract is the worked example of that.
     const c = JSON.parse(readFileSync(dir + '/dynamic-ref-writers.json', 'utf8'))
     expect(c.risk).toBe('r3')
+    // none, and it stays none under the corrected definition: the task neither
+    // runs against production nor deploys learner-facing code on merge.
     expect(c.production_effect).toBe('none')
   })
 

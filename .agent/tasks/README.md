@@ -42,7 +42,7 @@ Every field below is required. Unknown fields are rejected.
 | `non_goals` | string[] | What this task is explicitly NOT. The scope fence. |
 | `acceptance_criteria` | string[] | What "done" means. Checkable statements, not aspirations. |
 | `verification` | string[] | Commands that must pass. `npm run <script>` entries are checked to exist. |
-| `production_effect` | enum | `none`, `deploy-on-merge`, `database`, `store-release`, `external-service`. |
+| `production_effect` | enum | The **maximum** direct production effect the task is permitted to cause. Closed enum — see below. |
 | `dependencies` | id[] | Other task ids. Must resolve. May be empty. |
 | `stop_conditions` | string[] | When the agent must halt and report rather than push on. |
 | `contract_digest` | sha256 hex | The seal over all of the above. |
@@ -68,15 +68,46 @@ worst thing the work can reach, not the bulk of it.
 
 `risk` and `production_effect` answer different questions and are deliberately
 orthogonal. `risk` is the authority the **work** carries; `production_effect` is
-what **merging** it does. A migration written but not applied is `r3` with
-`production_effect: "database"`. A docs typo on `main` is `r0` with
-`deploy-on-merge`. The shipped `dynamic-ref-writers` contract is the worked
-example: `r3` because it changes CI/workflow authority, `production_effect:
-"none"` because merging it deploys nothing.
+the maximum production effect it is **permitted to cause**. Migration code
+written but explicitly not applied is `r3` (migration code is high-impact system
+semantics) with `production_effect: "none"` (writing it touches nothing live). A
+docs typo on `main` is `r0` with `deploy-on-merge`. The shipped
+`dynamic-ref-writers` contract is the worked example: `r3` because it changes
+CI/workflow authority, `production_effect: "none"` because it neither runs
+against production nor deploys on merge.
 
-`production_effect` is likewise closed — its values map to things that already
-exist here: a merge to `main` deploys, a migration touches the database, a store
-release goes through review.
+## The production_effect model
+
+**Definition: the maximum direct production effect this task is permitted to
+cause, whether during execution or as an automatic consequence of merge.**
+
+An earlier revision of this document defined it as "what merging does" and then
+gave an unapplied migration as `database`, which contradicted itself — writing
+migration code causes no production effect until someone applies it. The
+definition above is permission-shaped, which covers both halves: an Apply task
+mutates production while it runs; a merge to `main` deploys without anyone
+running anything.
+
+| Value | Meaning |
+| --- | --- |
+| `none` | No production access or direct production effect. |
+| `read-only` | May inspect live production/external state, but may not mutate it. |
+| `deploy-on-merge` | Merging automatically deploys learner-facing code. |
+| `database` | Permitted to mutate the live production database. |
+| `store-release` | Permitted to publish/release through an app store. |
+| `external-service` | Permitted to mutate another live external service. |
+
+Worked cases, so the contradiction cannot return:
+
+- **Migration code only, explicitly not applied** → **`none`**, not `database`.
+  (Unless merge itself causes another production effect, in which case use that.)
+- **A read-only production audit** → **`read-only`**.
+- **An Apply task** → **`database`**.
+- **`dynamic-ref-writers`** → **`none`**.
+
+If a task would carry **multiple write-side effects** (`database`,
+`store-release`, `external-service`), it should normally be **split**, or
+explicitly stopped for review. One enum value is the wrong place to hide that.
 
 ## owner_role is required but not yet closed
 

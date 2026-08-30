@@ -86,10 +86,11 @@ export const OPTIONAL_FIELDS = ['notes', 'links', 'contract_digest']
  * also touches the scheduler is r3, not r1 — the level describes the worst
  * thing the work can reach, not the bulk of it.
  *
- * Deliberately orthogonal to production_effect: risk is about the authority the
- * WORK carries, production_effect about what MERGING it does. A migration
- * written but not applied is r3 with production_effect "database"; a docs typo
- * on main is r0 with "deploy-on-merge".
+ * Deliberately orthogonal to production_effect: risk is the authority the WORK
+ * carries, production_effect the maximum production effect it is PERMITTED to
+ * cause. Migration code written but not applied is r3 (migration code is
+ * high-impact system semantics) with production_effect "none" (writing it
+ * touches nothing live); a docs typo on main is r0 with "deploy-on-merge".
  */
 export const RISK_LEVELS = ['r0', 'r1', 'r2', 'r3', 'r4']
 
@@ -106,16 +107,48 @@ export const RISK_LEVELS = ['r0', 'r1', 'r2', 'r3', 'r4']
 export const TOKEN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
 /**
- * production_effect DOES stay a closed set. Unlike role and risk it is not a
- * taxonomy anyone else is designing — it is a statement of blast radius, and
- * its values map to things that already exist in this repository: a merge to
- * main deploys, a migration touches the database, a store release goes through
- * review. A contract that cannot say which of those it does is not describing
- * the work.
+ * PRODUCTION_EFFECT: the maximum direct production effect this task is
+ * PERMITTED to cause — whether during execution or as an automatic consequence
+ * of merge.
+ *
+ * An earlier revision defined it as "what merging does" and then illustrated it
+ * with an unapplied migration marked "database", which contradicted the
+ * definition: writing migration code causes no production effect at all until
+ * someone applies it. The definition is now permission-shaped, which covers
+ * both halves — a task that runs Apply mutates production during execution; a
+ * task merged to main deploys without anyone running anything.
+ *
+ *   none              no production access or direct production effect
+ *   read-only         may inspect live production/external state, never mutate
+ *   deploy-on-merge   merging automatically deploys learner-facing code
+ *   database          permitted to mutate the live production database
+ *   store-release     permitted to publish/release through an app store
+ *   external-service  permitted to mutate another live external service
+ *
+ * Worked cases, so the contradiction cannot come back:
+ *
+ *   migration code written, explicitly NOT applied  -> none
+ *                                (unless merge itself deploys, then that)
+ *   a read-only production audit                    -> read-only
+ *   an Apply task                                   -> database
+ *
+ * A task carrying MULTIPLE write-side effects should normally be split, or
+ * stopped for review — one enum value is the wrong place to hide that.
+ *
+ * Still a closed set: unlike role and risk this is not a taxonomy anyone else
+ * is designing, and its values name things that already exist here.
  */
 export const PRODUCTION_EFFECTS = [
   'none',
+  'read-only',
   'deploy-on-merge',
+  'database',
+  'store-release',
+  'external-service',
+]
+
+/** The values that authorise a WRITE to something live. */
+export const WRITE_SIDE_PRODUCTION_EFFECTS = [
   'database',
   'store-release',
   'external-service',
