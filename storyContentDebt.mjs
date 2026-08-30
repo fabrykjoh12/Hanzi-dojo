@@ -24,6 +24,55 @@ import { publishable, DEFECT } from './storyVocabAudit.mjs'
 
 export const DEBT_VERSION = 'fab9-content-debt@1'
 
+// The baseline is data written by ANOTHER run of this checker, so the version
+// it carries is a schema handshake, not decoration. `entries`, `defect` and the
+// meaning of an occurrence count are all free to change in a future
+// fab9-content-debt@2; comparing @2 semantics against an @1 file would then
+// produce a confident verdict computed from two different contracts.
+//
+// So compatibility is checked once, explicitly, before a single entry is read.
+// Absent, malformed, older or newer all refuse: an unrecognised baseline is
+// never guessed compatible, because the failure mode of guessing is a green run.
+//
+// This is the whole-file handshake and is separate from tolerating a missing
+// field on one entry INSIDE a compatible baseline — that stays allowed.
+export class BaselineVersionError extends Error {
+  constructor(message, { found, expected } = {}) {
+    super(message)
+    this.name = 'BaselineVersionError'
+    this.found = found
+    this.expected = expected
+  }
+}
+
+const showVersion = (v) => (v === undefined ? 'undefined' : JSON.stringify(v))
+
+/**
+ * Require that `baseline` was written by this exact schema, or throw.
+ * `source` only makes the error actionable.
+ */
+export function assertBaselineCompatible(baseline, { source = 'the baseline' } = {}) {
+  const fail = (found, why) => {
+    throw new BaselineVersionError(
+      source + ': ' + why
+      + '. Found version ' + showVersion(found)
+      + '; this checker understands ' + JSON.stringify(DEBT_VERSION) + '.'
+      + ' Regenerate the baseline deliberately (--update-baseline) and review the diff'
+      + ' — a baseline of another version is not guessed compatible.',
+      { found, expected: DEBT_VERSION })
+  }
+  if (!baseline || typeof baseline !== 'object' || Array.isArray(baseline)) {
+    fail(baseline, 'is not an object')
+  }
+  if (typeof baseline.version !== 'string' || baseline.version.length === 0) {
+    fail(baseline.version, 'declares no version string')
+  }
+  if (baseline.version !== DEBT_VERSION) {
+    fail(baseline.version, 'was written by a different schema')
+  }
+  return baseline
+}
+
 // The three inventories this work depends on. They are different things and
 // were being conflated, so they are named once, here, and reconciled by
 // reconcileInventory() below.
@@ -117,8 +166,14 @@ export function collectDebt({ stories = [], vocabMap = {}, language = 'chinese',
  *   resolved     — gone entirely. Fine, and needs no baseline edit.
  *   stale        — in the baseline but the story no longer exists. Reported so
  *                  the baseline can be pruned deliberately; never a failure.
+ *
+ * Throws BaselineVersionError unless the baseline declares exactly
+ * DEBT_VERSION. There is no degraded comparison.
  */
-export function compareToBaseline(current, baseline) {
+export function compareToBaseline(current, baseline, { source } = {}) {
+  // Fail closed FIRST. Nothing below is meaningful across schema versions,
+  // and a mismatch must never be able to reach `ok: true`.
+  assertBaselineCompatible(baseline, source ? { source } : {})
   const base = new Map((baseline && baseline.entries ? baseline.entries : [])
     .map(e => [debtKey(e.story, e.form), e]))
   const now = new Map((current && current.entries ? current.entries : [])

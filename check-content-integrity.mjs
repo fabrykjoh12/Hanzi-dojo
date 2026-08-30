@@ -19,7 +19,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
-import { collectDebt, compareToBaseline, formatDebtComparison, repairMatrix, reconcileInventory } from './storyContentDebt.mjs'
+import { collectDebt, compareToBaseline, formatDebtComparison, repairMatrix, reconcileInventory, BaselineVersionError } from './storyContentDebt.mjs'
 import { curriculumWords, CurriculumAuthorityError, MIN_BAND } from './storyCurriculumAuthority.mjs'
 
 const args = process.argv.slice(2)
@@ -131,8 +131,29 @@ if (!existsSync(BASELINE)) {
   console.error('\nNo baseline at ' + BASELINE + '. Create it once with --update-baseline.')
   process.exit(2)
 }
-const baseline = JSON.parse(readFileSync(BASELINE, 'utf8'))
-const cmp = compareToBaseline(current, baseline)
+// The baseline is read fail-closed too. It is data written by another run of
+// this checker, so its declared version is a schema handshake: a future
+// fab9-content-debt@2 comparing itself against an @1 file would compute a
+// confident verdict from two different contracts. Unparseable or of any other
+// version stops the run rather than being guessed compatible.
+let baseline
+try {
+  baseline = JSON.parse(readFileSync(BASELINE, 'utf8'))
+} catch (err) {
+  console.error('\nBASELINE UNUSABLE — ' + BASELINE + ' is not valid JSON: ' + err.message)
+  console.error('Regenerate it deliberately with --update-baseline and review the diff.')
+  process.exit(2)
+}
+
+let cmp
+try {
+  cmp = compareToBaseline(current, baseline, { source: BASELINE })
+} catch (err) {
+  if (!(err instanceof BaselineVersionError)) throw err
+  console.error('\nBASELINE VERSION MISMATCH — ' + err.message)
+  console.error('Refusing to compare: the entries would be read under semantics that did not write them.')
+  process.exit(2)
+}
 console.log('')
 console.log(formatDebtComparison(cmp))
 if (json) console.log(JSON.stringify({ current, comparison: cmp }, null, 1))

@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync, existsSync } from 'node:fs'
 import {
   collectDebt, compareToBaseline, formatDebtComparison, repairMatrix, debtKey,
+  assertBaselineCompatible, BaselineVersionError,
   REPAIRABILITY, DEBT_VERSION,
 } from './storyContentDebt.mjs'
 import { DEFECT } from './storyVocabAudit.mjs'
@@ -106,7 +108,8 @@ describe('compareToBaseline — debt may shrink, never grow', () => {
   })
 
   it('treats an empty baseline as zero debt allowed', () => {
-    const cmp = compareToBaseline(debt([dirty]), { entries: [] })
+    // Empty of ENTRIES, not of version: the version handshake is checked first.
+    const cmp = compareToBaseline(debt([dirty]), { version: DEBT_VERSION, entries: [] })
     expect(cmp.ok).toBe(false)
     expect(cmp.added).toHaveLength(1)
   })
@@ -230,5 +233,108 @@ describe('a changed defect class is a regression, whatever the count does', () =
     const legacy = at(MISSING, 3)
     delete legacy.entries[0].defect
     expect(compareToBaseline(at(MISSING, 3), legacy).ok).toBe(true)
+  })
+})
+
+// The baseline is written by another run of this checker, so its declared
+// version is a schema handshake. `entries`, `defect` and what an occurrence
+// count means are all free to change in a fab9-content-debt@2; comparing @2
+// semantics against an @1 file would produce a confident verdict computed from
+// two different contracts. Nothing about that is visible in the numbers, which
+// is exactly why it has to be refused rather than detected.
+describe('the baseline version is a handshake, checked before any entry is read', () => {
+  const at = (version, occurrences) => ({
+    version,
+    stories: 1,
+    storyIds: ['s1'],
+    storiesWithDebt: 1,
+    forms: 1,
+    occurrences,
+    entries: [{ story: 's1', title: 't', level: 3, form: '船', defect: DEFECT.CURRICULUM_ROW_MISSING, occurrences }],
+  })
+
+  it('accepts a baseline written by this exact schema', () => {
+    expect(() => assertBaselineCompatible(at(DEBT_VERSION, 3))).not.toThrow()
+    expect(compareToBaseline(at(DEBT_VERSION, 3), at(DEBT_VERSION, 3)).ok).toBe(true)
+  })
+
+  it('the committed baseline declares exactly DEBT_VERSION', () => {
+    const F = 'data/content-integrity-baseline.json'
+    expect(existsSync(F), F + ' is the accepted baseline').toBe(true)
+    const doc = JSON.parse(readFileSync(F, 'utf8'))
+    expect(doc.version).toBe(DEBT_VERSION)
+    expect(() => assertBaselineCompatible(doc, { source: F })).not.toThrow()
+  })
+
+  // One defect each. A version check tested only against the real file proves
+  // nothing about what it refuses.
+  const refuses = [
+    ['no version field at all', { entries: [] }],
+    ['an older version', at('fab9-content-debt@0', 3)],
+    ['a future version', at('fab9-content-debt@2', 3)],
+    ['an unrelated version string', at('some-other-schema@1', 3)],
+    ['the bare name with no revision', at('fab9-content-debt', 3)],
+    ['an empty string', at('', 3)],
+    ['a number', at(1, 3)],
+    ['null', at(null, 3)],
+    ['an object', at({ major: 1 }, 3)],
+    ['an array', at([DEBT_VERSION], 3)],
+    ['a baseline that is not an object', null],
+    ['a baseline that is an array', []],
+    ['a baseline that is a string', JSON.stringify({ version: DEBT_VERSION })],
+  ]
+  for (const [name, baseline] of refuses) {
+    it('refuses: ' + name, () => {
+      expect(() => assertBaselineCompatible(baseline)).toThrow(BaselineVersionError)
+      expect(() => compareToBaseline(at(DEBT_VERSION, 3), baseline)).toThrow(BaselineVersionError)
+    })
+  }
+
+  it('a mismatch cannot produce ok:true even when every entry, count and class matches', () => {
+    // The dangerous case: byte-identical debt, differing only in the contract
+    // it was computed under. Nothing in the numbers can reveal it.
+    const current = at(DEBT_VERSION, 3)
+    const baseline = at('fab9-content-debt@2', 3)
+    expect(JSON.stringify(baseline.entries)).toBe(JSON.stringify(current.entries))
+    expect(baseline.occurrences).toBe(current.occurrences)
+    let result
+    try { result = compareToBaseline(current, baseline) } catch (err) {
+      expect(err).toBeInstanceOf(BaselineVersionError)
+    }
+    expect(result).toBeUndefined()      // no verdict at all, let alone a green one
+  })
+
+  it('says what it found, what it understands, and that regeneration is deliberate', () => {
+    let err
+    try { assertBaselineCompatible(at('fab9-content-debt@2', 3), { source: 'data/x.json' }) } catch (e) { err = e }
+    expect(err.message).toContain('data/x.json')
+    expect(err.message).toContain('fab9-content-debt@2')      // found
+    expect(err.message).toContain(DEBT_VERSION)               // understood
+    expect(err.message).toMatch(/--update-baseline/)          // how to regenerate
+    expect(err.message).toMatch(/not guessed compatible/)     // and that guessing is refused
+    expect(err.found).toBe('fab9-content-debt@2')
+    expect(err.expected).toBe(DEBT_VERSION)
+  })
+
+  it('names a missing version as undefined rather than pretending it read one', () => {
+    let err
+    try { assertBaselineCompatible({ entries: [] }) } catch (e) { err = e }
+    expect(err.message).toContain('undefined')
+    expect(err.found).toBeUndefined()
+  })
+
+  it('does not weaken the per-entry tolerance INSIDE a compatible baseline', () => {
+    // The handshake is whole-file. A single entry predating the `defect` field
+    // is still not a regression.
+    const legacy = at(DEBT_VERSION, 3)
+    delete legacy.entries[0].defect
+    expect(compareToBaseline(at(DEBT_VERSION, 3), legacy).ok).toBe(true)
+  })
+
+  it('and the reclassification rule still fails inside a compatible baseline', () => {
+    const was = at(DEBT_VERSION, 3)
+    const now = at(DEBT_VERSION, 3)
+    now.entries[0].defect = DEFECT.OUT_OF_CURRICULUM
+    expect(compareToBaseline(now, was).ok).toBe(false)
   })
 })
