@@ -23,8 +23,13 @@ name: Android build → AAB
 on:
   workflow_dispatch:
 
+# Ref-scoped. The group used to be a bare `android-build`, shared by every run
+# in the repository, so two dispatches from different branches queued behind
+# each other — and any future PR trigger would have queued behind a release
+# build. cancel-in-progress stays false: a signed bundle that is half-built is
+# worse than a slow queue.
 concurrency:
-  group: android-build
+  group: android-build-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:

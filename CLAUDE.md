@@ -388,10 +388,31 @@ lives in `package.json`; don't restate it here or run the stages by hand.
 mean the same thing by construction. `/ship` runs it too and refuses to commit
 if it fails.
 
-Two things it does not cover: **Playwright e2e is a separate CI job**
-(`e2e.yml`), and **native artifact verification is separate** for now — the
-Capacitor wrapper and the iOS/Android builds. The store *web bundle* is
-covered; `build:public` is exactly that build.
+Two things it does not cover, each with its own tier:
+
+- **Playwright e2e** — a separate CI job (`e2e.yml`).
+- **The native artifact** — `npm run verify:native` (shell agreement, the store
+  build, and a real-browser proof that it never contacts Google Fonts), plus a
+  `cap sync` of both platforms. It is deliberately out of `verify:pr` so a docs
+  typo doesn't pay for a store build.
+
+  `native.yml` runs on **every** pull request and filters internally: a cheap
+  `changes` job diffs against the base, `verify` runs only when a
+  native-sensitive file moved, and `native-gate` always reports. So every PR
+  gets a gate status while only native PRs pay for the verification — which is
+  what makes `native-gate` safe to require on `main`. (A workflow-level
+  `paths:` filter could not be required: it posts no status at all on a
+  non-native PR, and a required check that never reports blocks it forever.)
+
+  Native-sensitive means `src/**`, `public/**`, `android/**`, `ios/**`, plus
+  `package.json`, `package-lock.json`, `vite.config.js`, `index.html`,
+  `capacitor.config.json`, the font modules and the verifiers. Whole
+  directories, not a hand-picked file list — every screen in `src/` compiles
+  into the store bundle.
+
+  The store *web bundle* is already covered above; `build:public` is exactly
+  that build. A full gradle/Xcode build stays dispatch-only
+  (`android-build.yml`, `ios-testflight.yml`).
 
 That command, plus read-only git (`status`, `diff`, `log`, `show`), the
 **read-only** Supabase MCP tools (`list_*`, `get_*`, `search_docs`), and —
