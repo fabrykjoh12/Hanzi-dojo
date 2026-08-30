@@ -501,6 +501,22 @@ export function resolveGovernanceBoundary({ taskId, headSha, git }) {
     return fail('reviewed head is not a full commit SHA: ' + JSON.stringify(headSha))
   }
 
+  // A shallow clone cannot answer this question. History is truncated, so the
+  // "last commit that touched the contract" is whatever the graft boundary
+  // happens to be — in a depth-1 checkout that is a single root commit
+  // containing the entire tree, which would present itself as a governance
+  // commit that changed a thousand files. CI checks out shallow by default, so
+  // this is the normal case there, not an exotic one.
+  //
+  // Refusing is the only sound answer: an unknowable boundary must not become a
+  // guessed one. The caller fetches full history and asks again.
+  const shallow = git(['rev-parse', '--is-shallow-repository'])
+  if (shallow.status !== 0) return fail('could not determine whether the repository is shallow')
+  if (shallow.stdout.trim() === 'true') {
+    return fail('the repository is a shallow clone, so the governance boundary cannot be derived — ' +
+      'fetch full history (git fetch --unshallow) and review again')
+  }
+
   const log = git(['rev-list', '--max-count=2', headSha, '--', contractPath])
   if (log.status !== 0) return fail('could not search history for ' + contractPath + ': ' + log.stderr.trim())
   const commits = log.stdout.split('\n').map(x => x.trim()).filter(Boolean)

@@ -159,6 +159,14 @@ Nothing is stored in the contract to make this work. A contract cannot name the
 commit that will contain it, and a field that tried would be a lie or a second
 seal to maintain. History already knows.
 
+**A shallow clone cannot answer the question, so it is refused.** With truncated
+history the "last commit that touched the contract" is whatever the graft
+boundary happens to be — in a depth-1 checkout that is one root commit
+containing the entire tree, which would present itself as a governance commit
+that changed a thousand files. CI checks out shallow by default, so this is the
+normal case there rather than an exotic one. The caller fetches full history
+(`git fetch --unshallow`) and asks again.
+
 ### The floors are floors, not classifiers
 
 `RISK_FLOOR_PATHS` cannot tell you a change is `r1` — only that it cannot
