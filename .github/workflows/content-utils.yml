@@ -37,10 +37,20 @@ on:
         type: boolean
         default: false
 
-# manhua-art-fetch commits the art it fetches back to the branch it was
-# dispatched on (see fetch-manhua-art.mjs for why episode art is committed
-# rather than uploaded to the storage bucket). Every other task here is
-# read-only against the repo and writes only to Supabase.
+# Two tasks commit back to the branch they were dispatched on; the rest are
+# read-only against the repo and write only to Supabase.
+#
+#   manhua-art-fetch          commits the art it fetches (see fetch-manhua-art.mjs
+#                             for why episode art is committed rather than
+#                             uploaded to the storage bucket).
+#   content-integrity-accept  commits data/content-integrity-baseline.json. It is
+#                             the explicit action that ACCEPTS learner-facing
+#                             content debt, so the diff is the review, and it
+#                             refuses to run on main — both in the task and again
+#                             on the commit step.
+#
+# content-integrity (no suffix) is the normal path and is compare-only: it reads
+# the corpus, diffs against the accepted baseline, and writes nothing.
 permissions:
   contents: write
 
