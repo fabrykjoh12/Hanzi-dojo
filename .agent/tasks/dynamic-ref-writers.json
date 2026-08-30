@@ -1,0 +1,45 @@
+{
+  "id": "dynamic-ref-writers",
+  "goal": "Stop the four content workflows from resolving their push target to main when dispatched from main, so they fail before doing work rather than at push time.",
+  "owner_role": "workflow-authority",
+  "risk": "r3",
+  "allowed_paths": [
+    ".github/workflows/content-utils.yml",
+    ".github/workflows/llm-bench.yml",
+    ".github/workflows/story-pilot.yml",
+    ".github/workflows/vocab-complete.yml",
+    "workflow-authority.test.mjs",
+    "docs/AUTOMATION-AUTHORITY.md"
+  ],
+  "forbidden_paths": [
+    ".github/workflows/gate3-prepare.yml",
+    ".github/workflows/gate3-apply.yml",
+    ".github/workflows/roadmap-live-sync.yml",
+    ".github/workflows/needs-testing-sync.yml"
+  ],
+  "non_goals": [
+    "Changing what the content workflows generate or publish",
+    "Adding a pull-request trigger to any content workflow",
+    "Touching Gate 3, Supabase, or the roadmap/needs-testing sync workflows",
+    "Making native-gate or any other check required — that is a repository settings change"
+  ],
+  "acceptance_criteria": [
+    "Each of the four workflows refuses to run when github.ref is refs/heads/main, with an error naming the alternative",
+    "The refusal happens before any generation or commit step does work",
+    "workflow-authority.test.mjs still pins the set of dynamic writers at exactly these four",
+    "docs/AUTOMATION-AUTHORITY.md no longer describes their post-ruleset failure as accepted temporary behaviour"
+  ],
+  "verification": [
+    "npm run verify:pr",
+    "npx vitest run workflow-authority.test.mjs"
+  ],
+  "production_effect": "none",
+  "dependencies": [],
+  "stop_conditions": [
+    "A workflow turns out to depend on committing to main as its designed output — report rather than redesign it",
+    "The fix would require adding a pull-request trigger, which is a separate cost decision",
+    "Any change would touch a Gate 3 workflow"
+  ],
+  "notes": "Identified during the PR3 native-tier audit. These push HEAD:${GITHUB_REF_NAME} or a bare git push, so main is the Actions UI default target; the main ruleset now rejects that at the server, after the job has already done its work. Risk r3: this changes CI/workflow authority, which is r3 by the control-plane model even though production_effect is none.",
+  "contract_digest": "e7834c80cd3fe2dd292504fa69e3740b99067b20b2ecce7a70e81fc77b8284ee"
+}
