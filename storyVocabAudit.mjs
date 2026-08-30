@@ -214,8 +214,19 @@ export function publishable(story, { vocabMap = {}, language = 'chinese', curric
     title: (story && story.title) || null,
     offenders,
     occurrences: offenders.reduce((n, o) => n + o.occurrences, 0),
+    // A refusal has to say what to DO, or the gate reads as "proper nouns are
+    // banned". They are not: the Reader recognises a name two ways, and both
+    // are open to the author.
+    remedy: offenders.length ? REMEDY : null,
   }
 }
+
+export const REMEDY = [
+  'Every token must resolve the way the Reader resolves it. For a person or place, either:',
+  '  - give them a speaker label in the story (名字: ...) — collectStoryNames derives names from the story itself, so a new character needs no registration; or',
+  '  - add them to CHARACTER_READINGS in src/characterNames.js with their reading — the name payload is { word, reading } and carries nothing person-specific, so a place works the same way.',
+  'For an ordinary word the learner does not have, change the word. Do not add a vocabulary row to silence this.',
+].join('\n')
 
 /** How much of an existing corpus would fail the invariant, and why. */
 export function publishabilityBlastRadius({ stories = [], vocabMap = {}, language = 'chinese', curriculum = null } = {}) {

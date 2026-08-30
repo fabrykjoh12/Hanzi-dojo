@@ -24,6 +24,40 @@ import { publishable, DEFECT } from './storyVocabAudit.mjs'
 
 export const DEBT_VERSION = 'fab9-content-debt@1'
 
+// The three inventories this work depends on. They are different things and
+// were being conflated, so they are named once, here, and reconciled by
+// reconcileInventory() below.
+//
+//   learnerFacingRows   what the DATABASE has and the app loads today
+//                       (chinese, is_active, level 1-6). 4,995.
+//   intendedCurriculum  what the UPSTREAM HSK 3.0 word list says the course
+//                       contains at bands 1-6. 5,181.
+//   missingCurriculumRows  intended minus present. 192 — words the course
+//                       lists that no database row carries.
+//
+// 4,995 is NOT the curriculum denominator. It is the current DB inventory, and
+// the upstream proves it is short by 192 rows.
+export function reconcileInventory({ vocabMap = {}, curriculum = new Set() } = {}) {
+  const present = new Set(Object.keys(vocabMap))
+  const intended = curriculum
+  const intendedAndPresent = [...intended].filter(w => present.has(w))
+  const missing = [...intended].filter(w => !present.has(w)).sort()
+  const extra = [...present].filter(w => !intended.has(w)).sort()
+  return {
+    learnerFacingRows: present.size,
+    intendedCurriculum: intended.size,
+    intendedAndPresent: intendedAndPresent.length,
+    missingCurriculumRows: missing.length,
+    presentButNotIntended: extra.length,
+    missing,
+    extra,
+    // Both identities must hold, or one of the two inventories is being
+    // miscounted and nothing downstream of it can be trusted.
+    reconciles: intended.size === intendedAndPresent.length + missing.length
+      && present.size === intendedAndPresent.length + extra.length,
+  }
+}
+
 /** A stable key for one story's one offending form. */
 export function debtKey(storyKey, form) {
   return String(storyKey) + ' ' + String(form)

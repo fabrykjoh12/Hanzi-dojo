@@ -19,7 +19,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
-import { collectDebt, compareToBaseline, formatDebtComparison, repairMatrix } from './storyContentDebt.mjs'
+import { collectDebt, compareToBaseline, formatDebtComparison, repairMatrix, reconcileInventory } from './storyContentDebt.mjs'
 
 const args = process.argv.slice(2)
 const update = args.includes('--update-baseline')
@@ -76,12 +76,22 @@ if (existsSync(CURRICULUM)) {
   process.exit(2)
 }
 
+// The three inventories, named precisely and reconciled before anything is
+// concluded from them.
+const inv = reconcileInventory({ vocabMap, curriculum })
+console.log('INVENTORY')
+console.log('  learner-facing DB rows (chinese, active, level 1-' + MAX_LEVEL + ')   ' + String(inv.learnerFacingRows).padStart(6))
+console.log('  intended upstream curriculum (HSK 3.0 bands 1-' + MAX_LEVEL + ')     ' + String(inv.intendedCurriculum).padStart(6))
+console.log('  intended AND present                                  ' + String(inv.intendedAndPresent).padStart(6))
+console.log('  MISSING curriculum rows                               ' + String(inv.missingCurriculumRows).padStart(6))
+console.log('  present but not in the intended bands                 ' + String(inv.presentButNotIntended).padStart(6))
+console.log('  reconciles (B=C+D and A=C+E): ' + (inv.reconciles ? 'yes' : 'NO — one inventory is miscounted'))
+if (!inv.reconciles) process.exit(2)
+
 const current = collectDebt({ stories, vocabMap, curriculum })
-console.log('corpus: ' + stories.length + ' published Chinese stories, '
-  + Object.keys(vocabMap).length + ' learner-facing vocabulary rows, '
-  + curriculum.size + ' curriculum words at bands 1-' + MAX_LEVEL + ')')
-console.log('debt:   ' + current.occurrences + ' occurrences of ' + current.forms
-  + ' distinct forms across ' + current.storiesWithDebt + ' stories\n')
+current.inventory = inv
+console.log('\nDEBT: ' + current.occurrences + ' occurrences of ' + current.forms
+  + ' distinct forms across ' + current.storiesWithDebt + ' of ' + stories.length + ' published stories\n')
 
 console.log('class                     forms  occurrences  stories  repair')
 for (const r of repairMatrix(current)) {

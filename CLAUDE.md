@@ -50,6 +50,7 @@ still get full detail — they are read once, on purpose.
 | [`docs/DISCORD.md`](docs/DISCORD.md) | Server layout, webhooks, the sync workflows | Changing anything Discord-facing |
 | [`docs/DOJO-BRIDGE.md`](docs/DOJO-BRIDGE.md) | The `tools/` bridge | Working on DojoHQ |
 | [`docs/STORY_EXPERIENCE_AUDIT.md`](docs/STORY_EXPERIENCE_AUDIT.md) | Long-form audit of the reading experience | Reworking the reader |
+| [`docs/VOCAB-INGESTION.md`](docs/VOCAB-INGESTION.md) | The `forms[0]` ingestion incident, the three vocabulary inventories and how they reconcile, and the reseed plan | Touching vocabulary ingestion, or before any reseed |
 | [`docs/DATABASE.md`](docs/DATABASE.md) | Older schema notes — **`docs/ARCHITECTURE.md` is the current source of truth**; last touched 2026-07-02 | Rarely; prefer ARCHITECTURE.md |
 | [`docs/superpowers/`](docs/superpowers/README.md) | Design specs and plans for features that already shipped — history, **not** current intent | Archaeology on a feature's design |
 
