@@ -35,10 +35,10 @@ Every field below is required. Unknown fields are rejected.
 | --- | --- | --- |
 | `id` | kebab-case string | Must equal the filename stem. |
 | `goal` | string | One sentence: what this task is for. |
-| `owner_role` | enum | Which role owns it. Named now so a later enforcement layer has a closed set; **not enforced yet**. |
-| `risk` | `low` \| `medium` \| `high` | How much damage a mistake does. |
-| `allowed_paths` | glob[] | The only paths the work may modify. Non-empty. |
-| `forbidden_paths` | glob[] | Carve-outs inside `allowed_paths`. May be empty, must be present. |
+| `owner_role` | kebab-case token | Which role owns it. **Vocabulary deliberately not closed** — see below. |
+| `risk` | kebab-case token | How much damage a mistake does. **Vocabulary deliberately not closed** — see below. |
+| `allowed_paths` | path[] | The only paths the work may modify. Non-empty. Narrow grammar — see below. |
+| `forbidden_paths` | path[] | Carve-outs inside `allowed_paths`. May be empty, must be present. |
 | `non_goals` | string[] | What this task is explicitly NOT. The scope fence. |
 | `acceptance_criteria` | string[] | What "done" means. Checkable statements, not aspirations. |
 | `verification` | string[] | Commands that must pass. `npm run <script>` entries are checked to exist. |
@@ -50,16 +50,67 @@ Every field below is required. Unknown fields are rejected.
 `notes` and `links` are optional and **not** covered by the digest — a contract
 should be annotatable without re-sealing, or nobody will annotate it.
 
+## Two vocabularies are deliberately left open
+
+`owner_role` and `risk` are **required**, are covered by the digest, and must be
+lowercase kebab-case tokens — but their value sets are **not** closed here.
+
+An earlier revision of this format invented both: six role names and
+`low|medium|high`. That was wrong twice. The role layer is a later phase that
+will define and enforce its own vocabulary, and a second competing role model
+living in the task format would have to be migrated away the moment that lands.
+For `risk`, the intended model is a control-plane risk taxonomy that **does not
+exist in this repository yet** — searched for and not found: no R0–R4 tiers, no
+risk classes in `docs/`, and "control plane" here refers only to the Gate 3
+snapshot-key revision.
+
+Guessing a second time would repeat the mistake with different values. So the
+field *shape* is fixed and every contract must carry both, while the closed set
+is left to the layer that consumes it. `r0`, `tier-one` and `low` are all
+already accepted; tightening a syntactic constraint into an enum later is a pure
+addition, whereas unpicking a wrong enum from committed contracts is not.
+
+`production_effect` **is** closed, because it is not a contested taxonomy — its
+values map to things that already exist here: a merge to `main` deploys, a
+migration touches the database, a store release goes through review.
+
+## The path grammar is deliberately narrow
+
+Exactly two forms are accepted:
+
+```
+src/App.jsx        an exact repository-relative POSIX path
+src/**             a directory subtree
+```
+
+Everything else is rejected: `*.js`, `.agent/tasks/*`, `**/*.json`, `?`,
+character classes, braces, backslashes, Windows drive paths, a bare `**`,
+absolute paths, `..`, empty segments.
+
+This is not tidiness. Containment reasoning can only be *exact* for these two
+forms, and anything the validator cannot decide must not be expressible —
+otherwise it is accepted and then silently not analysed. `.agent/tasks/*` and
+`.agent/*` both reach task contracts and neither is decidable by prefix logic
+that only understands `/**`; under a permissive grammar they passed.
+
+With the grammar closed, the always-forbidden floor is **complete**: every
+accepted expression matches either exactly one path or exactly one subtree, so
+containment against a floor entry is decidable in both directions. A test
+generates every route to every floor entry and requires each to be refused.
+
 ## Rules the validator enforces
 
 Fail-closed on all of these:
 
 - Missing, empty or wrong-typed required fields; unknown fields.
 - `id` not kebab-case, or not matching the filename.
-- `owner_role`, `risk` or `production_effect` outside its enum.
+- `owner_role` or `risk` that is not a lowercase kebab-case token;
+  `production_effect` outside its closed enum.
 - Empty `allowed_paths` (no work is authorised) or empty `acceptance_criteria`
   (anything counts as done). Both are contradictions, not defaults.
-- Absolute paths, or any path containing `..`.
+- **Any path outside the two-form grammar** — wildcards, character classes,
+  braces, backslashes, drive letters, a bare `**`, absolute paths, `..`, empty
+  segments.
 - **The always-forbidden floor** — `allowed_paths` naming `.agent/tasks/**`,
   `.claude/settings.json`, `.claude/settings.local.json` or `.git/**`.
 - **Contradictory paths** — a path both allowed and forbidden, or an allowed
@@ -76,6 +127,12 @@ Fail-closed on all of these:
 npm run verify:tasks           # validate every contract
 npm run verify:tasks -- --seal # recompute digests after a deliberate edit
 ```
+
+**`--seal` cannot bless an invalid contract.** It validates every non-digest
+rule first; if a single contract is unsound it exits 1 and **modifies no files
+at all**, then re-validates the written result in full before reporting success.
+A digest over a contract that authorises `.agent/tasks/**` would certify exactly
+the escalation the floor exists to refuse, so sealing is all-or-nothing.
 
 Sealing is a separate, explicit step on purpose. It should appear in review as a
 changed digest beside the changed terms — if a digest moves and the terms did

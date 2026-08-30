@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync, existsSync } from 'node:fs'
+import { readFileSync, readdirSync, existsSync, writeFileSync, rmSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import {
   findContractViolations,
   computeDigest,
@@ -8,9 +9,9 @@ import {
   normalisePath,
   BINDING_FIELDS,
   OPTIONAL_FIELDS,
-  OWNER_ROLES,
-  RISK_LEVELS,
   PRODUCTION_EFFECTS,
+  pathGrammarError,
+  TOKEN,
   ALWAYS_FORBIDDEN,
   TASKS_DIR,
 } from './tools/verify-task-contracts.mjs'
@@ -96,21 +97,44 @@ describe('required fields fail closed', () => {
   })
 })
 
-describe('enums are closed', () => {
-  it('rejects an owner_role nobody defined', () => {
-    expect(violations(reseal({ ...good(), owner_role: 'wizard' })).join()).toMatch(/owner_role must be one of/)
+describe('owner_role and risk are constrained but NOT frozen', () => {
+  // Deliberate: the role layer is a later phase with its own vocabulary, and
+  // the intended risk model is a control-plane taxonomy that does not exist in
+  // this repository yet. An earlier revision invented both. Inventing a second
+  // competing set would have to be migrated away the moment the real one lands,
+  // so the shape is fixed and the closed set is left to whoever enforces it.
+  it('requires both fields', () => {
+    for (const f of ['owner_role', 'risk']) {
+      const c = good()
+      delete c[f]
+      expect(violations(c).join()).toMatch(new RegExp('missing required field: ' + f))
+    }
   })
-  it('rejects an unknown risk level', () => {
-    expect(violations(reseal({ ...good(), risk: 'catastrophic' })).join()).toMatch(/risk must be one of/)
+
+  it('requires a kebab-case token, rejecting free text', () => {
+    for (const bad of ['Workflow Engineer', 'HIGH', 'r0!', '', '  ', 'a_b']) {
+      expect(violations(reseal({ ...good(), risk: bad })).join(), JSON.stringify(bad))
+        .toMatch(/risk must be a lowercase kebab-case token/)
+    }
   })
-  it('rejects an unknown production_effect', () => {
+
+  it('accepts any well-formed token, including a future R-tier spelling', () => {
+    // Whatever the enforcement layer picks — r0..r4, tier-one, low — the format
+    // already carries it without a migration.
+    for (const v of ['r0', 'r4', 'low', 'high', 'tier-one', 'workflow-engineer', 'docs']) {
+      expect(violations(reseal({ ...good(), risk: v, owner_role: v })), v).toEqual([])
+    }
+    expect(TOKEN.test('r0')).toBe(true)
+  })
+
+  it('keeps production_effect closed, because it is not a contested taxonomy', () => {
+    // Blast radius maps to things that already exist here: merge-to-main
+    // deploys, a migration touches the database, a store release is reviewed.
     expect(violations(reseal({ ...good(), production_effect: 'probably-fine' })).join())
       .toMatch(/production_effect must be one of/)
-  })
-  it('accepts every declared enum value', () => {
-    for (const role of OWNER_ROLES) expect(violations(reseal({ ...good(), owner_role: role }))).toEqual([])
-    for (const risk of RISK_LEVELS) expect(violations(reseal({ ...good(), risk }))).toEqual([])
-    for (const fx of PRODUCTION_EFFECTS) expect(violations(reseal({ ...good(), production_effect: fx }))).toEqual([])
+    for (const fx of PRODUCTION_EFFECTS) {
+      expect(violations(reseal({ ...good(), production_effect: fx }))).toEqual([])
+    }
   })
 })
 
@@ -145,12 +169,21 @@ describe('THE SCOPE FLOOR: a contract cannot widen its own authority', () => {
     })
   }
 
-  it('refuses a broad glob that would swallow the task contracts', () => {
-    // The realistic escalation: not naming .agent/tasks/** outright, but
-    // claiming `**` or `.agent/**` and inheriting it.
-    for (const broad of ['**', '.agent/**']) {
-      expect(violations(reseal({ ...good(), allowed_paths: [broad] })).join(), broad)
-        .toMatch(/may never authorise/)
+  it('refuses a parent subtree that would swallow the task contracts', () => {
+    // .agent/** is valid grammar and must be caught by the FLOOR.
+    expect(violations(reseal({ ...good(), allowed_paths: ['.agent/**'] })).join())
+      .toMatch(/may never authorise/)
+  })
+
+  it('refuses the wildcard forms that used to slip past containment', () => {
+    // THE ESCAPE HATCH. `.agent/tasks/*` and `.agent/*` both reach task
+    // contracts, and neither is decidable by prefix logic that only knows
+    // `/**` — so under a permissive grammar they were accepted and then
+    // silently not analysed. The grammar now refuses them outright, which is
+    // what makes the floor complete rather than best-effort.
+    for (const evasion of ['.agent/tasks/*', '.agent/*', '.agent/tasks/*.json', '**/*.json', '**']) {
+      const found = violations(reseal({ ...good(), allowed_paths: [evasion] })).join()
+      expect(found, 'not rejected: ' + evasion).toMatch(/unsupported glob syntax|bare "\*\*"/)
     }
   })
 
@@ -184,9 +217,44 @@ describe('contradictory path permissions are rejected', () => {
 
   it('rejects absolute paths and parent-directory escapes', () => {
     expect(violations(reseal({ ...good(), allowed_paths: ['/etc/passwd'] })).join())
-      .toMatch(/must be repository-relative/)
+      .toMatch(/is absolute/)
     expect(violations(reseal({ ...good(), allowed_paths: ['../other-repo/**'] })).join())
-      .toMatch(/must not escape the repository/)
+      .toMatch(/escapes the repository/)
+  })
+
+  it('accepts exactly two path forms and nothing else', () => {
+    expect(pathGrammarError('src/App.jsx')).toBeNull()
+    expect(pathGrammarError('src/**')).toBeNull()
+    expect(pathGrammarError('docs/a/b/c.md')).toBeNull()
+    for (const bad of ['*.js', 'a?b', 'x[0].js', 'a{b,c}', 'a\\b', 'C:/x', '**', 'src//a', ' src/a', './a', 'src/../etc']) {
+      expect(pathGrammarError(bad), 'accepted: ' + bad).not.toBeNull()
+    }
+  })
+
+  it('the floor is COMPLETE over the accepted grammar', () => {
+    // Every accepted expression matches either exactly one path or exactly one
+    // subtree, so containment against a floor entry is decidable in both
+    // directions — there is no accepted form the floor can fail to see.
+    for (const floor of ALWAYS_FORBIDDEN) {
+      expect(pathGrammarError(floor), 'floor entry is not itself valid grammar: ' + floor).toBeNull()
+
+      // Every expression that could reach this floor entry: the entry itself,
+      // and each ANCESTOR DIRECTORY as a subtree. For a file entry the
+      // directories are its parents only — ".claude/settings.json/**" is a
+      // subtree under a regular file and can never match anything, so it is not
+      // a route to the floor and not something the floor must catch.
+      const isSubtree = floor.endsWith('/**')
+      const body = isSubtree ? floor.slice(0, -3) : floor
+      const segs = body.split('/')
+      const dirDepth = isSubtree ? segs.length : segs.length - 1
+      const routes = [floor]
+      for (let i = 1; i <= dirDepth; i++) routes.push(segs.slice(0, i).join('/') + '/**')
+
+      for (const p of routes) {
+        expect(violations(reseal({ ...good(), allowed_paths: [p] })).join(), p)
+          .toMatch(/may never authorise/)
+      }
+    }
   })
 
   it('covers() is directional', () => {
@@ -289,6 +357,114 @@ describe('THE SEAL: rewrites cannot be silent', () => {
 
   it('canonicalise sorts keys and ignores whitespace', () => {
     expect(canonicalise({ b: 1, a: [2, 3] })).toBe('{"a":[2,3],"b":1}')
+  })
+})
+
+describe('--seal can never bless an invalid contract (end to end)', () => {
+  // The one operation that WRITES is the one that must not launder a broken
+  // contract into an apparently-valid one. A digest over a contract that
+  // authorises .agent/tasks/** would make it pass every later check — the seal
+  // would be certifying the escalation it exists to prevent.
+  //
+  // Real subprocess, real files: the pre-flight/refuse/re-validate ordering is
+  // a property of the CLI, not of any pure function.
+  const EVIL = TASKS_DIR + '/seal-guard-probe.json'
+  const evilContract = (extra = {}) => JSON.stringify({
+    id: 'seal-guard-probe',
+    goal: 'Attempt to widen my own authority.',
+    owner_role: 'workflow-engineer',
+    risk: 'low',
+    allowed_paths: ['.agent/tasks/**'],
+    forbidden_paths: [],
+    non_goals: ['nothing'],
+    acceptance_criteria: ['it worked'],
+    verification: ['npm test'],
+    production_effect: 'none',
+    dependencies: [],
+    stop_conditions: ['never'],
+    ...extra,
+  }, null, 2) + '\n'
+
+  const seal = () => spawnSync('node', ['tools/verify-task-contracts.mjs', '--seal'], { encoding: 'utf8' })
+  const cleanup = () => { try { rmSync(EVIL) } catch { /* already gone */ } }
+
+  it('refuses to seal a self-authorising contract, and leaves it byte-for-byte unchanged', () => {
+    const before = evilContract()
+    writeFileSync(EVIL, before)
+    try {
+      const r = seal()
+      expect(r.status, 'seal should have failed').toBe(1)
+      expect(r.stderr).toMatch(/may never authorise/)
+      expect(r.stderr).toMatch(/refusing to seal — no files were modified/)
+      expect(readFileSync(EVIL, 'utf8'), 'the file was modified').toBe(before)
+    } finally { cleanup() }
+  })
+
+  it('leaves OTHER, valid contracts untouched when one is invalid — sealing is all or nothing', () => {
+    const committed = readdirSync(TASKS_DIR).filter(n => n.endsWith('.json') && !n.startsWith('seal-guard'))
+    const snapshot = committed.map(n => [n, readFileSync(TASKS_DIR + '/' + n, 'utf8')])
+    writeFileSync(EVIL, evilContract())
+    try {
+      expect(seal().status).toBe(1)
+      for (const [n, text] of snapshot) {
+        expect(readFileSync(TASKS_DIR + '/' + n, 'utf8'), n + ' was modified').toBe(text)
+      }
+    } finally { cleanup() }
+  })
+
+  it('refuses on any semantic violation, not only the floor', () => {
+    for (const broken of [
+      { allowed_paths: ['src/**'], acceptance_criteria: [] },
+      { allowed_paths: ['*.js'] },
+      { allowed_paths: ['src/**'], verification: ['npm run verify:imaginary'] },
+      { allowed_paths: ['src/**'], dependencies: ['no-such-task'] },
+      { allowed_paths: ['src/deep/**'], forbidden_paths: ['src/**'] },
+      { allowed_paths: ['src/**'], risk: 'NOT A TOKEN' },
+    ]) {
+      const before = evilContract(broken)
+      writeFileSync(EVIL, before)
+      try {
+        expect(seal().status, JSON.stringify(broken)).toBe(1)
+        expect(readFileSync(EVIL, 'utf8'), JSON.stringify(broken)).toBe(before)
+      } finally { cleanup() }
+    }
+  })
+
+  it('DOES seal a contract that is valid apart from its digest', () => {
+    // The legitimate use, which must keep working — otherwise the refusal above
+    // is just a broken feature rather than a guard.
+    const valid = evilContract({ allowed_paths: ['src/**'] })
+    writeFileSync(EVIL, valid)
+    try {
+      const r = seal()
+      expect(r.status, r.stderr).toBe(0)
+      const after = JSON.parse(readFileSync(EVIL, 'utf8'))
+      expect(after.contract_digest).toMatch(/^[0-9a-f]{64}$/)
+      expect(findContractViolations(after, { fileName: 'seal-guard-probe.json', npmScripts: PKG.scripts })).toEqual([])
+    } finally { cleanup() }
+  })
+
+  it('re-validates the written result before reporting success', () => {
+    // STRUCTURAL, not behavioural, and deliberately so: this branch is only
+    // reachable if the seal-writing itself is buggy, which no fixture can
+    // produce without introducing the bug. A mutation check confirmed the
+    // behavioural specs do NOT cover its removal — so it is asserted here
+    // against the source rather than left silently unprotected.
+    const src = readFileSync('tools/verify-task-contracts.mjs', 'utf8')
+    const sealBlock = src.slice(src.indexOf('const preflight = await loadAndCheck'))
+    const writeAt = sealBlock.indexOf('await writeFile(')
+    const recheckAt = sealBlock.indexOf('loadAndCheck({ skipDigest: false })')
+    expect(writeAt, 'seal does not write').toBeGreaterThan(-1)
+    expect(recheckAt, 'seal does not re-validate after writing').toBeGreaterThan(-1)
+    expect(recheckAt, 're-validation must come AFTER the write').toBeGreaterThan(writeAt)
+    const tail = sealBlock.slice(recheckAt)
+    expect(tail, 're-validation result must gate success').toMatch(/after\.problems\.length/)
+    expect(tail).toMatch(/process\.exitCode = 1/)
+  })
+
+  it('plain validation still passes once the probe is gone', () => {
+    const r = spawnSync('node', ['tools/verify-task-contracts.mjs'], { encoding: 'utf8' })
+    expect(r.status, r.stderr).toBe(0)
   })
 })
 

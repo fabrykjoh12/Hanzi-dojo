@@ -64,24 +64,33 @@ export const BINDING_FIELDS = [
 export const OPTIONAL_FIELDS = ['notes', 'links', 'contract_digest']
 
 /**
- * Roles are named here so the vocabulary is fixed before anything enforces it.
- * This PR does NOT enforce roles; it only refuses a role nobody defined, so a
- * later enforcement layer has a closed set to work from.
+ * owner_role and risk are REQUIRED and syntactically constrained, but their
+ * vocabularies are deliberately NOT closed here.
+ *
+ * An earlier revision of this file invented both — six role names and
+ * low/medium/high. That was wrong twice over: the role layer is a later phase
+ * that will define and enforce its own vocabulary, and a second competing role
+ * model invented in the task format would have to be migrated away the moment
+ * that lands. For risk, the intended model is a control-plane risk taxonomy
+ * that does not exist in this repository yet (searched: no R0-R4 model, no risk
+ * tiers in docs/, and "control plane" here means only the Gate 3 key revision).
+ *
+ * Guessing a second time would be the same mistake with different values. So
+ * the field shape is fixed — a lowercase kebab-case token, required, present in
+ * every contract, covered by the digest — and the closed set is left to the
+ * layer that will consume it. Tightening a syntactic constraint into an enum
+ * later is a pure addition; unpicking a wrong enum from committed contracts is
+ * not.
  */
-export const OWNER_ROLES = [
-  'workflow-engineer',
-  'product-engineer',
-  'content-engineer',
-  'design-engineer',
-  'ops-engineer',
-  'docs',
-]
-
-export const RISK_LEVELS = ['low', 'medium', 'high']
+export const TOKEN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
 /**
- * What the work can do to production if it lands. Not a permission — a
- * declaration, so review effort can be aimed at the ones that matter.
+ * production_effect DOES stay a closed set. Unlike role and risk it is not a
+ * taxonomy anyone else is designing — it is a statement of blast radius, and
+ * its values map to things that already exist in this repository: a merge to
+ * main deploys, a migration touches the database, a store release goes through
+ * review. A contract that cannot say which of those it does is not describing
+ * the work.
  */
 export const PRODUCTION_EFFECTS = [
   'none',
@@ -106,6 +115,51 @@ export const ALWAYS_FORBIDDEN = [
   '.claude/settings.local.json',
   '.git/**',
 ]
+
+/**
+ * THE PATH GRAMMAR. Exactly two accepted forms:
+ *
+ *   an exact repository-relative POSIX path      src/App.jsx
+ *   a directory subtree                          src/**
+ *
+ * Nothing else. No `*` segments, no `?`, no character classes or braces, no
+ * backslashes, no drive letters, no bare `**`.
+ *
+ * This is not tidiness. `covers()` below reasons about containment, and it can
+ * only reason exactly about these two forms — so anything it cannot decide must
+ * not be expressible. With the grammar closed, the ALWAYS_FORBIDDEN floor is
+ * COMPLETE: every accepted expression either matches exactly one path, or
+ * matches exactly one subtree, and in both cases containment against a floor
+ * entry is decidable rather than approximated.
+ *
+ * The escape hatch this closes: `.agent/tasks/*` and `.agent/*` both reach task
+ * contracts, and neither is covered by prefix logic that only understands
+ * `/**`. Under the old permissive grammar they were accepted and then silently
+ * not analysed.
+ */
+const PATH_SEGMENT = /^[A-Za-z0-9._-]+$/
+export function pathGrammarError(p) {
+  const raw = String(p)
+  if (raw !== raw.trim()) return 'has leading or trailing whitespace'
+  if (raw === '') return 'is empty'
+  if (raw.includes('\\')) return 'uses a backslash; paths are POSIX and repository-relative'
+  if (/^[A-Za-z]:/.test(raw)) return 'looks like a Windows drive path'
+  if (raw.startsWith('/')) return 'is absolute; paths must be repository-relative'
+  const body = raw.endsWith('/**') ? raw.slice(0, -3) : raw
+  if (raw === '**') return 'is a bare "**"; name a directory subtree instead'
+  if (body === '') return 'names no directory before "/**"'
+  const segments = body.split('/')
+  for (const seg of segments) {
+    if (seg === '') return 'contains an empty path segment'
+    if (seg === '..') return 'escapes the repository with ".."'
+    if (seg === '.') return 'contains a "." segment'
+    if (!PATH_SEGMENT.test(seg)) {
+      return 'contains unsupported glob syntax in "' + seg +
+        '" — only an exact path or a directory ending in "/**" can be reasoned about'
+    }
+  }
+  return null
+}
 
 const isPlainObject = v => !!v && typeof v === 'object' && !Array.isArray(v)
 const isNonEmptyString = v => typeof v === 'string' && v.trim().length > 0
@@ -157,7 +211,7 @@ export function covers(outer, inner) {
  * resolution be checked across the whole set; `npmScripts` lets verification
  * commands be checked against reality.
  */
-export function findContractViolations(contract, { fileName, knownIds = [], npmScripts = null } = {}) {
+export function findContractViolations(contract, { fileName, knownIds = [], npmScripts = null, skipDigest = false } = {}) {
   const out = []
   const at = fileName ? fileName + ': ' : ''
 
@@ -184,13 +238,14 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   if ('goal' in contract && !isNonEmptyString(contract.goal)) {
     out.push(at + 'goal must be a non-empty string')
   }
-  if ('owner_role' in contract && !OWNER_ROLES.includes(contract.owner_role)) {
-    out.push(at + 'owner_role must be one of ' + OWNER_ROLES.join(', ') + ' (got ' +
-      JSON.stringify(contract.owner_role) + ')')
-  }
-  if ('risk' in contract && !RISK_LEVELS.includes(contract.risk)) {
-    out.push(at + 'risk must be one of ' + RISK_LEVELS.join(', ') + ' (got ' +
-      JSON.stringify(contract.risk) + ')')
+  // Syntactic only, by design — see the note on TOKEN above. The closed set
+  // arrives with the layer that enforces it.
+  for (const field of ['owner_role', 'risk']) {
+    if (!(field in contract)) continue
+    if (!isNonEmptyString(contract[field]) || !TOKEN.test(contract[field])) {
+      out.push(at + field + ' must be a lowercase kebab-case token (got ' +
+        JSON.stringify(contract[field]) + ')')
+    }
   }
   if ('production_effect' in contract && !PRODUCTION_EFFECTS.includes(contract.production_effect)) {
     out.push(at + 'production_effect must be one of ' + PRODUCTION_EFFECTS.join(', ') + ' (got ' +
@@ -220,15 +275,23 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   const allowed = Array.isArray(contract.allowed_paths) ? contract.allowed_paths.filter(isNonEmptyString) : []
   const forbidden = Array.isArray(contract.forbidden_paths) ? contract.forbidden_paths.filter(isNonEmptyString) : []
 
-  for (const p of [...allowed, ...forbidden]) {
-    const n = normalisePath(p)
-    if (n.startsWith('/')) out.push(at + 'path must be repository-relative, not absolute: ' + p)
-    if (n.split('/').includes('..')) out.push(at + 'path must not escape the repository: ' + p)
+  // The grammar gate. Everything downstream — the floor, the contradiction
+  // rules — assumes each expression is one of the two decidable forms.
+  for (const [field, list] of [['allowed_paths', allowed], ['forbidden_paths', forbidden]]) {
+    for (const p of list) {
+      const err = pathGrammarError(p)
+      if (err) out.push(at + field + ' entry "' + p + '" ' + err)
+    }
   }
+  // A path that failed the grammar cannot be reasoned about, so containment is
+  // not attempted for it — reporting one clear cause beats a second, derived
+  // complaint about a pattern nobody should have written.
+  const okAllowed = allowed.filter(p => !pathGrammarError(p))
+  const okForbidden = forbidden.filter(p => !pathGrammarError(p))
 
   // The floor. Refused even if the contract also forbids it — an allowance
   // that names one of these is a mistake to be corrected, not reconciled.
-  for (const a of allowed) {
+  for (const a of okAllowed) {
     for (const floor of ALWAYS_FORBIDDEN) {
       if (covers(a, floor) || covers(floor, a)) {
         out.push(at + 'allowed_paths may never authorise ' + floor + ' (via "' + a +
@@ -239,8 +302,8 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
 
   // Contradictions. A carve-out (forbidden INSIDE allowed) is normal and fine;
   // what is contradictory is an allowance that can never take effect.
-  for (const a of allowed) {
-    for (const f of forbidden) {
+  for (const a of okAllowed) {
+    for (const f of okForbidden) {
       if (normalisePath(a) === normalisePath(f)) {
         out.push(at + 'path "' + a + '" is both allowed and forbidden')
       } else if (covers(f, a)) {
@@ -272,6 +335,10 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   }
 
   // ---- the seal ----------------------------------------------------------
+  // skipDigest is for the --seal pre-flight ONLY: the digest is about to be
+  // recomputed, so complaining that it is stale would be noise. Every other
+  // rule still runs, which is what makes sealing unable to bless a bad file.
+  if (skipDigest) return out
   if (!('contract_digest' in contract)) {
     out.push(at + 'missing contract_digest — run `npm run verify:tasks -- --seal` and commit the result')
   } else if (!/^[0-9a-f]{64}$/.test(String(contract.contract_digest))) {
@@ -311,50 +378,93 @@ async function loadAll(dir) {
   return { missing: false, files }
 }
 
-async function main(argv = process.argv.slice(2)) {
-  const seal = argv.includes('--seal')
+/** Parse + validate a freshly-read set. Returns { files, problems }. */
+async function loadAndCheck({ skipDigest }) {
   const { missing, files } = await loadAll(TASKS_DIR)
-
-  if (missing) {
-    process.stdout.write('verify-task-contracts: no ' + TASKS_DIR + ' directory — nothing to check.\n')
-    return
-  }
+  if (missing) return { missing: true, files: [], problems: [] }
 
   let npmScripts = null
   try { npmScripts = JSON.parse(await readFile('package.json', 'utf8')).scripts } catch { /* optional */ }
 
-  const knownIds = files.filter(f => f.parsed && f.parsed.id).map(f => f.parsed.id)
   const problems = []
+  for (const f of files) {
+    if (!f.parsed) problems.push(f.name + ': invalid JSON — ' + f.parseError)
+  }
+  const knownIds = files.filter(f => f.parsed && f.parsed.id).map(f => f.parsed.id)
+  for (const f of files) {
+    if (!f.parsed) continue
+    problems.push(...findContractViolations(f.parsed, { fileName: f.name, knownIds, npmScripts, skipDigest }))
+  }
+  return { missing: false, files, problems }
+}
 
-  if (seal) {
-    const { writeFile } = await import('node:fs/promises')
-    for (const f of files) {
-      if (!f.parsed) { problems.push(f.name + ': invalid JSON — ' + f.parseError); continue }
-      const digest = computeDigest(f.parsed)
-      if (f.parsed.contract_digest === digest) continue
-      const updated = { ...f.parsed, contract_digest: digest }
-      await writeFile(f.full, JSON.stringify(updated, null, 2) + '\n')
-      process.stdout.write('sealed ' + f.name + ' -> ' + digest.slice(0, 12) + '…\n')
-    }
-    if (!problems.length) {
-      process.stdout.write('verify-task-contracts: sealing complete. Review the digest changes before committing.\n')
+function report(problems) {
+  process.stderr.write('verify-task-contracts: ' + problems.length + ' problem(s)\n\n' +
+    problems.map(p => '  FAIL  ' + p).join('\n') + '\n')
+}
+
+async function main(argv = process.argv.slice(2)) {
+  const seal = argv.includes('--seal')
+
+  if (!seal) {
+    const { missing, files, problems } = await loadAndCheck({ skipDigest: false })
+    if (missing) {
+      process.stdout.write('verify-task-contracts: no ' + TASKS_DIR + ' directory — nothing to check.\n')
       return
     }
+    if (problems.length) { report(problems); process.exitCode = 1; return }
+    process.stdout.write('verify-task-contracts: ' + files.length +
+      ' contract(s) valid, sealed and internally consistent.\n')
+    return
   }
 
-  for (const f of files) {
-    if (!f.parsed) { problems.push(f.name + ': invalid JSON — ' + f.parseError); continue }
-    problems.push(...findContractViolations(f.parsed, { fileName: f.name, knownIds, npmScripts }))
+  // ---- --seal -----------------------------------------------------------
+  //
+  // Sealing is the one operation that WRITES, so it is the one that must never
+  // launder a broken contract into an apparently-valid one. A digest computed
+  // over a contract that authorises .agent/tasks/** would make that contract
+  // pass every subsequent check — the seal would be certifying the escalation.
+  //
+  // So: validate EVERYTHING except the digest first, refuse to write anything
+  // at all if a single contract is unsound, and re-validate the written result
+  // in full before reporting success.
+  const preflight = await loadAndCheck({ skipDigest: true })
+  if (preflight.missing) {
+    process.stdout.write('verify-task-contracts: no ' + TASKS_DIR + ' directory — nothing to seal.\n')
+    return
   }
-
-  if (problems.length) {
-    process.stderr.write('verify-task-contracts: ' + problems.length + ' problem(s)\n\n' +
-      problems.map(p => '  FAIL  ' + p).join('\n') + '\n')
+  if (preflight.problems.length) {
+    report(preflight.problems)
+    process.stderr.write('\nverify-task-contracts: refusing to seal — no files were modified.\n' +
+      'A digest over an invalid contract would certify it. Fix the problems above, then seal.\n')
     process.exitCode = 1
     return
   }
-  process.stdout.write('verify-task-contracts: ' + files.length +
-    ' contract(s) valid, sealed and internally consistent.\n')
+
+  const { writeFile } = await import('node:fs/promises')
+  const sealed = []
+  for (const f of preflight.files) {
+    const digest = computeDigest(f.parsed)
+    if (f.parsed.contract_digest === digest) continue
+    await writeFile(f.full, JSON.stringify({ ...f.parsed, contract_digest: digest }, null, 2) + '\n')
+    sealed.push(f.name + ' -> ' + digest.slice(0, 12) + '…')
+  }
+
+  // Re-read from disk and check in full. If writing produced anything that does
+  // not validate, say so rather than reporting a successful seal.
+  const after = await loadAndCheck({ skipDigest: false })
+  if (after.problems.length) {
+    report(after.problems)
+    process.stderr.write('\nverify-task-contracts: the sealed set does not validate. ' +
+      'Inspect ' + TASKS_DIR + ' before committing.\n')
+    process.exitCode = 1
+    return
+  }
+
+  for (const line of sealed) process.stdout.write('sealed ' + line + '\n')
+  process.stdout.write('verify-task-contracts: ' + (sealed.length || 'no') +
+    ' contract(s) re-sealed; ' + after.files.length + ' valid. ' +
+    'Review the digest changes before committing.\n')
 }
 
 if (process.argv[1] && process.argv[1].endsWith('verify-task-contracts.mjs')) {
