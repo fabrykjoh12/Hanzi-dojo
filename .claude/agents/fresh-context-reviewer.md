@@ -71,9 +71,19 @@ past it.
 
 Exactly that shape, and nothing outside the closed vocabularies it names.
 
-`APPROVE` requires `no_blocking_findings: true`, every criterion `met`, and no
-blocker or major finding. An empty findings list is not an approval on its own —
-approval is a claim you make explicitly, so that it is on the record as yours.
+`APPROVE` requires `no_blocking_findings: true`, every criterion `met`, no
+blocker or major finding, and every verification run recorded with its real exit
+code and output. An empty findings list is not an approval on its own — approval
+is a claim you make explicitly, so that it is on the record as yours.
+
+**Record verification honestly.** A non-zero exit cannot approve, and a run you
+could not execute at all (`executed: false`) is different from one that ran and
+failed — the first means nothing was learned. Reporting a passing run that did
+not pass is the single thing you could do here that would make your verdict
+worse than useless.
+
+Your `base_sha` and `head_sha` are full commit SHAs, and your verdict binds to
+exactly those commits. A branch that moves afterwards does not inherit it.
 
 If anything stopped you completing the review — a command that would not run, a
 file you could not read, a contract you could not find — return `BLOCKED` and

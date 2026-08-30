@@ -277,35 +277,296 @@ export function mechanicalFindings({ contract, changedPaths }) {
   return out
 }
 
+/** A full 40-hex commit id. Abbreviations are ambiguous and are not accepted. */
+export const SHA_RE = /^[0-9a-f]{40}$/
+
+export const SNAPSHOT_VERSION = 2
+
 /**
- * INTEGRITY: did the review itself change anything?
+ * WHO TOOK THE SNAPSHOT.
  *
- * The reviewer is read-only with respect to the implementation. That is
- * enforced first by its tool allow-list and worktree isolation — but a
- * preventive control you cannot observe is a claim, so this is the detective
- * half. Snapshots are {path: contentHash} maps taken before and after.
+ *   external  taken by the review driver, in a worktree the driver created and
+ *             owns, from outside the reviewer's context.
+ *   self      taken from inside the reviewer's own context.
  *
- * Any difference is a blocker: a reviewer that edited the work is no longer
- * reviewing it, and its verdict describes something nobody else has.
+ * Only `external` can support an APPROVE. A snapshot the reviewer takes of
+ * itself is self-attestation: a reviewer that wanted to hide a write would take
+ * the "after" snapshot before making it. That catches the careless case and
+ * nothing else, so it must not be able to clear a merge.
+ *
+ * What the protocol verifies is WHERE the snapshot was taken and WHAT it
+ * describes — same worktree root either side, matching the reviewed head. It
+ * cannot verify WHO ran the command; that residual is stated in
+ * docs/REVIEWER-PROTOCOL.md rather than papered over here.
  */
-export function reviewIntegrityFindings(before, after) {
-  const out = []
-  if (!before || !after || typeof before !== 'object' || typeof after !== 'object') {
-    return [finding('blocker', 'hidden-authority-expansion',
-      'Could not establish whether the review modified the working tree',
-      'a before/after snapshot was missing',
-      'the reviewer must be read-only with respect to the implementation')]
+export const SNAPSHOT_OBSERVERS = ['external', 'self']
+
+const snapshotShapeError = (snap, which) => {
+  if (!snap || typeof snap !== 'object' || Array.isArray(snap)) return which + ' snapshot is not an object'
+  if (snap.snapshot_version !== SNAPSHOT_VERSION) {
+    return which + ' snapshot has unsupported snapshot_version ' + JSON.stringify(snap.snapshot_version) +
+      '; this protocol understands version ' + SNAPSHOT_VERSION + ' only'
   }
-  const keys = new Set([...Object.keys(before), ...Object.keys(after)])
+  if (!SNAPSHOT_OBSERVERS.includes(snap.observer)) {
+    return which + ' snapshot has no valid observer (got ' + JSON.stringify(snap.observer) + ')'
+  }
+  if (typeof snap.root !== 'string' || snap.root.trim() === '') return which + ' snapshot names no worktree root'
+  if (!SHA_RE.test(String(snap.head || ''))) return which + ' snapshot records no full head SHA'
+  if (!snap.entries || typeof snap.entries !== 'object' || Array.isArray(snap.entries)) {
+    return which + ' snapshot has no entries map'
+  }
+  return null
+}
+
+/**
+ * INTEGRITY: did the review change anything, and can we tell?
+ *
+ * Compares two worktree snapshots. Each entry is "<mode> <content-hash>" for a
+ * tracked file, "untracked <mode> <hash>" for a non-ignored untracked one, and
+ * "DELETED" for a tracked file missing from disk — so a content edit, a
+ * deletion, a new untracked file and a mode change are all visible as a changed
+ * or added or removed key.
+ *
+ * Every way of NOT knowing is a blocker: a missing snapshot, a malformed one, a
+ * pair from two different worktrees, or a pair that does not describe the head
+ * that was reviewed. Not knowing whether the reviewer wrote is the same as
+ * knowing it did.
+ */
+export function reviewIntegrityFindings(before, after, { headSha = null } = {}) {
+  const out = []
+  const blocker = (summary, evidence) => out.push(finding('blocker', 'hidden-authority-expansion',
+    summary, evidence, 'the reviewer must be read-only with respect to the implementation'))
+
+  for (const [snap, which] of [[before, 'before'], [after, 'after']]) {
+    const err = snapshotShapeError(snap, which)
+    if (err) blocker('Could not establish whether the review modified the worktree', err)
+  }
+  if (out.length > 0) return out
+
+  if (before.root !== after.root) {
+    blocker('The integrity snapshots describe two different worktrees',
+      'before: ' + before.root + ' / after: ' + after.root)
+  }
+  if (before.head !== after.head) {
+    blocker('The worktree moved to a different commit during the review',
+      'before head ' + before.head + ' / after head ' + after.head)
+  }
+  if (headSha && (before.head !== headSha || after.head !== headSha)) {
+    blocker('The integrity snapshots do not describe the reviewed head',
+      'reviewed ' + headSha + ', snapshots at ' + before.head + '/' + after.head)
+  }
+  if (before.observer !== 'external' || after.observer !== 'external') {
+    // Not a shape error — a strength-of-evidence one, and it has to block
+    // rather than warn, or the weak path silently becomes the normal one.
+    blocker('The integrity evidence is self-attested, not independently observed',
+      'observer: before=' + before.observer + ' after=' + after.observer +
+      '; a snapshot the reviewer takes of itself cannot show a write it wanted to hide')
+  }
+  if (out.length > 0) return out
+
+  const keys = new Set([...Object.keys(before.entries), ...Object.keys(after.entries)])
   for (const k of [...keys].sort()) {
-    if (before[k] === after[k]) continue
-    const what = !(k in before) ? 'created' : !(k in after) ? 'deleted' : 'modified'
-    out.push(finding('blocker', 'hidden-authority-expansion',
-      'The review ' + what + ' a file',
-      k + ' changed during the review',
-      'the reviewer may not edit implementation files, fix findings, or re-seal a contract'))
+    const b = before.entries[k]
+    const a = after.entries[k]
+    if (b === a) continue
+    const what = b === undefined ? 'created' : a === undefined ? 'removed' : 'changed'
+    blocker('The review ' + what + ' a file in the review worktree',
+      k + ': ' + (b === undefined ? '(absent)' : b) + ' -> ' + (a === undefined ? '(absent)' : a))
   }
   return out
+}
+
+/**
+ * IDENTITY: is this verdict about the exact commits that were reviewed?
+ *
+ * The failure this closes: a review of head A replayed as an approval for head
+ * B. Non-empty ref strings do not prevent that — "main" and "feature" are names
+ * whose meaning moves. So the brief resolves both refs to full commit SHAs, the
+ * result carries those SHAs, and the decision independently resolves them again
+ * and compares. A branch that moved between brief and decide produces a
+ * mismatch rather than a silent retarget.
+ */
+export function identityFindings({ result, baseSha, headSha }) {
+  const out = []
+  const blocker = (summary, evidence) => out.push(finding('blocker', 'stale-assumptions',
+    summary, evidence, 'a verdict binds to the exact commits it was produced against'))
+
+  if (!SHA_RE.test(String(baseSha || '')) || !SHA_RE.test(String(headSha || ''))) {
+    blocker('The decision could not resolve the reviewed commits',
+      'base=' + JSON.stringify(baseSha) + ' head=' + JSON.stringify(headSha))
+    return out
+  }
+  for (const [field, expected] of [['base_sha', baseSha], ['head_sha', headSha]]) {
+    const got = result && result[field]
+    if (!SHA_RE.test(String(got || ''))) {
+      blocker('The review result carries no full ' + field,
+        field + '=' + JSON.stringify(got))
+    } else if (got !== expected) {
+      blocker('The review was performed against a different commit',
+        'reviewed ' + field + ' ' + got + ', deciding against ' + expected)
+    }
+  }
+  return out
+}
+
+/**
+ * VERIFICATION: a recorded failure cannot approve.
+ *
+ * Two different things wear the same "it didn't work" clothing, and the
+ * protocol has to tell them apart:
+ *
+ *   the command could not execute  -> BLOCKED. Nothing was learned; a tool that
+ *                                     did not run found nothing.
+ *   it ran and failed              -> at least REQUEST_CHANGES. Something WAS
+ *                                     learned, and it was bad.
+ *
+ * An exit code of 0 with no evidence is also refused: a verification nobody can
+ * check is a claim, and this whole protocol exists because claims are cheap.
+ */
+export function verificationFindings(result) {
+  const out = []
+  const runs = result && result.verification_run
+  if (runs === undefined) return out
+  if (!Array.isArray(runs)) {
+    return [finding('blocker', 'tests-and-verification',
+      'verification_run is not a list of runs',
+      typeof runs, 'verification')]
+  }
+  for (const [i, v] of runs.entries()) {
+    const where = 'verification_run[' + i + ']'
+    if (!v || typeof v !== 'object') {
+      out.push(finding('blocker', 'tests-and-verification',
+        'A verification entry is not an object', where, 'verification'))
+      continue
+    }
+    const cmd = typeof v.command === 'string' ? v.command : '(unnamed command)'
+    if (v.executed === false || v.exit_code === null) {
+      out.push(finding('blocker', 'tests-and-verification',
+        'A verification command could not be executed',
+        where + ' ' + cmd + ': ' + (typeof v.evidence === 'string' ? v.evidence : 'no evidence'),
+        'verification'))
+      continue
+    }
+    if (!Number.isInteger(v.exit_code)) {
+      out.push(finding('blocker', 'tests-and-verification',
+        'A verification entry records no integer exit code',
+        where + ' ' + cmd + ' exit_code=' + JSON.stringify(v.exit_code), 'verification'))
+      continue
+    }
+    if (v.exit_code !== 0) {
+      out.push(finding('major', 'tests-and-verification',
+        'A recorded verification run failed',
+        where + ' ' + cmd + ' exited ' + v.exit_code, 'verification'))
+    }
+    if (!isNonEmptyString(v.evidence)) {
+      out.push(finding('major', 'tests-and-verification',
+        'A verification run carries no evidence of what it printed',
+        where + ' ' + cmd, 'verification'))
+    }
+  }
+  return out
+}
+
+/**
+ * THE GOVERNANCE BOUNDARY — derived from history, never chosen by the caller.
+ *
+ * Governance-first is only worth something if the review base is the governance
+ * commit. If the caller picks `--base`, they can pick a base AFTER an
+ * inconvenient commit and the review never sees it: contract -> unauthorised
+ * change -> tidy-up, reviewed from the tidy-up, approves clean. The scope fence
+ * would be enforced against a diff chosen to fit inside it.
+ *
+ * So the base is computed. The boundary is the most recent commit reachable
+ * from the reviewed head that touched this contract, and four things must hold:
+ *
+ *   1. it exists and is an ancestor of the reviewed head
+ *   2. it changed ONLY the contract file — a governance act, not work with a
+ *      contract edit folded into it
+ *   3. the contract blob at the reviewed head is byte-identical to the blob at
+ *      the boundary — the terms did not move under the implementation
+ *   4. the implementation diff is exactly boundary..head
+ *
+ * Nothing is stored in the contract to make this work. A contract cannot name
+ * the commit that will contain it, and a field that tried would be a lie or a
+ * second seal to maintain; history already knows the answer.
+ *
+ * Anything ambiguous is BLOCKED. `git` is injected so the specs can run this
+ * against real throwaway repositories rather than a mock of git's opinions.
+ */
+export function resolveGovernanceBoundary({ taskId, headSha, git }) {
+  const contractPath = TASKS_DIR + '/' + taskId + '.json'
+  const fail = (error) => ({ boundarySha: null, contractPath, error })
+
+  if (!SHA_RE.test(String(headSha || ''))) {
+    return fail('reviewed head is not a full commit SHA: ' + JSON.stringify(headSha))
+  }
+
+  const log = git(['rev-list', '--max-count=2', headSha, '--', contractPath])
+  if (log.status !== 0) return fail('could not search history for ' + contractPath + ': ' + log.stderr.trim())
+  const commits = log.stdout.split('\n').map(x => x.trim()).filter(Boolean)
+  if (commits.length === 0) {
+    return fail('no commit reachable from ' + headSha.slice(0, 12) + ' establishes ' + contractPath +
+      ' — there is no governance boundary to review from')
+  }
+  const boundarySha = commits[0]
+
+  // The governance act must be exactly that. A commit that seals a contract and
+  // also ships code has already blurred the line this boundary exists to draw.
+  const touched = git(['show', '--name-only', '--format=', boundarySha])
+  if (touched.status !== 0) return fail('could not inspect governance commit ' + boundarySha)
+  const paths = touched.stdout.split('\n').map(x => x.trim()).filter(Boolean)
+  if (paths.length !== 1 || paths[0] !== contractPath) {
+    return fail('governance commit ' + boundarySha.slice(0, 12) + ' changed ' + paths.length +
+      ' path(s) (' + paths.join(', ') + ') — a governance step must change only ' + contractPath)
+  }
+
+  // The terms must not have moved between the boundary and the head.
+  //
+  // Honest note on this one. Given how the boundary is chosen — the last commit
+  // reachable from head that touched this path — the two blobs are equal BY
+  // CONSTRUCTION, and no fixture can make the inequality fire. I tried: a merge
+  // resolving the contract to one parent's version, and an evil merge rewriting
+  // it to a third version. In both, rev-list correctly names the commit that
+  // last changed the file, so head's blob is the boundary's blob.
+  //
+  // It is kept, and kept cheap, because it is an assertion about that reasoning
+  // rather than a branch expected to run: it holds only while the boundary is
+  // derived this exact way. Anyone who changes the derivation — --full-history,
+  // a follow, a different starting ref — gets a clear refusal instead of a
+  // silently wrong review range. A structural spec pins that it is still here.
+  //
+  // The reachable half is the read itself: a contract DELETED at the head makes
+  // rev-parse fail, and that is a real state a branch can be in.
+  const atBoundary = git(['rev-parse', boundarySha + ':' + contractPath])
+  const atHead = git(['rev-parse', headSha + ':' + contractPath])
+  if (atBoundary.status !== 0 || atHead.status !== 0) {
+    return fail('could not read ' + contractPath + ' at both ' + boundarySha.slice(0, 12) +
+      ' and ' + headSha.slice(0, 12) + ' — the contract does not survive to the reviewed head')
+  }
+  if (atBoundary.stdout.trim() !== atHead.stdout.trim()) {
+    return fail('the contract at the reviewed head is not the contract sealed at ' +
+      boundarySha.slice(0, 12) + ' — the terms moved after the governance step')
+  }
+
+  const anc = git(['merge-base', '--is-ancestor', boundarySha, headSha])
+  if (anc.status !== 0) {
+    return fail('governance commit ' + boundarySha.slice(0, 12) + ' is not an ancestor of ' + headSha.slice(0, 12))
+  }
+
+  return { boundarySha, contractPath, error: null }
+}
+
+/**
+ * A caller-supplied base is not an alternative to the derived one. Passing a
+ * different base is not a preference, it is an attempt to change what gets
+ * looked at, so it is reported rather than quietly honoured.
+ */
+export function governanceBaseFindings({ derivedBase, requestedBase }) {
+  if (!requestedBase || requestedBase === derivedBase) return []
+  return [finding('blocker', 'hidden-authority-expansion',
+    'The review base was overridden instead of derived from the governance commit',
+    'derived ' + String(derivedBase).slice(0, 12) + ', requested ' + String(requestedBase).slice(0, 12),
+    'the implementation diff must begin at the governance boundary')]
 }
 
 /**
@@ -321,7 +582,7 @@ export function reviewIntegrityFindings(before, after) {
  * Pure: same inputs, same string. That is what makes it reviewable in a test
  * rather than a matter of trusting whoever spawned the agent.
  */
-export function buildReviewBrief({ contract, baseRef, headRef, changedPaths }) {
+export function buildReviewBrief({ contract, baseSha, headSha, changedPaths }) {
   const mech = mechanicalFindings({ contract, changedPaths })
   const lines = []
 
@@ -341,10 +602,15 @@ export function buildReviewBrief({ contract, baseRef, headRef, changedPaths }) {
   lines.push('')
   lines.push('## Refs')
   lines.push('')
-  lines.push('base: ' + baseRef)
-  lines.push('head: ' + headRef)
+  lines.push('base: ' + baseSha + '   (the governance commit that sealed the contract)')
+  lines.push('head: ' + headSha)
   lines.push('')
-  lines.push('Get the diff with: git diff ' + baseRef + '...' + headRef)
+  lines.push('Both are full commit SHAs, not branch names. Your verdict binds to')
+  lines.push('exactly these two commits: a branch that moves afterwards does not')
+  lines.push('inherit it. The base is DERIVED from the governance commit, not')
+  lines.push('chosen — so no implementation commit can be hidden before it.')
+  lines.push('')
+  lines.push('Get the diff with: git diff ' + baseSha + '...' + headSha)
   lines.push('')
   lines.push('## Changed paths (' + changedPaths.length + ')')
   lines.push('')
@@ -404,30 +670,39 @@ export function buildReviewBrief({ contract, baseRef, headRef, changedPaths }) {
   lines.push('## Return exactly this JSON')
   lines.push('')
   lines.push('```json')
-  lines.push(JSON.stringify(resultTemplate(contract, baseRef, headRef), null, 2))
+  lines.push(JSON.stringify(resultTemplate(contract, baseSha, headSha), null, 2))
   lines.push('```')
   lines.push('')
   lines.push('verdict is one of: ' + VERDICTS.join(', '))
   lines.push('severity is one of: ' + SEVERITIES.join(', '))
   lines.push('')
   lines.push('APPROVE requires no_blocking_findings true, every criterion met,')
-  lines.push('and no blocker or major finding. If anything stopped you from')
-  lines.push('completing the review — a command you could not run, a file you')
-  lines.push('could not read — return BLOCKED. Silence is never approval.')
+  lines.push('no blocker or major finding, and every verification run recorded')
+  lines.push('with its real exit code and output. Record a failing run honestly:')
+  lines.push('a non-zero exit cannot approve, and hiding it is the one thing here')
+  lines.push('that would make your verdict worse than useless.')
+  lines.push('')
+  lines.push('If a verification command could not be executed at all, set')
+  lines.push('executed false — that is different from it running and failing, and')
+  lines.push('the protocol treats them differently.')
+  lines.push('')
+  lines.push('If anything stopped you from completing the review — a command you')
+  lines.push('could not run, a file you could not read — return BLOCKED.')
+  lines.push('Silence is never approval.')
 
   return lines.join('\n')
 }
 
 /** The shape the reviewer fills in. Emitted into the brief so it cannot drift. */
-function resultTemplate(contract, baseRef, headRef) {
+function resultTemplate(contract, baseSha, headSha) {
   const dims = {}
   for (const d of REVIEW_DIMENSIONS) dims[d] = { inspected: true, note: '<what you checked and what you saw>' }
   return {
     protocol_version: PROTOCOL_VERSION,
     task_id: contract.id,
     contract_digest: contract.contract_digest,
-    base_ref: baseRef,
-    head_ref: headRef,
+    base_sha: baseSha,
+    head_sha: headSha,
     verdict: '<' + VERDICTS.join('|') + '>',
     dimensions: dims,
     criteria: (contract.acceptance_criteria || []).map(c => ({
@@ -442,7 +717,12 @@ function resultTemplate(contract, baseRef, headRef) {
       evidence: '<file:line, command output, or diff hunk>',
       violates: '<the contract criterion or invariant, if one applies>',
     }],
-    verification_run: [{ command: '<command>', exit_code: 0, evidence: '<what it printed>' }],
+    verification_run: [{
+      command: '<command>',
+      executed: true,
+      exit_code: 0,
+      evidence: '<what it printed — required, including when it passed>',
+    }],
     no_blocking_findings: false,
   }
 }
@@ -473,8 +753,15 @@ export function validateReviewResult(result, { contract } = {}) {
   if (typeof result.no_blocking_findings !== 'boolean') {
     out.push(at + 'no_blocking_findings must be a boolean — approval has to be stated, never inferred')
   }
-  for (const f of ['task_id', 'base_ref', 'head_ref']) {
-    if (!isNonEmptyString(result[f])) out.push(at + f + ' must be a non-empty string')
+  if (!isNonEmptyString(result.task_id)) out.push(at + 'task_id must be a non-empty string')
+  // Full SHAs, not ref names. "main" and "feature" are labels whose meaning
+  // moves; a verdict that binds to a label can be replayed onto a head it never
+  // saw. Identity has to be immutable or it is not identity.
+  for (const f of ['base_sha', 'head_sha']) {
+    if (!SHA_RE.test(String(result[f] || ''))) {
+      out.push(at + f + ' must be a full 40-character commit SHA (got ' +
+        JSON.stringify(result[f]) + ') — a verdict binds to commits, not to branch names')
+    }
   }
 
   if (contract) {
@@ -566,7 +853,12 @@ export function validateReviewResult(result, { contract } = {}) {
         const where = at + 'verification_run[' + i + '] '
         if (!v || typeof v !== 'object') { out.push(where + 'is not an object'); continue }
         if (!isNonEmptyString(v.command)) out.push(where + 'has no command')
-        if (!Number.isInteger(v.exit_code)) out.push(where + 'has no integer exit_code')
+        if (v.executed !== false && !Number.isInteger(v.exit_code)) {
+          out.push(where + 'has no integer exit_code (use executed: false if it could not run)')
+        }
+        if (!isNonEmptyString(v.evidence)) {
+          out.push(where + 'has no evidence — a verification nobody can check is a claim')
+        }
       }
     }
   }
@@ -589,10 +881,20 @@ export function decideVerdict({
   result,
   mechanical = [],
   integrity = [],
+  identity = [],
+  governance = [],
   toolFailures = [],
+  integrityEvidenceProvided = true,
 } = {}) {
   const protocolErrors = validateReviewResult(result, { contract })
   const reasons = []
+
+  // Integrity evidence is not optional for an approval. Without it the claim
+  // "the reviewer changed nothing" rests on the reviewer having been asked not
+  // to — and a control nobody observed is only a promise. A review that ran
+  // without snapshots is a review whose read-only-ness is unknown, and unknown
+  // is BLOCKED like every other way of not knowing here.
+  const missingIntegrity = !integrityEvidenceProvided
 
   // A tool that did not run is not a tool that found nothing.
   for (const t of toolFailures) {
@@ -600,8 +902,16 @@ export function decideVerdict({
   }
   for (const e of protocolErrors) reasons.push('protocol: ' + e)
 
+  if (missingIntegrity) {
+    reasons.push('no integrity evidence: the review ran without before/after worktree ' +
+      'snapshots, so whether it modified anything is unknown')
+  }
+
   const reviewerFindings = Array.isArray(result?.findings) ? result.findings : []
-  const all = [...mechanical, ...integrity, ...reviewerFindings]
+  const all = [
+    ...mechanical, ...integrity, ...identity, ...governance,
+    ...verificationFindings(result), ...reviewerFindings,
+  ]
   const blockers = all.filter(f => f && f.severity === 'blocker')
   const majors = all.filter(f => f && f.severity === 'major')
 
@@ -619,16 +929,20 @@ export function decideVerdict({
     ? result.criteria.filter(c => c && c.status !== 'met')
     : []
 
+  // Named unconditionally. A verdict that blocks for one reason while silently
+  // holding three others sends the author back for a second round.
+  for (const f of majors) reasons.push('major: ' + f.summary)
+  for (const c of unmet) reasons.push('criterion ' + c.status + ': ' + c.criterion)
+  if (result && result.no_blocking_findings !== true) {
+    reasons.push('approval was not stated — no_blocking_findings is not true')
+  }
+
   let verdict
-  if (toolFailures.length > 0 || protocolErrors.length > 0 || blockers.length > 0 || contradicts) {
+  if (toolFailures.length > 0 || protocolErrors.length > 0 || blockers.length > 0 ||
+      contradicts || missingIntegrity) {
     verdict = 'BLOCKED'
   } else if (majors.length > 0 || unmet.length > 0 || result.no_blocking_findings !== true) {
     verdict = 'REQUEST_CHANGES'
-    for (const f of majors) reasons.push('major: ' + f.summary)
-    for (const c of unmet) reasons.push('criterion ' + c.status + ': ' + c.criterion)
-    if (result.no_blocking_findings !== true) {
-      reasons.push('approval was not stated — no_blocking_findings is not true')
-    }
   } else {
     verdict = 'APPROVE'
   }
@@ -648,6 +962,7 @@ export function decideVerdict({
     findings: all,
     protocol_errors: protocolErrors,
     counts: { blocker: blockers.length, major: majors.length, unmet_criteria: unmet.length },
+    integrity_evidence: integrityEvidenceProvided ? 'provided' : 'missing',
   }
 }
 

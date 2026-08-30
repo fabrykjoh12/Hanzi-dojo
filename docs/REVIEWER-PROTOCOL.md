@@ -86,25 +86,78 @@ serve it:
 - A review dimension not reported on → `BLOCKED`, for the same reason.
 - `no_blocking_findings: true` alongside a blocking finding → `BLOCKED`. A false
   claim in the record is worse than an honest `REQUEST_CHANGES`.
-- No refs passed to `decide`, so paths were never checked → `BLOCKED`, said out
-  loud, because a decision that skipped the check would otherwise look exactly
-  like one that made it.
+- No `--head` passed to `decide`, so there is no commit identity → `BLOCKED`,
+  said out loud, because a decision that skipped the check would otherwise look
+  exactly like one that made it.
+- No integrity evidence → `BLOCKED`. Whether the review modified anything is
+  then unknown.
+- Self-attested integrity evidence → `BLOCKED`. See limitation 2.
+- A recorded verification run with a non-zero exit → cannot approve; one that
+  could not execute at all → `BLOCKED`.
+- A reviewed `head_sha` or `base_sha` that is not the one being decided against
+  → `BLOCKED`. A verdict binds to commits, not to branch names.
 
 `APPROVE` requires all of: `no_blocking_findings: true`, every criterion `met`,
-no blocker or major finding, no protocol error, no tool failure. The CLI exits
-`0` only for `APPROVE`.
+no blocker or major finding, no protocol error, no tool failure, external
+integrity evidence, and every recorded verification run passing with evidence.
+The CLI exits `0` only for `APPROVE`.
 
 A reviewer may be **more** cautious than the machinery and never less. If it
 returns `BLOCKED` where the checks computed `APPROVE`, `BLOCKED` stands — it saw
 something no function can.
 
-### The brief cannot be editorialised
+### The brief is derived — but delivery is not sealed
 
-`buildReviewBrief()` takes the contract, the refs and the changed paths. **It
-takes no free-text parameter.** There is nowhere for an implementer to add "it's
-all just cleanup, honestly" or a summary of what it built. A summary
-substituting for the diff is the failure mode this exists to prevent, so the
-function is pure and a spec proves that extra fields change nothing.
+`buildReviewBrief()` takes the contract, the resolved SHAs and the changed
+paths. **It takes no free-text parameter.** There is nowhere inside the function
+for an implementer to add "it's all just cleanup, honestly", and a spec proves
+extra fields change nothing.
+
+**That is a property of the function, not of the delegation.** When a caller
+delegates to the subagent by hand, nothing stops them prepending or appending
+text to the brief on the way. The reviewer's own instructions push back — it is
+told that any summary is the author's account and not evidence, and to read the
+diff regardless — but that is a posture, not a boundary.
+
+Closing it needs a delivery path the caller does not compose: a driver outside
+the agent that passes the generated brief verbatim. That is CI-invoked review,
+which is automatic dispatch, and deliberately out of scope here. Until then:
+**the brief cannot be editorialised by the function; it can be editorialised in
+transit.**
+
+### Identity binds to commits, not to names
+
+`base_ref`/`head_ref` were replaced by `base_sha`/`head_sha`, full 40 characters,
+resolved with `rev-parse --verify <ref>^{commit}` so a tag or a tree cannot pose
+as a commit and an abbreviation cannot collide.
+
+The failure this closes: a review of head A replayed as an approval for head B.
+"main" and "feature" are labels whose meaning moves, and a verdict bound to a
+label follows the label. `decide` resolves the refs itself and compares them to
+what the result carries; a branch that advanced between brief and decision
+produces a mismatch and `BLOCKED`, not a silent retarget.
+
+### The base is derived from governance, never chosen
+
+Governance-first is only worth something if the review base *is* the governance
+commit. A caller who picks `--base` can pick one after an inconvenient commit:
+contract → unauthorised change → tidy-up, reviewed from the tidy-up, approves
+clean. The scope fence would be enforced against a diff chosen to fit inside it.
+
+So `--base` does not exist. The boundary is computed as the most recent commit
+reachable from the reviewed head that touched this contract, and four things
+must hold or the review is `BLOCKED`:
+
+1. it exists and is an ancestor of the reviewed head;
+2. it changed **only** the contract file — a governance act, not work with a
+   contract edit folded into it;
+3. the contract blob at the reviewed head is byte-identical to the blob at the
+   boundary, so the terms did not move under the implementation;
+4. the implementation diff is exactly `boundary..head`.
+
+Nothing is stored in the contract to make this work. A contract cannot name the
+commit that will contain it, and a field that tried would be a lie or a second
+seal to maintain. History already knows.
 
 ### The floors are floors, not classifiers
 
@@ -122,16 +175,27 @@ treating the path as the effect is exactly the contradiction the
 ## Running it
 
 ```bash
-# The brief — everything the reviewer gets
-node tools/review-task.mjs brief --task <id> --base <ref> --head <ref>
+# 1. The DRIVER creates and snapshots the review worktree. This is what makes
+#    the integrity evidence external rather than self-attested.
+node tools/review-task.mjs prepare --task <id> --head <ref> --worktree /tmp/rw \
+  | tee prepared.json                       # .snapshot is the "before"
 
-# Either side of the review, for the integrity check
-node tools/review-task.mjs snapshot > before.json
+# 2. The brief — everything the reviewer gets. There is no --base.
+node tools/review-task.mjs brief --task <id> --head <ref>
 
-# The decision. Exits 0 only on APPROVE.
-node tools/review-task.mjs decide --task <id> --result result.json \
-  --base <ref> --head <ref> --before before.json --after after.json
+# 3. …delegate to the fresh-context-reviewer, collect its JSON as result.json…
+
+# 4. Snapshot again, from the driver.
+node tools/review-task.mjs snapshot --worktree /tmp/rw > after.json
+
+# 5. The decision. Exits 0 only on APPROVE.
+node tools/review-task.mjs decide --task <id> --head <ref> --result result.json \
+  --before before.json --after after.json
 ```
+
+Integrity evidence is **required**: a `decide` without `--before/--after` is
+`BLOCKED`, because whether the review modified anything is then unknown, and
+unknown fails closed like everything else here.
 
 ## Limitations, stated precisely
 
@@ -149,17 +213,36 @@ separation with a documented gap, and closing that gap needs something outside
 this repository — a CI-invoked reviewer, or a required GitHub reviewer that is a
 different account. Both are deliberately out of scope here.
 
-**2. Read-only is enforced unevenly, and the detective half is why.**
+**2. Read-only is enforced unevenly, and the detective half has a named gap.**
 
 `Edit`, `Write` and `NotebookEdit` are removed by the platform. `Bash` is
 granted, because a reviewer that cannot run the verification cannot check
 anything — and `Bash` can write files. `isolation: worktree` contains that:
-filesystem effects land in a throwaway copy, and commands are checked to stay
-inside it. Network-reaching commands remain possible in principle.
+filesystem effects land in a throwaway copy. Network-reaching commands remain
+possible in principle.
 
-So the snapshot comparison exists as the detective control: any tracked file
-that changed during the review is a blocker. A preventive control you cannot
-observe is only a claim.
+The snapshot comparison is the detective half, and **where it is taken decides
+whether it is worth anything.**
+
+- A snapshot taken *inside the reviewer's own context* is **self-attestation**.
+  A reviewer that wanted to hide a write would take the "after" snapshot before
+  making it. It catches carelessness and nothing else.
+- A snapshot taken by the **driver, in a worktree the driver created**, is an
+  external observation. `review-task.mjs prepare` exists for exactly this: it
+  creates the review worktree and snapshots it before the reviewer ever sees it.
+
+Snapshots therefore carry an `observer` field, and **only `external` can support
+an APPROVE.** A self-attested pair blocks.
+
+The residual, stated plainly: the protocol verifies **where** the snapshot was
+taken and **what** it describes — same worktree root either side, matching the
+reviewed head, ignored paths excluded. It cannot verify **who** ran the command.
+Closing that needs the snapshots taken by a process the reviewer has no reach
+into at all, which is CI-invoked review and out of scope here.
+
+The snapshot covers tracked content, tracked deletions, new non-ignored
+untracked files, and file modes — a same-bytes exec-bit flip is a real change
+and a hash-only snapshot would have called it untouched.
 
 **3. The protocol validates shape, not judgment.**
 
@@ -167,6 +250,12 @@ Nothing here can tell a thorough review from a lazy one that filled in every
 field. `validateReviewResult()` guarantees a *complete* answer, not a *correct*
 one. What it removes is the ability to approve by saying nothing — which is the
 common failure, not the exotic one.
+
+The one place shape does reach substance is verification. A recorded run with a
+non-zero exit cannot approve, and "could not execute" (`executed: false`) is
+separated from "ran and failed": the first means nothing was learned and blocks;
+the second means something was learned and it was bad. A passing run with no
+evidence is refused too — a verification nobody can check is a claim.
 
 **4. The floors are heuristics over paths.**
 

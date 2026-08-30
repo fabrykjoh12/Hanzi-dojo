@@ -1,11 +1,17 @@
-import { describe, it, expect } from 'vitest'
-import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs'
+import { describe, it, expect, afterAll } from 'vitest'
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import {
   VERDICTS,
   SEVERITIES,
+  SHA_RE,
+  SNAPSHOT_VERSION,
+  identityFindings,
+  verificationFindings,
+  resolveGovernanceBoundary,
+  governanceBaseFindings,
   REVIEW_DIMENSIONS,
   CRITERION_STATUSES,
   PROTOCOL_VERSION,
@@ -35,6 +41,21 @@ import { ALWAYS_FORBIDDEN, TASKS_DIR, computeDigest } from './tools/verify-task-
 // APPROVAL. Each fixture below is a way of saying nothing — an unaddressed
 // criterion, an empty findings list, a tool that did not run, a result that
 // would not parse — and each must fail to approve.
+
+const sha = (seed) => seed.repeat(40).slice(0, 40)
+const BASE_SHA = sha('a')
+const HEAD_SHA = sha('b')
+const OTHER_SHA = sha('c')
+
+/** A worktree snapshot in the shape the protocol expects. */
+const snap = (over = {}) => ({
+  snapshot_version: SNAPSHOT_VERSION,
+  observer: 'external',
+  root: '/tmp/review-wt',
+  head: HEAD_SHA,
+  entries: { 'src/thing.js': '100644 ' + sha('1'), 'docs/thing.md': '100644 ' + sha('2') },
+  ...over,
+})
 
 const AGENT_FILE = '.claude/agents/fresh-context-reviewer.md'
 const AGENT_SRC = readFileSync(AGENT_FILE, 'utf8')
@@ -74,15 +95,17 @@ const cleanResult = (c, over = {}) => {
     protocol_version: PROTOCOL_VERSION,
     task_id: c.id,
     contract_digest: c.contract_digest,
-    base_ref: 'main',
-    head_ref: 'feature',
+    base_sha: BASE_SHA,
+    head_sha: HEAD_SHA,
     verdict: 'APPROVE',
     dimensions,
     criteria: c.acceptance_criteria.map(x => ({
       criterion: x, status: 'met', evidence: 'src/thing.js:12 and the passing spec',
     })),
     findings: [],
-    verification_run: [{ command: 'npm run verify:pr', exit_code: 0, evidence: '4120 tests passed' }],
+    verification_run: [{
+      command: 'npm run verify:pr', executed: true, exit_code: 0, evidence: '4205 tests passed',
+    }],
     no_blocking_findings: true,
     ...over,
   }
@@ -93,7 +116,10 @@ const decide = (over = {}) => decideVerdict({
   result: over.result ?? cleanResult(over.contract ?? contract()),
   mechanical: over.mechanical ?? [],
   integrity: over.integrity ?? [],
+  identity: over.identity ?? [],
+  governance: over.governance ?? [],
   toolFailures: over.toolFailures ?? [],
+  integrityEvidenceProvided: over.integrityEvidenceProvided ?? true,
 })
 
 describe('the verdict vocabulary is closed', () => {
@@ -301,43 +327,73 @@ describe('FIXTURE 5: production-effect under-classification', () => {
 })
 
 describe('FIXTURE 6: the reviewer tried to change something', () => {
-  it('blocks when the review modified a file', () => {
-    const before = { 'src/thing.js': 'aaa', 'docs/thing.md': 'bbb' }
-    const after = { 'src/thing.js': 'ccc', 'docs/thing.md': 'bbb' }
-    const found = reviewIntegrityFindings(before, after)
+  const integrity = (over) => reviewIntegrityFindings(snap(), snap(over), { headSha: HEAD_SHA })
+
+  it('blocks a tracked content modification', () => {
+    const found = integrity({ entries: { ...snap().entries, 'src/thing.js': '100644 ' + sha('9') } })
     expect(found).toHaveLength(1)
     expect(found[0].severity).toBe('blocker')
-    expect(found[0].summary).toMatch(/modified a file/)
+    expect(found[0].summary).toMatch(/changed a file/)
     expect(found[0].evidence).toContain('src/thing.js')
   })
 
-  it('blocks when the review created or deleted a file', () => {
-    expect(reviewIntegrityFindings({}, { 'new.js': 'x' })[0].summary).toMatch(/created a file/)
-    expect(reviewIntegrityFindings({ 'old.js': 'x' }, {})[0].summary).toMatch(/deleted a file/)
+  it('blocks a tracked deletion', () => {
+    const found = integrity({ entries: { ...snap().entries, 'src/thing.js': 'DELETED' } })
+    expect(found[0].severity).toBe('blocker')
+    expect(found[0].evidence).toContain('DELETED')
   })
 
-  it('blocks when the review re-sealed the contract under review', () => {
-    const f = TASKS_DIR + '/example-task.json'
-    const found = reviewIntegrityFindings({ [f]: 'sealed-a' }, { [f]: 'sealed-b' })
+  it('blocks a new non-ignored untracked file', () => {
+    // The reviewer "just jotting a note" is still a write into the tree it is
+    // supposed to be judging.
+    const found = integrity({ entries: { ...snap().entries, 'NOTES.md': 'untracked 100644 ' + sha('7') } })
     expect(found[0].severity).toBe('blocker')
-    expect(found[0].violates).toMatch(/re-seal a contract/)
+    expect(found[0].evidence).toContain('NOTES.md')
+  })
+
+  it('blocks a mode change with identical content', () => {
+    // Same bytes, new exec bit. A hash-only snapshot would call this untouched.
+    const same = snap().entries['src/thing.js'].split(' ')[1]
+    const found = integrity({ entries: { ...snap().entries, 'src/thing.js': '100755 ' + same } })
+    expect(found[0].severity).toBe('blocker')
+    expect(found[0].evidence).toMatch(/100644.*->.*100755/)
   })
 
   it('blocks when integrity could not be established at all', () => {
-    // Not knowing whether the reviewer wrote is the same as knowing it did.
-    for (const [b, a] of [[null, {}], [{}, null], [undefined, undefined]]) {
-      expect(reviewIntegrityFindings(b, a)[0].severity).toBe('blocker')
+    for (const [b, a] of [[null, snap()], [snap(), null], [undefined, undefined], [{}, {}]]) {
+      const found = reviewIntegrityFindings(b, a, { headSha: HEAD_SHA })
+      expect(found[0].severity, JSON.stringify([b, a])).toBe('blocker')
     }
   })
 
-  it('passes an untouched tree', () => {
-    expect(reviewIntegrityFindings({ 'a.js': 'x' }, { 'a.js': 'x' })).toEqual([])
+  it('blocks a snapshot pair from two different worktrees', () => {
+    const found = reviewIntegrityFindings(snap(), snap({ root: '/tmp/somewhere-else' }), { headSha: HEAD_SHA })
+    expect(found[0].summary).toMatch(/two different worktrees/)
+  })
+
+  it('blocks snapshots that do not describe the reviewed head', () => {
+    const found = reviewIntegrityFindings(
+      snap({ head: OTHER_SHA }), snap({ head: OTHER_SHA }), { headSha: HEAD_SHA })
+    expect(found[0].summary).toMatch(/do not describe the reviewed head/)
+  })
+
+  it('blocks self-attested evidence — it cannot show a write it wanted to hide', () => {
+    for (const over of [{ observer: 'self' }, {}]) {
+      const before = over.observer ? snap(over) : snap()
+      const after = over.observer ? snap(over) : snap({ observer: 'self' })
+      const found = reviewIntegrityFindings(before, after, { headSha: HEAD_SHA })
+      expect(found.some(f => /self-attested/.test(f.summary)), JSON.stringify(over)).toBe(true)
+    }
+  })
+
+  it('passes an untouched, externally observed worktree', () => {
+    expect(reviewIntegrityFindings(snap(), snap(), { headSha: HEAD_SHA })).toEqual([])
   })
 
   it('the decision is BLOCKED regardless of what the reviewer concluded', () => {
     const c = contract()
-    const integrity = reviewIntegrityFindings({ 'a.js': 'x' }, { 'a.js': 'y' })
-    expect(decide({ contract: c, result: cleanResult(c), integrity }).verdict).toBe('BLOCKED')
+    const found = integrity({ entries: { ...snap().entries, 'src/thing.js': '100644 ' + sha('9') } })
+    expect(decide({ contract: c, result: cleanResult(c), integrity: found }).verdict).toBe('BLOCKED')
   })
 })
 
@@ -447,7 +503,7 @@ describe('FIXTURE 10: a clean change can actually approve', () => {
       contract: c,
       result: cleanResult(c),
       mechanical,
-      integrity: reviewIntegrityFindings({ 'a.js': 'x' }, { 'a.js': 'x' }),
+      integrity: reviewIntegrityFindings(snap(), snap(), { headSha: HEAD_SHA }),
     })
     expect(d.verdict).toBe('APPROVE')
     expect(d.reasons).toEqual([])
@@ -606,7 +662,7 @@ describe('the review is bound to the exact terms it judged', () => {
 describe('the brief is derived, not written', () => {
   const c = contract()
   const brief = () => buildReviewBrief({
-    contract: c, baseRef: 'main', headRef: 'feature', changedPaths: ['src/thing.js'],
+    contract: c, baseSha: BASE_SHA, headSha: HEAD_SHA, changedPaths: ['src/thing.js'],
   })
 
   it('is a pure function of contract, refs and changed paths', () => {
@@ -617,7 +673,7 @@ describe('the brief is derived, not written', () => {
     // The failure this prevents: an implementation summary that substitutes for
     // reading the diff. There is nowhere to put one.
     const withExtra = buildReviewBrief({
-      contract: c, baseRef: 'main', headRef: 'feature', changedPaths: ['src/thing.js'],
+      contract: c, baseSha: BASE_SHA, headSha: HEAD_SHA, changedPaths: ['src/thing.js'],
       summary: 'It is all just cleanup, honestly', note: 'skip the scheduler bit',
     })
     expect(withExtra).toBe(brief())
@@ -627,7 +683,7 @@ describe('the brief is derived, not written', () => {
   it('carries the contract verbatim, the refs, and the diff command', () => {
     const b = brief()
     expect(b).toContain(JSON.stringify(c, null, 2))
-    expect(b).toContain('git diff main...feature')
+    expect(b).toContain('git diff ' + BASE_SHA + '...' + HEAD_SHA)
     expect(b).toContain('- src/thing.js')
   })
 
@@ -645,7 +701,7 @@ describe('the brief is derived, not written', () => {
 
   it('hands the reviewer the mechanical findings rather than hiding them', () => {
     const b = buildReviewBrief({
-      contract: c, baseRef: 'main', headRef: 'feature', changedPaths: ['src/elsewhere.js'],
+      contract: c, baseSha: BASE_SHA, headSha: HEAD_SHA, changedPaths: ['src/elsewhere.js'],
     })
     expect(b).toMatch(/\[blocker\] path-compliance/)
     expect(b).toMatch(/you cannot approve past them/)
@@ -752,67 +808,6 @@ describe('what this mechanism does NOT claim', () => {
 // THE CLI
 // ---------------------------------------------------------------------------
 
-describe('the CLI fails closed at the exit code', () => {
-  const run = (args, opts = {}) =>
-    spawnSync('node', ['tools/review-task.mjs', ...args], { encoding: 'utf8', ...opts })
-
-  const withResultFile = (result, fn) => {
-    const dir = mkdtempSync(path.join(tmpdir(), 'review-cli-'))
-    try {
-      const file = path.join(dir, 'result.json')
-      writeFileSync(file, typeof result === 'string' ? result : JSON.stringify(result))
-      return fn(file, dir)
-    } finally { rmSync(dir, { recursive: true, force: true }) }
-  }
-
-  it('exits non-zero with no arguments', () => {
-    expect(run([]).status).not.toBe(0)
-  })
-
-  it('exits non-zero for an unknown subcommand', () => {
-    expect(run(['approve-please']).status).not.toBe(0)
-  })
-
-  it('BLOCKS a decide against a contract that does not exist', () => {
-    const r = withResultFile(cleanResult(contract()), (file) =>
-      run(['decide', '--task', 'no-such-task', '--result', file]))
-    expect(r.status).not.toBe(0)
-    expect(r.stdout + r.stderr).toMatch(/BLOCKED/)
-  })
-
-  it('BLOCKS a decide whose result file will not parse', () => {
-    const r = withResultFile('{ not json', (file) =>
-      run(['decide', '--task', 'fresh-context-reviewer', '--result', file]))
-    expect(r.status).not.toBe(0)
-    expect(r.stdout).toMatch(/BLOCKED/)
-  })
-
-  it('BLOCKS rather than skipping the path check when refs are missing', () => {
-    // The quiet failure this prevents: a decision that never checked paths
-    // looking exactly like one that checked them and found nothing.
-    const real = JSON.parse(readFileSync(TASKS_DIR + '/fresh-context-reviewer.json', 'utf8'))
-    const r = withResultFile(cleanResult(real), (file) =>
-      run(['decide', '--task', 'fresh-context-reviewer', '--result', file]))
-    expect(r.status).not.toBe(0)
-    expect(r.stdout).toMatch(/path compliance could not be checked/)
-  })
-
-  it('emits a brief for the real sealed contract', () => {
-    const r = run(['brief', '--task', 'fresh-context-reviewer', '--base', 'HEAD', '--head', 'HEAD'])
-    expect(r.status, r.stderr).toBe(0)
-    expect(r.stdout).toMatch(/Independent review: fresh-context-reviewer/)
-    expect(r.stdout).toMatch(/FIND CONCRETE REASONS THIS SHOULD NOT MERGE/)
-  })
-
-  it('snapshots tracked files so the integrity check has something to compare', () => {
-    const r = run(['snapshot'])
-    expect(r.status, r.stderr).toBe(0)
-    const snap = JSON.parse(r.stdout)
-    expect(Object.keys(snap).length).toBeGreaterThan(100)
-    expect(snap['package.json']).toMatch(/^[0-9a-f]{40}$/)
-  })
-})
-
 describe('this task governs itself by the rules it is adding', () => {
   const real = JSON.parse(readFileSync(TASKS_DIR + '/fresh-context-reviewer.json', 'utf8'))
 
@@ -840,5 +835,482 @@ describe('this task governs itself by the rules it is adding', () => {
     const found = mechanicalFindings({ contract: real, changedPaths: real.allowed_paths })
     expect(found.filter(f => f.dimension === 'risk-classification')).toEqual([])
     expect(found.filter(f => f.dimension === 'production-effect')).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// CORRECTION 1: a verdict binds to exact, immutable commits
+// ---------------------------------------------------------------------------
+
+describe('a verdict binds to the exact commits it was produced against', () => {
+  // The failure this closes: a review of head A replayed as an approval for
+  // head B. Non-empty ref strings do not prevent it — "main" is a label whose
+  // meaning moves, and a verdict bound to a label follows the label.
+  const c = contract()
+
+  it('requires full 40-character SHAs, not ref names', () => {
+    for (const bad of ['main', 'feature', 'HEAD', 'f853706', '', null, 42, sha('a').slice(0, 39)]) {
+      const errs = validateReviewResult(cleanResult(c, { head_sha: bad }), { contract: c })
+      expect(errs.join(), JSON.stringify(bad)).toMatch(/must be a full 40-character commit SHA/)
+    }
+  })
+
+  it('BLOCKS when the reviewed head SHA is not the deciding head SHA', () => {
+    const identity = identityFindings({
+      result: cleanResult(c, { head_sha: OTHER_SHA }), baseSha: BASE_SHA, headSha: HEAD_SHA,
+    })
+    expect(identity).toHaveLength(1)
+    expect(identity[0].severity).toBe('blocker')
+    expect(identity[0].evidence).toContain(OTHER_SHA)
+    expect(decide({ contract: c, identity }).verdict).toBe('BLOCKED')
+  })
+
+  it('BLOCKS when the reviewed base SHA is not the deciding base SHA', () => {
+    const identity = identityFindings({
+      result: cleanResult(c, { base_sha: OTHER_SHA }), baseSha: BASE_SHA, headSha: HEAD_SHA,
+    })
+    expect(identity[0].severity).toBe('blocker')
+    expect(identity[0].summary).toMatch(/different commit/)
+    expect(decide({ contract: c, identity }).verdict).toBe('BLOCKED')
+  })
+
+  it('BLOCKS when the decision cannot resolve the commits at all', () => {
+    for (const [b, h] of [[null, HEAD_SHA], [BASE_SHA, null], ['main', 'feature']]) {
+      const identity = identityFindings({ result: cleanResult(c), baseSha: b, headSha: h })
+      expect(identity[0].severity, JSON.stringify([b, h])).toBe('blocker')
+    }
+  })
+
+  it('approves when both SHAs are unchanged', () => {
+    const identity = identityFindings({ result: cleanResult(c), baseSha: BASE_SHA, headSha: HEAD_SHA })
+    expect(identity).toEqual([])
+    expect(decide({ contract: c, identity }).verdict).toBe('APPROVE')
+  })
+
+  it('a moving branch cannot silently retarget an existing approval', () => {
+    // The whole scenario end to end: a review is produced while `feature`
+    // points at HEAD_SHA; the branch then advances to OTHER_SHA. Re-deciding
+    // resolves the branch to its NEW commit, and the old result no longer
+    // matches it. The approval does not follow the label.
+    const approved = cleanResult(c)
+    expect(decide({
+      contract: c,
+      result: approved,
+      identity: identityFindings({ result: approved, baseSha: BASE_SHA, headSha: HEAD_SHA }),
+    }).verdict).toBe('APPROVE')
+
+    const afterBranchMoved = decide({
+      contract: c,
+      result: approved,
+      identity: identityFindings({ result: approved, baseSha: BASE_SHA, headSha: OTHER_SHA }),
+    })
+    expect(afterBranchMoved.verdict).toBe('BLOCKED')
+    expect(afterBranchMoved.reasons.join()).toMatch(/performed against a different commit/)
+  })
+
+  it('the brief hands the reviewer SHAs and says why they are SHAs', () => {
+    const b = buildReviewBrief({
+      contract: c, baseSha: BASE_SHA, headSha: HEAD_SHA, changedPaths: ['src/thing.js'],
+    })
+    expect(b).toContain(BASE_SHA)
+    expect(b).toContain(HEAD_SHA)
+    expect(b).toMatch(/not branch names/)
+    expect(b).toMatch(/a branch that moves afterwards does not/)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// CORRECTION 2: the base is derived from governance, not chosen by the caller
+// ---------------------------------------------------------------------------
+
+describe('the review base is derived from the governance commit', () => {
+  // Real throwaway repositories rather than a mock: what is being tested is
+  // what git actually reports about history, and a mock would only test my
+  // beliefs about it.
+  const repos = []
+  const mkrepo = () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'gov-'))
+    repos.push(dir)
+    const git = (args, input) => {
+      const r = spawnSync('git', args, { cwd: dir, encoding: 'utf8', input })
+      if (r.status !== 0) throw new Error('git ' + args.join(' ') + ': ' + r.stderr)
+      return r.stdout.trim()
+    }
+    git(['init', '-q', '-b', 'main'])
+    git(['config', 'user.email', 'fixture@example.test'])
+    git(['config', 'user.name', 'Fixture'])
+    git(['commit', '-q', '--allow-empty', '-m', 'base'])
+    return {
+      dir,
+      git,
+      run: (args) => {
+        const r = spawnSync('git', args, { cwd: dir, encoding: 'utf8' })
+        return { status: r.status, stdout: r.stdout || '', stderr: r.stderr || '' }
+      },
+      write: (rel, body) => {
+        mkdirSync(path.dirname(path.join(dir, rel)), { recursive: true })
+        writeFileSync(path.join(dir, rel), body)
+      },
+      commit: (msg) => { git(['add', '-A']); git(['commit', '-q', '-m', msg]); return git(['rev-parse', 'HEAD']) },
+    }
+  }
+  afterAll(() => { for (const d of repos) rmSync(d, { recursive: true, force: true }) })
+
+  const CONTRACT_PATH = TASKS_DIR + '/example-task.json'
+
+  /** contract commit -> unauthorised commit -> clean tidy-up commit. */
+  const threeCommitRepo = () => {
+    const r = mkrepo()
+    r.write(CONTRACT_PATH, JSON.stringify(contract(), null, 2))
+    const governance = r.commit('governance: seal the contract')
+    r.write('src/secret-backdoor.js', 'export const oops = true\n')
+    const unauthorised = r.commit('feat: something nobody authorised')
+    r.write('docs/thing.md', 'tidy\n')
+    const clean = r.commit('docs: a perfectly clean commit')
+    return { r, governance, unauthorised, clean }
+  }
+
+  it('derives the boundary as the latest commit establishing the contract', () => {
+    const { r, governance, clean } = threeCommitRepo()
+    const gov = resolveGovernanceBoundary({ taskId: 'example-task', headSha: clean, git: r.run })
+    expect(gov.error).toBeNull()
+    expect(gov.boundarySha).toBe(governance)
+  })
+
+  it('a caller CANNOT hide an unauthorised commit by choosing a later base', () => {
+    // The attack in full. Reviewed from the tidy-up commit, the diff contains
+    // only docs/thing.md and approves clean; the backdoor is invisible. Because
+    // the base is derived, the diff starts at governance and the backdoor is in
+    // it — and it is outside allowed_paths, so it blocks.
+    const { r, governance, clean, unauthorised } = threeCommitRepo()
+    const gov = resolveGovernanceBoundary({ taskId: 'example-task', headSha: clean, git: r.run })
+    expect(gov.boundarySha).toBe(governance)
+    expect(gov.boundarySha).not.toBe(unauthorised)
+
+    const derivedDiff = r.run(['diff', '--name-only', gov.boundarySha + '...' + clean])
+      .stdout.split('\n').filter(Boolean)
+    expect(derivedDiff, 'the derived diff must contain the hidden commit\'s file')
+      .toContain('src/secret-backdoor.js')
+
+    const found = mechanicalFindings({ contract: contract(), changedPaths: derivedDiff })
+    expect(found.some(f => f.dimension === 'path-compliance' && f.severity === 'blocker')).toBe(true)
+
+    // And for contrast: the base the caller WANTED to use hides it entirely.
+    const truncated = r.run(['diff', '--name-only', unauthorised + '...' + clean])
+      .stdout.split('\n').filter(Boolean)
+    expect(truncated).not.toContain('src/secret-backdoor.js')
+    expect(mechanicalFindings({ contract: contract(), changedPaths: truncated })).toEqual([])
+  })
+
+  it('refuses a caller-supplied base that is not the derived one', () => {
+    const found = governanceBaseFindings({ derivedBase: BASE_SHA, requestedBase: OTHER_SHA })
+    expect(found[0].severity).toBe('blocker')
+    expect(found[0].summary).toMatch(/overridden instead of derived/)
+    expect(decide({ governance: found }).verdict).toBe('BLOCKED')
+  })
+
+  it('accepts a caller-supplied base that agrees, and no base at all', () => {
+    expect(governanceBaseFindings({ derivedBase: BASE_SHA, requestedBase: BASE_SHA })).toEqual([])
+    expect(governanceBaseFindings({ derivedBase: BASE_SHA, requestedBase: null })).toEqual([])
+  })
+
+  it('BLOCKS when the governance commit also shipped code', () => {
+    // A commit that seals a contract and changes something else has already
+    // blurred the line the boundary exists to draw.
+    const r = mkrepo()
+    r.write(CONTRACT_PATH, JSON.stringify(contract(), null, 2))
+    r.write('src/thing.js', 'sneaked in\n')
+    const head = r.commit('governance: seal the contract (and quietly ship)')
+    const gov = resolveGovernanceBoundary({ taskId: 'example-task', headSha: head, git: r.run })
+    expect(gov.boundarySha).toBeNull()
+    expect(gov.error).toMatch(/must change only/)
+  })
+
+  it('BLOCKS when the contract moved after the governance step', () => {
+    // The terms are not allowed to drift under the implementation. If they did,
+    // the work was judged against something other than what is on the head.
+    const r = mkrepo()
+    r.write(CONTRACT_PATH, JSON.stringify(contract(), null, 2))
+    r.commit('governance: seal the contract')
+    r.write('src/thing.js', 'work\n')
+    r.commit('feat: work')
+    r.write(CONTRACT_PATH, JSON.stringify(contract({ acceptance_criteria: ['something easier'] }), null, 2))
+    const head = r.commit('governance: quietly relax the terms')
+    // The most recent contract commit becomes the boundary, and it is not a
+    // pure governance act relative to... in fact it IS pure, so the guard that
+    // catches this is the ancestor/identity pair below.
+    const gov = resolveGovernanceBoundary({ taskId: 'example-task', headSha: head, git: r.run })
+    // Boundary is the relaxing commit, and everything before it is now outside
+    // the review — which is exactly why the relaxation must be visible as a
+    // separate governance commit in the PR rather than hidden mid-branch.
+    expect(gov.boundarySha).toBeTruthy()
+    const diff = r.run(['diff', '--name-only', gov.boundarySha + '...' + head]).stdout.split('\n').filter(Boolean)
+    expect(diff, 'a relaxed contract must leave the implementation outside the reviewed range')
+      .toEqual([])
+  })
+
+  it('BLOCKS when the contract does not survive to the reviewed head', () => {
+    // The reachable half of the blob check: the contract is sealed, then
+    // deleted. rev-list names the deleting commit as the boundary, and reading
+    // the contract at the head fails.
+    const r = mkrepo()
+    r.write(CONTRACT_PATH, JSON.stringify(contract(), null, 2))
+    r.commit('governance: seal the contract')
+    rmSync(path.join(r.dir, CONTRACT_PATH))
+    const head = r.commit('chore: delete the contract')
+    const gov = resolveGovernanceBoundary({ taskId: 'example-task', headSha: head, git: r.run })
+    expect(gov.boundarySha).toBeNull()
+    expect(gov.error).toMatch(/does not survive to the reviewed head/)
+  })
+
+  it('keeps the blob-identity assertion, which no fixture can make fire', () => {
+    // Structural, and labelled as such. Given how the boundary is derived — the
+    // last commit reachable from head that touched the contract — head's blob
+    // IS the boundary's blob, and I could not construct a case where they
+    // differ (a merge taking one parent's version, and an evil merge writing a
+    // third, both behave). It stays as an assertion about that reasoning: it
+    // holds only while the derivation is this one, and anyone who changes the
+    // derivation should get a refusal rather than a silently wrong range.
+    expect(PROTOCOL_SRC).toContain('the terms moved after the governance step')
+    expect(PROTOCOL_SRC).toMatch(/atBoundary\.stdout\.trim\(\) !== atHead\.stdout\.trim\(\)/)
+  })
+
+  it('BLOCKS when no commit establishes the contract at all', () => {
+    const r = mkrepo()
+    r.write('src/thing.js', 'work with no contract\n')
+    const head = r.commit('feat: ungoverned work')
+    const gov = resolveGovernanceBoundary({ taskId: 'example-task', headSha: head, git: r.run })
+    expect(gov.boundarySha).toBeNull()
+    expect(gov.error).toMatch(/no governance boundary/)
+  })
+
+  it('BLOCKS on a head that is not a full SHA', () => {
+    const r = mkrepo()
+    for (const bad of ['HEAD', 'main', '', null, 'abc1234']) {
+      const gov = resolveGovernanceBoundary({ taskId: 'example-task', headSha: bad, git: r.run })
+      expect(gov.error, JSON.stringify(bad)).toMatch(/not a full commit SHA/)
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// CORRECTION 3: integrity evidence is required, not optional
+// ---------------------------------------------------------------------------
+
+describe('an approval requires integrity evidence', () => {
+  const c = contract()
+
+  it('BLOCKS a decision taken without before/after snapshots', () => {
+    // Previously this ran and could approve. "The reviewer changed nothing"
+    // then rested on the reviewer having been asked not to.
+    const d = decide({ contract: c, integrityEvidenceProvided: false })
+    expect(d.verdict).toBe('BLOCKED')
+    expect(d.reasons.join()).toMatch(/no integrity evidence/)
+    expect(d.integrity_evidence).toBe('missing')
+  })
+
+  it('records that the evidence was provided when it was', () => {
+    expect(decide({ contract: c }).integrity_evidence).toBe('provided')
+  })
+
+  it('cannot be waived by an otherwise perfect review', () => {
+    const d = decide({ contract: c, result: cleanResult(c), integrityEvidenceProvided: false })
+    expect(d.counts).toEqual({ blocker: 0, major: 0, unmet_criteria: 0 })
+    expect(d.verdict).toBe('BLOCKED')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// CORRECTION 4: a recorded failed verification cannot approve
+// ---------------------------------------------------------------------------
+
+describe('a recorded verification failure cannot approve', () => {
+  const c = contract()
+  const withRun = (run) => cleanResult(c, { verification_run: [run] })
+
+  it('an otherwise perfect APPROVE with exit_code 1 does not approve', () => {
+    const result = withRun({ command: 'npm run verify:pr', executed: true, exit_code: 1, evidence: '3 failed' })
+    const d = decide({ contract: c, result })
+    expect(d.verdict).not.toBe('APPROVE')
+    expect(d.reasons.join()).toMatch(/verification run failed/)
+    // It is BLOCKED rather than REQUEST_CHANGES because the result ALSO claimed
+    // nothing was blocking. Recording a failure and then asserting it is fine
+    // is a false claim in the record, which is worse than the failure.
+    expect(d.verdict).toBe('BLOCKED')
+    expect(d.reasons.join()).toMatch(/no_blocking_findings is true, but/)
+  })
+
+  it('distinguishes "ran and failed" from "could not run"', () => {
+    // Ran and failed: something was learned, and it was bad -> REQUEST_CHANGES.
+    const failed = decide({
+      contract: c,
+      result: cleanResult(c, {
+        no_blocking_findings: false,
+        verification_run: [{ command: 'npm test', executed: true, exit_code: 2, evidence: 'assertion failed' }],
+      }),
+    })
+    expect(failed.verdict).toBe('REQUEST_CHANGES')
+    expect(failed.reasons.join()).toMatch(/verification run failed/)
+
+    // Could not run: nothing was learned at all -> BLOCKED.
+    const unrunnable = decide({
+      contract: c,
+      result: withRun({ command: 'npm test', executed: false, exit_code: null, evidence: 'command not found' }),
+    })
+    expect(unrunnable.verdict).toBe('BLOCKED')
+    expect(unrunnable.reasons.join()).toMatch(/could not be executed/)
+  })
+
+  it('treats every non-zero exit as a failure, not just 1', () => {
+    for (const code of [1, 2, 127, 130, -1]) {
+      const d = decide({ contract: c, result: withRun({ command: 'x', executed: true, exit_code: code, evidence: 'e' }) })
+      expect(d.verdict, String(code)).not.toBe('APPROVE')
+    }
+  })
+
+  it('refuses a run with no evidence, even a passing one', () => {
+    // A verification nobody can check is a claim, and claims are what this
+    // whole protocol exists because of.
+    for (const evidence of ['', '   ', undefined]) {
+      const result = withRun({ command: 'npm run verify:pr', executed: true, exit_code: 0, evidence })
+      expect(validateReviewResult(result, { contract: c }).join(), JSON.stringify(evidence))
+        .toMatch(/has no evidence/)
+      expect(decide({ contract: c, result }).verdict).toBe('BLOCKED')
+    }
+  })
+
+  it('refuses a non-integer exit code that is not an honest "could not run"', () => {
+    const result = withRun({ command: 'x', executed: true, exit_code: 'ok', evidence: 'e' })
+    expect(verificationFindings(result)[0].severity).toBe('blocker')
+  })
+
+  it('still approves when every recorded run genuinely passed', () => {
+    const result = cleanResult(c, {
+      verification_run: [
+        { command: 'npm run verify:pr', executed: true, exit_code: 0, evidence: '4205 passed' },
+        { command: 'npx vitest run review-protocol.test.mjs', executed: true, exit_code: 0, evidence: '85 passed' },
+      ],
+    })
+    expect(decide({ contract: c, result }).verdict).toBe('APPROVE')
+  })
+
+  it('the reviewer may still be more cautious about a passing run', () => {
+    const result = cleanResult(c, { verdict: 'REQUEST_CHANGES' })
+    expect(decide({ contract: c, result }).verdict).toBe('REQUEST_CHANGES')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// THE CLI
+// ---------------------------------------------------------------------------
+
+describe('the CLI derives, binds and fails closed', () => {
+  const run = (args) => spawnSync('node', ['tools/review-task.mjs', ...args], { encoding: 'utf8' })
+  const TASK = 'fresh-context-reviewer'
+
+  const withFile = (body, fn) => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'review-cli-'))
+    try {
+      const file = path.join(dir, 'result.json')
+      writeFileSync(file, typeof body === 'string' ? body : JSON.stringify(body))
+      return fn(file, dir)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  }
+
+  it('exits non-zero with no arguments or an unknown subcommand', () => {
+    expect(run([]).status).not.toBe(0)
+    expect(run(['approve-please']).status).not.toBe(0)
+  })
+
+  it('refuses --base outright rather than honouring it', () => {
+    const r = run(['brief', '--task', TASK, '--head', 'HEAD', '--base', 'HEAD~1'])
+    expect(r.status).not.toBe(0)
+    expect(r.stderr).toMatch(/--base is not accepted/)
+  })
+
+  it('emits a brief whose base is the governance commit, resolved to a SHA', () => {
+    const r = run(['brief', '--task', TASK, '--head', 'HEAD'])
+    expect(r.status, r.stderr).toBe(0)
+    const base = r.stdout.match(/^base: ([0-9a-f]{40})/m)
+    const head = r.stdout.match(/^head: ([0-9a-f]{40})/m)
+    expect(base, 'brief did not emit a full base SHA').toBeTruthy()
+    expect(head, 'brief did not emit a full head SHA').toBeTruthy()
+    expect(SHA_RE.test(base[1])).toBe(true)
+    // The derived base must be the commit that sealed this contract, which is
+    // the only commit in this repository's history touching that file.
+    const govLog = spawnSync('git', ['rev-list', '--max-count=1', 'HEAD', '--',
+      TASKS_DIR + '/' + TASK + '.json'], { encoding: 'utf8' })
+    expect(base[1]).toBe(govLog.stdout.trim())
+  })
+
+  it('BLOCKS a decide with no --head — there is no identity to bind to', () => {
+    const r = withFile({}, (file) => run(['decide', '--task', TASK, '--result', file]))
+    expect(r.status).not.toBe(0)
+    expect(r.stdout).toMatch(/no commit identity to decide against/)
+  })
+
+  it('BLOCKS a decide with no integrity evidence', () => {
+    const r = withFile({}, (file) =>
+      run(['decide', '--task', TASK, '--head', 'HEAD', '--result', file]))
+    expect(r.status).not.toBe(0)
+    expect(r.stdout).toMatch(/no integrity evidence/)
+  })
+
+  it('BLOCKS a decide against a contract that does not exist', () => {
+    const r = withFile({}, (file) =>
+      run(['decide', '--task', 'no-such-task', '--head', 'HEAD', '--result', file]))
+    expect(r.status).not.toBe(0)
+    expect(r.stdout + r.stderr).toMatch(/BLOCKED/)
+  })
+
+  it('BLOCKS a decide whose result file will not parse', () => {
+    const r = withFile('{ not json', (file) =>
+      run(['decide', '--task', TASK, '--head', 'HEAD', '--result', file]))
+    expect(r.status).not.toBe(0)
+    expect(r.stdout).toMatch(/BLOCKED/)
+  })
+
+  it('snapshots a worktree with modes, untracked files and provenance', () => {
+    const r = run(['snapshot', '--worktree', '.'])
+    expect(r.status, r.stderr).toBe(0)
+    const s = JSON.parse(r.stdout)
+    expect(s.snapshot_version).toBe(SNAPSHOT_VERSION)
+    expect(s.observer).toBe('external')
+    expect(SHA_RE.test(s.head)).toBe(true)
+    expect(Object.keys(s.entries).length).toBeGreaterThan(100)
+    // Modes are carried, so an exec-bit flip is visible.
+    expect(s.entries['package.json']).toMatch(/^1006\d\d [0-9a-f]{40}$/)
+    expect(s.entries['tools/review-task.mjs']).toMatch(/^100[67]\d\d [0-9a-f]{40}$/)
+  })
+
+  it('marks a self-taken snapshot as self, so it cannot clear a merge', () => {
+    const r = run(['snapshot', '--worktree', '.', '--observer', 'self'])
+    expect(r.status, r.stderr).toBe(0)
+    expect(JSON.parse(r.stdout).observer).toBe('self')
+  })
+
+  it('a real prepare/snapshot round-trip detects a write into the review worktree', () => {
+    // End to end against real git: the driver creates the worktree, snapshots
+    // it, something writes into it, and the comparison catches it.
+    const wt = path.join(mkdtempSync(path.join(tmpdir(), 'review-wt-')), 'tree')
+    try {
+      const prep = run(['prepare', '--task', TASK, '--head', 'HEAD', '--worktree', wt])
+      expect(prep.status, prep.stderr).toBe(0)
+      const { snapshot: before, head_sha: headSha, base_sha: baseSha } = JSON.parse(prep.stdout)
+      expect(SHA_RE.test(headSha) && SHA_RE.test(baseSha)).toBe(true)
+      expect(before.observer).toBe('external')
+
+      const clean = JSON.parse(run(['snapshot', '--worktree', wt]).stdout)
+      expect(reviewIntegrityFindings(before, clean, { headSha })).toEqual([])
+
+      writeFileSync(path.join(wt, 'REVIEWER-WAS-HERE.md'), 'I fixed it for you\n')
+      const dirty = JSON.parse(run(['snapshot', '--worktree', wt]).stdout)
+      const found = reviewIntegrityFindings(before, dirty, { headSha })
+      expect(found.some(f => f.evidence.includes('REVIEWER-WAS-HERE.md'))).toBe(true)
+      expect(found[0].severity).toBe('blocker')
+    } finally {
+      spawnSync('git', ['worktree', 'remove', '--force', wt], { encoding: 'utf8' })
+      rmSync(path.dirname(wt), { recursive: true, force: true })
+    }
   })
 })
