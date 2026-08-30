@@ -3,7 +3,7 @@
 // well as by the readers.
 import { CHARACTER_READINGS, PLACE_WORDS } from './characterNames.js'
 import { collectStoryNames } from './storyNames.js'
-import { isPriorKnown } from './knowledgeState'
+import { isPriorKnown } from './knowledgeState.js'
 
 // Canonical story readability + the pure token/status helpers the immersion
 // reader is built from. This is the single source of truth for "% known": the
