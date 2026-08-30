@@ -13,7 +13,7 @@ import {
   WRITE_SIDE_PRODUCTION_EFFECTS,
   RISK_LEVELS,
   pathGrammarError,
-  TOKEN,
+  OWNER_ROLES,
   ALWAYS_FORBIDDEN,
   TASKS_DIR,
 } from './tools/verify-task-contracts.mjs'
@@ -36,7 +36,7 @@ const good = () => {
   const c = {
     id: 'example-task',
     goal: 'Do one well-defined thing.',
-    owner_role: 'workflow-engineer',
+    owner_role: 'workflow-authority',
     risk: 'r1',
     allowed_paths: ['src/**', 'docs/EXAMPLE.md'],
     forbidden_paths: ['src/secret/**'],
@@ -157,29 +157,39 @@ describe('risk is closed to the canonical control-plane levels', () => {
   })
 })
 
-describe('owner_role is constrained but NOT yet frozen', () => {
-  // The role-enforcement PR defines and enforces the real taxonomy. A second
-  // competing model invented here would have to be migrated away when it lands.
+describe('owner_role is closed to the canonical role model', () => {
+  // The full role-model specs live in role-model.test.mjs. What belongs HERE is
+  // only the contract format's side of it: the field is required, and its
+  // vocabulary comes from .agent/roles.json rather than from this file.
   it('is required', () => {
     const c = good()
     delete c.owner_role
     expect(violations(c).join()).toMatch(/missing required field: owner_role/)
   })
 
-  it('requires a kebab-case token, rejecting free text', () => {
-    for (const bad of ['Workflow Engineer', 'DOCS', 'a_b', '  ', 'role!']) {
+  it('rejects free text and any role outside the model', () => {
+    for (const bad of ['Workflow Engineer', 'DOCS', 'a_b', '  ', 'role!', 'docs', 'ops',
+      'workflow-engineer', 'whatever-the-role-layer-picks']) {
       expect(violations(reseal({ ...good(), owner_role: bad })).join(), JSON.stringify(bad))
-        .toMatch(/owner_role must be a lowercase kebab-case token/)
+        .toMatch(/owner_role must be one of/)
     }
   })
 
-  it('accepts any well-formed token until the role layer closes it', () => {
-    for (const v of ['workflow-engineer', 'docs', 'ops', 'whatever-the-role-layer-picks']) {
-      expect(violations(reseal({ ...good(), owner_role: v })), v).toEqual([])
+  it('accepts every canonical role, and the enum is the one read from roles.json', () => {
+    for (const role of OWNER_ROLES) {
+      expect(violations(reseal({ ...good(), owner_role: role })), role).toEqual([])
     }
-    expect(TOKEN.test('workflow-engineer')).toBe(true)
+    // Well-formed kebab-case is no longer sufficient — closure is the point.
+    expect(/^[a-z0-9]+(-[a-z0-9]+)*$/.test('workflow-engineer')).toBe(true)
+    expect(OWNER_ROLES).not.toContain('workflow-engineer')
   })
 
+  it('is covered by the digest, so a role cannot be swapped silently', () => {
+    const c = good()
+    const swapped = { ...c, owner_role: 'privacy-release' }
+    expect(swapped.owner_role).not.toBe(c.owner_role)
+    expect(violations(swapped).join()).toMatch(/contract_digest does not match/)
+  })
 })
 
 describe('production_effect is the MAXIMUM effect the task may cause', () => {
@@ -435,7 +445,7 @@ describe('THE SEAL: rewrites cannot be silent', () => {
     const mutate = {
       id: 'other-task',
       goal: 'something else',
-      owner_role: 'docs',
+      owner_role: 'qa',
       risk: 'high',
       allowed_paths: ['other/**'],
       forbidden_paths: [],
@@ -487,7 +497,7 @@ describe('--seal can never bless an invalid contract (end to end)', () => {
   const evilContract = (extra = {}) => JSON.stringify({
     id: 'seal-guard-probe',
     goal: 'Attempt to widen my own authority.',
-    owner_role: 'workflow-engineer',
+    owner_role: 'workflow-authority',
     risk: 'r1',
     allowed_paths: ['.agent/tasks/**'],
     forbidden_paths: [],

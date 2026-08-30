@@ -33,11 +33,14 @@
 // every failure path without writing broken files to disk.
 
 import { readFile, readdir } from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
 export const TASKS_DIR = '.agent/tasks'
+export const ROLES_FILE = '.agent/roles.json'
 
 /**
  * The fields a contract is BOUND by. The digest covers exactly these, so a
@@ -95,16 +98,34 @@ export const OPTIONAL_FIELDS = ['notes', 'links', 'contract_digest']
 export const RISK_LEVELS = ['r0', 'r1', 'r2', 'r3', 'r4']
 
 /**
- * owner_role is REQUIRED, digest-covered and syntactically constrained, but its
- * vocabulary is deliberately NOT closed yet.
+ * THE ROLE MODEL. Loaded from .agent/roles.json — the single canonical source.
  *
- * An earlier revision invented six role names. The role-enforcement PR defines
- * and enforces the real taxonomy; a second competing model living in the task
- * format would have to be migrated away the moment that lands. Tightening a
- * syntactic constraint into an enum later is a pure addition — unpicking a
- * wrong enum from committed contracts is not.
+ * Deliberately NOT restated here. A hand-kept copy beside the real list is how
+ * a taxonomy drifts: the two disagree, and the one the validator reads quietly
+ * wins over the one people read. role-model.test.mjs fails if a second literal
+ * role list appears in this file.
+ *
+ * A role is an authority DOMAIN — what kind of work this is and who may own it.
+ * It is orthogonal to risk (worst reach) and production_effect (maximum effect
+ * permitted), and it NEVER grants permission to exceed a contract's
+ * allowed_paths, forbidden_paths, acceptance_criteria, stop_conditions, risk or
+ * production_effect. Where a role and a contract disagree, the contract is
+ * narrower and the contract wins.
  */
-export const TOKEN = /^[a-z0-9]+(-[a-z0-9]+)*$/
+function loadRoleModel() {
+  // Resolved relative to this module, so the validator works from any cwd.
+  const here = path.dirname(fileURLToPath(import.meta.url))
+  const parsed = JSON.parse(readFileSync(path.resolve(here, '..', ROLES_FILE), 'utf8'))
+  if (!parsed || !Array.isArray(parsed.roles) || parsed.roles.length === 0) {
+    throw new Error(ROLES_FILE + ' has no roles — refusing to run with an empty role model')
+  }
+  return parsed
+}
+
+export const ROLE_MODEL = loadRoleModel()
+
+/** The canonical role ids, DERIVED — never typed out a second time. */
+export const OWNER_ROLES = ROLE_MODEL.roles.map(r => r.id)
 
 /**
  * PRODUCTION_EFFECT: the maximum direct production effect this task is
@@ -292,17 +313,16 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   if ('goal' in contract && !isNonEmptyString(contract.goal)) {
     out.push(at + 'goal must be a non-empty string')
   }
-  // risk is closed to the canonical control-plane levels; owner_role stays
-  // syntactic until the role-enforcement layer defines its vocabulary.
+  // Both closed: risk to the control-plane levels, owner_role to the canonical
+  // role model in .agent/roles.json.
   if ('risk' in contract && !RISK_LEVELS.includes(contract.risk)) {
     out.push(at + 'risk must be one of ' + RISK_LEVELS.join(', ') +
       ' (got ' + JSON.stringify(contract.risk) + '). When several levels apply, take the highest.')
   }
-  if ('owner_role' in contract) {
-    if (!isNonEmptyString(contract.owner_role) || !TOKEN.test(contract.owner_role)) {
-      out.push(at + 'owner_role must be a lowercase kebab-case token (got ' +
-        JSON.stringify(contract.owner_role) + ')')
-    }
+  if ('owner_role' in contract && !OWNER_ROLES.includes(contract.owner_role)) {
+    out.push(at + 'owner_role must be one of ' + OWNER_ROLES.join(', ') +
+      ' (got ' + JSON.stringify(contract.owner_role) + '). Roles are defined in ' +
+      ROLES_FILE + '; a role is an authority domain, never permission to exceed this contract.')
   }
   if ('production_effect' in contract && !PRODUCTION_EFFECTS.includes(contract.production_effect)) {
     out.push(at + 'production_effect must be one of ' + PRODUCTION_EFFECTS.join(', ') + ' (got ' +

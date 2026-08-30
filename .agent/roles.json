@@ -1,0 +1,257 @@
+{
+  "$comment": "THE canonical role source. tools/verify-task-contracts.mjs reads this file for the owner_role enum; nothing anywhere restates the list. A second hand-maintained enum is how a taxonomy drifts, and role-model.test.mjs fails if one appears. Roles describe AUTHORITY DOMAIN only - what kind of work this is and who may own it. They are orthogonal to risk (worst reach) and production_effect (maximum effect permitted), and a role NEVER grants permission to exceed a contract's allowed_paths, forbidden_paths, acceptance_criteria, stop_conditions, risk or production_effect.",
+  "version": 1,
+  "roles": [
+    {
+      "id": "product-app",
+      "purpose": "Owns learner-facing application behaviour and general product UI that is not story/content semantics, scheduler/database semantics, release/compliance authority, or repository automation authority.",
+      "mental_model": "How the learner moves through and interacts with the application.",
+      "authority": [
+        "Onboarding and first-run product flows",
+        "Auth/account UX and application-level validation",
+        "Navigation, routing and the app shell",
+        "Generic learner-facing screens",
+        "Design-system components and tokens",
+        "Settings and feedback flows",
+        "Offline application behaviour and offline UI",
+        "General product state and interaction behaviour"
+      ],
+      "non_authority": [
+        "No story/vocabulary/curriculum/Reader semantic authority",
+        "No FSRS/scheduler/cards/schema/migration authority",
+        "No privacy-policy, compliance, store, native release or signing authority",
+        "No CI/workflow/task-control-plane authority",
+        "No live production mutation merely because a product flow consumes production data"
+      ],
+      "owns_examples": [
+        "Reworking the onboarding path so the first lesson comes before account creation",
+        "Fixing the sign-in form's email validation and its error copy",
+        "Adding a nav entry and its route",
+        "Adjusting a design token used across screens",
+        "Making the offline bar reflect a queued write"
+      ],
+      "hand_off_examples": [
+        "Changing how the reader matches vocabulary to text -> story-content",
+        "Changing what counts as due, or a cards/schema migration -> scheduler-db",
+        "Native Sign in with Apple provider configuration or entitlements -> privacy-release",
+        "Changing a required CI check or a workflow trigger -> workflow-authority"
+      ]
+    },
+    {
+      "id": "story-content",
+      "purpose": "Owns the learning material itself and the semantics that decide whether it is correct: stories, vocabulary and content integrity, Reader/matcher behaviour, and the generation and content tooling behind them.",
+      "mental_model": "What the learner reads and learns, and whether the lexical/content semantics are correct.",
+      "authority": [
+        "Stories, seasons, chapters and their publication state",
+        "Vocabulary and content integrity, including readings and definitions",
+        "Reader and matcher semantics - how text is segmented and matched to known words",
+        "Story/vocabulary generation and content tooling, and their validators",
+        "Content-facing checks such as the published-story validator"
+      ],
+      "non_authority": [
+        "No FSRS/scheduler/cards/schema authority - content decides what is read, not what is scheduled",
+        "No general product UI, navigation or app-shell authority",
+        "No privacy, compliance, store or native release authority",
+        "No CI/workflow authority, including the workflows that run the content tooling",
+        "Not a general product-engineering role - ordinary application work belongs to product-app"
+      ],
+      "owns_examples": [
+        "Fixing a wrong pinyin reading in the HSK vocabulary",
+        "Changing how storyReading.js segments and matches CJK text",
+        "Adding a generation check that a story really contains its required words",
+        "Publishing a held chapter through the content tooling"
+      ],
+      "hand_off_examples": [
+        "Changing where a content workflow is allowed to push -> workflow-authority",
+        "Changing how a read story affects card scheduling -> scheduler-db",
+        "Redesigning the Stories shelf layout and navigation -> product-app",
+        "Deciding whether generated art may be described as AI-made in the Terms -> privacy-release"
+      ]
+    },
+    {
+      "id": "scheduler-db",
+      "purpose": "Owns what the learning system knows, stores, schedules and counts: FSRS and scheduler semantics, cards and reviews, and database schema and migration work.",
+      "mental_model": "What the learning system knows, stores, schedules and counts.",
+      "authority": [
+        "FSRS scheduling and its parameters",
+        "Card and review state, and the predicates over it (learned, mastered, due)",
+        "Database schema, migrations and the RPCs the app depends on",
+        "Progress, level and mastery accounting",
+        "The sync/outbox path that persists grading"
+      ],
+      "non_authority": [
+        "No story/vocabulary/content semantic authority",
+        "No general product UI, navigation or app-shell authority",
+        "No privacy, compliance, store or native release authority",
+        "No CI/workflow authority",
+        "Writing a migration is not permission to APPLY it - applying against production is its own task with its own production_effect"
+      ],
+      "owns_examples": [
+        "Changing the FSRS request retention or the learning-steps handling",
+        "Correcting what counts as due so Home and the session agree",
+        "Writing a migration that adds a column the app reads",
+        "Fixing the transactional grading RPC"
+      ],
+      "hand_off_examples": [
+        "Applying a migration against the live database -> a task with production_effect database, reviewed as such",
+        "Changing the flashcard screen's layout -> product-app",
+        "Changing which words a story is allowed to use -> story-content",
+        "Changing the CI job that runs the migration checks -> workflow-authority"
+      ]
+    },
+    {
+      "id": "privacy-release",
+      "purpose": "Owns what may legally and safely ship, and how native and store release authority is exercised: privacy, security and compliance, native release configuration, and App Store / Play release work.",
+      "mental_model": "What may legally/safely ship, and how native/store release authority is exercised.",
+      "authority": [
+        "Privacy policy, terms, and compliance decisions",
+        "Security-sensitive configuration, credentials, signing and native identity-provider setup",
+        "Native release configuration and store metadata",
+        "App Store / Play identity requirements, submission and publication",
+        "Data-handling disclosures and privacy manifests"
+      ],
+      "non_authority": [
+        "No general product UI or app-flow authority - a sign-in SCREEN is product-app",
+        "No story/vocabulary/content semantic authority",
+        "No FSRS/scheduler/cards/schema authority",
+        "No generic CI/workflow authority - the native CI gate ARCHITECTURE is workflow-authority",
+        "Not the owner of every file that mentions authentication"
+      ],
+      "owns_examples": [
+        "Rewriting the privacy policy to match what the app actually stores",
+        "Configuring the Apple identity provider and its signing credentials",
+        "Filling in Data Safety answers for a store listing",
+        "Cutting a TestFlight or Play release"
+      ],
+      "hand_off_examples": [
+        "The sign-in screen's layout, validation and post-auth navigation -> product-app",
+        "Changing the native CI gate or required-check composition -> workflow-authority",
+        "Deleting a user's rows on request -> a task with production_effect database",
+        "Changing what the app stores in the first place -> scheduler-db or product-app, depending on the data"
+      ]
+    },
+    {
+      "id": "workflow-authority",
+      "purpose": "Owns the repository automation and control-plane rules under which other work is built, checked, merged, and allowed to mutate repository state.",
+      "mental_model": "The repository rules under which work is checked, automated and merged.",
+      "authority": [
+        "CI/workflow definitions and triggers",
+        "Required-check and gate composition",
+        "Workflow permissions and concurrency",
+        "Automation write paths and branch-safety rules",
+        "Task-contract infrastructure and validators",
+        "Repository-side branch-protection/ruleset specifications and their verification",
+        "Automation authority documentation and contract tests"
+      ],
+      "non_authority": [
+        "No product behaviour changes",
+        "No story/vocabulary/content semantics",
+        "No FSRS/scheduler semantics",
+        "No live production database mutation",
+        "No privacy-policy or product-compliance decisions",
+        "No app-store publication or signing authority",
+        "Must not grant itself production credentials or broaden its own task contract"
+      ],
+      "owns_examples": [
+        "Stopping a workflow from pushing to main, and proving it with a contract test",
+        "Composing an always-present gate job that is safe to require on main",
+        "Adding a validator and its specs to the task-contract infrastructure",
+        "Specifying the main ruleset and verifying it holds"
+      ],
+      "hand_off_examples": [
+        "Changing what a content workflow GENERATES -> story-content",
+        "Cutting the release the release workflow builds -> privacy-release",
+        "Writing the Playwright spec a gate runs -> qa",
+        "Fixing the app code a failing check exposed -> product-app, story-content or scheduler-db"
+      ]
+    },
+    {
+      "id": "qa",
+      "purpose": "Independently exercises and verifies behaviour: Playwright and integration verification, screenshots, native/device verification, and reproduction work.",
+      "mental_model": "Independently exercises and verifies behaviour.",
+      "authority": [
+        "Playwright and integration test implementation",
+        "Screenshots and visual baselines",
+        "Native and on-device verification",
+        "Reproducing reported failures and narrowing them to a cause",
+        "Test fixtures and mocks that support verification"
+      ],
+      "non_authority": [
+        "Does not define which gates are required or how verification is wired into repository authority - that is workflow-authority",
+        "No product, content, scheduler, privacy or release implementation authority",
+        "Reproducing a bug is not authority to fix it in the owning domain",
+        "No live production mutation"
+      ],
+      "owns_examples": [
+        "Writing a Playwright spec for the onboarding flow",
+        "Reproducing a reported crash on a real device and narrowing it",
+        "Refreshing a visual baseline after an approved design change",
+        "Adding a fixture that makes an integration path testable"
+      ],
+      "hand_off_examples": [
+        "Making that spec a required check, or changing the e2e workflow trigger -> workflow-authority",
+        "Fixing the onboarding bug the spec found -> product-app",
+        "Deciding a failing visual baseline is an intended design change -> product-app",
+        "Verifying a store build is signable -> privacy-release"
+      ]
+    },
+    {
+      "id": "reviewer",
+      "purpose": "Independently judges an implementation against its contract and diff, from fresh context. Review only.",
+      "mental_model": "Independently judges the implementation against the contract and diff.",
+      "authority": [
+        "Reading code, task contracts, diffs and history",
+        "Running verification commands to check claims",
+        "Judging whether acceptance_criteria are genuinely met",
+        "Reporting findings, and refusing to sign off"
+      ],
+      "non_authority": [
+        "MUST NOT implement the task being reviewed - see the implementer/reviewer separation below",
+        "No authority to relax acceptance_criteria, widen allowed_paths, or re-seal a contract to fit what was built",
+        "No production mutation",
+        "No merge authority - integration is integrator's"
+      ],
+      "owns_examples": [
+        "Reading a diff against its contract and reporting where they disagree",
+        "Running the contract's verification commands and reporting the real result",
+        "Refusing sign-off because an acceptance criterion is unmet"
+      ],
+      "hand_off_examples": [
+        "Fixing what the review found -> the implementing role that owns that domain",
+        "Deciding the criterion itself was wrong -> the task's owner, as a contract change with a visible re-seal",
+        "Merging the approved work -> integrator"
+      ]
+    },
+    {
+      "id": "integrator",
+      "purpose": "Integrates already-approved work: resolves integration conflicts and runs the defined gates, without redefining requirements or gates.",
+      "mental_model": "Integrates already-approved work without redefining requirements or gates.",
+      "authority": [
+        "Merging and rebasing approved work",
+        "Resolving integration conflicts",
+        "Running already-defined gates and reporting their result",
+        "Sequencing merges so dependent work lands in order"
+      ],
+      "non_authority": [
+        "Must not silently change product requirements or acceptance_criteria",
+        "Must not define, weaken, or bypass gates - that is workflow-authority",
+        "No implementation authority in any product domain",
+        "No production mutation"
+      ],
+      "owns_examples": [
+        "Merging main into a stale approved branch and resolving the conflict",
+        "Running the gates on a combined result before landing it",
+        "Sequencing two approved PRs whose migrations must land in order"
+      ],
+      "hand_off_examples": [
+        "A conflict where both sides changed the same behaviour -> the owning role decides",
+        "A gate that is wrong or too slow -> workflow-authority",
+        "Work that is not yet approved -> reviewer"
+      ]
+    }
+  ],
+  "separation": {
+    "implementer_is_not_reviewer": "The implementer of a task cannot also serve as its independent fresh-context reviewer. Independence is the whole value of the review: an agent that judges its own work brings the same blind spots and the same reading of the contract that produced the work. This is a SEMANTIC rule recorded here and asserted by role-model.test.mjs. Nothing enforces it at runtime yet - there is no reviewer agent and no dispatch layer - so it currently binds whoever assigns the work.",
+    "role_never_overrides_contract": "A role is an authority DOMAIN, never a permission to exceed the task contract. No role grants the ability to modify paths outside allowed_paths, to touch forbidden_paths, to relax acceptance_criteria, to ignore stop_conditions, or to exceed the contract's risk or production_effect. Where a role and a contract disagree, the contract is narrower and the contract wins."
+  }
+}
