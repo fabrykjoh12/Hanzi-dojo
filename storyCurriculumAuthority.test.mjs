@@ -165,3 +165,44 @@ describe('publication gate — proper-noun exception semantics', () => {
     expect(gate('我的缸很好。').ok).toBe(false)
   })
 })
+
+// The baseline is an accepted record of learner-facing debt. A run that
+// regenerates it silently would make the check meaningless, and pushing one to
+// main would bypass review entirely. Both guards are asserted here because the
+// workflow cannot be dispatched on main to prove it until this merges — main's
+// copy of content-utils.yml does not offer the task yet.
+describe('baseline acceptance is explicit and never touches main', () => {
+  const wf = readFileSync('.github/workflows/content-utils.yml', 'utf8')
+
+  it('offers a compare-only task and a separate accept task', () => {
+    expect(wf).toMatch(/content-integrity,\s*content-integrity-accept/)
+    expect(wf).toMatch(/node check-content-integrity\.mjs\n/)          // compare-only
+    expect(wf).toMatch(/node check-content-integrity\.mjs --update-baseline/)
+  })
+
+  it('the accept task refuses on main', () => {
+    const accept = wf.slice(wf.indexOf('content-integrity-accept" ]; then'))
+    expect(accept).toMatch(/GITHUB_REF_NAME" = "main"/)
+    expect(accept).toMatch(/Refusing to rewrite the content-integrity baseline on main/)
+    expect(accept).toMatch(/exit 1/)
+  })
+
+  it('the commit step is independently gated on the ref, so there are two guards', () => {
+    expect(wf).toMatch(/if: inputs\.task == 'content-integrity-accept' && github\.ref_name != 'main'/)
+    expect(wf).toMatch(/refusing to push a baseline to main/)
+  })
+
+  it('only the accept task ever writes the baseline', () => {
+    // The compare-only path must not contain --update-baseline anywhere.
+    const compare = wf.slice(wf.indexOf('content-integrity" ]; then'), wf.indexOf('content-integrity-accept" ]; then'))
+    expect(compare).not.toMatch(/--update-baseline/)
+  })
+
+  it('the checker itself only writes when the flag is passed', () => {
+    const src = readFileSync('check-content-integrity.mjs', 'utf8')
+    expect(src).toMatch(/const update = args\.includes\('--update-baseline'\)/)
+    // The single writeFileSync is inside the `if (update)` branch.
+    expect(src.split('writeFileSync').length - 1).toBe(2)   // the import and the one call
+    expect(src.slice(src.indexOf('if (update)'))).toMatch(/writeFileSync\(BASELINE/)
+  })
+})
