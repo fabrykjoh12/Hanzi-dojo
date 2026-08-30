@@ -27,12 +27,12 @@
 // resolves to BLOCKED. The only route to APPROVE is an explicit, complete,
 // internally consistent statement that nothing merge-blocking remains.
 //
-// This file enforces the protocol. It does not enforce the reviewer: nothing
-// here can stop an agent editing a file. That boundary is the subagent's tool
-// allow-list and worktree isolation, and its limits are documented precisely in
+// This file enforces the protocol, not the reviewer. The reviewer is bounded
+// somewhere else and more simply: its subagent definition grants Read, Grep and
+// Glob and nothing more, so it has no tool that can write. Its limits, and the
+// bounded execution authority the driver holds in exchange, are documented in
 // docs/REVIEWER-PROTOCOL.md rather than overstated here.
 
-import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 import {
   TASKS_DIR,
@@ -407,6 +407,101 @@ export function identityFindings({ result, baseSha, headSha }) {
     }
   }
   return out
+}
+
+/**
+ * THE VERIFICATION COMMAND GRAMMAR — closed, and enforced at execution.
+ *
+ * The problem this closes is one the reviewer found, and it is worth stating
+ * plainly. `verification` is a list of strings in the sealed contract, and the
+ * contract validator does NOT constrain them: `sh -c "curl … | sh"`,
+ * `echo $SECRET > /tmp/x`, `npm run build && rm -rf dist` all seal without
+ * complaint. Executing those with a shell and the driver's environment would
+ * mean that writing a string into `verification` granted arbitrary runtime
+ * authority — with the driver's credentials — to anyone who could seal a
+ * contract. `production_effect: none` would not have stopped any of it.
+ *
+ * So the executor refuses rather than the validator rejects. That distinction
+ * matters: the validator lives outside this task's allowed_paths, and it does
+ * not need to change. A contract may still CONTAIN an unsupported string; it
+ * simply cannot be run, and the review is BLOCKED instead. Fail-closed, and no
+ * schema change.
+ *
+ * Exactly two forms, because those are the two this repository's contracts
+ * actually use. Adding a third is a deliberate edit here, reviewed as such.
+ *
+ * WHAT THIS DOES NOT BUY, said out loud: `npm run <script>` runs a script
+ * defined by the REVIEWED COMMIT'S package.json, which runs arbitrary code from
+ * the commit under review. That is not a hole in the grammar — it is what
+ * verification IS. Running the tests is running the code. The grammar bounds the
+ * FORM of the command and the environment bounds its AUTHORITY; neither bounds
+ * what the repository's own test suite chooses to do.
+ */
+export const VERIFICATION_FORMS = [
+  {
+    form: 'npm run <script>',
+    pattern: /^npm run ([A-Za-z0-9][A-Za-z0-9:_-]*)$/,
+    argv: (m) => ['npm', 'run', m[1]],
+  },
+  {
+    form: 'npx vitest run <path>',
+    pattern: /^npx vitest run ([A-Za-z0-9][A-Za-z0-9._/-]*)$/,
+    argv: (m) => ['npx', 'vitest', 'run', m[1]],
+  },
+]
+
+/** Anything that could chain, redirect, substitute, or reach a second command. */
+const SHELL_METACHARACTERS = /[;&|<>$`\\(){}\[\]*?!~"'\n\r]/
+
+/**
+ * Parse one contract verification string into an argv, or explain the refusal.
+ *
+ * Never returns a shell string. The caller spawns argv[0] with argv.slice(1)
+ * and no shell, so there is no parsing layer left to be clever about quoting.
+ */
+export function parseVerificationCommand(command) {
+  if (!isNonEmptyString(command)) {
+    return { argv: null, error: 'verification command is not a non-empty string' }
+  }
+  const meta = command.match(SHELL_METACHARACTERS)
+  if (meta) {
+    return {
+      argv: null,
+      error: 'refused: contains the shell metacharacter ' + JSON.stringify(meta[0]) +
+        '. Verification runs without a shell, so chaining, redirection and ' +
+        'substitution are not available and are not silently ignored',
+    }
+  }
+  for (const { pattern, argv } of VERIFICATION_FORMS) {
+    const m = command.match(pattern)
+    if (m) return { argv: argv(m), error: null }
+  }
+  return {
+    argv: null,
+    error: 'refused: not a supported verification form. Supported: ' +
+      VERIFICATION_FORMS.map(f => f.form).join(', ') +
+      '. An unsupported command is refused rather than guessed at',
+  }
+}
+
+/**
+ * The environment a verification command is given.
+ *
+ * A deliberate allowlist, not `process.env` minus a denylist — a denylist is a
+ * list of the secrets someone remembered. The code under review runs here, and
+ * it should not inherit whatever the driver happens to be carrying.
+ *
+ * `CI` is set so test runners take their non-interactive path.
+ */
+export const VERIFICATION_ENV_KEYS = ['PATH', 'HOME', 'LANG', 'LC_ALL', 'TZ', 'TMPDIR', 'SystemRoot']
+
+export function verificationEnv(source = {}) {
+  const env = {}
+  for (const k of VERIFICATION_ENV_KEYS) {
+    if (typeof source[k] === 'string') env[k] = source[k]
+  }
+  env.CI = '1'
+  return env
 }
 
 export const VERIFICATION_EVIDENCE_VERSION = 1
@@ -823,18 +918,15 @@ export function buildReviewBrief({ contract, baseSha, headSha, changedPaths, dif
   lines.push('severity is one of: ' + SEVERITIES.join(', '))
   lines.push('')
   lines.push('APPROVE requires no_blocking_findings true, every criterion met,')
-  lines.push('no blocker or major finding, and every verification run recorded')
-  lines.push('with its real exit code and output. Record a failing run honestly:')
-  lines.push('a non-zero exit cannot approve, and hiding it is the one thing here')
-  lines.push('that would make your verdict worse than useless.')
+  lines.push('and no blocker or major finding.')
   lines.push('')
-  lines.push('If a verification command could not be executed at all, set')
-  lines.push('executed false — that is different from it running and failing, and')
-  lines.push('the protocol treats them differently.')
+  lines.push('The verification above was executed by the driver, bound to this')
+  lines.push('commit, and is authoritative. You are judging it, not producing it,')
+  lines.push('and there is no field for you to restate it in.')
   lines.push('')
-  lines.push('If anything stopped you from completing the review — a command you')
-  lines.push('could not run, a file you could not read — return BLOCKED.')
-  lines.push('Silence is never approval.')
+  lines.push('If anything stopped you from completing the review — a file you')
+  lines.push('could not read, verification output that does not cover what the')
+  lines.push('contract required — return BLOCKED. Silence is never approval.')
 
   return lines.join('\n')
 }
@@ -1099,32 +1191,6 @@ export function decideVerdict({
   }
 }
 
-/** Read and re-verify a sealed contract, or explain why it cannot be reviewed. */
-export async function loadContractForReview(taskId, { dir = TASKS_DIR } = {}) {
-  const file = path.join(dir, taskId + '.json')
-  let raw
-  try {
-    raw = await readFile(file, 'utf8')
-  } catch (err) {
-    return { contract: null, error: 'cannot read contract ' + file + ' (' + err.code + ')' }
-  }
-  let contract
-  try {
-    contract = JSON.parse(raw)
-  } catch (err) {
-    return { contract: null, error: 'contract ' + file + ' is not valid JSON (' + err.message + ')' }
-  }
-  // An unsealed or stale contract is not a reviewable standard: the terms could
-  // have moved after the work was judged against them.
-  const violations = findContractViolations(contract, { fileName: taskId + '.json' })
-  if (violations.length > 0) {
-    return { contract: null, error: 'contract ' + file + ' is not valid: ' + violations.join('; ') }
-  }
-  if (contract.contract_digest !== computeDigest(contract)) {
-    return { contract: null, error: 'contract ' + file + ' is not sealed against its own terms' }
-  }
-  return { contract, error: null }
-}
 
 /** Kept exported so the CLI and the specs agree on the vocabulary. */
 export const PRODUCTION_EFFECT_VALUES = PRODUCTION_EFFECTS

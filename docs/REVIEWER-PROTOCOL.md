@@ -158,6 +158,37 @@ commit**, separate from the tree the reviewer reads so that build and test outpu
 cannot look like the reviewer having written a file. The record it produces is
 the only one that counts, and it is bound to `head_sha`.
 
+#### The driver's execution authority is bounded
+
+Handing the driver a shell over contract strings would have been a bad trade for
+taking one away from the reviewer. `verification` is a list of strings in a
+sealed contract, and **the contract validator does not constrain them**:
+`sh -c "curl … | sh"`, `echo $SECRET > /tmp/leak` and `npm run build && rm -rf
+dist` all seal without complaint, and `production_effect: none` constrains none
+of it. So the executor refuses rather than the validator rejecting — which is
+also why this needed no schema change:
+
+- **No shell.** Commands are parsed to an explicit executable and argv.
+- **A closed grammar**, exactly the two forms this repository's contracts use:
+  `npm run <script>` and `npx vitest run <path>`. Anything else is **refused**,
+  not guessed at, and a refusal records `executed: false`, which the evidence
+  rules already treat as a blocker. An unsupported command blocks the review.
+- **Metacharacters are refused outright** rather than escaped, so chaining,
+  redirection and substitution are unavailable and visibly so.
+- **A deliberate environment allowlist** — `PATH`, `HOME`, `LANG`, `LC_ALL`,
+  `TZ`, `TMPDIR`, `SystemRoot`, plus `CI=1`. Not `process.env` minus a denylist:
+  a denylist is a list of the secrets someone remembered. The code under review
+  runs here and does not inherit what the driver is carrying.
+- **No package-install or network form** exists in the grammar; `npm ci` and
+  `npm install` are not `npm run`.
+
+**What this does not buy, said plainly:** `npm run <script>` executes a script
+defined by the *reviewed commit's* `package.json`, which runs arbitrary code
+from the commit under review. That is not a hole in the grammar — it is what
+verification *is*. Running the tests is running the code. The grammar bounds the
+**form** of the command and the allowlist bounds its **authority**; neither
+bounds what the repository's own test suite chooses to do.
+
 Accounting is exact in both directions. Every entry in `contract.verification`
 must have **exactly one** record — not "at least one", because that lets a
 duplicate of an easy command stand in for a missing hard one while the count

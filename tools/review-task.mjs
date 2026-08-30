@@ -1,13 +1,14 @@
 #!/usr/bin/env node
 // The review CLI. Four jobs, split so none can quietly do another's:
 //
-//   prepare   Create a review worktree at the reviewed head, owned by the
-//             DRIVER rather than by the reviewer, and snapshot it. This is what
-//             makes the integrity evidence external rather than self-attested.
-//   brief     Emit the reviewer's brief. Refs are resolved to full commit SHAs
-//             and the base is DERIVED from the governance commit, never taken
-//             from the caller.
-//   snapshot  Snapshot a worktree, for the after-side of the integrity check.
+//   verify    Run the contract's verification commands — parsed against a closed
+//             grammar, no shell, minimal environment — in a driver-owned
+//             worktree at the reviewed commit. The reviewer has no shell, so
+//             this record is the authoritative one.
+//   brief     Emit the reviewer's brief. The contract comes from the reviewed
+//             commit, the base is DERIVED from the governance commit, and the
+//             raw diff is delivered rather than fetched.
+//   snapshot  Snapshot a worktree, for the integrity check either side.
 //   decide    Produce the final verdict, independently re-resolving the
 //             identities and re-deriving the base. Exits 0 only on APPROVE.
 //
@@ -27,6 +28,8 @@ import {
   SNAPSHOT_VERSION,
   SHA_RE,
   VERIFICATION_EVIDENCE_VERSION,
+  parseVerificationCommand,
+  verificationEnv,
   loadContractAtCommit,
   verificationEvidenceFindings,
   buildReviewBrief,
@@ -229,9 +232,20 @@ async function resolveReview(taskId, headRef) {
 function runVerification(commands, headSha, root) {
   const runs = []
   for (const command of commands) {
-    const r = spawnSync(command, {
-      cwd: root, shell: true, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
-      env: { ...process.env, CI: '1' },
+    // Parsed to argv against a closed grammar, and REFUSED rather than guessed
+    // at. A refusal is recorded as executed:false, which the protocol turns
+    // into a blocker — so an unsupported command blocks the review instead of
+    // handing the driver a shell.
+    const { argv, error } = parseVerificationCommand(command)
+    if (error) {
+      runs.push({ command, executed: false, exit_code: null, evidence: error })
+      continue
+    }
+    const r = spawnSync(argv[0], argv.slice(1), {
+      cwd: root, shell: false, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
+      // A deliberate allowlist. The code under review runs here; it does not
+      // get to inherit whatever credentials the driver is carrying.
+      env: verificationEnv(process.env),
     })
     if (r.error) {
       // Could not execute at all. Recorded as such, because "nothing was
