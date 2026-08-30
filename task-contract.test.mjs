@@ -10,6 +10,7 @@ import {
   BINDING_FIELDS,
   OPTIONAL_FIELDS,
   PRODUCTION_EFFECTS,
+  RISK_LEVELS,
   pathGrammarError,
   TOKEN,
   ALWAYS_FORBIDDEN,
@@ -35,7 +36,7 @@ const good = () => {
     id: 'example-task',
     goal: 'Do one well-defined thing.',
     owner_role: 'workflow-engineer',
-    risk: 'low',
+    risk: 'r1',
     allowed_paths: ['src/**', 'docs/EXAMPLE.md'],
     forbidden_paths: ['src/secret/**'],
     non_goals: ['Anything to do with Gate 3'],
@@ -97,39 +98,85 @@ describe('required fields fail closed', () => {
   })
 })
 
-describe('owner_role and risk are constrained but NOT frozen', () => {
-  // Deliberate: the role layer is a later phase with its own vocabulary, and
-  // the intended risk model is a control-plane taxonomy that does not exist in
-  // this repository yet. An earlier revision invented both. Inventing a second
-  // competing set would have to be migrated away the moment the real one lands,
-  // so the shape is fixed and the closed set is left to whoever enforces it.
-  it('requires both fields', () => {
-    for (const f of ['owner_role', 'risk']) {
-      const c = good()
-      delete c[f]
-      expect(violations(c).join()).toMatch(new RegExp('missing required field: ' + f))
+describe('risk is closed to the canonical control-plane levels', () => {
+  it('is exactly r0..r4, in order', () => {
+    expect(RISK_LEVELS).toEqual(['r0', 'r1', 'r2', 'r3', 'r4'])
+  })
+
+  it('accepts every canonical level', () => {
+    for (const r of RISK_LEVELS) expect(violations(reseal({ ...good(), risk: r })), r).toEqual([])
+  })
+
+  it('rejects the invented values this format briefly carried', () => {
+    // low/medium/high were guessed here before the real model was available.
+    // A contract still carrying one must fail rather than be silently mapped.
+    for (const bad of ['low', 'medium', 'high']) {
+      expect(violations(reseal({ ...good(), risk: bad })).join(), bad)
+        .toMatch(/risk must be one of r0, r1, r2, r3, r4/)
     }
+  })
+
+  it('rejects near-misses and out-of-range levels', () => {
+    for (const bad of ['r5', 'r-1', 'R2', 'r', 'r10', 'tier-one', 'r2 ', '2', 'rr2']) {
+      expect(violations(reseal({ ...good(), risk: bad })).join(), JSON.stringify(bad))
+        .toMatch(/risk must be one of/)
+    }
+  })
+
+  it('rejects a missing or non-string risk', () => {
+    const c = good()
+    delete c.risk
+    expect(violations(c).join()).toMatch(/missing required field: risk/)
+    for (const bad of [null, 2, [], {}]) {
+      expect(violations(reseal({ ...good(), risk: bad })).join(), JSON.stringify(bad))
+        .toMatch(/risk must be one of/)
+    }
+  })
+
+  it('states the take-the-highest rule where someone choosing a level will read it', () => {
+    // The rule only works if it is visible at the point of failure and in the
+    // format doc — a level chosen from the bulk of a change rather than its
+    // worst reach is the predictable mistake.
+    expect(violations(reseal({ ...good(), risk: 'nope' })).join())
+      .toMatch(/When several levels apply, take the highest/)
+    const readme = readFileSync(TASKS_DIR + '/README.md', 'utf8')
+    expect(readme).toMatch(/highest/i)
+    for (const level of RISK_LEVELS) expect(readme, 'README omits ' + level).toContain('`' + level + '`')
+  })
+
+  it('stays orthogonal to production_effect', () => {
+    // Different questions: risk is the authority the WORK carries,
+    // production_effect what MERGING it does. A migration written but not
+    // applied is r3 / database; a docs typo on main is r0 / deploy-on-merge.
+    expect(violations(reseal({ ...good(), risk: 'r3', production_effect: 'none' }))).toEqual([])
+    expect(violations(reseal({ ...good(), risk: 'r0', production_effect: 'deploy-on-merge' }))).toEqual([])
+  })
+})
+
+describe('owner_role is constrained but NOT yet frozen', () => {
+  // The role-enforcement PR defines and enforces the real taxonomy. A second
+  // competing model invented here would have to be migrated away when it lands.
+  it('is required', () => {
+    const c = good()
+    delete c.owner_role
+    expect(violations(c).join()).toMatch(/missing required field: owner_role/)
   })
 
   it('requires a kebab-case token, rejecting free text', () => {
-    for (const bad of ['Workflow Engineer', 'HIGH', 'r0!', '', '  ', 'a_b']) {
-      expect(violations(reseal({ ...good(), risk: bad })).join(), JSON.stringify(bad))
-        .toMatch(/risk must be a lowercase kebab-case token/)
+    for (const bad of ['Workflow Engineer', 'DOCS', 'a_b', '  ', 'role!']) {
+      expect(violations(reseal({ ...good(), owner_role: bad })).join(), JSON.stringify(bad))
+        .toMatch(/owner_role must be a lowercase kebab-case token/)
     }
   })
 
-  it('accepts any well-formed token, including a future R-tier spelling', () => {
-    // Whatever the enforcement layer picks — r0..r4, tier-one, low — the format
-    // already carries it without a migration.
-    for (const v of ['r0', 'r4', 'low', 'high', 'tier-one', 'workflow-engineer', 'docs']) {
-      expect(violations(reseal({ ...good(), risk: v, owner_role: v })), v).toEqual([])
+  it('accepts any well-formed token until the role layer closes it', () => {
+    for (const v of ['workflow-engineer', 'docs', 'ops', 'whatever-the-role-layer-picks']) {
+      expect(violations(reseal({ ...good(), owner_role: v })), v).toEqual([])
     }
-    expect(TOKEN.test('r0')).toBe(true)
+    expect(TOKEN.test('workflow-engineer')).toBe(true)
   })
 
   it('keeps production_effect closed, because it is not a contested taxonomy', () => {
-    // Blast radius maps to things that already exist here: merge-to-main
-    // deploys, a migration touches the database, a store release is reviewed.
     expect(violations(reseal({ ...good(), production_effect: 'probably-fine' })).join())
       .toMatch(/production_effect must be one of/)
     for (const fx of PRODUCTION_EFFECTS) {
@@ -373,7 +420,7 @@ describe('--seal can never bless an invalid contract (end to end)', () => {
     id: 'seal-guard-probe',
     goal: 'Attempt to widen my own authority.',
     owner_role: 'workflow-engineer',
-    risk: 'low',
+    risk: 'r1',
     allowed_paths: ['.agent/tasks/**'],
     forbidden_paths: [],
     non_goals: ['nothing'],
@@ -491,6 +538,22 @@ describe('the contracts committed to this repository', () => {
     // The README must not overclaim what this layer provides.
     expect(readme).toMatch(/tamper-EVIDENCE, not tamper-proofing/)
     for (const field of BINDING_FIELDS) expect(readme, 'README omits ' + field).toContain(field)
+  })
+
+  it('every committed contract carries a canonical risk level', () => {
+    for (const n of files) {
+      const c = JSON.parse(readFileSync(dir + '/' + n, 'utf8'))
+      expect(RISK_LEVELS, n + ' has risk ' + c.risk).toContain(c.risk)
+    }
+  })
+
+  it('dynamic-ref-writers is r3, because it changes workflow authority', () => {
+    // CI/workflow authority is r3 by the model, even though merging the task
+    // itself has no production effect — the two fields answer different
+    // questions and this contract is the worked example of that.
+    const c = JSON.parse(readFileSync(dir + '/dynamic-ref-writers.json', 'utf8'))
+    expect(c.risk).toBe('r3')
+    expect(c.production_effect).toBe('none')
   })
 
   it('has a verify:tasks script that points at the validator', () => {

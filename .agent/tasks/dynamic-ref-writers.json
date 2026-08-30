@@ -2,7 +2,7 @@
   "id": "dynamic-ref-writers",
   "goal": "Stop the four content workflows from resolving their push target to main when dispatched from main, so they fail before doing work rather than at push time.",
   "owner_role": "workflow-engineer",
-  "risk": "medium",
+  "risk": "r3",
   "allowed_paths": [
     ".github/workflows/content-utils.yml",
     ".github/workflows/llm-bench.yml",
@@ -40,6 +40,6 @@
     "The fix would require adding a pull-request trigger, which is a separate cost decision",
     "Any change would touch a Gate 3 workflow"
   ],
-  "notes": "Identified during the PR3 native-tier audit. These push HEAD:${GITHUB_REF_NAME} or a bare git push, so main is the Actions UI default target; the main ruleset now rejects that at the server, after the job has already done its work.",
-  "contract_digest": "3626febe92b6caa09dbb80fd01dcdb69ee464cb67a02e4f6cb688dcbc6fe0517"
+  "notes": "Identified during the PR3 native-tier audit. These push HEAD:${GITHUB_REF_NAME} or a bare git push, so main is the Actions UI default target; the main ruleset now rejects that at the server, after the job has already done its work. Risk r3: this changes CI/workflow authority, which is r3 by the control-plane model even though production_effect is none.",
+  "contract_digest": "7db1d057d51d077e0f8bee8e43c9b48c14dc08966db270ac64c7b22377a86a90"
 }

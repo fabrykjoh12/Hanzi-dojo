@@ -36,7 +36,7 @@ Every field below is required. Unknown fields are rejected.
 | `id` | kebab-case string | Must equal the filename stem. |
 | `goal` | string | One sentence: what this task is for. |
 | `owner_role` | kebab-case token | Which role owns it. **Vocabulary deliberately not closed** — see below. |
-| `risk` | kebab-case token | How much damage a mistake does. **Vocabulary deliberately not closed** — see below. |
+| `risk` | `r0`–`r4` | Control-plane risk level. Closed enum — see below. |
 | `allowed_paths` | path[] | The only paths the work may modify. Non-empty. Narrow grammar — see below. |
 | `forbidden_paths` | path[] | Carve-outs inside `allowed_paths`. May be empty, must be present. |
 | `non_goals` | string[] | What this task is explicitly NOT. The scope fence. |
@@ -50,29 +50,42 @@ Every field below is required. Unknown fields are rejected.
 `notes` and `links` are optional and **not** covered by the digest — a contract
 should be annotatable without re-sealing, or nobody will annotate it.
 
-## Two vocabularies are deliberately left open
+## The risk model
 
-`owner_role` and `risk` are **required**, are covered by the digest, and must be
-lowercase kebab-case tokens — but their value sets are **not** closed here.
+`risk` is closed to the canonical control-plane levels:
 
-An earlier revision of this format invented both: six role names and
-`low|medium|high`. That was wrong twice. The role layer is a later phase that
-will define and enforce its own vocabulary, and a second competing role model
-living in the task format would have to be migrated away the moment that lands.
-For `risk`, the intended model is a control-plane risk taxonomy that **does not
-exist in this repository yet** — searched for and not found: no R0–R4 tiers, no
-risk classes in `docs/`, and "control plane" here refers only to the Gate 3
-snapshot-key revision.
+| Level | Meaning |
+| --- | --- |
+| `r0` | Docs, comments, non-executable metadata only. |
+| `r1` | Pure logic or local UI. No auth, persistence, native/release, or external side effects. |
+| `r2` | User-flow / bounded integration semantics: story matching, onboarding, auth flow, offline behaviour, SRS UI. |
+| `r3` | High-impact system semantics or authority: FSRS/scheduler core, migration code, privacy/security, CI/workflow authority, native/release configuration. |
+| `r4` | Direct production authority: live Apply/data mutation, secrets and signing, store publication/release. |
 
-Guessing a second time would repeat the mistake with different values. So the
-field *shape* is fixed and every contract must carry both, while the closed set
-is left to the layer that consumes it. `r0`, `tier-one` and `low` are all
-already accepted; tightening a syntactic constraint into an enum later is a pure
-addition, whereas unpicking a wrong enum from committed contracts is not.
+**When several levels apply, take the highest.** A change that is mostly local
+UI but also touches the scheduler is `r3`, not `r1` — the level describes the
+worst thing the work can reach, not the bulk of it.
 
-`production_effect` **is** closed, because it is not a contested taxonomy — its
-values map to things that already exist here: a merge to `main` deploys, a
-migration touches the database, a store release goes through review.
+`risk` and `production_effect` answer different questions and are deliberately
+orthogonal. `risk` is the authority the **work** carries; `production_effect` is
+what **merging** it does. A migration written but not applied is `r3` with
+`production_effect: "database"`. A docs typo on `main` is `r0` with
+`deploy-on-merge`. The shipped `dynamic-ref-writers` contract is the worked
+example: `r3` because it changes CI/workflow authority, `production_effect:
+"none"` because merging it deploys nothing.
+
+`production_effect` is likewise closed — its values map to things that already
+exist here: a merge to `main` deploys, a migration touches the database, a store
+release goes through review.
+
+## owner_role is required but not yet closed
+
+`owner_role` is **required**, digest-covered, and must be a lowercase kebab-case
+token — but its value set is **not** closed here. The role-enforcement PR
+defines and enforces the real taxonomy; a competing role model invented in the
+task format would have to be migrated away the moment that lands. Tightening a
+syntactic constraint into an enum later is a pure addition; unpicking a wrong
+enum from committed contracts is not.
 
 ## The path grammar is deliberately narrow
 
@@ -104,8 +117,8 @@ Fail-closed on all of these:
 
 - Missing, empty or wrong-typed required fields; unknown fields.
 - `id` not kebab-case, or not matching the filename.
-- `owner_role` or `risk` that is not a lowercase kebab-case token;
-  `production_effect` outside its closed enum.
+- `risk` outside `r0`–`r4`, or `production_effect` outside its closed enum.
+- `owner_role` that is not a lowercase kebab-case token.
 - Empty `allowed_paths` (no work is authorised) or empty `acceptance_criteria`
   (anything counts as done). Both are contradictions, not defaults.
 - **Any path outside the two-form grammar** — wildcards, character classes,

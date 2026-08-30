@@ -64,23 +64,44 @@ export const BINDING_FIELDS = [
 export const OPTIONAL_FIELDS = ['notes', 'links', 'contract_digest']
 
 /**
- * owner_role and risk are REQUIRED and syntactically constrained, but their
- * vocabularies are deliberately NOT closed here.
+ * THE RISK MODEL. Canonical machine values, closed.
  *
- * An earlier revision of this file invented both — six role names and
- * low/medium/high. That was wrong twice over: the role layer is a later phase
- * that will define and enforce its own vocabulary, and a second competing role
- * model invented in the task format would have to be migrated away the moment
- * that lands. For risk, the intended model is a control-plane risk taxonomy
- * that does not exist in this repository yet (searched: no R0-R4 model, no risk
- * tiers in docs/, and "control plane" here means only the Gate 3 key revision).
+ * These are the control-plane risk levels. An earlier revision of this file
+ * invented low/medium/high; the real model was designed outside this
+ * repository, which is why it could not be found here and why the field was
+ * briefly left open rather than guessed at a second time.
  *
- * Guessing a second time would be the same mistake with different values. So
- * the field shape is fixed — a lowercase kebab-case token, required, present in
- * every contract, covered by the digest — and the closed set is left to the
- * layer that will consume it. Tightening a syntactic constraint into an enum
- * later is a pure addition; unpicking a wrong enum from committed contracts is
- * not.
+ *   r0  docs, comments, non-executable metadata only
+ *   r1  pure logic or local UI — no auth, persistence, native/release, or
+ *       external side effects
+ *   r2  user-flow / bounded integration semantics: story matching, onboarding,
+ *       auth flow, offline behaviour, SRS UI
+ *   r3  high-impact system semantics or authority: FSRS/scheduler core,
+ *       migration code, privacy/security, CI/workflow authority,
+ *       native/release configuration
+ *   r4  direct production authority: live Apply/data mutation, secrets and
+ *       signing, store publication/release
+ *
+ * WHEN SEVERAL APPLY, TAKE THE HIGHEST. A change that is mostly local UI but
+ * also touches the scheduler is r3, not r1 — the level describes the worst
+ * thing the work can reach, not the bulk of it.
+ *
+ * Deliberately orthogonal to production_effect: risk is about the authority the
+ * WORK carries, production_effect about what MERGING it does. A migration
+ * written but not applied is r3 with production_effect "database"; a docs typo
+ * on main is r0 with "deploy-on-merge".
+ */
+export const RISK_LEVELS = ['r0', 'r1', 'r2', 'r3', 'r4']
+
+/**
+ * owner_role is REQUIRED, digest-covered and syntactically constrained, but its
+ * vocabulary is deliberately NOT closed yet.
+ *
+ * An earlier revision invented six role names. The role-enforcement PR defines
+ * and enforces the real taxonomy; a second competing model living in the task
+ * format would have to be migrated away the moment that lands. Tightening a
+ * syntactic constraint into an enum later is a pure addition — unpicking a
+ * wrong enum from committed contracts is not.
  */
 export const TOKEN = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
@@ -238,13 +259,16 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   if ('goal' in contract && !isNonEmptyString(contract.goal)) {
     out.push(at + 'goal must be a non-empty string')
   }
-  // Syntactic only, by design — see the note on TOKEN above. The closed set
-  // arrives with the layer that enforces it.
-  for (const field of ['owner_role', 'risk']) {
-    if (!(field in contract)) continue
-    if (!isNonEmptyString(contract[field]) || !TOKEN.test(contract[field])) {
-      out.push(at + field + ' must be a lowercase kebab-case token (got ' +
-        JSON.stringify(contract[field]) + ')')
+  // risk is closed to the canonical control-plane levels; owner_role stays
+  // syntactic until the role-enforcement layer defines its vocabulary.
+  if ('risk' in contract && !RISK_LEVELS.includes(contract.risk)) {
+    out.push(at + 'risk must be one of ' + RISK_LEVELS.join(', ') +
+      ' (got ' + JSON.stringify(contract.risk) + '). When several levels apply, take the highest.')
+  }
+  if ('owner_role' in contract) {
+    if (!isNonEmptyString(contract.owner_role) || !TOKEN.test(contract.owner_role)) {
+      out.push(at + 'owner_role must be a lowercase kebab-case token (got ' +
+        JSON.stringify(contract.owner_role) + ')')
     }
   }
   if ('production_effect' in contract && !PRODUCTION_EFFECTS.includes(contract.production_effect)) {
