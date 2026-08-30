@@ -49,6 +49,7 @@ still get full detail — they are read once, on purpose.
 | [`docs/APPLE-SETUP.md`](docs/APPLE-SETUP.md) | Step-by-step Apple portal + Supabase setup for Sign in with Apple — written to hand to whoever has portal access | Wiring up Apple sign-in |
 | [`docs/DISCORD.md`](docs/DISCORD.md) | Server layout, webhooks, and the two workflows that post to it | Changing anything Discord-facing |
 | [`docs/AUTOMATION-AUTHORITY.md`](docs/AUTOMATION-AUTHORITY.md) | What a workflow may mutate, and which boundary stops a stale branch reaching `main` or Discord | Adding or changing any workflow that writes |
+| [`docs/REVIEWER-PROTOCOL.md`](docs/REVIEWER-PROTOCOL.md) | The fresh-context reviewer: what it may see, the closed verdict vocabulary, why silence never approves, and the limits of the isolation | Reviewing work against a task contract |
 | [`docs/DOJO-BRIDGE.md`](docs/DOJO-BRIDGE.md) | The `tools/` bridge | Working on DojoHQ |
 | [`docs/STORY_EXPERIENCE_AUDIT.md`](docs/STORY_EXPERIENCE_AUDIT.md) | Long-form audit of the reading experience | Reworking the reader |
 | [`docs/DATABASE.md`](docs/DATABASE.md) | Older schema notes — **`docs/ARCHITECTURE.md` is the current source of truth**; last touched 2026-07-02 | Rarely; prefer ARCHITECTURE.md |
