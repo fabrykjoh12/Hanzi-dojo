@@ -33,11 +33,14 @@
 // every failure path without writing broken files to disk.
 
 import { readFile, readdir } from 'node:fs/promises'
+import { readFileSync } from 'node:fs'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
+import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 
 export const TASKS_DIR = '.agent/tasks'
+export const ROLES_FILE = '.agent/roles.json'
 
 /**
  * The fields a contract is BOUND by. The digest covers exactly these, so a
@@ -95,16 +98,117 @@ export const OPTIONAL_FIELDS = ['notes', 'links', 'contract_digest']
 export const RISK_LEVELS = ['r0', 'r1', 'r2', 'r3', 'r4']
 
 /**
- * owner_role is REQUIRED, digest-covered and syntactically constrained, but its
- * vocabulary is deliberately NOT closed yet.
+ * THE ROLE MODEL. Loaded from .agent/roles.json — the single canonical source.
  *
- * An earlier revision invented six role names. The role-enforcement PR defines
- * and enforces the real taxonomy; a second competing model living in the task
- * format would have to be migrated away the moment that lands. Tightening a
- * syntactic constraint into an enum later is a pure addition — unpicking a
- * wrong enum from committed contracts is not.
+ * Deliberately NOT restated here. A hand-kept copy beside the real list is how
+ * a taxonomy drifts: the two disagree, and the one the validator reads quietly
+ * wins over the one people read. role-model.test.mjs fails if a second literal
+ * role list appears in this file.
+ *
+ * A role is an authority DOMAIN — what kind of work this is and who may own it.
+ * It is orthogonal to risk (worst reach) and production_effect (maximum effect
+ * permitted), and it NEVER grants permission to exceed a contract's
+ * allowed_paths, forbidden_paths, acceptance_criteria, stop_conditions, risk or
+ * production_effect. Where a role and a contract disagree, the contract is
+ * narrower and the contract wins.
  */
-export const TOKEN = /^[a-z0-9]+(-[a-z0-9]+)*$/
+/**
+ * The ONE role-model schema version this validator understands.
+ *
+ * Matched exactly, not as a floor. A floor ("any version >= 1") reads as
+ * permissive but is the unsafe direction: a v2 model written for a loader that
+ * does not exist yet would be interpreted by the v1 rules, silently, and
+ * whatever v2 added — a field that narrows a role, a new separation rule —
+ * would be ignored rather than enforced. Refusing an unknown version is the
+ * fail-closed reading: bump this constant in the same change that teaches the
+ * loader the new shape.
+ */
+export const ROLE_MODEL_VERSION = 1
+
+/** Documentation a role must carry to be choosable at all. */
+const ROLE_REQUIRED_TEXT = ['purpose', 'mental_model']
+const ROLE_REQUIRED_LISTS = ['authority', 'non_authority', 'owns_examples', 'hand_off_examples']
+/** Separation rules the model must state. Their CONTENT is asserted in specs. */
+const REQUIRED_SEPARATION = ['implementer_is_not_reviewer', 'role_never_overrides_contract']
+
+/**
+ * Load and FULLY validate the role model, or refuse to run.
+ *
+ * Fail-closed, and it has to be here rather than in a spec: a spec runs later
+ * and separately, so a malformed model would still have been handed to every
+ * contract check in between. A validator that silently accepts a broken
+ * authority model is worse than one that will not start — the enum it derives
+ * would be short, misspelled or empty, and contracts naming real roles would
+ * be rejected while the model itself went unmentioned.
+ *
+ * It deliberately does NOT know the eight role ids. Hardcoding them here would
+ * recreate the second enum this design exists to avoid; .agent/roles.json stays
+ * the canonical taxonomy and this only enforces its SHAPE.
+ */
+function loadRoleModel() {
+  // Resolved relative to this module, so the validator works from any cwd.
+  const here = path.dirname(fileURLToPath(import.meta.url))
+  const file = path.resolve(here, '..', ROLES_FILE)
+  const refuse = (why) => {
+    throw new Error(ROLES_FILE + ': ' + why + ' — refusing to run against a malformed role model')
+  }
+
+  let parsed
+  try {
+    parsed = JSON.parse(readFileSync(file, 'utf8'))
+  } catch (err) {
+    refuse('could not be read or parsed (' + err.message + ')')
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) refuse('is not a JSON object')
+  if (parsed.version !== ROLE_MODEL_VERSION) {
+    refuse('unsupported role-model schema version ' + JSON.stringify(parsed.version) +
+      '; this validator understands version ' + ROLE_MODEL_VERSION + ' only')
+  }
+  if (!Array.isArray(parsed.roles) || parsed.roles.length === 0) {
+    refuse('has no roles')
+  }
+
+  const seen = new Set()
+  for (const [i, role] of parsed.roles.entries()) {
+    const at = 'roles[' + i + ']'
+    if (!role || typeof role !== 'object' || Array.isArray(role)) refuse(at + ' is not an object')
+    if (typeof role.id !== 'string' || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(role.id)) {
+      refuse(at + '.id must be a non-empty lowercase kebab-case token (got ' +
+        JSON.stringify(role.id) + ')')
+    }
+    if (seen.has(role.id)) refuse('duplicate role id "' + role.id + '"')
+    seen.add(role.id)
+
+    for (const field of ROLE_REQUIRED_TEXT) {
+      if (typeof role[field] !== 'string' || role[field].trim() === '') {
+        refuse(role.id + '.' + field + ' must be a non-empty string')
+      }
+    }
+    for (const field of ROLE_REQUIRED_LISTS) {
+      const list = role[field]
+      if (!Array.isArray(list) || list.length === 0 ||
+          !list.every(x => typeof x === 'string' && x.trim() !== '')) {
+        refuse(role.id + '.' + field + ' must be a non-empty array of non-empty strings')
+      }
+    }
+  }
+
+  const sep = parsed.separation
+  if (!sep || typeof sep !== 'object' || Array.isArray(sep)) refuse('separation must be an object')
+  for (const rule of REQUIRED_SEPARATION) {
+    if (typeof sep[rule] !== 'string' || sep[rule].trim() === '') {
+      refuse('separation.' + rule + ' must be a non-empty string')
+    }
+  }
+
+  return parsed
+}
+
+export const ROLE_MODEL = loadRoleModel()
+
+/** The canonical role ids, DERIVED — never typed out a second time. */
+export const OWNER_ROLES = ROLE_MODEL.roles.map(r => r.id)
 
 /**
  * PRODUCTION_EFFECT: the maximum direct production effect this task is
@@ -162,9 +266,18 @@ export const WRITE_SIDE_PRODUCTION_EFFECTS = [
  * the result compliant; one that could authorise .claude/settings.json could
  * widen the harness permission allow-list. Both are refused at the contract
  * level, so the escalation cannot even be expressed.
+ *
+ * .agent/roles.json is on the floor for exactly the same reason, one level up:
+ * it is the taxonomy that DEFINES authority domains. A task able to edit it
+ * could add itself a role, or rewrite the non-authority list that bounds the
+ * role it already holds — self-authorisation by redefining the vocabulary
+ * rather than by widening a path. Role-taxonomy governance therefore happens
+ * outside an ordinary implementing contract, exactly as task-contract
+ * definition changes already do.
  */
 export const ALWAYS_FORBIDDEN = [
   '.agent/tasks/**',
+  '.agent/roles.json',
   '.claude/settings.json',
   '.claude/settings.local.json',
   '.git/**',
@@ -292,17 +405,16 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   if ('goal' in contract && !isNonEmptyString(contract.goal)) {
     out.push(at + 'goal must be a non-empty string')
   }
-  // risk is closed to the canonical control-plane levels; owner_role stays
-  // syntactic until the role-enforcement layer defines its vocabulary.
+  // Both closed: risk to the control-plane levels, owner_role to the canonical
+  // role model in .agent/roles.json.
   if ('risk' in contract && !RISK_LEVELS.includes(contract.risk)) {
     out.push(at + 'risk must be one of ' + RISK_LEVELS.join(', ') +
       ' (got ' + JSON.stringify(contract.risk) + '). When several levels apply, take the highest.')
   }
-  if ('owner_role' in contract) {
-    if (!isNonEmptyString(contract.owner_role) || !TOKEN.test(contract.owner_role)) {
-      out.push(at + 'owner_role must be a lowercase kebab-case token (got ' +
-        JSON.stringify(contract.owner_role) + ')')
-    }
+  if ('owner_role' in contract && !OWNER_ROLES.includes(contract.owner_role)) {
+    out.push(at + 'owner_role must be one of ' + OWNER_ROLES.join(', ') +
+      ' (got ' + JSON.stringify(contract.owner_role) + '). Roles are defined in ' +
+      ROLES_FILE + '; a role is an authority domain, never permission to exceed this contract.')
   }
   if ('production_effect' in contract && !PRODUCTION_EFFECTS.includes(contract.production_effect)) {
     out.push(at + 'production_effect must be one of ' + PRODUCTION_EFFECTS.join(', ') + ' (got ' +

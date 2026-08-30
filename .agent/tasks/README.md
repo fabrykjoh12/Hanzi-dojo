@@ -19,10 +19,11 @@ cannot do is change a contract's terms *silently*:
 - `contract_digest` covers the binding fields. Edit an acceptance criterion
   without re-sealing and validation fails. Re-seal and the diff carries a
   changed digest line, which is exactly the thing a reviewer looks for.
-- `allowed_paths` may never name `.agent/tasks/**`, `.claude/settings.json` or
-  `.git/**`. A task cannot grant itself the authority to rewrite its own
-  contract or widen the harness permission list — the grant is refused at
-  validation, so the escalation cannot even be written down.
+- `allowed_paths` may never name `.agent/tasks/**`, `.agent/roles.json`,
+  `.claude/settings.json` or `.git/**`. A task cannot grant itself the authority
+  to rewrite its own contract, redefine the role taxonomy that bounds it, or
+  widen the harness permission list — the grant is refused at validation, so the
+  escalation cannot even be written down.
 
 Do not describe this as preventing scope expansion. It makes scope expansion
 **visible and deliberate**, which is what a structural change can honestly buy.
@@ -35,7 +36,7 @@ Every field below is required. Unknown fields are rejected.
 | --- | --- | --- |
 | `id` | kebab-case string | Must equal the filename stem. |
 | `goal` | string | One sentence: what this task is for. |
-| `owner_role` | kebab-case token | Which role owns it. **Vocabulary deliberately not closed** — see below. |
+| `owner_role` | role id | Which authority domain owns it. Closed enum, read from `.agent/roles.json` — see below. |
 | `risk` | `r0`–`r4` | Control-plane risk level. Closed enum — see below. |
 | `allowed_paths` | path[] | The only paths the work may modify. Non-empty. Narrow grammar — see below. |
 | `forbidden_paths` | path[] | Carve-outs inside `allowed_paths`. May be empty, must be present. |
@@ -109,14 +110,75 @@ If a task would carry **multiple write-side effects** (`database`,
 `store-release`, `external-service`), it should normally be **split**, or
 explicitly stopped for review. One enum value is the wrong place to hide that.
 
-## owner_role is required but not yet closed
+## The role model
 
-`owner_role` is **required**, digest-covered, and must be a lowercase kebab-case
-token — but its value set is **not** closed here. The role-enforcement PR
-defines and enforces the real taxonomy; a competing role model invented in the
-task format would have to be migrated away the moment that lands. Tightening a
-syntactic constraint into an enum later is a pure addition; unpicking a wrong
-enum from committed contracts is not.
+`owner_role` is **required**, digest-covered, and closed to exactly the roles in
+[`.agent/roles.json`](../roles.json) — the one canonical source. The validator
+*reads* that file; the list is not restated anywhere, here included. It is also
+on the always-forbidden floor: an ordinary task contract cannot authorise
+editing the taxonomy that defines its own authority domain, so role-taxonomy
+governance happens outside an implementing task, exactly as task-contract
+definition changes already do.
+
+The validator **refuses to run** against a malformed model rather than deriving
+a short or empty enum from it: bad JSON, an unsupported schema version, no
+roles, a duplicate or non-kebab id, a missing documentation field, or a missing
+separation rule all stop the tool at load with a message naming the fault.
+`version` is matched **exactly** against the one schema the validator
+understands — not as a floor — so a future `version: 2` model refuses rather
+than being silently read by the v1 rules. Bump `ROLE_MODEL_VERSION` in the same
+change that teaches the loader the new shape.
+
+It enforces the model's *shape* only — the role ids themselves live in
+`roles.json` and nowhere else.
+
+Each role there carries its purpose, its authority, its explicit
+**non**-authority, and worked examples of what it owns and what it must hand
+off. Read it before choosing one; the boundaries are where the value is.
+
+| Role | Mental model |
+| --- | --- |
+| `product-app` | How the learner moves through and interacts with the application. |
+| `story-content` | What the learner reads and learns, and whether the content semantics are correct. |
+| `scheduler-db` | What the learning system knows, stores, schedules and counts. |
+| `privacy-release` | What may legally/safely ship, and how native/store release authority is exercised. |
+| `workflow-authority` | The repository rules under which work is checked, automated and merged. |
+| `qa` | Independently exercises and verifies behaviour. |
+| `reviewer` | Independently judges the implementation against the contract and diff. |
+| `integrator` | Integrates already-approved work without redefining requirements or gates. |
+
+That table is a *pointer*, not the enum — it names the roles so a reader knows
+what exists; the ids the validator accepts come from `roles.json` alone.
+
+### The three axes are orthogonal
+
+`owner_role` = **authority domain** (what kind of work this is).
+`risk` = **worst reach** (the most impactful thing the work can touch).
+`production_effect` = **maximum direct production effect permitted**.
+
+None implies another. A `workflow-authority` task can be `r0`/`none` or
+`r3`/`none`; a `product-app` task can be `r0` with `deploy-on-merge`. Pick each
+independently.
+
+### A role never overrides a contract
+
+A role is an authority **domain**, never a permission. No role grants the
+ability to modify paths outside `allowed_paths`, to touch `forbidden_paths`, to
+relax `acceptance_criteria`, to ignore `stop_conditions`, or to exceed the
+contract's `risk` or `production_effect`. **Where a role and a contract
+disagree, the contract is narrower and the contract wins.**
+
+### An implementer is not its own reviewer
+
+**The implementer of a task cannot also serve as its independent fresh-context
+reviewer.** Independence is the whole value of the review: an agent judging its
+own work brings the same blind spots and the same reading of the contract that
+produced the work.
+
+This is a **semantic** rule. It is recorded in `roles.json` and asserted by
+`role-model.test.mjs` — but nothing enforces it at runtime. There is no reviewer
+agent and no dispatch layer, so today it binds whoever assigns the work. Do not
+describe it as enforced.
 
 ## The path grammar is deliberately narrow
 
@@ -149,14 +211,15 @@ Fail-closed on all of these:
 - Missing, empty or wrong-typed required fields; unknown fields.
 - `id` not kebab-case, or not matching the filename.
 - `risk` outside `r0`–`r4`, or `production_effect` outside its closed enum.
-- `owner_role` that is not a lowercase kebab-case token.
+- `owner_role` outside the canonical role model in `.agent/roles.json`.
 - Empty `allowed_paths` (no work is authorised) or empty `acceptance_criteria`
   (anything counts as done). Both are contradictions, not defaults.
 - **Any path outside the two-form grammar** — wildcards, character classes,
   braces, backslashes, drive letters, a bare `**`, absolute paths, `..`, empty
   segments.
 - **The always-forbidden floor** — `allowed_paths` naming `.agent/tasks/**`,
-  `.claude/settings.json`, `.claude/settings.local.json` or `.git/**`.
+  `.agent/roles.json`, `.claude/settings.json`, `.claude/settings.local.json` or
+  `.git/**`.
 - **Contradictory paths** — a path both allowed and forbidden, or an allowed
   path entirely inside a forbidden one, where the allowance can never take
   effect. A forbidden path *inside* an allowed one is a carve-out and is fine;
@@ -185,5 +248,7 @@ not, or the terms moved and the digest did not, something is wrong.
 ## What this is not
 
 No task here is executed automatically. Nothing dispatches an agent, nothing
-enforces `owner_role`, nothing reviews the result. This change is the vocabulary
-and the checker; the layers that act on it come later.
+selects a role for you, and nothing reviews the result. `owner_role` is
+*validated* — a contract cannot name a role that does not exist — but it is not
+*enforced*: no hook, no filesystem interception, no reviewer agent. This is the
+vocabulary and the checker; the layers that act on it come later.
