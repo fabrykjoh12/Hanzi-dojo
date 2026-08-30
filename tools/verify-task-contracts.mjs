@@ -112,13 +112,82 @@ export const RISK_LEVELS = ['r0', 'r1', 'r2', 'r3', 'r4']
  * production_effect. Where a role and a contract disagree, the contract is
  * narrower and the contract wins.
  */
+/** Documentation a role must carry to be choosable at all. */
+const ROLE_REQUIRED_TEXT = ['purpose', 'mental_model']
+const ROLE_REQUIRED_LISTS = ['authority', 'non_authority', 'owns_examples', 'hand_off_examples']
+/** Separation rules the model must state. Their CONTENT is asserted in specs. */
+const REQUIRED_SEPARATION = ['implementer_is_not_reviewer', 'role_never_overrides_contract']
+
+/**
+ * Load and FULLY validate the role model, or refuse to run.
+ *
+ * Fail-closed, and it has to be here rather than in a spec: a spec runs later
+ * and separately, so a malformed model would still have been handed to every
+ * contract check in between. A validator that silently accepts a broken
+ * authority model is worse than one that will not start — the enum it derives
+ * would be short, misspelled or empty, and contracts naming real roles would
+ * be rejected while the model itself went unmentioned.
+ *
+ * It deliberately does NOT know the eight role ids. Hardcoding them here would
+ * recreate the second enum this design exists to avoid; .agent/roles.json stays
+ * the canonical taxonomy and this only enforces its SHAPE.
+ */
 function loadRoleModel() {
   // Resolved relative to this module, so the validator works from any cwd.
   const here = path.dirname(fileURLToPath(import.meta.url))
-  const parsed = JSON.parse(readFileSync(path.resolve(here, '..', ROLES_FILE), 'utf8'))
-  if (!parsed || !Array.isArray(parsed.roles) || parsed.roles.length === 0) {
-    throw new Error(ROLES_FILE + ' has no roles — refusing to run with an empty role model')
+  const file = path.resolve(here, '..', ROLES_FILE)
+  const refuse = (why) => {
+    throw new Error(ROLES_FILE + ': ' + why + ' — refusing to run against a malformed role model')
   }
+
+  let parsed
+  try {
+    parsed = JSON.parse(readFileSync(file, 'utf8'))
+  } catch (err) {
+    refuse('could not be read or parsed (' + err.message + ')')
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) refuse('is not a JSON object')
+  if (!Number.isInteger(parsed.version) || parsed.version < 1) {
+    refuse('version must be a positive integer (got ' + JSON.stringify(parsed.version) + ')')
+  }
+  if (!Array.isArray(parsed.roles) || parsed.roles.length === 0) {
+    refuse('has no roles')
+  }
+
+  const seen = new Set()
+  for (const [i, role] of parsed.roles.entries()) {
+    const at = 'roles[' + i + ']'
+    if (!role || typeof role !== 'object' || Array.isArray(role)) refuse(at + ' is not an object')
+    if (typeof role.id !== 'string' || !/^[a-z0-9]+(-[a-z0-9]+)*$/.test(role.id)) {
+      refuse(at + '.id must be a non-empty lowercase kebab-case token (got ' +
+        JSON.stringify(role.id) + ')')
+    }
+    if (seen.has(role.id)) refuse('duplicate role id "' + role.id + '"')
+    seen.add(role.id)
+
+    for (const field of ROLE_REQUIRED_TEXT) {
+      if (typeof role[field] !== 'string' || role[field].trim() === '') {
+        refuse(role.id + '.' + field + ' must be a non-empty string')
+      }
+    }
+    for (const field of ROLE_REQUIRED_LISTS) {
+      const list = role[field]
+      if (!Array.isArray(list) || list.length === 0 ||
+          !list.every(x => typeof x === 'string' && x.trim() !== '')) {
+        refuse(role.id + '.' + field + ' must be a non-empty array of non-empty strings')
+      }
+    }
+  }
+
+  const sep = parsed.separation
+  if (!sep || typeof sep !== 'object' || Array.isArray(sep)) refuse('separation must be an object')
+  for (const rule of REQUIRED_SEPARATION) {
+    if (typeof sep[rule] !== 'string' || sep[rule].trim() === '') {
+      refuse('separation.' + rule + ' must be a non-empty string')
+    }
+  }
+
   return parsed
 }
 
@@ -183,9 +252,18 @@ export const WRITE_SIDE_PRODUCTION_EFFECTS = [
  * the result compliant; one that could authorise .claude/settings.json could
  * widen the harness permission allow-list. Both are refused at the contract
  * level, so the escalation cannot even be expressed.
+ *
+ * .agent/roles.json is on the floor for exactly the same reason, one level up:
+ * it is the taxonomy that DEFINES authority domains. A task able to edit it
+ * could add itself a role, or rewrite the non-authority list that bounds the
+ * role it already holds — self-authorisation by redefining the vocabulary
+ * rather than by widening a path. Role-taxonomy governance therefore happens
+ * outside an ordinary implementing contract, exactly as task-contract
+ * definition changes already do.
  */
 export const ALWAYS_FORBIDDEN = [
   '.agent/tasks/**',
+  '.agent/roles.json',
   '.claude/settings.json',
   '.claude/settings.local.json',
   '.git/**',

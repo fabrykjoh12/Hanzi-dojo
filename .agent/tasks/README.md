@@ -19,10 +19,11 @@ cannot do is change a contract's terms *silently*:
 - `contract_digest` covers the binding fields. Edit an acceptance criterion
   without re-sealing and validation fails. Re-seal and the diff carries a
   changed digest line, which is exactly the thing a reviewer looks for.
-- `allowed_paths` may never name `.agent/tasks/**`, `.claude/settings.json` or
-  `.git/**`. A task cannot grant itself the authority to rewrite its own
-  contract or widen the harness permission list — the grant is refused at
-  validation, so the escalation cannot even be written down.
+- `allowed_paths` may never name `.agent/tasks/**`, `.agent/roles.json`,
+  `.claude/settings.json` or `.git/**`. A task cannot grant itself the authority
+  to rewrite its own contract, redefine the role taxonomy that bounds it, or
+  widen the harness permission list — the grant is refused at validation, so the
+  escalation cannot even be written down.
 
 Do not describe this as preventing scope expansion. It makes scope expansion
 **visible and deliberate**, which is what a structural change can honestly buy.
@@ -113,10 +114,21 @@ explicitly stopped for review. One enum value is the wrong place to hide that.
 
 `owner_role` is **required**, digest-covered, and closed to exactly the roles in
 [`.agent/roles.json`](../roles.json) — the one canonical source. The validator
-*reads* that file; the list is not restated anywhere, here included. Each role
-there carries its purpose, its authority, its explicit **non**-authority, and
-worked examples of what it owns and what it must hand off. Read it before
-choosing one; the boundaries are where the value is.
+*reads* that file; the list is not restated anywhere, here included. It is also
+on the always-forbidden floor: an ordinary task contract cannot authorise
+editing the taxonomy that defines its own authority domain, so role-taxonomy
+governance happens outside an implementing task, exactly as task-contract
+definition changes already do.
+
+The validator **refuses to run** against a malformed model rather than deriving
+a short or empty enum from it: bad JSON, a bad version, no roles, a duplicate or
+non-kebab id, a missing documentation field, or a missing separation rule all
+stop the tool at load with a message naming the fault. It enforces the model's
+*shape* only — the role ids themselves live in `roles.json` and nowhere else.
+
+Each role there carries its purpose, its authority, its explicit
+**non**-authority, and worked examples of what it owns and what it must hand
+off. Read it before choosing one; the boundaries are where the value is.
 
 | Role | Mental model |
 | --- | --- |
@@ -200,7 +212,8 @@ Fail-closed on all of these:
   braces, backslashes, drive letters, a bare `**`, absolute paths, `..`, empty
   segments.
 - **The always-forbidden floor** — `allowed_paths` naming `.agent/tasks/**`,
-  `.claude/settings.json`, `.claude/settings.local.json` or `.git/**`.
+  `.agent/roles.json`, `.claude/settings.json`, `.claude/settings.local.json` or
+  `.git/**`.
 - **Contradictory paths** — a path both allowed and forbidden, or an allowed
   path entirely inside a forbidden one, where the allowance can never take
   effect. A forbidden path *inside* an allowed one is a carve-out and is fine;
