@@ -8,8 +8,10 @@ import {
   SEVERITIES,
   SHA_RE,
   SNAPSHOT_VERSION,
+  VERIFICATION_EVIDENCE_VERSION,
   identityFindings,
-  verificationFindings,
+  verificationEvidenceFindings,
+  loadContractAtCommit,
   resolveGovernanceBoundary,
   governanceBaseFindings,
   REVIEW_DIMENSIONS,
@@ -103,13 +105,20 @@ const cleanResult = (c, over = {}) => {
       criterion: x, status: 'met', evidence: 'src/thing.js:12 and the passing spec',
     })),
     findings: [],
-    verification_run: [{
-      command: 'npm run verify:pr', executed: true, exit_code: 0, evidence: '4205 tests passed',
-    }],
     no_blocking_findings: true,
     ...over,
   }
 }
+
+/** Authoritative evidence that satisfies a contract's required commands. */
+const goodEvidence = (c, over = {}) => ({
+  verification_version: VERIFICATION_EVIDENCE_VERSION,
+  head_sha: HEAD_SHA,
+  runs: c.verification.map(cmd => ({
+    command: cmd, executed: true, exit_code: 0, evidence: 'ok: 4240 passed',
+  })),
+  ...over,
+})
 
 const decide = (over = {}) => decideVerdict({
   contract: over.contract ?? contract(),
@@ -118,6 +127,11 @@ const decide = (over = {}) => decideVerdict({
   integrity: over.integrity ?? [],
   identity: over.identity ?? [],
   governance: over.governance ?? [],
+  verification: over.verification ?? verificationEvidenceFindings({
+    contract: over.contract ?? contract(),
+    evidence: goodEvidence(over.contract ?? contract()),
+    headSha: HEAD_SHA,
+  }),
   toolFailures: over.toolFailures ?? [],
   integrityEvidenceProvided: over.integrityEvidenceProvided ?? true,
 })
@@ -683,7 +697,7 @@ describe('the brief is derived, not written', () => {
   it('carries the contract verbatim, the refs, and the diff command', () => {
     const b = brief()
     expect(b).toContain(JSON.stringify(c, null, 2))
-    expect(b).toContain('git diff ' + BASE_SHA + '...' + HEAD_SHA)
+    expect(b).toContain(BASE_SHA.slice(0, 12) + '...' + HEAD_SHA.slice(0, 12))
     expect(b).toContain('- src/thing.js')
   })
 
@@ -726,8 +740,10 @@ describe('the brief is derived, not written', () => {
 // THE MECHANISM: what the platform actually enforces
 // ---------------------------------------------------------------------------
 
-describe('the reviewer subagent is defined for isolation, not by promise', () => {
+describe('the reviewer cannot write, because it has no tool that writes', () => {
   const frontmatter = AGENT_SRC.split('---')[1] || ''
+  const toolsLine = (frontmatter.match(/^tools:(.*)$/m) || [, ''])[1]
+  const granted = toolsLine.split(',').map(x => x.trim()).filter(Boolean)
 
   it('exists as a subagent definition', () => {
     expect(AGENT_SRC.startsWith('---')).toBe(true)
@@ -736,25 +752,51 @@ describe('the reviewer subagent is defined for isolation, not by promise', () =>
 
   it('is a non-fork subagent, so it does not inherit the implementer context', () => {
     // A fork inherits the entire conversation — system prompt, history, the
-    // implementer's plan and self-justification. That is precisely the thing
-    // this mechanism exists to exclude, so the definition must never become one.
+    // implementer's plan and self-justification. That is precisely what this
+    // mechanism exists to exclude, so the definition must never become one.
     expect(frontmatter).not.toMatch(/fork/)
   })
 
-  it('has its file-writing tools removed by the platform, not by instruction', () => {
-    // tools: is an allowlist and disallowedTools: a denylist, both enforced by
-    // Claude Code. "Please do not edit" in a prompt is not a control.
-    expect(frontmatter).toMatch(/tools:\s*Read,\s*Grep,\s*Glob,\s*Bash/)
-    expect(frontmatter).toMatch(/disallowedTools:.*Edit/)
-    expect(frontmatter).toMatch(/disallowedTools:.*Write/)
-    expect(frontmatter).toMatch(/disallowedTools:.*NotebookEdit/)
+  it('grants exactly Read, Grep and Glob — nothing that can mutate', () => {
+    // `tools:` is a strict allowlist: only the listed tools exist for the
+    // subagent. This is the whole read-only argument. Not "we asked it not to
+    // edit" — there is no edit.
+    expect(granted.sort()).toEqual(['Glob', 'Grep', 'Read'])
   })
 
-  it('runs in a worktree, so Bash cannot reach the implementation checkout', () => {
-    // Bash is broad enough to write files, which would undo the allowlist. The
-    // worktree is what contains that, and it is the reason granting Bash at all
-    // is defensible — the reviewer must be able to RUN the verification.
-    expect(frontmatter).toMatch(/isolation:\s*worktree/)
+  it('grants no tool that can execute anything', () => {
+    for (const runner of ['Bash', 'PowerShell', 'Skill', 'ToolSearch', 'Agent']) {
+      expect(granted, 'reviewer can execute via ' + runner).not.toContain(runner)
+    }
+  })
+
+  it('grants no editing tool', () => {
+    for (const writer of ['Edit', 'Write', 'NotebookEdit']) {
+      expect(granted, 'reviewer can write via ' + writer).not.toContain(writer)
+    }
+  })
+
+  it('grants no MCP server, which could carry a write tool of its own', () => {
+    expect(toolsLine).not.toMatch(/mcp__/)
+    expect(frontmatter).not.toMatch(/^mcpServers:/m)
+  })
+
+  it('denies the mutation-capable tools a second time, so widening tools is not enough', () => {
+    // disallowedTools is applied first and the allowlist resolves against what
+    // remains. Someone who later adds Bash to `tools:` still does not get it.
+    const denied = (frontmatter.match(/^disallowedTools:(.*)$/m) || [, ''])[1]
+    for (const t of ['Bash', 'PowerShell', 'Edit', 'Write', 'NotebookEdit', 'Skill', 'ToolSearch', 'Agent']) {
+      expect(denied, 'not denied: ' + t).toContain(t)
+    }
+  })
+
+  it('does NOT use isolation: worktree, and that is deliberate', () => {
+    // The docs are explicit that an isolated worktree is "branched by default
+    // from your default branch rather than the parent session's HEAD" — so it
+    // would point the reviewer at main, not at the commit under review. It also
+    // confines reads to that worktree. With no shell to contain, it buys
+    // nothing and costs the one thing that matters: reviewing the right code.
+    expect(frontmatter).not.toMatch(/isolation:/)
   })
 
   it('is described as review-only, so it is not delegated implementation work', () => {
@@ -762,17 +804,19 @@ describe('the reviewer subagent is defined for isolation, not by promise', () =>
     expect(frontmatter).toMatch(/Never use it to write, fix, or finish work/i)
   })
 
-  it('tells the reviewer to report rather than fix, and says why', () => {
-    expect(AGENT_SRC).toMatch(/report it anyway/i)
-    expect(AGENT_SRC).toMatch(/independence/i)
+  it('tells the reviewer why it has no shell, and that verification was run for it', () => {
+    expect(AGENT_SRC).toMatch(/no shell/i)
+    expect(AGENT_SRC).toMatch(/verification was run for you/i)
+    expect(AGENT_SRC).toMatch(/diff is in your brief/i)
   })
 
-  it('forbids every action the review posture excludes', () => {
-    const body = AGENT_SRC.toLowerCase().replace(/\s+/g, ' ')
-    for (const forbidden of ['edit implementation files', 'acceptance criteria',
-      'widen allowed paths', 're-seal', 'merge', 'production']) {
-      expect(body, 'the agent never mentions: ' + forbidden).toContain(forbidden)
-    }
+  it('refuses reviewer-authored verification in the returned JSON', () => {
+    expect(AGENT_SRC).toMatch(/Do \*\*not\*\* include a `verification_run` field/)
+  })
+
+  it('tells the reviewer to report rather than fix, and says why', () => {
+    expect(AGENT_SRC).toMatch(/report it/i)
+    expect(AGENT_SRC).toMatch(/independence/i)
   })
 
   it('carries the fail-closed rule in the reviewer\'s own instructions', () => {
@@ -806,8 +850,6 @@ describe('what this mechanism does NOT claim', () => {
 
 // ---------------------------------------------------------------------------
 // THE CLI
-// ---------------------------------------------------------------------------
-
 describe('this task governs itself by the rules it is adding', () => {
   const real = JSON.parse(readFileSync(TASKS_DIR + '/fresh-context-reviewer.json', 'utf8'))
 
@@ -1124,85 +1166,141 @@ describe('an approval requires integrity evidence', () => {
 // CORRECTION 4: a recorded failed verification cannot approve
 // ---------------------------------------------------------------------------
 
-describe('a recorded verification failure cannot approve', () => {
-  const c = contract()
-  const withRun = (run) => cleanResult(c, { verification_run: [run] })
+describe('verification is the driver\'s, and every required command is accounted for', () => {
+  // The reviewer has no shell, so it cannot run the contract's commands and
+  // cannot be the source of the record. The driver runs them at the reviewed
+  // commit and that record is authoritative. What these fixtures pin is that
+  // the accounting is EXACT in both directions — every required command has
+  // one record, and no record stands for a command the contract never asked for.
+  const c = contract({ verification: ['npm run verify:pr', 'npx vitest run x.test.mjs'] })
+  const find = (evidence, headSha = HEAD_SHA) =>
+    verificationEvidenceFindings({ contract: c, evidence, headSha })
+  const verdictWith = (evidence) =>
+    decide({ contract: c, result: cleanResult(c), verification: find(evidence) }).verdict
 
-  it('an otherwise perfect APPROVE with exit_code 1 does not approve', () => {
-    const result = withRun({ command: 'npm run verify:pr', executed: true, exit_code: 1, evidence: '3 failed' })
-    const d = decide({ contract: c, result })
-    expect(d.verdict).not.toBe('APPROVE')
-    expect(d.reasons.join()).toMatch(/verification run failed/)
-    // It is BLOCKED rather than REQUEST_CHANGES because the result ALSO claimed
-    // nothing was blocking. Recording a failure and then asserting it is fine
-    // is a false claim in the record, which is worse than the failure.
-    expect(d.verdict).toBe('BLOCKED')
-    expect(d.reasons.join()).toMatch(/no_blocking_findings is true, but/)
+  it('a clean, complete record approves', () => {
+    expect(find(goodEvidence(c))).toEqual([])
+    expect(verdictWith(goodEvidence(c))).toBe('APPROVE')
   })
 
-  it('distinguishes "ran and failed" from "could not run"', () => {
-    // Ran and failed: something was learned, and it was bad -> REQUEST_CHANGES.
-    const failed = decide({
-      contract: c,
-      result: cleanResult(c, {
-        no_blocking_findings: false,
-        verification_run: [{ command: 'npm test', executed: true, exit_code: 2, evidence: 'assertion failed' }],
-      }),
-    })
-    expect(failed.verdict).toBe('REQUEST_CHANGES')
-    expect(failed.reasons.join()).toMatch(/verification run failed/)
-
-    // Could not run: nothing was learned at all -> BLOCKED.
-    const unrunnable = decide({
-      contract: c,
-      result: withRun({ command: 'npm test', executed: false, exit_code: null, evidence: 'command not found' }),
-    })
-    expect(unrunnable.verdict).toBe('BLOCKED')
-    expect(unrunnable.reasons.join()).toMatch(/could not be executed/)
-  })
-
-  it('treats every non-zero exit as a failure, not just 1', () => {
-    for (const code of [1, 2, 127, 130, -1]) {
-      const d = decide({ contract: c, result: withRun({ command: 'x', executed: true, exit_code: code, evidence: 'e' }) })
-      expect(d.verdict, String(code)).not.toBe('APPROVE')
+  it('BLOCKS when there is no evidence at all', () => {
+    for (const nothing of [null, undefined, 'ran it', []]) {
+      const f = find(nothing)
+      expect(f[0].severity, JSON.stringify(nothing)).toBe('blocker')
+      expect(verdictWith(nothing)).toBe('BLOCKED')
     }
   })
 
-  it('refuses a run with no evidence, even a passing one', () => {
-    // A verification nobody can check is a claim, and claims are what this
-    // whole protocol exists because of.
-    for (const evidence of ['', '   ', undefined]) {
-      const result = withRun({ command: 'npm run verify:pr', executed: true, exit_code: 0, evidence })
-      expect(validateReviewResult(result, { contract: c }).join(), JSON.stringify(evidence))
-        .toMatch(/has no evidence/)
-      expect(decide({ contract: c, result }).verdict).toBe('BLOCKED')
-    }
+  it('BLOCKS an empty run list when the contract requires commands', () => {
+    const f = find(goodEvidence(c, { runs: [] }))
+    expect(f[0].severity).toBe('blocker')
+    expect(f[0].summary).toMatch(/requires verification and none was executed/)
   })
 
-  it('refuses a non-integer exit code that is not an honest "could not run"', () => {
-    const result = withRun({ command: 'x', executed: true, exit_code: 'ok', evidence: 'e' })
-    expect(verificationFindings(result)[0].severity).toBe('blocker')
+  it('BLOCKS when a required command is missing', () => {
+    const partial = goodEvidence(c, {
+      runs: [{ command: c.verification[0], executed: true, exit_code: 0, evidence: 'ok' }],
+    })
+    const f = find(partial)
+    expect(f).toHaveLength(1)
+    expect(f[0].severity).toBe('blocker')
+    expect(f[0].evidence).toContain(c.verification[1])
+    expect(verdictWith(partial)).toBe('BLOCKED')
   })
 
-  it('still approves when every recorded run genuinely passed', () => {
-    const result = cleanResult(c, {
-      verification_run: [
-        { command: 'npm run verify:pr', executed: true, exit_code: 0, evidence: '4205 passed' },
-        { command: 'npx vitest run review-protocol.test.mjs', executed: true, exit_code: 0, evidence: '85 passed' },
+  it('BLOCKS an unrelated easy command substituted for a required one', () => {
+    const swapped = goodEvidence(c, {
+      runs: [
+        { command: c.verification[0], executed: true, exit_code: 0, evidence: 'ok' },
+        { command: 'echo ok', executed: true, exit_code: 0, evidence: 'ok' },
       ],
     })
-    expect(decide({ contract: c, result }).verdict).toBe('APPROVE')
+    const f = find(swapped)
+    expect(f.some(x => /was not executed/.test(x.summary))).toBe(true)
+    expect(f.some(x => /command the contract does not require/.test(x.summary))).toBe(true)
+    expect(verdictWith(swapped)).toBe('BLOCKED')
   })
 
-  it('the reviewer may still be more cautious about a passing run', () => {
-    const result = cleanResult(c, { verdict: 'REQUEST_CHANGES' })
-    expect(decide({ contract: c, result }).verdict).toBe('REQUEST_CHANGES')
+  it('BLOCKS a duplicate standing in for a missing command', () => {
+    // The count looks right. "Exactly one" is what makes it not look right.
+    const doubled = goodEvidence(c, {
+      runs: [
+        { command: c.verification[0], executed: true, exit_code: 0, evidence: 'ok' },
+        { command: c.verification[0], executed: true, exit_code: 0, evidence: 'ok' },
+      ],
+    })
+    const f = find(doubled)
+    expect(f.some(x => /more than one record/.test(x.summary))).toBe(true)
+    expect(f.some(x => /was not executed/.test(x.summary))).toBe(true)
+    expect(verdictWith(doubled)).toBe('BLOCKED')
+  })
+
+  it('BLOCKS when executed is missing or false — nothing was learned', () => {
+    for (const bad of [{ executed: undefined }, { executed: false }, { executed: 'yes' }]) {
+      const runs = c.verification.map(cmd => ({ command: cmd, exit_code: 0, evidence: 'ok', ...bad }))
+      const f = find(goodEvidence(c, { runs }))
+      expect(f[0].severity, JSON.stringify(bad)).toBe('blocker')
+      expect(f[0].summary).toMatch(/did not execute/)
+    }
+  })
+
+  it('BLOCKS a non-integer exit code', () => {
+    const runs = c.verification.map(cmd => ({ command: cmd, executed: true, exit_code: 'ok', evidence: 'e' }))
+    expect(find(goodEvidence(c, { runs }))[0].summary).toMatch(/no integer exit code/)
+  })
+
+  it('cannot approve a non-zero exit — for any non-zero value', () => {
+    for (const code of [1, 2, 127, 130, -1]) {
+      const runs = c.verification.map(cmd => ({ command: cmd, executed: true, exit_code: code, evidence: 'failed' }))
+      const f = find(goodEvidence(c, { runs }))
+      expect(f.every(x => x.severity === 'major'), String(code)).toBe(true)
+      expect(verdictWith(goodEvidence(c, { runs })), String(code)).not.toBe('APPROVE')
+    }
+  })
+
+  it('cannot approve a passing run with no captured output', () => {
+    for (const evidence of ['', '   ', undefined]) {
+      const runs = c.verification.map(cmd => ({ command: cmd, executed: true, exit_code: 0, evidence }))
+      const f = find(goodEvidence(c, { runs }))
+      expect(f.some(x => /no captured output/.test(x.summary)), JSON.stringify(evidence)).toBe(true)
+      expect(verdictWith(goodEvidence(c, { runs }))).not.toBe('APPROVE')
+    }
+  })
+
+  it('BLOCKS evidence bound to a different commit', () => {
+    // Evidence from another head is evidence about other code.
+    const f = find(goodEvidence(c, { head_sha: OTHER_SHA }))
+    expect(f[0].severity).toBe('blocker')
+    expect(f[0].summary).toMatch(/not bound to the reviewed commit/)
+    expect(verdictWith(goodEvidence(c, { head_sha: OTHER_SHA }))).toBe('BLOCKED')
+  })
+
+  it('BLOCKS an unsupported evidence version rather than guessing', () => {
+    for (const v of [0, 2, '1', undefined]) {
+      expect(find(goodEvidence(c, { verification_version: v }))[0].summary, JSON.stringify(v))
+        .toMatch(/Unsupported verification evidence version/)
+    }
+  })
+
+  it('a contract requiring nothing is satisfied by an empty record', () => {
+    const none = contract({ verification: [] })
+    expect(verificationEvidenceFindings({
+      contract: none, evidence: goodEvidence(none), headSha: HEAD_SHA,
+    })).toEqual([])
+  })
+
+  it('REFUSES a reviewer-authored verification_run outright', () => {
+    // Not merely ignored. A reviewer offering its own record is offering a
+    // second, weaker account that nobody ran — and could satisfy a required
+    // command by naming it.
+    const result = cleanResult(c, {
+      verification_run: [{ command: 'npm run verify:pr', executed: true, exit_code: 0, evidence: 'ok' }],
+    })
+    expect(validateReviewResult(result, { contract: c }).join())
+      .toMatch(/verification_run is not a reviewer field/)
+    expect(decide({ contract: c, result, verification: find(goodEvidence(c)) }).verdict).toBe('BLOCKED')
   })
 })
-
-// ---------------------------------------------------------------------------
-// THE CLI
-// ---------------------------------------------------------------------------
 
 describe('the CLI derives, binds and fails closed', () => {
   // These run against purpose-built repositories rather than against this one.
@@ -1219,7 +1317,7 @@ describe('the CLI derives, binds and fails closed', () => {
   afterAll(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }) })
 
   /** A full (non-shallow) repo with a sealed contract and one implementation commit. */
-  const fixtureRepo = ({ shallow = false } = {}) => {
+  const fixtureRepo = ({ shallow = false, verification = ['echo v'] } = {}) => {
     const dir = mkdtempSync(path.join(tmpdir(), 'cli-'))
     dirs.push(dir)
     const g = (args, opts = {}) => spawnSync('git', args, { cwd: dir, encoding: 'utf8', ...opts })
@@ -1228,7 +1326,7 @@ describe('the CLI derives, binds and fails closed', () => {
     g(['config', 'user.name', 'Fixture'])
     g(['commit', '-q', '--allow-empty', '-m', 'root'])
 
-    const c = contract({ id: 'cli-task', allowed_paths: ['src/**'], verification: ['npm test'] })
+    const c = contract({ id: 'cli-task', allowed_paths: ['src/**'], verification })
     mkdirSync(path.join(dir, TASKS_DIR), { recursive: true })
     writeFileSync(path.join(dir, TASKS_DIR, 'cli-task.json'), JSON.stringify(c, null, 2))
     g(['add', '-A']); g(['commit', '-q', '-m', 'governance: seal cli-task'])
@@ -1345,30 +1443,210 @@ describe('the CLI derives, binds and fails closed', () => {
     expect(JSON.parse(out.stdout).observer).toBe('self')
   })
 
-  it('a real prepare/snapshot round-trip detects a write into the review worktree', () => {
-    // End to end against real git: the driver creates the worktree, snapshots
-    // it, something writes into it, and the comparison catches it.
+  it('runs the contract verification in its OWN worktree at the reviewed head', () => {
+    // Driver-executed, bound to the commit, and — critically — in a worktree
+    // separate from the tree the reviewer reads, so build output cannot look
+    // like the reviewer having written a file.
+    const r = fixtureRepo({ verification: ['echo hello-from-verification'] })
+    const out = run(['verify', '--task', 'cli-task', '--head', r.head], r.dir)
+    expect(out.status, out.stderr).toBe(0)
+    const ev = JSON.parse(out.stdout)
+    expect(ev.verification_version).toBe(VERIFICATION_EVIDENCE_VERSION)
+    expect(ev.head_sha).toBe(r.head)
+    expect(ev.runs).toHaveLength(1)
+    expect(ev.runs[0]).toMatchObject({ command: 'echo hello-from-verification', executed: true, exit_code: 0 })
+    expect(ev.runs[0].evidence).toContain('hello-from-verification')
+    expect(verificationEvidenceFindings({ contract: r.contract, evidence: ev, headSha: r.head })).toEqual([])
+  })
+
+  it('records a real failure honestly rather than hiding it', () => {
+    const r = fixtureRepo({ verification: ['sh -c "echo boom >&2; exit 3"'] })
+    const ev = JSON.parse(run(['verify', '--task', 'cli-task', '--head', r.head], r.dir).stdout)
+    expect(ev.runs[0].executed).toBe(true)
+    expect(ev.runs[0].exit_code).toBe(3)
+    const f = verificationEvidenceFindings({ contract: r.contract, evidence: ev, headSha: r.head })
+    expect(f[0].severity).toBe('major')
+  })
+
+  it('verification build output never reaches the tree the reviewer reads', () => {
+    // The whole reason verification gets its own worktree: a dist/ written by a
+    // build would otherwise be indistinguishable from the reviewer having
+    // written a file, and would block every review that ran a build.
+    const r = fixtureRepo({ verification: ['sh -c "mkdir -p dist && echo x > dist/out.js"'] })
+    const before = JSON.parse(run(['snapshot', '--worktree', r.dir], r.dir).stdout)
+    const ev = JSON.parse(run(['verify', '--task', 'cli-task', '--head', r.head], r.dir).stdout)
+    expect(ev.runs[0].exit_code).toBe(0)
+    const after = JSON.parse(run(['snapshot', '--worktree', r.dir], r.dir).stdout)
+    expect(reviewIntegrityFindings(before, after, { headSha: r.head })).toEqual([])
+    expect(after.entries['dist/out.js'], 'build output leaked into the review tree').toBeUndefined()
+  })
+
+  it('removes its verification worktree, leaving only the main one registered', () => {
+    // A leaked worktree accumulates and, being at the reviewed head, is exactly
+    // the thing someone could later mistake for the review tree.
+    const r = fixtureRepo({ verification: ['echo v'] })
+    const listed = () => spawnSync('git', ['worktree', 'list', '--porcelain'],
+      { cwd: r.dir, encoding: 'utf8' }).stdout.split('\n').filter(l => l.startsWith('worktree '))
+    expect(listed()).toHaveLength(1)
+    expect(run(['verify', '--task', 'cli-task', '--head', r.head], r.dir).status).toBe(0)
+    expect(listed(), 'verification worktree was left registered').toHaveLength(1)
+  })
+
+  it('BLOCKS a brief when the working tree is not at the reviewed head', () => {
+    // The reviewer reads THIS tree with Read/Grep/Glob and has no shell to
+    // check out another. So the tree must already be the reviewed commit.
     const r = fixtureRepo()
-    const wt = path.join(mkdtempSync(path.join(tmpdir(), 'wt-')), 'tree')
-    dirs.push(path.dirname(wt))
-    try {
-      const prep = run(['prepare', '--task', 'cli-task', '--head', r.head, '--worktree', wt], r.dir)
-      expect(prep.status, prep.stderr).toBe(0)
-      const { snapshot: before, head_sha: headSha, base_sha: baseSha } = JSON.parse(prep.stdout)
-      expect(headSha).toBe(r.head)
-      expect(baseSha).toBe(r.governance)
-      expect(before.observer).toBe('external')
+    spawnSync('git', ['checkout', '-q', 'HEAD~1'], { cwd: r.dir, encoding: 'utf8' })
+    const out = run(['brief', '--task', 'cli-task', '--head', r.head], r.dir)
+    expect(out.status).not.toBe(0)
+    expect(out.stderr).toMatch(/not the reviewed head/)
+    expect(out.stderr).toMatch(/no shell to check out another/)
+  })
 
-      const clean = JSON.parse(run(['snapshot', '--worktree', wt], r.dir).stdout)
-      expect(reviewIntegrityFindings(before, clean, { headSha })).toEqual([])
+  it('BLOCKS a brief when the working tree is dirty', () => {
+    const r = fixtureRepo()
+    writeFileSync(path.join(r.dir, 'src', 'thing.js'), 'locally edited\n')
+    const out = run(['brief', '--task', 'cli-task', '--head', r.head], r.dir)
+    expect(out.status).not.toBe(0)
+    expect(out.stderr).toMatch(/uncommitted changes/)
+  })
 
-      writeFileSync(path.join(wt, 'REVIEWER-WAS-HERE.md'), 'I fixed it for you\n')
-      const dirty = JSON.parse(run(['snapshot', '--worktree', wt], r.dir).stdout)
-      const found = reviewIntegrityFindings(before, dirty, { headSha })
-      expect(found.some(f => f.evidence.includes('REVIEWER-WAS-HERE.md'))).toBe(true)
-      expect(found[0].severity).toBe('blocker')
-    } finally {
-      spawnSync('git', ['worktree', 'remove', '--force', wt], { cwd: r.dir, encoding: 'utf8' })
+  it('puts the raw diff in the brief, so the reviewer needs no shell to see it', () => {
+    const r = fixtureRepo()
+    const out = run(['brief', '--task', 'cli-task', '--head', r.head], r.dir)
+    expect(out.status, out.stderr).toBe(0)
+    expect(out.stdout).toContain('```diff')
+    expect(out.stdout).toContain('+++ b/src/thing.js')
+    expect(out.stdout).toMatch(/Derived mechanically from the governance commit/)
+  })
+
+  it('carries the verification output into the brief when it is supplied', () => {
+    const r = fixtureRepo({ verification: ['echo carried-through'] })
+    const ev = path.join(r.dir, '..', 'ev.json')
+    writeFileSync(ev, run(['verify', '--task', 'cli-task', '--head', r.head], r.dir).stdout)
+    const out = run(['brief', '--task', 'cli-task', '--head', r.head, '--verification', ev], r.dir)
+    expect(out.status, out.stderr).toBe(0)
+    expect(out.stdout).toContain('carried-through')
+    expect(out.stdout).toMatch(/Verification, executed for you at/)
+  })
+
+  it('says so in the brief when no verification was supplied', () => {
+    const r = fixtureRepo()
+    const out = run(['brief', '--task', 'cli-task', '--head', r.head], r.dir)
+    expect(out.stdout).toMatch(/NONE SUPPLIED/)
+  })
+})
+
+describe('THE CONTRACT COMES FROM THE REVIEWED COMMIT, NOT THE WORKING TREE', () => {
+  // Finding 3, with real repositories. A locally re-sealed contract is VALID —
+  // every digest check passes — so nothing downstream would notice it had
+  // quietly relaxed its own acceptance criteria and widened its own
+  // allowed_paths. It must have zero influence on a review of an older head.
+  const CLI = path.resolve('tools/review-task.mjs')
+  const dirs = []
+  afterAll(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }) })
+
+  const strictThenTampered = () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'bind-'))
+    dirs.push(dir)
+    const g = (args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' })
+    g(['init', '-q', '-b', 'main'])
+    g(['config', 'user.email', 'f@example.test']); g(['config', 'user.name', 'F'])
+    g(['commit', '-q', '--allow-empty', '-m', 'root'])
+
+    const strict = contract({
+      id: 'bound', allowed_paths: ['src/**'], verification: ['echo v'],
+      acceptance_criteria: ['STRICT: the hard criterion'],
+    })
+    mkdirSync(path.join(dir, TASKS_DIR), { recursive: true })
+    writeFileSync(path.join(dir, TASKS_DIR, 'bound.json'), JSON.stringify(strict, null, 2))
+    g(['add', '-A']); g(['commit', '-q', '-m', 'governance: seal bound'])
+    const governance = g(['rev-parse', 'HEAD']).stdout.trim()
+
+    mkdirSync(path.join(dir, 'src'), { recursive: true })
+    writeFileSync(path.join(dir, 'src', 'thing.js'), 'work\n')
+    g(['add', '-A']); g(['commit', '-q', '-m', 'feat: work'])
+    const head = g(['rev-parse', 'HEAD']).stdout.trim()
+
+    // Now tamper LOCALLY, without committing: relaxed criteria, widened paths,
+    // validly re-sealed so it passes every digest check on its own terms.
+    const lax = contract({
+      id: 'bound', allowed_paths: ['src/**', 'anywhere/**'], verification: ['echo v'],
+      acceptance_criteria: ['LAX: anything goes'],
+    })
+    writeFileSync(path.join(dir, TASKS_DIR, 'bound.json'), JSON.stringify(lax, null, 2))
+    return { dir, governance, head, strict, lax, g }
+  }
+
+  it('loadContractAtCommit returns the COMMITTED bytes, not the working tree', () => {
+    const r = strictThenTampered()
+    const git = (args) => {
+      const out = spawnSync('git', args, { cwd: r.dir, encoding: 'utf8' })
+      return { status: out.status, stdout: out.stdout || '', stderr: out.stderr || '' }
+    }
+    const { contract: loaded, error } = loadContractAtCommit({ taskId: 'bound', commitSha: r.head, git })
+    expect(error).toBeNull()
+    expect(loaded.acceptance_criteria).toEqual(['STRICT: the hard criterion'])
+    expect(loaded.allowed_paths).not.toContain('anywhere/**')
+    expect(loaded.contract_digest).toBe(r.strict.contract_digest)
+  })
+
+  it('the brief uses the committed contract even with a valid tampered one on disk', () => {
+    const r = strictThenTampered()
+    // Commit the tamper so the tree is clean — otherwise the dirty guard fires
+    // first and we would not be testing the binding at all.
+    r.g(['stash', '-q', '-u'])
+    const out = spawnSync('node', [CLI, 'brief', '--task', 'bound', '--head', r.head],
+      { cwd: r.dir, encoding: 'utf8' })
+    expect(out.status, out.stderr).toBe(0)
+    expect(out.stdout).toContain('STRICT: the hard criterion')
+    expect(out.stdout).not.toContain('LAX: anything goes')
+    expect(out.stdout).not.toContain('anywhere/**')
+  })
+
+  it('a tampered contract on ANOTHER branch has no influence on the reviewed head', () => {
+    // The decision may be run from a different checkout entirely. What matters
+    // is the commit, not where the process happens to be standing.
+    const r = strictThenTampered()
+    r.g(['stash', '-q', '-u'])
+    r.g(['checkout', '-q', '-b', 'other'])
+    const lax = contract({
+      id: 'bound', allowed_paths: ['src/**', 'anywhere/**'], verification: ['echo v'],
+      acceptance_criteria: ['LAX: anything goes'],
+    })
+    writeFileSync(path.join(r.dir, TASKS_DIR, 'bound.json'), JSON.stringify(lax, null, 2))
+    r.g(['add', '-A']); r.g(['commit', '-q', '-m', 'governance: relax on another branch'])
+
+    const git = (args) => {
+      const out = spawnSync('git', args, { cwd: r.dir, encoding: 'utf8' })
+      return { status: out.status, stdout: out.stdout || '', stderr: out.stderr || '' }
+    }
+    const { contract: loaded } = loadContractAtCommit({ taskId: 'bound', commitSha: r.head, git })
+    expect(loaded.acceptance_criteria).toEqual(['STRICT: the hard criterion'])
+  })
+
+  it('BLOCKS when the reviewed commit carries no contract at all', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'nocontract-'))
+    dirs.push(dir)
+    const g = (args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' })
+    g(['init', '-q', '-b', 'main'])
+    g(['config', 'user.email', 'f@example.test']); g(['config', 'user.name', 'F'])
+    g(['commit', '-q', '--allow-empty', '-m', 'root'])
+    const head = g(['rev-parse', 'HEAD']).stdout.trim()
+    const git = (args) => {
+      const out = spawnSync('git', args, { cwd: dir, encoding: 'utf8' })
+      return { status: out.status, stdout: out.stdout || '', stderr: out.stderr || '' }
+    }
+    const { contract: loaded, error } = loadContractAtCommit({ taskId: 'bound', commitSha: head, git })
+    expect(loaded).toBeNull()
+    expect(error).toMatch(/does not exist at/)
+  })
+
+  it('refuses a commit id that is not a full SHA', () => {
+    const git = () => ({ status: 0, stdout: '', stderr: '' })
+    for (const bad of ['HEAD', 'main', '', null, 'abc1234']) {
+      expect(loadContractAtCommit({ taskId: 'bound', commitSha: bad, git }).error, JSON.stringify(bad))
+        .toMatch(/not a full commit SHA/)
     }
   })
 })

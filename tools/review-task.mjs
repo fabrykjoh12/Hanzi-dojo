@@ -17,7 +17,8 @@
 // code cannot accidentally read a failure as an approval.
 
 import { readFile } from 'node:fs/promises'
-import { lstatSync, readlinkSync } from 'node:fs'
+import { lstatSync, readlinkSync, mkdtempSync } from 'node:fs'
+import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import path from 'node:path'
@@ -25,6 +26,9 @@ import process from 'node:process'
 import {
   SNAPSHOT_VERSION,
   SHA_RE,
+  VERIFICATION_EVIDENCE_VERSION,
+  loadContractAtCommit,
+  verificationEvidenceFindings,
   buildReviewBrief,
   mechanicalFindings,
   reviewIntegrityFindings,
@@ -32,17 +36,19 @@ import {
   governanceBaseFindings,
   resolveGovernanceBoundary,
   decideVerdict,
-  loadContractForReview,
 } from './review-protocol.mjs'
 
 const USAGE = `Usage:
-  node tools/review-task.mjs prepare  --task <id> --head <ref> --worktree <dir>
-  node tools/review-task.mjs brief    --task <id> --head <ref> [--worktree <dir>]
+  node tools/review-task.mjs verify   --task <id> --head <ref> [--worktree <dir>]
+  node tools/review-task.mjs brief    --task <id> --head <ref> --verification <v.json>
   node tools/review-task.mjs snapshot --worktree <dir> [--observer external|self]
   node tools/review-task.mjs decide   --task <id> --head <ref> --result <f.json> \\
+                                      --verification <v.json> \\
                                       --before <snap.json> --after <snap.json>
 
   The base is DERIVED from the governance commit. There is no --base.
+  The contract is read from the reviewed commit, never from the working tree.
+  The reviewer has no shell: 'verify' runs the contract's commands for it.
 `
 
 function parseArgs(argv) {
@@ -185,21 +191,63 @@ const readJson = async (file, what) => {
 
 /** Everything both `brief` and `decide` must agree on, derived the same way twice. */
 async function resolveReview(taskId, headRef) {
-  const { contract, error } = await loadContractForReview(taskId)
-  if (error) return { error }
+  const git = gitIn(process.cwd())
+  // Identity FIRST. Everything else — the contract included — is then read out
+  // of that commit, so nothing about the review can come from local state.
   const headSha = resolveSha(headRef)
   if (!headSha) return { error: 'could not resolve --head ' + JSON.stringify(headRef) + ' to a commit' }
-  const gov = resolveGovernanceBoundary({ taskId, headSha, git: gitIn(process.cwd()) })
+
+  const gov = resolveGovernanceBoundary({ taskId, headSha, git })
   if (gov.error) return { error: gov.error }
-  const diff = gitIn(process.cwd())(['diff', '--name-only', gov.boundarySha + '...' + headSha])
-  if (diff.status !== 0) return { error: 'git diff failed: ' + diff.stderr.trim() }
+
+  const { contract, error } = loadContractAtCommit({ taskId, commitSha: headSha, git })
+  if (error) return { error }
+
+  const names = git(['diff', '--name-only', gov.boundarySha + '...' + headSha])
+  if (names.status !== 0) return { error: 'git diff --name-only failed: ' + names.stderr.trim() }
+  const patch = git(['diff', gov.boundarySha + '...' + headSha])
+  if (patch.status !== 0) return { error: 'git diff failed: ' + patch.stderr.trim() }
+
   return {
     contract,
     headSha,
     baseSha: gov.boundarySha,
-    changedPaths: diff.stdout.split('\n').map(x => x.trim()).filter(Boolean),
+    changedPaths: names.stdout.split('\n').map(x => x.trim()).filter(Boolean),
+    diffText: patch.stdout,
     error: null,
   }
+}
+
+/**
+ * Run one required command in a throwaway worktree at the reviewed commit.
+ *
+ * Its own worktree, separate from the tree the reviewer reads, so build and test
+ * output cannot contaminate the integrity snapshot — a `dist/` written by
+ * `npm run build` would otherwise look exactly like the reviewer having written
+ * a file.
+ */
+function runVerification(commands, headSha, root) {
+  const runs = []
+  for (const command of commands) {
+    const r = spawnSync(command, {
+      cwd: root, shell: true, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
+      env: { ...process.env, CI: '1' },
+    })
+    if (r.error) {
+      // Could not execute at all. Recorded as such, because "nothing was
+      // learned" and "something bad was learned" are different verdicts.
+      runs.push({ command, executed: false, exit_code: null, evidence: String(r.error.message).slice(0, 4000) })
+      continue
+    }
+    const tail = ((r.stdout || '') + (r.stderr || '')).trim().split('\n').slice(-40).join('\n')
+    runs.push({
+      command,
+      executed: true,
+      exit_code: r.status === null ? -1 : r.status,
+      evidence: tail === '' ? '(command produced no output)' : tail.slice(0, 8000),
+    })
+  }
+  return { verification_version: VERIFICATION_EVIDENCE_VERSION, head_sha: headSha, runs }
 }
 
 async function main(argv = process.argv.slice(2)) {
@@ -213,18 +261,25 @@ async function main(argv = process.argv.slice(2)) {
     return 0
   }
 
-  if (cmd === 'prepare') {
-    if (!args.task || !args.head || !args.worktree) { process.stderr.write(USAGE); return 2 }
+  if (cmd === 'verify') {
+    if (!args.task || !args.head) { process.stderr.write(USAGE); return 2 }
     const r = await resolveReview(args.task, args.head)
     if (r.error) { process.stderr.write('BLOCKED: ' + r.error + '\n'); return 1 }
-    // The DRIVER creates the worktree. That is the whole point: a worktree the
-    // reviewer creates for itself cannot yield evidence about itself.
-    const add = gitIn(process.cwd())(['worktree', 'add', '--detach', args.worktree, r.headSha])
-    if (add.status !== 0) { process.stderr.write('BLOCKED: git worktree add failed: ' + add.stderr + '\n'); return 1 }
-    process.stdout.write(JSON.stringify({
-      task: args.task, base_sha: r.baseSha, head_sha: r.headSha, worktree: args.worktree,
-      snapshot: snapshotWorktree(args.worktree, 'external'),
-    }, null, 2) + '\n')
+
+    // A worktree the DRIVER owns, at the exact reviewed commit. Separate from
+    // the tree the reviewer reads so build output cannot contaminate the
+    // integrity snapshot.
+    const root = args.worktree || path.join(mkdtempSync(path.join(tmpdir(), 'review-verify-')), 'tree')
+    const add = gitIn(process.cwd())(['worktree', 'add', '--detach', root, r.headSha])
+    if (add.status !== 0) {
+      process.stderr.write('BLOCKED: git worktree add failed: ' + add.stderr + '\n')
+      return 1
+    }
+    try {
+      process.stdout.write(JSON.stringify(runVerification(r.contract.verification, r.headSha, root), null, 2) + '\n')
+    } finally {
+      gitIn(process.cwd())(['worktree', 'remove', '--force', root])
+    }
     return 0
   }
 
@@ -238,8 +293,39 @@ async function main(argv = process.argv.slice(2)) {
     }
     const r = await resolveReview(args.task, args.head)
     if (r.error) { process.stderr.write('BLOCKED: ' + r.error + '\n'); return 1 }
+
+    // The reviewer reads THIS working tree with Read/Grep/Glob — it has no shell
+    // to check out anything else. So the tree has to already BE the reviewed
+    // commit, and clean, or the reviewer would be reading code that is not what
+    // the verdict binds to.
+    const git = gitIn(process.cwd())
+    const at = git(['rev-parse', 'HEAD'])
+    if (at.status !== 0 || at.stdout.trim() !== r.headSha) {
+      process.stderr.write('BLOCKED: the working tree is at ' + at.stdout.trim().slice(0, 12) +
+        ', not the reviewed head ' + r.headSha.slice(0, 12) +
+        ' — the reviewer reads this tree and has no shell to check out another\n')
+      return 1
+    }
+    const dirty = git(['status', '--porcelain', '--untracked-files=all'])
+    if (dirty.status !== 0 || dirty.stdout.trim() !== '') {
+      process.stderr.write('BLOCKED: the working tree has uncommitted changes, so what the ' +
+        'reviewer reads is not the reviewed commit:\n' + dirty.stdout)
+      return 1
+    }
+
+    let verificationEvidence = null
+    if (args.verification) {
+      try {
+        verificationEvidence = await readJson(args.verification, 'verification evidence')
+      } catch (err) {
+        process.stderr.write('BLOCKED: ' + err.message + '\n')
+        return 1
+      }
+    }
+
     process.stdout.write(buildReviewBrief({
-      contract: r.contract, baseSha: r.baseSha, headSha: r.headSha, changedPaths: r.changedPaths,
+      contract: r.contract, baseSha: r.baseSha, headSha: r.headSha,
+      changedPaths: r.changedPaths, diffText: r.diffText, verificationEvidence,
     }) + '\n')
     return 0
   }
@@ -273,10 +359,22 @@ async function main(argv = process.argv.slice(2)) {
       toolFailures.push(err.message)
     }
 
+    // The authoritative verification record. Absent is not "skip the check" —
+    // it is a blocking finding, because the contract's commands then went unrun.
+    let evidence = null
+    if (args.verification) {
+      try {
+        evidence = await readJson(args.verification, 'verification evidence')
+      } catch (err) {
+        toolFailures.push(err.message)
+      }
+    }
+    const verification = contract
+      ? verificationEvidenceFindings({ contract, evidence, headSha })
+      : []
+
     const identity = identityFindings({ result, baseSha, headSha })
 
-    // Integrity evidence is required for an approval, so its absence is not a
-    // skipped optional step — it is the decision's own reason to refuse.
     const integrityEvidenceProvided = Boolean(args.before && args.after)
     let integrity = []
     if (integrityEvidenceProvided) {
@@ -292,12 +390,12 @@ async function main(argv = process.argv.slice(2)) {
     }
 
     const decision = decideVerdict({
-      contract, result, mechanical, integrity, identity, governance,
+      contract, result, mechanical, integrity, identity, governance, verification,
       toolFailures, integrityEvidenceProvided,
     })
     process.stdout.write(JSON.stringify(decision, null, 2) + '\n')
     process.stdout.write('\nVERDICT: ' + decision.verdict + '\n')
-    for (const r of decision.reasons) process.stdout.write('  - ' + r + '\n')
+    for (const x of decision.reasons) process.stdout.write('  - ' + x + '\n')
     return decision.verdict === 'APPROVE' ? 0 : 1
   }
 
@@ -317,4 +415,4 @@ if (process.argv[1] && process.argv[1].endsWith('review-task.mjs')) {
   )
 }
 
-export { snapshotWorktree, resolveSha, gitIn, resolveReview, main }
+export { snapshotWorktree, resolveSha, gitIn, resolveReview, runVerification, main }

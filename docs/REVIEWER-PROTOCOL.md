@@ -35,10 +35,54 @@ anyway — it is not the implementer's account of this change.
 
 | Frontmatter | Why |
 | --- | --- |
-| `tools: Read, Grep, Glob, Bash` | An allowlist, enforced by the platform. |
-| `disallowedTools: Edit, Write, NotebookEdit` | The file-editing tools are removed. "Please don't edit" in a prompt is not a control; this is. |
-| `isolation: worktree` | `Bash` is broad enough to write files, which would undo the allowlist. The worktree is a throwaway copy, and commands are checked to stay inside it. This is what makes granting `Bash` defensible — the reviewer must be able to *run* the verification, not just read about it. |
+| `tools: Read, Grep, Glob` | A strict allowlist: **only** these three tools exist for the subagent. Not "we asked it not to edit" — there is no edit, no shell, no skill, no MCP, no nested agent. |
+| `disallowedTools: Bash, PowerShell, Edit, Write, NotebookEdit, Skill, ToolSearch, Agent, WebFetch, WebSearch` | `disallowedTools` is applied first and the allowlist resolves against what remains, so someone who later adds `Bash` to `tools:` still does not get it. |
 | no `fork` | A fork inherits the entire conversation, which is precisely what must not happen. A spec fails if the word appears in the frontmatter. |
+| **no `isolation: worktree`** | See below. It would point the reviewer at the wrong commit. |
+
+### Why the reviewer has no shell
+
+An earlier revision granted `Bash` and tried to contain it. That does not work,
+and the reason is worth keeping written down: removing `Edit`/`Write` does not
+make a shell read-only. `Bash` can write, delete, `chmod`, replace files, run a
+script that modifies files, and put them back. The only mechanisms that would
+genuinely constrain it are a `PreToolUse` hook or the Bash sandbox's
+`filesystem.denyWrite` — and the sandbox is configured in `settings.json` and
+inherited from the parent session, with no per-agent key.
+
+So the capability is removed instead of constrained. With `Read`, `Grep` and
+`Glob` there is no platform-accessible path for the reviewer to mutate anything:
+
+| Path | Status |
+| --- | --- |
+| `Bash`, `PowerShell` | not granted |
+| `Edit`, `Write`, `NotebookEdit` | not granted |
+| `Skill` | not granted — cannot load a skill that shells out |
+| `ToolSearch` | not granted — cannot surface a deferred MCP tool |
+| `Agent` | not granted — cannot spawn a wider-tooled sub-subagent |
+| MCP servers | none granted, and no `mcp__` pattern in the allowlist |
+
+That is what makes read-only a fact about the platform rather than a promise
+about behaviour — and it satisfies the sealed acceptance criterion without a
+hook, a sandbox setting, or any runtime enforcement.
+
+### Why `isolation: worktree` was removed
+
+It existed only to contain `Bash`. With no shell it has no job, and it actively
+breaks the review, because the docs are explicit about what it does:
+
+> an isolated copy of the repository **branched by default from your default
+> branch rather than the parent session's `HEAD`**
+
+A worktree branched from `main` is not the commit under review. The reviewer,
+whose `Read`/`Grep`/`Glob` operate on whatever tree it is rooted in, would have
+been reading the wrong code — and worktree isolation also confines reads, so a
+driver-prepared exact-head tree elsewhere would be unreachable.
+
+Instead: **`brief` refuses unless the working tree is exactly the reviewed
+commit and clean.** The reviewer has no shell to check out anything else, so the
+tree it reads has to already be the right one, and the driver proves that rather
+than asking.
 
 ## The protocol
 
@@ -105,6 +149,51 @@ The CLI exits `0` only for `APPROVE`.
 A reviewer may be **more** cautious than the machinery and never less. If it
 returns `BLOCKED` where the checks computed `APPROVE`, `BLOCKED` stands — it saw
 something no function can.
+
+### Verification is the driver's, and every required command is accounted for
+
+The reviewer cannot run the contract's commands, so the driver runs them —
+`review-task.mjs verify`, in **its own throwaway worktree at the reviewed
+commit**, separate from the tree the reviewer reads so that build and test output
+cannot look like the reviewer having written a file. The record it produces is
+the only one that counts, and it is bound to `head_sha`.
+
+Accounting is exact in both directions. Every entry in `contract.verification`
+must have **exactly one** record — not "at least one", because that lets a
+duplicate of an easy command stand in for a missing hard one while the count
+still looks right — and a record naming a command the contract never required is
+itself a blocker, so an easier command cannot substitute.
+
+A reviewer-authored `verification_run` is **refused outright**, not ignored. A
+second account nobody ran could only disagree with the one that was, and worse,
+it would let a reviewer satisfy a required command by naming it. Supplemental
+observations belong in a dimension note or a finding.
+
+| Case | Outcome |
+| --- | --- |
+| No evidence at all | `BLOCKED` |
+| Empty record while the contract requires commands | `BLOCKED` |
+| A required command missing | `BLOCKED` |
+| A duplicate standing in for a missing command | `BLOCKED` |
+| A command the contract does not require | `BLOCKED` |
+| `executed` missing or false | `BLOCKED` — nothing was learned |
+| Non-integer exit code | `BLOCKED` |
+| Evidence bound to another commit | `BLOCKED` |
+| Non-zero exit | cannot approve |
+| Passing run with no captured output | cannot approve |
+
+### The contract comes from the reviewed commit
+
+`loadContractAtCommit()` reads `git show <head>:.agent/tasks/<id>.json`. Nothing
+about the review comes from the working tree.
+
+The failure this closes is quiet: a locally re-sealed contract is **valid** —
+every digest check passes on its own terms — so a version that relaxed its own
+acceptance criteria and widened its own `allowed_paths` would have become the
+review standard without appearing in the reviewed diff at all. Now the contract
+bytes, the digest, the governance boundary, the implementation diff, the
+verification evidence and the reviewer's verdict all bind to the same immutable
+history.
 
 ### The brief is derived — but delivery is not sealed
 
@@ -183,22 +272,30 @@ treating the path as the effect is exactly the contradiction the
 ## Running it
 
 ```bash
-# 1. The DRIVER creates and snapshots the review worktree. This is what makes
-#    the integrity evidence external rather than self-attested.
-node tools/review-task.mjs prepare --task <id> --head <ref> --worktree /tmp/rw \
-  | tee prepared.json                       # .snapshot is the "before"
+# 0. Check out the exact commit under review. The reviewer reads this tree and
+#    has no shell to check out another; `brief` refuses if it is wrong or dirty.
+git checkout <head-sha>
 
-# 2. The brief — everything the reviewer gets. There is no --base.
-node tools/review-task.mjs brief --task <id> --head <ref>
+# 1. The DRIVER runs the contract's verification, in its own worktree at that
+#    commit, so its output never touches the tree the reviewer reads.
+node tools/review-task.mjs verify --task <id> --head <head-sha> > verification.json
 
-# 3. …delegate to the fresh-context-reviewer, collect its JSON as result.json…
+# 2. Snapshot the review tree, from the driver — the "before".
+node tools/review-task.mjs snapshot --worktree . > before.json
 
-# 4. Snapshot again, from the driver.
-node tools/review-task.mjs snapshot --worktree /tmp/rw > after.json
+# 3. The brief: sealed contract from the commit, raw diff, verification output.
+#    There is no --base.
+node tools/review-task.mjs brief --task <id> --head <head-sha> \
+  --verification verification.json
 
-# 5. The decision. Exits 0 only on APPROVE.
-node tools/review-task.mjs decide --task <id> --head <ref> --result result.json \
-  --before before.json --after after.json
+# 4. …delegate to the fresh-context-reviewer, collect its JSON as result.json…
+
+# 5. Snapshot again, from the driver.
+node tools/review-task.mjs snapshot --worktree . > after.json
+
+# 6. The decision. Exits 0 only on APPROVE.
+node tools/review-task.mjs decide --task <id> --head <head-sha> --result result.json \
+  --verification verification.json --before before.json --after after.json
 ```
 
 Integrity evidence is **required**: a `decide` without `--before/--after` is
@@ -221,16 +318,11 @@ separation with a documented gap, and closing that gap needs something outside
 this repository — a CI-invoked reviewer, or a required GitHub reviewer that is a
 different account. Both are deliberately out of scope here.
 
-**2. Read-only is enforced unevenly, and the detective half has a named gap.**
+**2. Read-only is now a capability fact; the detective half still has a named gap.**
 
-`Edit`, `Write` and `NotebookEdit` are removed by the platform. `Bash` is
-granted, because a reviewer that cannot run the verification cannot check
-anything — and `Bash` can write files. `isolation: worktree` contains that:
-filesystem effects land in a throwaway copy. Network-reaching commands remain
-possible in principle.
-
-The snapshot comparison is the detective half, and **where it is taken decides
-whether it is worth anything.**
+The reviewer has no tool that can write. That part is settled. What the snapshot
+comparison adds is evidence that it held — and **where it is taken decides
+whether that evidence is worth anything.**
 
 - A snapshot taken *inside the reviewer's own context* is **self-attestation**.
   A reviewer that wanted to hide a write would take the "after" snapshot before
@@ -252,7 +344,16 @@ The snapshot covers tracked content, tracked deletions, new non-ignored
 untracked files, and file modes — a same-bytes exec-bit flip is a real change
 and a hash-only snapshot would have called it untouched.
 
-**3. The protocol validates shape, not judgment.**
+**3. The reviewer reads the working tree, and the guard is the driver's.**
+
+`brief` refuses unless the checkout is the reviewed commit and clean. That is a
+real, checked precondition, not a request — but it is checked at brief time. A
+driver that briefed correctly and then changed the checkout underneath the
+reviewer would not be caught by it. The integrity snapshots bracket the review
+and would show the tree moving, which is what makes this a gap worth naming
+rather than one worth hiding.
+
+**4. The protocol validates shape, not judgment.**
 
 Nothing here can tell a thorough review from a lazy one that filled in every
 field. `validateReviewResult()` guarantees a *complete* answer, not a *correct*
@@ -271,12 +372,12 @@ They catch the under-classifications the repo has actually seen. A change that
 reaches something dangerous through a path not on the list will not be flagged,
 and the reviewer's judgment is the only thing covering that.
 
-**5. Nothing is enforced at runtime.**
+**6. Nothing is enforced at runtime.**
 
 No hook, no filesystem interception, no tool-permission enforcement, no
 automatic routing, no automatic review, no automatic merge. This PR establishes
 the mechanism and the protocol; invoking them is a deliberate act, and making
 them mandatory is later hardening.
 
-**6. Nothing here reviews this repository's existing code.** The deliverable is
+**7. Nothing here reviews this repository's existing code.** The deliverable is
 the mechanism, not a review.

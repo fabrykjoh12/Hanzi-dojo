@@ -409,62 +409,153 @@ export function identityFindings({ result, baseSha, headSha }) {
   return out
 }
 
+export const VERIFICATION_EVIDENCE_VERSION = 1
+
 /**
- * VERIFICATION: a recorded failure cannot approve.
+ * AUTHORITATIVE VERIFICATION — executed by the driver, not by the reviewer.
  *
- * Two different things wear the same "it didn't work" clothing, and the
- * protocol has to tell them apart:
+ * The reviewer has no shell. That is what makes its read-only posture a fact
+ * about the platform rather than a promise, and it means the contract's
+ * verification commands have to be run by something else. The driver runs them,
+ * in its own worktree at the exact reviewed commit, and the record it produces
+ * is the ONLY record that counts.
  *
- *   the command could not execute  -> BLOCKED. Nothing was learned; a tool that
- *                                     did not run found nothing.
- *   it ran and failed              -> at least REQUEST_CHANGES. Something WAS
- *                                     learned, and it was bad.
+ * Why a reviewer's own account cannot count, even as a fallback: it would assert
+ * something nobody checked, and — worse — it would let a reviewer satisfy a
+ * required command simply by naming it.
  *
- * An exit code of 0 with no evidence is also refused: a verification nobody can
- * check is a claim, and this whole protocol exists because claims are cheap.
+ * Every required command must have EXACTLY ONE authoritative record. Exactly
+ * one, not at least one: "at least" lets a duplicate of an easy command stand in
+ * for a missing hard one while the count still looks right.
  */
-export function verificationFindings(result) {
+export function verificationEvidenceFindings({ contract, evidence, headSha }) {
   const out = []
-  const runs = result && result.verification_run
-  if (runs === undefined) return out
+  const blocker = (summary, ev) => out.push(finding('blocker', 'tests-and-verification', summary, ev, 'verification'))
+  const major = (summary, ev) => out.push(finding('major', 'tests-and-verification', summary, ev, 'verification'))
+
+  const required = Array.isArray(contract?.verification) ? contract.verification : []
+
+  if (!evidence || typeof evidence !== 'object' || Array.isArray(evidence)) {
+    blocker('No authoritative verification evidence',
+      'the driver produced no verification record for this review')
+    return out
+  }
+  if (evidence.verification_version !== VERIFICATION_EVIDENCE_VERSION) {
+    blocker('Unsupported verification evidence version',
+      JSON.stringify(evidence.verification_version) + '; this protocol understands version ' +
+      VERIFICATION_EVIDENCE_VERSION + ' only')
+    return out
+  }
+  // Bound to the commit. Evidence from another head is evidence about other code.
+  if (!SHA_RE.test(String(evidence.head_sha || '')) || evidence.head_sha !== headSha) {
+    blocker('Verification evidence is not bound to the reviewed commit',
+      'evidence head ' + JSON.stringify(evidence.head_sha) + ', reviewing ' + JSON.stringify(headSha))
+    return out
+  }
+  const runs = evidence.runs
   if (!Array.isArray(runs)) {
-    return [finding('blocker', 'tests-and-verification',
-      'verification_run is not a list of runs',
-      typeof runs, 'verification')]
+    blocker('Verification evidence carries no runs list', typeof runs)
+    return out
   }
-  for (const [i, v] of runs.entries()) {
-    const where = 'verification_run[' + i + ']'
-    if (!v || typeof v !== 'object') {
-      out.push(finding('blocker', 'tests-and-verification',
-        'A verification entry is not an object', where, 'verification'))
+  if (required.length > 0 && runs.length === 0) {
+    blocker('The contract requires verification and none was executed',
+      required.length + ' required command(s), 0 executed')
+    return out
+  }
+
+  const byCommand = new Map()
+  for (const r of runs) {
+    if (!r || typeof r !== 'object' || !isNonEmptyString(r.command)) {
+      blocker('A verification record has no command', JSON.stringify(r))
       continue
     }
-    const cmd = typeof v.command === 'string' ? v.command : '(unnamed command)'
-    if (v.executed === false || v.exit_code === null) {
-      out.push(finding('blocker', 'tests-and-verification',
-        'A verification command could not be executed',
-        where + ' ' + cmd + ': ' + (typeof v.evidence === 'string' ? v.evidence : 'no evidence'),
-        'verification'))
+    byCommand.set(r.command, (byCommand.get(r.command) || []).concat([r]))
+  }
+
+  for (const cmd of required) {
+    const got = byCommand.get(cmd) || []
+    if (got.length === 0) {
+      blocker('A required verification command was not executed',
+        'contract.verification requires ' + JSON.stringify(cmd) + ' and no record names it')
       continue
     }
-    if (!Number.isInteger(v.exit_code)) {
-      out.push(finding('blocker', 'tests-and-verification',
-        'A verification entry records no integer exit code',
-        where + ' ' + cmd + ' exit_code=' + JSON.stringify(v.exit_code), 'verification'))
+    if (got.length > 1) {
+      blocker('A required verification command has more than one record',
+        JSON.stringify(cmd) + ' appears ' + got.length + ' times; exactly one authoritative record is required')
       continue
     }
-    if (v.exit_code !== 0) {
-      out.push(finding('major', 'tests-and-verification',
-        'A recorded verification run failed',
-        where + ' ' + cmd + ' exited ' + v.exit_code, 'verification'))
+    const r = got[0]
+    if (r.executed !== true) {
+      blocker('A required verification command did not execute',
+        JSON.stringify(cmd) + ': executed=' + JSON.stringify(r.executed) +
+        (isNonEmptyString(r.evidence) ? ' - ' + r.evidence : ''))
+      continue
     }
-    if (!isNonEmptyString(v.evidence)) {
-      out.push(finding('major', 'tests-and-verification',
-        'A verification run carries no evidence of what it printed',
-        where + ' ' + cmd, 'verification'))
+    if (!Number.isInteger(r.exit_code)) {
+      blocker('A required verification command records no integer exit code',
+        JSON.stringify(cmd) + ': exit_code=' + JSON.stringify(r.exit_code))
+      continue
+    }
+    if (r.exit_code !== 0) {
+      major('A required verification command failed',
+        JSON.stringify(cmd) + ' exited ' + r.exit_code +
+        (isNonEmptyString(r.evidence) ? ': ' + r.evidence.slice(0, 200) : ''))
+    }
+    if (!isNonEmptyString(r.evidence)) {
+      major('A required verification command produced no captured output',
+        JSON.stringify(cmd) + ' - a verification nobody can read is a claim')
     }
   }
+
+  // A record for something the contract never asked for is not a substitute for
+  // one it did. Supplemental observation belongs in the reviewer's result.
+  for (const cmd of byCommand.keys()) {
+    if (!required.includes(cmd)) {
+      blocker('The verification record contains a command the contract does not require',
+        JSON.stringify(cmd) + ' is not in contract.verification; an easier command cannot stand in for a required one')
+    }
+  }
+
   return out
+}
+
+/**
+ * Load the contract as it exists AT A COMMIT, not as it exists on disk.
+ *
+ * The review standard has to come from the reviewed history. Reading the working
+ * tree meant a locally re-sealed contract - validly sealed, so every digest
+ * check passed - could silently become the standard for a review of an older
+ * head. A contract that relaxes its own acceptance criteria and widens its own
+ * allowed_paths is exactly the edit someone would make, and it would never have
+ * appeared in the reviewed diff.
+ *
+ * `git` is injected so this is testable against real throwaway repositories.
+ */
+export function loadContractAtCommit({ taskId, commitSha, git }) {
+  const file = TASKS_DIR + '/' + taskId + '.json'
+  const fail = (error) => ({ contract: null, error })
+
+  if (!SHA_RE.test(String(commitSha || ''))) {
+    return fail('cannot load a contract at ' + JSON.stringify(commitSha) + ' - not a full commit SHA')
+  }
+  const show = git(['show', commitSha + ':' + file])
+  if (show.status !== 0) {
+    return fail(file + ' does not exist at ' + commitSha.slice(0, 12) + ' - there is no contract in the reviewed history')
+  }
+  let contract
+  try {
+    contract = JSON.parse(show.stdout)
+  } catch (err) {
+    return fail(file + ' at ' + commitSha.slice(0, 12) + ' is not valid JSON (' + err.message + ')')
+  }
+  const violations = findContractViolations(contract, { fileName: taskId + '.json' })
+  if (violations.length > 0) {
+    return fail(file + ' at ' + commitSha.slice(0, 12) + ' is not valid: ' + violations.join('; '))
+  }
+  if (contract.contract_digest !== computeDigest(contract)) {
+    return fail(file + ' at ' + commitSha.slice(0, 12) + ' is not sealed against its own terms')
+  }
+  return { contract, error: null }
 }
 
 /**
@@ -598,7 +689,7 @@ export function governanceBaseFindings({ derivedBase, requestedBase }) {
  * Pure: same inputs, same string. That is what makes it reviewable in a test
  * rather than a matter of trusting whoever spawned the agent.
  */
-export function buildReviewBrief({ contract, baseSha, headSha, changedPaths }) {
+export function buildReviewBrief({ contract, baseSha, headSha, changedPaths, diffText = '', verificationEvidence = null }) {
   const mech = mechanicalFindings({ contract, changedPaths })
   const lines = []
 
@@ -626,7 +717,8 @@ export function buildReviewBrief({ contract, baseSha, headSha, changedPaths }) {
   lines.push('inherit it. The base is DERIVED from the governance commit, not')
   lines.push('chosen — so no implementation commit can be hidden before it.')
   lines.push('')
-  lines.push('Get the diff with: git diff ' + baseSha + '...' + headSha)
+  lines.push('The diff itself is below. You have no shell to fetch it with, and')
+  lines.push('that is deliberate — see "What you may and may not do".')
   lines.push('')
   lines.push('## Changed paths (' + changedPaths.length + ')')
   lines.push('')
@@ -674,14 +766,52 @@ export function buildReviewBrief({ contract, baseSha, headSha, changedPaths }) {
   lines.push('')
   lines.push('## What you may and may not do')
   lines.push('')
-  lines.push('MAY: read any file, read history, run the contract\'s verification')
-  lines.push('commands and any read-only command, and challenge any claim.')
+  lines.push('You have Read, Grep and Glob. No shell, no editing tools. You')
+  lines.push('CANNOT change anything, which is what makes your read-only posture')
+  lines.push('a fact about the platform rather than a promise about your')
+  lines.push('behaviour. The working tree you are reading is checked out at the')
+  lines.push('exact commit under review.')
   lines.push('')
-  lines.push('MUST NOT: edit implementation files, fix anything you find, change')
-  lines.push('acceptance criteria, widen allowed_paths, re-seal the contract,')
-  lines.push('merge, or touch production. If a finding tempts you to fix it,')
-  lines.push('report it — fixing it destroys the independence that makes your')
-  lines.push('verdict worth anything.')
+  lines.push('If a finding tempts you to fix it, report it — fixing it would')
+  lines.push('destroy the independence that makes your verdict worth anything,')
+  lines.push('and here you could not do it anyway.')
+  lines.push('')
+  lines.push('Do NOT return a verification_run field. Verification was executed')
+  lines.push('for you, bound to the reviewed commit, and that record is')
+  lines.push('authoritative; a second account of it from you could only disagree')
+  lines.push('with the one that was actually run.')
+  lines.push('')
+  lines.push('## Verification, executed for you at ' + headSha.slice(0, 12))
+  lines.push('')
+  if (!verificationEvidence || !Array.isArray(verificationEvidence.runs)) {
+    lines.push('NONE SUPPLIED. That is itself a reason this cannot be approved —')
+    lines.push('say so.')
+  } else if (verificationEvidence.runs.length === 0) {
+    lines.push('The contract required no verification commands.')
+  } else {
+    lines.push('Run in a separate worktree at that commit, so its build and test')
+    lines.push('output never touched the tree you are reading.')
+    lines.push('')
+    for (const r of verificationEvidence.runs) {
+      lines.push('$ ' + r.command)
+      lines.push('  executed: ' + JSON.stringify(r.executed) + '   exit: ' + JSON.stringify(r.exit_code))
+      for (const line of String(r.evidence || '(no output captured)').split('\n')) {
+        lines.push('  | ' + line)
+      }
+      lines.push('')
+    }
+    lines.push('Judge this as evidence. If the output does not support what the')
+    lines.push('change claims, that is a finding.')
+  }
+  lines.push('')
+  lines.push('## The diff — ' + baseSha.slice(0, 12) + '...' + headSha.slice(0, 12))
+  lines.push('')
+  lines.push('Derived mechanically from the governance commit to the reviewed')
+  lines.push('head. Nothing summarises it and nothing selected it.')
+  lines.push('')
+  lines.push('```diff')
+  lines.push(diffText === '' ? '(empty diff)' : diffText.replace(/\n$/, ''))
+  lines.push('```')
   lines.push('')
   lines.push('## Return exactly this JSON')
   lines.push('')
@@ -732,12 +862,6 @@ function resultTemplate(contract, baseSha, headSha) {
       summary: '<one sentence>',
       evidence: '<file:line, command output, or diff hunk>',
       violates: '<the contract criterion or invariant, if one applies>',
-    }],
-    verification_run: [{
-      command: '<command>',
-      executed: true,
-      exit_code: 0,
-      evidence: '<what it printed — required, including when it passed>',
     }],
     no_blocking_findings: false,
   }
@@ -861,22 +985,14 @@ export function validateReviewResult(result, { contract } = {}) {
     }
   }
 
+  // Verification is the driver's, bound to the reviewed commit. A reviewer that
+  // supplies its own record is offering a second, weaker account that nobody
+  // ran — and the danger is not that it disagrees, but that it could satisfy a
+  // required command by naming it.
   if (result.verification_run !== undefined) {
-    if (!Array.isArray(result.verification_run)) {
-      out.push(at + 'verification_run must be an array when present')
-    } else {
-      for (const [i, v] of result.verification_run.entries()) {
-        const where = at + 'verification_run[' + i + '] '
-        if (!v || typeof v !== 'object') { out.push(where + 'is not an object'); continue }
-        if (!isNonEmptyString(v.command)) out.push(where + 'has no command')
-        if (v.executed !== false && !Number.isInteger(v.exit_code)) {
-          out.push(where + 'has no integer exit_code (use executed: false if it could not run)')
-        }
-        if (!isNonEmptyString(v.evidence)) {
-          out.push(where + 'has no evidence — a verification nobody can check is a claim')
-        }
-      }
-    }
+    out.push(at + 'verification_run is not a reviewer field — verification is executed by the ' +
+      'driver against the reviewed commit and is authoritative. Put supplemental observations ' +
+      'in a dimension note or a finding.')
   }
 
   return out
@@ -899,6 +1015,7 @@ export function decideVerdict({
   integrity = [],
   identity = [],
   governance = [],
+  verification = [],
   toolFailures = [],
   integrityEvidenceProvided = true,
 } = {}) {
@@ -926,7 +1043,7 @@ export function decideVerdict({
   const reviewerFindings = Array.isArray(result?.findings) ? result.findings : []
   const all = [
     ...mechanical, ...integrity, ...identity, ...governance,
-    ...verificationFindings(result), ...reviewerFindings,
+    ...verification, ...reviewerFindings,
   ]
   const blockers = all.filter(f => f && f.severity === 'blocker')
   const majors = all.filter(f => f && f.severity === 'major')
