@@ -100,14 +100,23 @@ export function collectDebt({ stories = [], vocabMap = {}, language = 'chinese',
 /**
  * Compare a fresh inventory against the accepted baseline.
  *
- *   added     — a (story, form) pair the baseline does not have. ALWAYS a
- *               failure: a new story with an unresolved token, or an edit that
- *               introduced one.
- *   worsened  — a known pair that now occurs MORE often. A failure.
- *   improved  — fewer occurrences. Fine, and needs no baseline edit.
- *   resolved  — gone entirely. Fine, and needs no baseline edit.
- *   stale     — in the baseline but the story no longer exists. Reported so the
- *               baseline can be pruned deliberately; never a failure.
+ *   added        — a (story, form) pair the baseline does not have. ALWAYS a
+ *                  failure: a new story with an unresolved token, or an edit
+ *                  that introduced one.
+ *   worsened     — a known pair that now occurs MORE often. A failure.
+ *   reclassified — a known pair whose DEFECT CLASS changed. A failure, even at
+ *                  the same or a lower count. The class says who owns the
+ *                  repair — ingestion, story content, or a curriculum decision
+ *                  — so a silent change of owner is exactly the thing a
+ *                  baseline exists to catch. No severity ordering is implied
+ *                  and none is needed: any change is reviewed. In particular a
+ *                  broken curriculum authority reclassifies every
+ *                  CURRICULUM_ROW_MISSING to OUT_OF_CURRICULUM without moving
+ *                  a single count, and that must not go green.
+ *   improved     — fewer occurrences, same class. Fine, needs no baseline edit.
+ *   resolved     — gone entirely. Fine, and needs no baseline edit.
+ *   stale        — in the baseline but the story no longer exists. Reported so
+ *                  the baseline can be pruned deliberately; never a failure.
  */
 export function compareToBaseline(current, baseline) {
   const base = new Map((baseline && baseline.entries ? baseline.entries : [])
@@ -118,10 +127,16 @@ export function compareToBaseline(current, baseline) {
 
   const added = []
   const worsened = []
+  const reclassified = []
   const improved = []
   for (const [k, e] of now) {
     const was = base.get(k)
     if (!was) { added.push(e); continue }
+    // Checked before the counts, and independently of them: a reclassification
+    // at an unchanged or lower count is the case that would otherwise pass.
+    if (was.defect !== undefined && e.defect !== was.defect) {
+      reclassified.push({ ...e, wasDefect: was.defect, was: was.occurrences })
+    }
     if (e.occurrences > was.occurrences) worsened.push({ ...e, was: was.occurrences })
     else if (e.occurrences < was.occurrences) improved.push({ ...e, was: was.occurrences })
   }
@@ -136,9 +151,10 @@ export function compareToBaseline(current, baseline) {
   }
   return {
     version: DEBT_VERSION,
-    ok: added.length === 0 && worsened.length === 0,
+    ok: added.length === 0 && worsened.length === 0 && reclassified.length === 0,
     added,
     worsened,
+    reclassified,
     improved,
     resolved,
     stale,
@@ -161,6 +177,10 @@ export function formatDebtComparison(cmp) {
     }
     for (const e of cmp.worsened) {
       lines.push('  MORE  ' + e.form + ' x' + e.occurrences + ' (was ' + e.was + ')  in "' + (e.title || e.story) + '"')
+    }
+    for (const e of (cmp.reclassified || [])) {
+      lines.push('  CLASS ' + e.form + '  ' + e.wasDefect + ' -> ' + e.defect
+        + '  in "' + (e.title || e.story) + '"  (x' + e.occurrences + ')')
     }
     lines.push('')
     lines.push('Every learner-facing Mandarin token must resolve through the Reader own')

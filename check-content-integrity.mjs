@@ -20,6 +20,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
 import { collectDebt, compareToBaseline, formatDebtComparison, repairMatrix, reconcileInventory } from './storyContentDebt.mjs'
+import { curriculumWords, CurriculumAuthorityError, MIN_BAND } from './storyCurriculumAuthority.mjs'
 
 const args = process.argv.slice(2)
 const update = args.includes('--update-baseline')
@@ -51,8 +52,14 @@ async function fetchAll(table, select, apply) {
   return out
 }
 
+// Bounded to the course bands the report claims to measure. The old query took
+// every non-null level, so the header said "level 1-6" while the data behind it
+// was "any level" — correct today only because production happens to hold no
+// active Chinese 7-9 rows. Seeding one would have silently widened inventory A,
+// the reconciliation and the story classification all at once.
 const vocab = await fetchAll('vocabulary', 'word, level, meaning, reading',
-  q => q.eq('language', 'chinese').eq('is_active', true).not('level', 'is', null))
+  q => q.eq('language', 'chinese').eq('is_active', true)
+    .gte('level', MIN_BAND).lte('level', MAX_LEVEL))
 const stories = await fetchAll('stories', 'id, title, level, content, language, is_published',
   q => q.eq('language', 'chinese').eq('is_published', true))
 
@@ -67,12 +74,27 @@ for (const v of vocab) if (v && v.word && !vocabMap[v.word]) vocabMap[v.word] = 
 // exactly that way. data/hsk-curriculum-bands.json is derived from the upstream
 // word list itself and is the only thing that can tell "the database lost a row
 // the course teaches" from "the course never taught this word".
-const curriculum = new Set()
-if (existsSync(CURRICULUM)) {
-  const bands = JSON.parse(readFileSync(CURRICULUM, 'utf8')).bands || {}
-  for (const [word, band] of Object.entries(bands)) if (band <= MAX_LEVEL) curriculum.add(word)
-} else {
-  console.error('missing ' + CURRICULUM + ' — cannot tell a lost row from a word the course never taught.')
+//
+// Loaded fail-closed. `JSON.parse(...).bands || {}` degraded a malformed file
+// to an empty curriculum, and an empty curriculum reclassifies every lost row
+// as ordinary story debt without moving a single count — a green run asserting
+// the opposite of the truth.
+let curriculum
+try {
+  if (!existsSync(CURRICULUM)) {
+    throw new CurriculumAuthorityError(CURRICULUM + ' is missing')
+  }
+  let doc
+  try {
+    doc = JSON.parse(readFileSync(CURRICULUM, 'utf8'))
+  } catch (err) {
+    throw new CurriculumAuthorityError(CURRICULUM + ' is not valid JSON: ' + err.message)
+  }
+  curriculum = curriculumWords(doc, { maxLevel: MAX_LEVEL, source: CURRICULUM })
+} catch (err) {
+  console.error('\nCURRICULUM AUTHORITY UNUSABLE — ' + err.message)
+  console.error('Without it there is no way to tell a row the course teaches and the database lost')
+  console.error('from a word the course never taught. Refusing to classify anything.')
   process.exit(2)
 }
 

@@ -206,3 +206,41 @@ describe('baseline acceptance is explicit and never touches main', () => {
     expect(src.slice(src.indexOf('if (update)'))).toMatch(/writeFileSync\(BASELINE/)
   })
 })
+
+// The report header says "level 1-6" and MAX_LEVEL is 6, but the live query
+// took every non-null level — correct today only because production happens to
+// hold no active Chinese 7-9 rows. Seeding one would have silently widened
+// inventory A, the reconciliation and the story classification at once. The
+// bound is structural, so it cannot quietly disappear.
+describe('the live vocabulary query is bounded to the taught bands', () => {
+  const src = readFileSync('check-content-integrity.mjs', 'utf8')
+  // Negative assertions read CODE, not the comments explaining what the code no
+  // longer does — the prose naming an old construct would match them.
+  const code = src.split('\n').filter(l => !l.trim().startsWith('//')).join('\n')
+
+  it('constrains language, active flag and BOTH ends of the level range', () => {
+    const q = src.slice(src.indexOf("fetchAll('vocabulary'"), src.indexOf("fetchAll('stories'"))
+    expect(q).toMatch(/\.eq\('language', 'chinese'\)/)
+    expect(q).toMatch(/\.eq\('is_active', true\)/)
+    expect(q).toMatch(/\.gte\('level', MIN_BAND\)/)
+    expect(q).toMatch(/\.lte\('level', MAX_LEVEL\)/)
+  })
+
+  it('no longer relies on a bare non-null level filter', () => {
+    expect(code).not.toMatch(/\.not\('level', 'is', null\)/)
+  })
+
+  it('bounds the query with the same MAX_LEVEL the report prints', () => {
+    expect(src).toMatch(/const MAX_LEVEL = 6/)
+    // The header text and the query must move together.
+    expect(src).toMatch(/level 1-' \+ MAX_LEVEL/)
+  })
+
+  it('loads the curriculum authority fail-closed, with no degraded fallback', () => {
+    expect(src).toMatch(/curriculumWords\(doc, \{ maxLevel: MAX_LEVEL/)
+    // The construct that failed open.
+    expect(code).not.toMatch(/\.bands \|\| \{\}/)
+    expect(src).toMatch(/CURRICULUM AUTHORITY UNUSABLE/)
+    expect(src).toMatch(/process\.exit\(2\)/)
+  })
+})

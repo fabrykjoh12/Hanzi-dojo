@@ -162,3 +162,73 @@ describe('debtKey', () => {
     expect(DEBT_VERSION).toBe('fab9-content-debt@1')
   })
 })
+
+// The baseline records `defect` deliberately — it names who owns the repair:
+// ingestion, story content, or a curriculum decision. compareToBaseline ignored
+// it, so an ownership change at an unchanged count passed silently. The
+// conservative rule is that any change of class is reviewed; no severity
+// ordering is implied and none is needed.
+describe('a changed defect class is a regression, whatever the count does', () => {
+  const at = (defect, occurrences) => ({
+    version: DEBT_VERSION,
+    stories: 1,
+    storyIds: ['s1'],
+    storiesWithDebt: 1,
+    forms: 1,
+    occurrences,
+    entries: [{ story: 's1', title: 't', level: 3, form: '船', defect, occurrences }],
+  })
+  const MISSING = DEFECT.CURRICULUM_ROW_MISSING
+  const OUT = DEFECT.OUT_OF_CURRICULUM
+
+  it('same class, same count → passes', () => {
+    const cmp = compareToBaseline(at(MISSING, 3), at(MISSING, 3))
+    expect(cmp.ok).toBe(true)
+    expect(cmp.reclassified).toEqual([])
+  })
+
+  it('same class, FEWER occurrences → still passes', () => {
+    const cmp = compareToBaseline(at(MISSING, 1), at(MISSING, 3))
+    expect(cmp.ok).toBe(true)
+    expect(cmp.reclassified).toEqual([])
+    expect(cmp.improved[0]).toMatchObject({ occurrences: 1, was: 3 })
+  })
+
+  it('CHANGED class, same count → FAILS', () => {
+    const cmp = compareToBaseline(at(OUT, 3), at(MISSING, 3))
+    expect(cmp.ok).toBe(false)
+    expect(cmp.added).toEqual([])
+    expect(cmp.worsened).toEqual([])
+    expect(cmp.reclassified[0]).toMatchObject({ form: '船', wasDefect: MISSING, defect: OUT })
+  })
+
+  it('CHANGED class together with FEWER occurrences → still does not pass', () => {
+    // The case a count-only rule would wave through as an improvement.
+    const cmp = compareToBaseline(at(OUT, 1), at(MISSING, 3))
+    expect(cmp.ok).toBe(false)
+    expect(cmp.reclassified).toHaveLength(1)
+    expect(cmp.improved).toHaveLength(1)      // reported as both, and still fails
+  })
+
+  it('CHANGED class together with MORE occurrences fails on both counts', () => {
+    const cmp = compareToBaseline(at(OUT, 9), at(MISSING, 3))
+    expect(cmp.ok).toBe(false)
+    expect(cmp.reclassified).toHaveLength(1)
+    expect(cmp.worsened).toHaveLength(1)
+  })
+
+  it('reports the old and the new class in the output', () => {
+    const out = formatDebtComparison(compareToBaseline(at(OUT, 3), at(MISSING, 3)))
+    expect(out).toMatch(/CLASS/)
+    expect(out).toContain(MISSING)
+    expect(out).toContain('->')
+    expect(out).toContain(OUT)
+  })
+
+  it('a baseline entry with no recorded class does not fabricate a regression', () => {
+    // Older baselines may predate the field; absence is not a change.
+    const legacy = at(MISSING, 3)
+    delete legacy.entries[0].defect
+    expect(compareToBaseline(at(MISSING, 3), legacy).ok).toBe(true)
+  })
+})
