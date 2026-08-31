@@ -22,6 +22,7 @@ import {
   REQUIRED_CHECKS,
   EXPECTED_CHECK_SOURCE,
   EXPECTED_RULESET_ID,
+  EXPECTED_RULESET_CHECKS,
   EXPECTED_TARGET_BRANCH,
   INTEGRATION_EVIDENCE_VERSION,
   MAX_EVIDENCE_AGE_SECONDS,
@@ -161,12 +162,17 @@ function goodEvidence({ head, target, strict = true, checks = null } = {}) {
     },
     target: { branch: EXPECTED_TARGET_BRANCH, sha: target },
     check_runs: checks || REQUIRED_CHECKS.map(n => checkRun(n, { head_sha: head })),
+    // Modelled on the ACTUAL live ruleset shape, not a names-only
+    // approximation: required checks are {context, integration_id} and the
+    // bypass list is present and empty.
     ruleset: {
       id: EXPECTED_RULESET_ID,
       target_branch: EXPECTED_TARGET_BRANCH,
       enforcement: 'active',
-      required_status_checks: [...REQUIRED_CHECKS],
+      required_status_checks: EXPECTED_RULESET_CHECKS.map(c => ({ ...c })),
       strict_required_status_checks_policy: strict,
+      bypass_actors: [],
+      current_user_can_bypass: 'never',
     },
   }
 }
@@ -292,7 +298,9 @@ describe('the happy case can be authorized', () => {
     expect(b.expected_check_source).toEqual(EXPECTED_CHECK_SOURCE)
     expect(b.ruleset.id).toBe(EXPECTED_RULESET_ID)
     expect(b.ruleset.strict_required_status_checks_policy).toBe(true)
-    expect(b.ruleset.required_status_checks).toEqual(REQUIRED_CHECKS)
+    expect(b.ruleset.required_status_checks).toEqual(EXPECTED_RULESET_CHECKS)
+    expect(b.ruleset.bypass_actors).toEqual([])
+    expect(b.ruleset.current_user_can_bypass).toBe('never')
     expect(b.evidence_version).toBe(INTEGRATION_EVIDENCE_VERSION)
     expect(b.evidence_collected_at).toBeTruthy()
     expect(b.required_checks.map(c => c.name)).toEqual(REQUIRED_CHECKS)
@@ -650,21 +658,6 @@ describe('the ruleset: identity, enforcement, and what it actually requires', ()
     expect(codes(decide({ evidence: ev }))).toContain('ruleset-wrong-target')
   })
 
-  it('blocks when the ruleset requires fewer checks than the protocol validates', () => {
-    const ev = base(); ev.ruleset.required_status_checks = ['check', 'playwright']
-    const d = decide({ evidence: ev })
-    expect(d.decision).toBe('BLOCKED')
-    expect(codes(d)).toContain('ruleset-required-checks-mismatch')
-  })
-
-  it('blocks when the ruleset requires MORE than the protocol validates', () => {
-    // The subtler direction: the merge would be gated by something never looked
-    // at, so the decision would describe the wrong fence.
-    const ev = base(); ev.ruleset.required_status_checks = [...REQUIRED_CHECKS, 'some-new-gate']
-    const d = decide({ evidence: ev })
-    expect(d.decision).toBe('BLOCKED')
-    expect(codes(d)).toContain('ruleset-required-checks-mismatch')
-  })
 
   it('blocks when the ruleset state is unreadable', () => {
     for (const ruleset of [undefined, null, 'unreadable', []]) {
@@ -682,6 +675,202 @@ describe('the ruleset: identity, enforcement, and what it actually requires', ()
       expect(d.decision).toBe('BLOCKED')
       expect(codes(d)).toContain('ruleset-unreadable')
     }
+  })
+})
+
+describe('the ruleset must still REQUIRE those checks, from that integration', () => {
+  // Invariant B, and it is not invariant A. A says what produced the check runs
+  // observed on the reviewed head; B says what GitHub promises to require at
+  // merge time. A can be perfect while B has been quietly loosened — the same
+  // class of drift as head/base, one level up.
+  const base = () => goodEvidence({ head: repo.c2, target: repo.c0, strict: true })
+  const withChecks = (list) => { const ev = base(); ev.ruleset.required_status_checks = list; return ev }
+  const ctx = (context, integration_id) => ({ context, integration_id })
+
+  it('expects each required context bound to the expected integration', () => {
+    expect(EXPECTED_RULESET_CHECKS).toEqual([
+      { context: 'check', integration_id: 15368 },
+      { context: 'playwright', integration_id: 15368 },
+      { context: 'native-gate', integration_id: 15368 },
+    ])
+    // Derived from the two constants, so the source identity has one definition.
+    expect(EXPECTED_RULESET_CHECKS.map(c => c.context)).toEqual(REQUIRED_CHECKS)
+    for (const c of EXPECTED_RULESET_CHECKS) {
+      expect(c.integration_id).toBe(EXPECTED_CHECK_SOURCE.app_id)
+    }
+  })
+
+  it('refuses the old names-only shape rather than reading it as unbound', () => {
+    // Silently upgrading ['check', ...] would restore the exact flattening this
+    // version removes.
+    const d = decide({ evidence: withChecks([...REQUIRED_CHECKS]) })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('ruleset-unreadable')
+  })
+
+  it('blocks a required context whose integration binding was stripped', () => {
+    for (const [i] of REQUIRED_CHECKS.entries()) {
+      const list = EXPECTED_RULESET_CHECKS.map(c => ({ ...c }))
+      list[i] = { context: list[i].context, integration_id: null }
+      const d = decide({ evidence: withChecks(list) })
+      expect(d.decision).toBe('BLOCKED')
+      expect(codes(d)).toContain('ruleset-check-source-unbound')
+    }
+  })
+
+  it('blocks a required context bound to a different integration', () => {
+    const list = EXPECTED_RULESET_CHECKS.map(c => ({ ...c }))
+    list[0] = ctx(list[0].context, 99999)
+    const d = decide({ evidence: withChecks(list) })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('ruleset-check-source-mismatch')
+    // And it is NOT reported as merely missing — the context is there.
+    expect(codes(d)).not.toContain('ruleset-check-context-missing')
+  })
+
+  it('blocks when the integration_id key is absent entirely', () => {
+    const list = EXPECTED_RULESET_CHECKS.map(c => ({ ...c }))
+    delete list[1].integration_id
+    const d = decide({ evidence: withChecks(list) })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('ruleset-unreadable')
+  })
+
+  it('blocks a missing required context', () => {
+    const d = decide({ evidence: withChecks(EXPECTED_RULESET_CHECKS.slice(0, 2).map(c => ({ ...c }))) })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('ruleset-check-context-missing')
+  })
+
+  it('blocks an extra required context the protocol does not understand', () => {
+    const d = decide({ evidence: withChecks([...EXPECTED_RULESET_CHECKS.map(c => ({ ...c })), ctx('some-new-gate', 15368)]) })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('ruleset-check-context-unexpected')
+  })
+
+  it('blocks a duplicated context rather than choosing a binding', () => {
+    const d = decide({ evidence: withChecks([...EXPECTED_RULESET_CHECKS.map(c => ({ ...c })), ctx('check', 99999)]) })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('ruleset-check-duplicate-context')
+  })
+
+  it('blocks a malformed entry', () => {
+    for (const bad of [null, 42, [], 'check', { integration_id: 15368 }, { context: '', integration_id: 15368 }]) {
+      const d = decide({ evidence: withChecks([...EXPECTED_RULESET_CHECKS.map(c => ({ ...c })), bad]) })
+      expect(d.decision).toBe('BLOCKED')
+      expect(codes(d)).toContain('ruleset-unreadable')
+    }
+  })
+
+  it('keeps invariant A independent: green runs from App 15368 cannot rescue a loosened fence', () => {
+    // Check runs are perfect and from the right App; the fence no longer binds
+    // them. Exactly the drift the flattening allowed.
+    const ev = withChecks(EXPECTED_RULESET_CHECKS.map(c => ({ context: c.context, integration_id: null })))
+    const d = decide({ evidence: ev })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('ruleset-check-source-unbound')
+    // ...and no check-run finding fired, proving A passed on its own.
+    expect(codes(d).filter(c => c.startsWith('required-check-'))).toEqual([])
+  })
+
+  it('keeps invariant B independent: a sound fence cannot rescue a bad check run', () => {
+    const ev = base()
+    ev.check_runs = ev.check_runs.map(r => r.name === 'check' ? { ...r, conclusion: 'failure' } : r)
+    const d = decide({ evidence: ev })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('required-check-not-successful')
+    expect(codes(d).filter(c => c.startsWith('ruleset-check-'))).toEqual([])
+  })
+
+  it('preserves the structured policy identity in the decision document', () => {
+    const d = decide({ evidence: base() })
+    expect(d.bound.ruleset.required_status_checks).toEqual([
+      { context: 'check', integration_id: 15368 },
+      { context: 'playwright', integration_id: 15368 },
+      { context: 'native-gate', integration_id: 15368 },
+    ])
+    // Never flattened to names on the way out either.
+    expect(d.bound.ruleset.required_status_checks.every(e => typeof e === 'object')).toBe(true)
+  })
+})
+
+describe('the bypass list is part of policy identity', () => {
+  const base = () => goodEvidence({ head: repo.c2, target: repo.c0, strict: true })
+  const withBypass = (actors) => { const ev = base(); ev.ruleset.bypass_actors = actors; return ev }
+
+  it('allows an empty bypass list to continue', () => {
+    expect(decide({ evidence: withBypass([]) }).decision).toBe('READY_TO_INTEGRATE')
+  })
+
+  it('blocks a User bypass actor', () => {
+    const d = decide({ evidence: withBypass([{ actor_id: 5, actor_type: 'User', bypass_mode: 'always' }]) })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('ruleset-bypass-actors-present')
+  })
+
+  it('blocks an Integration bypass actor', () => {
+    const d = decide({ evidence: withBypass([{ actor_id: 15368, actor_type: 'Integration', bypass_mode: 'always' }]) })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('ruleset-bypass-actors-present')
+  })
+
+  it('blocks a pull_request-only bypass rather than silently reaching READY', () => {
+    // "Only for pull requests" is still a bypass. How such an actor could be
+    // safe is a policy question for an independently reviewed change.
+    const d = decide({ evidence: withBypass([{ actor_id: 1, actor_type: 'RepositoryRole', bypass_mode: 'pull_request' }]) })
+    expect(d.decision).toBe('BLOCKED')
+    expect(d.authorizes).toBe(false)
+    expect(codes(d)).toContain('ruleset-bypass-actors-present')
+  })
+
+  it('blocks an exempt / always bypass, and any actor type at all', () => {
+    for (const actor of [
+      { actor_id: 2, actor_type: 'OrganizationAdmin', bypass_mode: 'always' },
+      { actor_id: 3, actor_type: 'DeployKey', bypass_mode: 'always' },
+      { actor_id: null, actor_type: 'EnterpriseOwner', bypass_mode: 'exempt' },
+      'some-actor',
+    ]) {
+      const d = decide({ evidence: withBypass([actor]) })
+      expect(d.decision).toBe('BLOCKED')
+      expect(codes(d)).toContain('ruleset-bypass-actors-present')
+    }
+  })
+
+  it('blocks a MISSING bypass list — GitHub omits it without sufficient access', () => {
+    // An unread bypass list is an unknown policy state, not an empty one.
+    const ev = base(); delete ev.ruleset.bypass_actors
+    const d = decide({ evidence: ev })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('ruleset-bypass-unreadable')
+  })
+
+  it('blocks a malformed bypass list', () => {
+    for (const bad of [null, 'none', 0, {}, false]) {
+      const d = decide({ evidence: withBypass(bad) })
+      expect(d.decision).toBe('BLOCKED')
+      expect(codes(d)).toContain('ruleset-bypass-unreadable')
+    }
+  })
+
+  it('never lets current_user_can_bypass substitute for an empty list', () => {
+    // It answers "can THIS token bypass?", not "has the ruleset no bypass
+    // actors?". A caller-specific field cannot prove a repository-wide property.
+    const ev = withBypass([{ actor_id: 5, actor_type: 'User', bypass_mode: 'always' }])
+    ev.ruleset.current_user_can_bypass = 'never'
+    const d = decide({ evidence: ev })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('ruleset-bypass-actors-present')
+
+    const missing = base()
+    delete missing.ruleset.bypass_actors
+    missing.ruleset.current_user_can_bypass = 'never'
+    expect(codes(decide({ evidence: missing }))).toContain('ruleset-bypass-unreadable')
+  })
+
+  it('preserves the bypass state, and the corroborating field, in the decision', () => {
+    const d = decide({ evidence: base() })
+    expect(d.bound.ruleset.bypass_actors).toEqual([])
+    expect(d.bound.ruleset.current_user_can_bypass).toBe('never')
   })
 })
 
@@ -720,8 +909,9 @@ describe('a missing evidence field must never be the field that authorizes', () 
         id: EXPECTED_RULESET_ID,
         target_branch: EXPECTED_TARGET_BRANCH,
         enforcement: 'active',
-        required_status_checks: [...REQUIRED_CHECKS],
+        required_status_checks: EXPECTED_RULESET_CHECKS.map(c => ({ ...c })),
         strict_required_status_checks_policy: true,
+        bypass_actors: [],
         ...over,
       },
     })
@@ -746,15 +936,26 @@ describe('a missing evidence field must never be the field that authorizes', () 
     expect(rulesetFindings({ evidence: bare() })).toEqual([])
   })
 
-  it('blocks when EVERY optional-looking ruleset field is dropped one at a time', () => {
+  it('blocks when EVERY required ruleset field is dropped one at a time', () => {
     // Enumerated rather than spot-checked, so a field added later without a
     // shape rule is caught by this spec instead of by the next reviewer.
-    for (const key of Object.keys(base().ruleset)) {
+    //
+    // current_user_can_bypass is deliberately excluded: it is corroborating
+    // state, not policy. It answers "can THIS token bypass?" and so can never
+    // prove — or be required to prove — a repository-wide property.
+    const CORROBORATING_ONLY = ['current_user_can_bypass']
+    const required = Object.keys(base().ruleset).filter(k => !CORROBORATING_ONLY.includes(k))
+    expect(required.length).toBeGreaterThan(0)
+    for (const key of required) {
       const ev = base(); delete ev.ruleset[key]
       const d = decide({ evidence: ev })
       expect(d.decision, 'dropping ruleset.' + key + ' must block').toBe('BLOCKED')
       expect(d.authorizes).toBe(false)
     }
+    // And the corroborating field really is optional, so its exclusion above is
+    // a stated design decision rather than a hole the loop was shaped around.
+    const noCorroboration = base(); delete noCorroboration.ruleset.current_user_can_bypass
+    expect(decide({ evidence: noCorroboration }).decision).toBe('READY_TO_INTEGRATE')
   })
 })
 
@@ -853,7 +1054,9 @@ describe('unknown state is never turned into authorization', () => {
   })
 
   it('blocks an unsupported evidence version, matched exactly rather than as a floor', () => {
-    for (const v of [0, 2, '1', undefined, null]) {
+    // 2 is the CURRENT version; a v1 names-only document must be refused rather
+    // than upgraded, or the policy flattening comes straight back.
+    for (const v of [0, 1, 3, '2', undefined, null]) {
       const ev = goodEvidence({ head: repo.c2, target: repo.c0 })
       ev.evidence_version = v
       const d = decide({ evidence: ev })

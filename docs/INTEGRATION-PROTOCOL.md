@@ -112,7 +112,8 @@ setting flipped".
    present once, complete, successful, reported against the reviewed head, and
    produced by the expected App.
 5. **The ruleset** is the one this protocol reasons about, actively enforced,
-   protecting the expected branch, and requiring exactly those checks.
+   protecting the expected branch, requiring exactly those checks **each bound
+   to the expected integration**, and carrying an **empty bypass list**.
 6. **A review result** approving *this* head. Necessary, never sufficient.
 
 ### Why the check source is validated, not just the name
@@ -128,6 +129,53 @@ posted the extra run decide which result is read.
 Checks *outside* the required set are ignored, including permanently failing
 ones. The ruleset defines what gates a merge, and the red `Workers Builds` check
 is not fixable from this repository.
+
+### Two invariants, and neither substitutes for the other
+
+| | Question | Checked by |
+|---|---|---|
+| **A** | What *produced* the evidence run? | the check runs on the reviewed head are complete, successful, and from App `15368` |
+| **B** | What does GitHub *promise to require* at merge time? | the ruleset still demands those contexts, each bound to integration `15368` |
+
+A is a statement about what already happened; B about what will be enforced
+later. **A can be perfect while B has been quietly loosened** — and that is the
+same class of failure as the head/base drift that started this task, one level
+up.
+
+GitHub's ruleset API defines a required status check as a `context` plus an
+*optional* `integration_id`, where the integration_id means the check must
+originate from that integration. So the evidence carries structured entries:
+
+```json
+{ "context": "check", "integration_id": 15368 }
+```
+
+Flattening those to `["check", "playwright", "native-gate"]` throws the binding
+away, and the drift it permits is complete and silent: a later edit keeps the
+same ruleset id, the same context names and `strict: true`, while removing or
+repointing the binding. Three green GitHub Actions runs would still be observed
+on the reviewed head, and the gate would say `READY` against a fence that no
+longer requires GitHub Actions at all. So the gate blocks on a **missing
+context**, an **unexpected context**, a **duplicate context**, an **unbound**
+`integration_id` (`null` — GitHub's "any source"), a **mismatched**
+`integration_id`, and a **malformed entry**, each with its own finding.
+
+### The bypass list is part of policy identity
+
+A ruleset id is not immutable policy identity — ruleset `21654011` can be edited
+in place — and a strict policy guarantees nothing about merge time if the rules
+carrying it can be **bypassed**. `bypass_actors` names the actors permitted to do
+that, so authorization requires it to be **empty**. Any entry blocks, including a
+pull-request-only or conditional one: how such an actor could be safe is a policy
+question for an independently reviewed future change, not something this protocol
+may decide by shrugging.
+
+**A missing `bypass_actors` is not an empty one.** GitHub omits the field when
+the caller lacks sufficient access, so its absence means the policy state is
+*unknown*, which under this protocol's own invariant is `BLOCKED`.
+`current_user_can_bypass` is preserved as corroborating state and never
+substituted for it — it answers "can *this token* bypass?", not "has the ruleset
+no bypass actors?".
 
 ## When `main` moves after the review
 
@@ -196,10 +244,14 @@ plan for it.
 |---|---|
 | Ruleset | `21654011`, name `main protection`, enforcement `active` |
 | Target | `main` |
-| Required checks | `check`, `playwright`, `native-gate` |
+| Required checks | `check`, `playwright`, `native-gate` — each bound to `integration_id: 15368` |
 | Expected source | GitHub Actions App, id `15368` |
-| Bypass list | empty |
+| Bypass list | `bypass_actors: []`, and `current_user_can_bypass: "never"` |
 | `strict_required_status_checks_policy` | **`false`** ← the setting to change |
+
+These values were **read from the live API by the maintainer** and are recorded
+here as external evidence; the session that wrote this document could not reach
+the API. The gate fails closed on any mismatch rather than trusting this table.
 
 ## The exact change
 
@@ -259,8 +311,18 @@ off.
 
 ## Verification after activation
 
-1. Read the ruleset back and confirm the boolean is `true` and the required
-   check list and empty bypass list are unchanged.
+1. Read the ruleset back and confirm that **everything except the intended
+   boolean is unchanged**:
+   - ruleset id still `21654011`;
+   - `enforcement` still `active`;
+   - target still `main`;
+   - required contexts still exactly `check`, `playwright`, `native-gate`;
+   - each of those still bound to `integration_id: 15368`;
+   - `bypass_actors` still `[]`;
+   - and `strict_required_status_checks_policy` now `true`.
+
+   Activation is a one-boolean change; anything else that moved is a separate
+   edit that needs explaining before the fence is trusted.
 2. Take a branch deliberately one commit behind `main` and confirm GitHub
    reports it as needing an update, with the merge blocked, while its three
    required checks are still green — the exact shape observed during PR #229.

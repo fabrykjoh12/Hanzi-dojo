@@ -40,6 +40,7 @@ import {
   EXPECTED_RULESET_ID,
   EXPECTED_TARGET_BRANCH,
   REQUIRED_CHECKS,
+  EXPECTED_RULESET_CHECKS,
   SHA_RE,
   decideIntegration,
   authorizes,
@@ -129,13 +130,24 @@ const TEMPLATE = {
   check_runs: [
     { name: '', status: '', conclusion: '', head_sha: '', app: { id: 0, slug: '' } },
   ],
-  _ruleset: 'gh api repos/{owner}/{repo}/rulesets/' + EXPECTED_RULESET_ID,
+  _ruleset: [
+    'gh api repos/{owner}/{repo}/rulesets/' + EXPECTED_RULESET_ID,
+    'required_status_checks entries are {context, integration_id} — copy BOTH.',
+    'integration_id binds the context to an integration; dropping it turns the',
+    'merge-time fence into a name match that any installed App could satisfy.',
+    'bypass_actors is REQUIRED and must be []. GitHub omits it when the caller',
+    'lacks sufficient access — that is an unknown policy state, not an empty',
+    'list, and it is BLOCKED. Do not substitute current_user_can_bypass: it',
+    'answers "can THIS token bypass?", not "has the ruleset no bypass actors?".',
+  ],
   ruleset: {
     id: EXPECTED_RULESET_ID,
     target_branch: EXPECTED_TARGET_BRANCH,
     enforcement: 'active',
-    required_status_checks: [...REQUIRED_CHECKS],
+    required_status_checks: EXPECTED_RULESET_CHECKS.map(c => ({ ...c })),
     strict_required_status_checks_policy: false,
+    bypass_actors: [],
+    current_user_can_bypass: 'never',
   },
 }
 

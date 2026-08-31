@@ -97,7 +97,11 @@ export function authorizes(decision) {
 }
 
 export const PROTOCOL_VERSION = 1
-export const INTEGRATION_EVIDENCE_VERSION = 1
+// Bumped to 2 when required_status_checks became structured {context,
+// integration_id} entries and bypass_actors became required. A v1 document is
+// names-only, and reading it under v2 rules would silently restore the policy
+// flattening this version removes — so it is refused, not upgraded.
+export const INTEGRATION_EVIDENCE_VERSION = 2
 
 /**
  * The required check set, and it is EXACT rather than a minimum.
@@ -134,6 +138,62 @@ export const EXPECTED_CHECK_SOURCE = { app_id: 15368, app_slug: 'github-actions'
  */
 export const EXPECTED_RULESET_ID = 21654011
 export const EXPECTED_TARGET_BRANCH = 'main'
+
+/**
+ * WHAT THE RULESET MUST REQUIRE — as structured policy identity, not names.
+ *
+ * GitHub's ruleset API defines a required status check as a `context` plus an
+ * OPTIONAL `integration_id`, and the integration_id means the check must
+ * originate from that integration. The live ruleset binds all three contexts to
+ * GitHub Actions.
+ *
+ * Flattening that to ['check','playwright','native-gate'] threw the binding
+ * away, and the drift it allowed is quiet and complete: a later edit could keep
+ * the same ruleset id, the same context names and strict = true, while removing
+ * or repointing the integration binding. The gate would still see three green
+ * GitHub Actions runs on the reviewed head and say READY — against a merge-time
+ * fence that no longer requires them to come from GitHub Actions at all.
+ *
+ * TWO INVARIANTS, AND NEITHER SUBSTITUTES FOR THE OTHER:
+ *
+ *   A. WHAT PRODUCED THE EVIDENCE RUN.  requiredCheckFindings: the check runs
+ *      observed on the reviewed head are complete, successful, and came from
+ *      App 15368. A statement about what already happened.
+ *
+ *   B. WHAT GITHUB PROMISES TO REQUIRE AT MERGE TIME.  rulesetFindings: the
+ *      fence itself still demands those contexts, from that integration. A
+ *      statement about what will be enforced later.
+ *
+ * A can be perfect while B has been quietly loosened, which is exactly the
+ * class of failure this whole task exists for — one level up from the head/base
+ * drift that started it.
+ *
+ * Derived from the two constants above rather than typed out again, so the
+ * source identity has exactly one definition.
+ */
+export const EXPECTED_RULESET_CHECKS = REQUIRED_CHECKS.map(context =>
+  ({ context, integration_id: EXPECTED_CHECK_SOURCE.app_id }))
+
+/**
+ * THE BYPASS LIST, and why an empty one is part of policy identity.
+ *
+ * `bypass_actors` names the actors permitted to bypass the ruleset. A strict
+ * required-status-check policy guarantees nothing about merge time if the rules
+ * carrying it can be bypassed — so "ruleset 21654011 with strict = true" is not
+ * a sufficient description of the fence, and the ruleset id alone was never
+ * immutable policy identity: a ruleset can be edited in place.
+ *
+ * Authorization requires the list to be EMPTY. Anything in it blocks, including
+ * a pull-request-only or conditional entry: how such an actor could be safe is
+ * a policy question for an independently reviewed future change, not something
+ * this protocol may decide by shrugging.
+ *
+ * And the absence of the field is NOT an empty list. GitHub omits
+ * `bypass_actors` when the caller lacks sufficient access, so a missing field
+ * means the policy state is UNKNOWN — which under this protocol's own invariant
+ * is BLOCKED, never a convenient [].
+ */
+export const REQUIRED_EMPTY_BYPASS = true
 
 /**
  * The repository this protocol reasons about.
@@ -292,9 +352,45 @@ export function evidenceShapeFindings(evidence) {
       'ruleset.target_branch is missing or not a string — a ruleset whose target is unknown ' +
       'cannot be shown to protect the branch being merged into',
       JSON.stringify(ruleset.target_branch))
-    need(Array.isArray(ruleset.required_status_checks), 'ruleset-unreadable',
-      'ruleset.required_status_checks is missing or not an array',
-      JSON.stringify(ruleset.required_status_checks))
+    if (!Array.isArray(ruleset.required_status_checks)) {
+      out.push(blocker('ruleset-unreadable',
+        'ruleset.required_status_checks is missing or not an array',
+        JSON.stringify(ruleset.required_status_checks)))
+    } else {
+      for (const [i, entry] of ruleset.required_status_checks.entries()) {
+        const at = 'ruleset.required_status_checks[' + i + ']'
+        if (!isPlainObject(entry)) {
+          // A bare string is the OLD names-only shape. Refused rather than
+          // upgraded: silently reading it as an unbound context would restore
+          // the exact policy-identity flattening this version exists to remove.
+          out.push(blocker('ruleset-unreadable',
+            at + ' is not an object — a required check is a context plus an integration binding, not a name',
+            JSON.stringify(entry)))
+          continue
+        }
+        need(isNonEmptyString(entry.context), 'ruleset-unreadable',
+          at + '.context is missing or not a string', JSON.stringify(entry.context))
+        // The KEY must be present; its value may legitimately be null, which
+        // GitHub uses to mean "any source". That is a policy statement, not a
+        // malformed document, so it is judged by rulesetFindings rather than
+        // rejected here.
+        need('integration_id' in entry, 'ruleset-unreadable',
+          at + '.integration_id is absent — an unreported binding is indistinguishable from an unbound one',
+          'expected an integer or an explicit null')
+      }
+    }
+
+    // bypass_actors: required, and its absence is never an empty list. GitHub
+    // omits it when the caller lacks sufficient access, so missing means the
+    // policy state could not be read.
+    if (!Array.isArray(ruleset.bypass_actors)) {
+      out.push(blocker('ruleset-bypass-unreadable',
+        'ruleset.bypass_actors is missing or not an array — an unread bypass list is an unknown ' +
+        'policy state, not an empty one, and a strict policy guarantees nothing about merge time ' +
+        'if the rules carrying it can be bypassed',
+        JSON.stringify(ruleset.bypass_actors)))
+    }
+
     need(typeof ruleset.strict_required_status_checks_policy === 'boolean', 'ruleset-unreadable',
       'ruleset.strict_required_status_checks_policy is missing or not a boolean — ' +
       'an unknown strictness cannot be assumed strict',
@@ -545,7 +641,7 @@ export function requiredCheckFindings({ evidence, reviewedHead, required = REQUI
  * sound while the repository's enforcement is still loose. It carries its own
  * decision value instead, and that value does not authorize.
  */
-export function rulesetFindings({ evidence, expectedRulesetId = EXPECTED_RULESET_ID, required = REQUIRED_CHECKS, expectedTargetBranch = EXPECTED_TARGET_BRANCH }) {
+export function rulesetFindings({ evidence, expectedRulesetId = EXPECTED_RULESET_ID, expectedChecks = EXPECTED_RULESET_CHECKS, expectedTargetBranch = EXPECTED_TARGET_BRANCH }) {
   const out = []
   const rs = evidence?.ruleset
   if (!isPlainObject(rs)) return out
@@ -569,16 +665,69 @@ export function rulesetFindings({ evidence, expectedRulesetId = EXPECTED_RULESET
   }
 
   if (Array.isArray(rs.required_status_checks)) {
-    const actual = [...rs.required_status_checks].sort()
-    const expected = [...required].sort()
-    if (actual.length !== expected.length || actual.some((n, i) => n !== expected[i])) {
-      // Both directions are failures. Missing means something believed to gate
-      // the merge does not; extra means the merge is gated by something this
-      // protocol never examined and would report nothing about.
-      out.push(blocker('ruleset-required-checks-mismatch',
-        'The ruleset does not require exactly the checks this protocol validates',
-        'ruleset requires [' + actual.join(', ') + '], protocol validates [' + expected.join(', ') + ']'))
+    // One finding per drift shape rather than a single mismatch code, so each
+    // way the fence can be loosened is provable on its own instead of behind
+    // whichever check happens to fire first.
+    const entries = rs.required_status_checks.filter(isPlainObject)
+    const byContext = new Map()
+    for (const entry of entries) {
+      if (byContext.has(entry.context)) {
+        out.push(blocker('ruleset-check-duplicate-context',
+          'The ruleset requires the same context more than once',
+          JSON.stringify(entry.context) + ' appears twice — which binding applies is ambiguous'))
+      } else {
+        byContext.set(entry.context, entry)
+      }
     }
+
+    for (const expected of expectedChecks) {
+      const entry = byContext.get(expected.context)
+      if (!entry) {
+        out.push(blocker('ruleset-check-context-missing',
+          'The ruleset does not require a check this protocol treats as gating the merge',
+          'missing context ' + JSON.stringify(expected.context)))
+        continue
+      }
+      const bound = entry.integration_id
+      if (bound === null || bound === undefined) {
+        // GitHub's "any source". The context is required, but nothing says it
+        // must come from GitHub Actions — so a check run of that name from any
+        // installed App would satisfy the fence.
+        out.push(blocker('ruleset-check-source-unbound',
+          'The ruleset requires a context without binding it to an integration',
+          JSON.stringify(expected.context) + ' has integration_id ' + JSON.stringify(bound) +
+          ' — any App able to post a check of that name would satisfy the merge-time fence'))
+      } else if (bound !== expected.integration_id) {
+        out.push(blocker('ruleset-check-source-mismatch',
+          'The ruleset binds a required context to a different integration than expected',
+          JSON.stringify(expected.context) + ' expects integration ' + expected.integration_id +
+          ', ruleset binds ' + JSON.stringify(bound)))
+      }
+    }
+
+    const expectedContexts = new Set(expectedChecks.map(c => c.context))
+    for (const context of byContext.keys()) {
+      if (!expectedContexts.has(context)) {
+        // The subtler direction: the merge is gated by something this protocol
+        // never examined and would report nothing about.
+        out.push(blocker('ruleset-check-context-unexpected',
+          'The ruleset requires a context this protocol does not understand',
+          JSON.stringify(context) + ' is required at merge time but is not validated here'))
+      }
+    }
+  }
+
+  // The bypass list. Empty is the only state that can authorize; the shape pass
+  // has already blocked an absent or non-array one as unknown.
+  if (Array.isArray(rs.bypass_actors) && rs.bypass_actors.length > 0) {
+    out.push(blocker('ruleset-bypass-actors-present',
+      'The ruleset can be bypassed, so its guarantees are not unconditional',
+      rs.bypass_actors.length + ' bypass actor(s): ' +
+      rs.bypass_actors.map(a => JSON.stringify(isPlainObject(a)
+        ? (a.actor_type ?? 'unknown') + '/' + (a.bypass_mode ?? 'unknown')
+        : a)).join(', ') +
+      ' — how a bypass actor could be safe is a policy question for an independently ' +
+      'reviewed change, not something this protocol may decide'))
   }
 
   if (rs.strict_required_status_checks_policy === false) {
@@ -824,7 +973,18 @@ function buildDecision({ decision, findings, contract, review, reviewedHead, evi
         id: rs?.id ?? null,
         enforcement: rs?.enforcement ?? null,
         target_branch: rs?.target_branch ?? null,
-        required_status_checks: Array.isArray(rs?.required_status_checks) ? [...rs.required_status_checks] : null,
+        // Structured, never flattened to names — a stored decision must record
+        // the policy identity it was made against, binding included.
+        required_status_checks: Array.isArray(rs?.required_status_checks)
+          ? rs.required_status_checks.map(e => isPlainObject(e)
+            ? { context: e.context ?? null, integration_id: e.integration_id ?? null }
+            : { context: null, integration_id: null, malformed: JSON.stringify(e) })
+          : null,
+        bypass_actors: Array.isArray(rs?.bypass_actors) ? [...rs.bypass_actors] : null,
+        // Corroborating state only. It is caller-specific — it answers "can
+        // THIS token bypass?" — and can never stand in for proving the ruleset
+        // has no bypass actors at all.
+        current_user_can_bypass: rs?.current_user_can_bypass ?? null,
         strict_required_status_checks_policy:
           typeof rs?.strict_required_status_checks_policy === 'boolean'
             ? rs.strict_required_status_checks_policy
