@@ -245,8 +245,8 @@ describe('required check names identify exactly one job each', () => {
   }
 
   /**
-   * A mapping entry inside a job body: { key, value }, or null when the line is
-   * not a mapping key this parser can classify.
+   * A mapping entry at a GIVEN indentation: { key, rawValue }, or null when the
+   * line is not a mapping key this parser can classify there.
    *
    * The KEY is parsed separately from the value, because YAML spells the same
    * property several ways and GitHub honours all of them:
@@ -254,44 +254,55 @@ describe('required check names identify exactly one job each', () => {
    *   name: check          "name": check          'name' : 'check' # required
    *   name : check         'name': check
    *
-   * The earlier version matched only `^ {4}name:` and silently continued past
-   * the rest — so a job whose override was written `"name": check` produced a
-   * check run called `check` while this proof believed its effective name was
-   * the job id. That is the same required-context collision the task exists to
-   * rule out, reached by a different spelling.
+   * The indentation is a PARAMETER, not a literal. YAML gives no meaning to
+   * "four spaces" — it requires only that a child be indented further than its
+   * parent and that siblings share a level. An earlier version hardcoded 2 for
+   * job keys and 4 for job properties, so a job body written at 3 or 6 spaces
+   * was skipped in silence and its `name: check` never seen.
    */
-  const bodyEntry = (line) => {
-    const m = line.match(/^ {4}(?:'([^']*)'|"([^"]*)"|([^:#\s'"][^:#]*?))\s*:(\s.*)?$/)
+  const mappingEntry = (line, indent) => {
+    if (line.length < indent || line.slice(0, indent).trim() !== '') return null
+    const rest = line.slice(indent)
+    if (rest === '' || /^\s/.test(rest)) return null      // deeper than this level
+    const m = rest.match(/^(?:'([^']*)'|"([^"]*)"|([^:#\s'"][^:#]*?))\s*:(\s.*)?$/)
     if (!m) return null
-    // A BARE key must look like a property name. Without this, `    - name: x`
+    // A BARE key must look like a property name. Without this, `- name: x`
     // parses as a key called "- name" and is quietly treated as some other
-    // property — a malformed job body read as a well-formed one. A QUOTED key
-    // is explicit about where it begins and ends, so it needs no such rule.
+    // property — a malformed mapping read as a well-formed one. A QUOTED key is
+    // explicit about where it begins and ends, so it needs no such rule.
     if (m[3] !== undefined && !/^[A-Za-z_][A-Za-z0-9_.-]*$/.test(m[3])) return null
     const key = m[1] ?? m[2] ?? m[3]
     if (key === undefined) return null
     // The key is used VERBATIM. A quoted scalar preserves the whitespace inside
     // it, so `' name '` is the key " name " and not `name` — GitHub does not
-    // treat it as the name property, and neither may this. Trimming it here
-    // would invent an override the workflow does not have. Bare keys cannot
+    // treat it as the name property, and neither may this. Bare keys cannot
     // carry whitespace at all, by the shape rule above.
-    return { key, value: (m[4] ?? '').trim() }
+    return { key, rawValue: (m[4] ?? '').trim() }
   }
+
+  const indentOf = (line) => line.match(/^ */)[0].length
 
   /**
    * Every job in one workflow, as { id, effectiveName }.
    *
    * A hand parser rather than a YAML dependency — this repository has none, and
-   * package.json is outside this task's contract. Two rules make that safe:
+   * package.json is outside this task's contract. What makes that safe is not
+   * knowing YAML, it is REFUSING WHAT IT CANNOT CLASSIFY. Silently skipping an
+   * unrecognised line is the defect this parser has been corrected for three
+   * times: `  "check":` was skipped, then `"name": check` was skipped, then a
+   * job body at any indentation but four was skipped. Each is valid YAML that
+   * GitHub honours, and each let a required-context collision sit in the tree
+   * while this proof stayed green.
    *
-   *   1. It only reads the two levels of fixed indentation GitHub Actions
-   *      requires — a job key at two spaces, its `name:` at four.
-   *   2. IT REFUSES WHAT IT CANNOT CLASSIFY. Silently skipping an unrecognised
-   *      line is what made the earlier version unsound: `  "check":` and
-   *      `  check: # required` are both valid YAML and both matched nothing, so
-   *      a real collision could sit in the tree while this proof stayed green.
-   *      Anything at job-key indentation that does not parse now throws, named
-   *      by file and line.
+   * So indentation is DERIVED rather than assumed, at both levels:
+   *
+   *   the first child of `jobs:` establishes the JOB KEY level;
+   *   the first child of each job establishes THAT JOB's property level.
+   *
+   * Deeper than the property level is nested content — `steps:` and its
+   * `- name:` items live there, and a step name is not a job name. Anything
+   * between the two levels is inconsistent indentation that could hide
+   * job-level structure, and it throws, named by file and line.
    */
   const parseJobs = (text, workflow) => {
     const refuse = (line, i, why) => {
@@ -304,44 +315,77 @@ describe('required check names identify exactly one job each', () => {
     const start = lines.findIndex(l => /^jobs:\s*(?:#.*)?$/.test(l))
     if (start < 0) return []
 
-    const out = []
+    // The job-key level, from the first child of `jobs:`.
+    let keyIndent = null
     for (let i = start + 1; i < lines.length; i++) {
-      const line = lines[i]
-      if (line.trim() === '') continue
-      if (/^\S/.test(line)) break                                  // left the jobs: block
-      if (!/^ {2}\S/.test(line)) continue                          // deeper — part of a job body
+      if (lines[i].trim() === '') continue
+      if (indentOf(lines[i]) === 0) break                  // left the block with no jobs
+      keyIndent = indentOf(lines[i])
+      break
+    }
+    if (keyIndent === null) return []                      // declares jobs: but has none
 
-      // A line at job-key indentation. It is a job key or it is a refusal.
-      const key = line.match(/^ {2}([^:]*?)\s*:\s*(?:#.*)?$/)
+    const out = []
+    let i = start + 1
+    while (i < lines.length) {
+      const line = lines[i]
+      if (line.trim() === '') { i++; continue }
+      const ind = indentOf(line)
+      if (ind === 0) break                                 // left the jobs: block
+      if (ind !== keyIndent) {
+        refuse(line, i, 'is indented ' + ind + ' where sibling jobs are indented ' + keyIndent)
+      }
+
+      const key = mappingEntry(line, keyIndent)
       if (!key) refuse(line, i, 'is at job-key indentation but is not a job mapping key')
-      const id = scalar(key[1])
-      // A job id is not any scalar. GitHub constrains it, and without this a
-      // sequence item (`  - check:`) or a spaced key parses as an id.
-      if (id === null || !/^[A-Za-z_][A-Za-z0-9_-]*$/.test(id)) {
+      // A job key carries no inline value; a trailing comment is not a value.
+      if (key.rawValue !== '' && !key.rawValue.startsWith('#')) {
+        refuse(line, i, 'has a value on the job key line')
+      }
+      const id = key.key
+      if (!/^[A-Za-z_][A-Za-z0-9_-]*$/.test(id)) {
         refuse(line, i, 'has a job key this parser cannot classify as a job id')
       }
 
+      // The property level for THIS job, from its own first child.
+      let bodyIndent = null
       let effectiveName = id
-      for (let j = i + 1; j < lines.length; j++) {
+      let namedAt = null
+      let j = i + 1
+      for (; j < lines.length; j++) {
         const body = lines[j]
-        if (/^\S/.test(body) || /^ {2}\S/.test(body)) break         // next job
         if (body.trim() === '') continue
-        if (!/^ {4}\S/.test(body)) continue                          // deeper — inside a property
+        const bi = indentOf(body)
+        if (bi <= keyIndent) break                         // next job, or out of the block
+        if (bodyIndent === null) bodyIndent = bi           // first child sets the level
+        if (bi < bodyIndent) {
+          refuse(body, j, 'is indented ' + bi + ' where sibling job properties are indented ' +
+            bodyIndent + ', which makes the job-level structure ambiguous')
+        }
+        if (bi > bodyIndent) continue                      // nested content, not job-level
 
-        // Every job property is classified, not just the one being looked for.
-        // Skipping a four-space line because its spelling is unfamiliar is how
-        // a `name` override hides; all 81 such lines in the tree parse, so a
-        // refusal here means something genuinely new.
-        const entry = bodyEntry(body)
-        if (!entry) refuse(body, j, 'is at job-property indentation but is not a mapping key')
-        if (entry.key !== 'name') continue
+        // Every job-level property is classified, not just the one being looked
+        // for: skipping a line because its spelling is unfamiliar is how a
+        // `name` override hides.
+        const prop = mappingEntry(body, bodyIndent)
+        if (!prop) refuse(body, j, 'is at job-property indentation but is not a mapping key')
+        if (prop.key !== 'name') continue
 
-        const value = scalar(entry.value)
+        // Two `name` keys in one mapping is invalid YAML, and which one a
+        // reader takes is exactly the kind of thing this parser must not
+        // decide: picking either could report a name GitHub does not use.
+        if (namedAt !== null) {
+          refuse(body, j, 'declares a job name more than once (already at line ' + (namedAt + 1) + ')')
+        }
+        const value = scalar(prop.rawValue)
         if (value === null) refuse(body, j, 'has a job name this parser cannot classify')
+        namedAt = j
         effectiveName = value
-        break
+        // The scan continues rather than breaking, so the rest of the body is
+        // still checked for the inconsistent indentation that could hide another.
       }
       out.push({ id, effectiveName, workflow })
+      i = j
     }
     return out
   }
@@ -490,6 +534,138 @@ describe('required check names identify exactly one job each', () => {
       .toEqual([{ id: 'plain', effectiveName: 'plain', workflow: 'evil.yml' }])
   })
 
+  // -------------------------------------------------------------------------
+  // Indentation is derived, not assumed.
+  //
+  // YAML gives no meaning to "four spaces": a child need only be indented
+  // further than its parent, and siblings share a level. Every fixture below is
+  // a valid workflow that the previous parser skipped in silence.
+  // -------------------------------------------------------------------------
+
+  /** A workflow whose job body sits at an arbitrary indentation. */
+  const atIndent = (bodyIndent, props, keyIndent = 2) =>
+    'name: Evil\non:\n  workflow_dispatch:\n\njobs:\n' +
+    ' '.repeat(keyIndent) + 'diagnostic:\n' +
+    props.map(l => ' '.repeat(bodyIndent) + l).join('\n') + '\n'
+
+  it('catches a job-level name at ANY body indentation, not just four', () => {
+    for (const width of [3, 4, 5, 6, 8]) {
+      const text = atIndent(width, ['name: check', 'runs-on: ubuntu-latest'])
+      expect(parseJobs(text, 'evil.yml'), 'body indent ' + width)
+        .toEqual([{ id: 'diagnostic', effectiveName: 'check', workflow: 'evil.yml' }])
+      expect(producerMap([...allJobs(), ...parseJobs(text, 'evil.yml')]).check, 'body indent ' + width)
+        .toEqual(['ci.yml:check', 'evil.yml:diagnostic'])
+    }
+  })
+
+  it('catches every KEY spelling at those other indentations too', () => {
+    for (const width of [3, 6]) {
+      for (const spelling of ['name : check', '"name": check', "'name' : 'check' # required"]) {
+        const text = atIndent(width, [spelling, 'runs-on: ubuntu-latest'])
+        expect(parseJobs(text, 'evil.yml')[0].effectiveName, width + ' / ' + spelling).toBe('check')
+      }
+    }
+  })
+
+  it('derives the job-key level too, not only the property level', () => {
+    // Jobs indented at something other than two spaces are still jobs.
+    for (const keyIndent of [1, 3, 4]) {
+      const text = atIndent(keyIndent + 2, ['name: check', 'runs-on: ubuntu-latest'], keyIndent)
+      expect(parseJobs(text, 'evil.yml'), 'key indent ' + keyIndent)
+        .toEqual([{ id: 'diagnostic', effectiveName: 'check', workflow: 'evil.yml' }])
+    }
+  })
+
+  it('does NOT read a step name as the job name', () => {
+    // `steps:` sits at the property level and its items are nested deeper, so a
+    // step called `check` is not the job's check-run name. This is the reason
+    // "anything deeper is nested content" is a rule and not an oversight.
+    for (const width of [3, 4, 6]) {
+      const text = atIndent(width, [
+        'runs-on: ubuntu-latest',
+        'steps:',
+        ' '.repeat(2) + '- name: check',
+        ' '.repeat(4) + 'run: echo hi',
+      ])
+      expect(parseJobs(text, 'evil.yml'), 'body indent ' + width)
+        .toEqual([{ id: 'diagnostic', effectiveName: 'diagnostic', workflow: 'evil.yml' }])
+      expect(producerMap([...allJobs(), ...parseJobs(text, 'evil.yml')]).check, 'body indent ' + width)
+        .toEqual(['ci.yml:check'])
+    }
+  })
+
+  it('ignores nested mappings deeper than the property level', () => {
+    const text = atIndent(4, [
+      'runs-on: ubuntu-latest',
+      'strategy:',
+      '  matrix:',
+      '    name: check',          // deeper still — matrix data, not a job name
+      'env:',
+      '  name: check',            // an env var called name, also not a job name
+    ])
+    expect(parseJobs(text, 'evil.yml'))
+      .toEqual([{ id: 'diagnostic', effectiveName: 'diagnostic', workflow: 'evil.yml' }])
+  })
+
+  it('REFUSES inconsistent sibling indentation rather than guessing', () => {
+    // A property less indented than the established level, but still inside the
+    // job, makes the job-level structure ambiguous — and ambiguity is exactly
+    // where a `name` can hide.
+    const ragged = 'name: Evil\non:\n  workflow_dispatch:\n\njobs:\n  diagnostic:\n' +
+      '      runs-on: ubuntu-latest\n' +
+      '    name: check\n'                       // 4 where siblings are 6
+    expect(() => parseJobs(ragged, 'evil.yml')).toThrow(/evil\.yml:\d+/)
+    expect(() => parseJobs(ragged, 'evil.yml')).toThrow(/ambiguous/)
+
+    // And the same one level up: a job key out of line with its siblings.
+    const raggedJobs = 'jobs:\n  first:\n    runs-on: x\n   second:\n    runs-on: x\n'
+    expect(() => parseJobs(raggedJobs, 'evil.yml')).toThrow(/evil\.yml:\d+/)
+  })
+
+  it('REFUSES a job key out of line with its siblings', () => {
+    // Reaches the JOB-KEY level check specifically: the first job establishes
+    // the level, the second sits outside it, and the body scan has already
+    // ended — so nothing else can catch this one.
+    const ragged = 'jobs:\n    first:\n      runs-on: x\n  second:\n      runs-on: x\n'
+    expect(() => parseJobs(ragged, 'evil.yml')).toThrow(/evil\.yml:\d+/)
+    expect(() => parseJobs(ragged, 'evil.yml')).toThrow(/sibling jobs are indented/)
+
+    // The well-formed version of the same shape parses, so the rule is about
+    // consistency and not about the number 2.
+    expect(parseJobs('jobs:\n    first:\n      runs-on: x\n    second:\n      runs-on: x\n', 'ok.yml'))
+      .toEqual([
+        { id: 'first', effectiveName: 'first', workflow: 'ok.yml' },
+        { id: 'second', effectiveName: 'second', workflow: 'ok.yml' },
+      ])
+  })
+
+  it('REFUSES a job that declares `name` twice', () => {
+    // Invalid YAML, and which one a reader takes is exactly what this parser
+    // must not decide — either choice could report a name GitHub does not use.
+    const twice = atIndent(4, ['name: check', 'name: something-else', 'runs-on: x'])
+    expect(() => parseJobs(twice, 'evil.yml')).toThrow(/more than once/)
+
+    // Including when the two spellings differ, which is how it would slip past
+    // a check that only compared identical lines.
+    const mixed = atIndent(4, ['name: check', '"name": other', 'runs-on: x'])
+    expect(() => parseJobs(mixed, 'evil.yml')).toThrow(/more than once/)
+
+    // A step named `name` deeper in the body is not a second job name.
+    expect(parseJobs(atIndent(4, ['name: check', 'steps:', '  - name: a step']), 'ok.yml'))
+      .toEqual([{ id: 'diagnostic', effectiveName: 'check', workflow: 'ok.yml' }])
+  })
+
+  it('does not let a less-indented property silently alter identity', () => {
+    // The dangerous reading of a ragged line is "this belongs to some outer
+    // scope, ignore it". It must refuse instead — never quietly return the id.
+    const ragged = 'name: Evil\non:\n  workflow_dispatch:\n\njobs:\n  diagnostic:\n' +
+      '      runs-on: ubuntu-latest\n' +
+      '    name: check\n'
+    let threw = false
+    try { parseJobs(ragged, 'evil.yml') } catch { threw = true }
+    expect(threw, 'a ragged job body must not resolve to any effective name').toBe(true)
+  })
+
   it('catches a name override however the KEY is spelled', () => {
     // Each of these is valid YAML that GitHub honours as a name override, and
     // each was silently skipped before: the job would report a check run called
@@ -516,13 +692,18 @@ describe('required check names identify exactly one job each', () => {
     // The property is key IDENTITY, not one spelling of it: every form above
     // must reach the same `name` key, and a different key must not.
     for (const line of ['    name: x', '    "name": x', "    'name' : x", '    name : x']) {
-      expect(bodyEntry(line), line).toEqual({ key: 'name', value: 'x' })
+      expect(mappingEntry(line, 4), line).toEqual({ key: 'name', rawValue: 'x' })
     }
     for (const line of ['    runs-on: ubuntu-latest', '    "names": x', '    named: x']) {
-      expect(bodyEntry(line).key, line).not.toBe('name')
+      expect(mappingEntry(line, 4).key, line).not.toBe('name')
     }
     // A property with no value on the line is a key like any other.
-    expect(bodyEntry('    steps:')).toEqual({ key: 'steps', value: '' })
+    expect(mappingEntry('    steps:', 4)).toEqual({ key: 'steps', rawValue: '' })
+    // And the level is a parameter: the same line read at the wrong level is
+    // not a key there at all.
+    expect(mappingEntry('    name: x', 6)).toBeNull()
+    expect(mappingEntry('    name: x', 2)).toBeNull()
+    expect(mappingEntry('      name: x', 6)).toEqual({ key: 'name', rawValue: 'x' })
   })
 
   it('treats a padded quoted key as a different key, not as `name`', () => {
@@ -530,7 +711,7 @@ describe('required check names identify exactly one job each', () => {
     // " name ". GitHub does not read it as the name property, so neither may
     // this — inventing an override the workflow does not have would report a
     // collision that is not there.
-    expect(bodyEntry("    ' name ': check")).toEqual({ key: ' name ', value: 'check' })
+    expect(mappingEntry("    ' name ': check", 4)).toEqual({ key: ' name ', rawValue: 'check' })
     expect(parseJobs(wrap('  diagnostic:', "    ' name ': check\n"), 'evil.yml'))
       .toEqual([{ id: 'diagnostic', effectiveName: 'diagnostic', workflow: 'evil.yml' }])
     expect(withFixture(wrap('  diagnostic:', "    ' name ': check\n")).check)
