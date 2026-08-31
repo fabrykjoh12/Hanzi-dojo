@@ -2577,6 +2577,11 @@ describe('reviewer authority is never collapsed into integrator authority', () =
     /allow(s|ing|ed)?\s+(a|the)\s+merge/i,
     /permit(s|ting|ted)?\s+(a|the)\s+merge/i,
     /gate(s|ing|d)?\s+(a|the)\s+merge/i,
+    // "keeps the merge safe" was the real phrasing that slipped through: it
+    // claims the protocol protects a merge rather than a decision.
+    /keep(s|ing)?\s+(a|the)\s+merge/i,
+    /(protect|guard|safeguard)(s|ing|ed)?\s+(a|the)\s+merge/i,
+    /(block|prevent)(s|ing|ed)?\s+(a|the)\s+merge/i,
     /should\s*not\s+merge/i,
     /what\s+allows\s+the\s+merge/i,
   ]
@@ -2638,6 +2643,10 @@ describe('reviewer authority is never collapsed into integrator authority', () =
       'concrete reasons it should not merge',
       'the verdict approves the merge',
       'what allows the merge to proceed',
+      'decide blocking afterwards keeps the merge safe but not the review',
+      'this protects the merge',
+      'the protocol guards the merge',
+      'it blocks the merge',
     ]) {
       const scanned = stripLegitimate(bad)
       expect(MERGE_AUTHORITY_CLAIMS.some(re => re.test(scanned)), 'not caught: ' + bad).toBe(true)
@@ -2829,5 +2838,196 @@ describe('every re-review launches a new reviewer, never resumes one', () => {
     for (const f of ['tools/review-protocol.mjs', 'tools/review-task.mjs']) {
       expect(readFileSync(f, 'utf8'), f).not.toMatch(/SendMessage|resumeAgent|dispatchReview/i)
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The CLI exit-code contract is PER-SUBCOMMAND
+// ---------------------------------------------------------------------------
+
+describe('exit codes mean different things per subcommand', () => {
+  // The old header said "0 only for APPROVE" for the whole CLI, which was
+  // false: verify, brief and snapshot all exit 0 on success and carry no
+  // verdict at all. A future orchestrator reading `verify` exit 0 as "the
+  // verification passed" would be reading a guarantee nobody made.
+  //
+  // The behaviour is deliberately unchanged. A recorded failure is EVIDENCE,
+  // and carrying it to the reviewer and to `decide` is the pipeline's job — a
+  // non-zero exit there would abort the run under `set -e` or any exit-code
+  // orchestrator, so the failure would never be reviewed and no verdict would
+  // ever be produced. That is the same mistake as treating a failing test as
+  // invalid evidence.
+  const CLI = path.resolve('tools/review-task.mjs')
+  const dirs = []
+  afterAll(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }) })
+
+  const repo = ({ verification }) => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'exit-'))
+    dirs.push(dir)
+    const g = (args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' })
+    g(['init', '-q', '-b', 'main'])
+    g(['config', 'user.email', 'f@example.test']); g(['config', 'user.name', 'F'])
+    writeFileSync(path.join(dir, 'package.json'), JSON.stringify({
+      name: 'exit-fixture', private: true, scripts: {
+        ok: 'node -e "console.log(\'passed\')"',
+        fails: 'node -e "console.error(\'three assertions failed\'); process.exit(1)"',
+      },
+    }, null, 2))
+    writeFileSync(path.join(dir, '.gitignore'), 'node_modules\n')
+    g(['add', '-A']); g(['commit', '-q', '-m', 'chore: scaffolding'])
+    const c = contract({ id: 'exit', allowed_paths: ['src/**'], verification })
+    mkdirSync(path.join(dir, TASKS_DIR), { recursive: true })
+    writeFileSync(path.join(dir, TASKS_DIR, 'exit.json'), JSON.stringify(c, null, 2))
+    g(['add', '-A']); g(['commit', '-q', '-m', 'governance: seal exit'])
+    mkdirSync(path.join(dir, 'src'), { recursive: true })
+    writeFileSync(path.join(dir, 'src', 'a.js'), 'x\n')
+    g(['add', '-A']); g(['commit', '-q', '-m', 'feat: work'])
+    return { dir, head: g(['rev-parse', 'HEAD']).stdout.trim(), contract: c }
+  }
+  const run = (r, args) => spawnSync('node', [CLI, ...args], { cwd: r.dir, encoding: 'utf8' })
+
+  it('verify exits 0 when EVIDENCE was produced, even for a FAILING command', () => {
+    // The property the old wording got wrong, stated as a test.
+    const r = repo({ verification: ['npm run fails'] })
+    const out = run(r, ['verify', '--task', 'exit', '--head', r.head])
+    expect(out.status, 'verify aborted instead of producing evidence').toBe(0)
+    const ev = JSON.parse(out.stdout)
+    expect(ev.runs[0].executed).toBe(true)
+    expect(ev.runs[0].exit_code, 'the failure was not recorded').toBe(1)
+  })
+
+  it('and the evidence records the genuine failure honestly', () => {
+    const r = repo({ verification: ['npm run fails'] })
+    const ev = JSON.parse(run(r, ['verify', '--task', 'exit', '--head', r.head]).stdout)
+    expect(ev.runs[0].evidence).toContain('three assertions failed')
+    // The protocol reads that record as a real failure, whatever verify exited.
+    const f = verificationEvidenceFindings({ contract: r.contract, evidence: ev, headSha: r.head })
+    expect(f.some(x => x.severity === 'major' && /failed/.test(x.summary))).toBe(true)
+  })
+
+  it('a failing required command cannot be read as a passing review from verify alone', () => {
+    // The inference that must never be available: verify exit 0 => it passed.
+    // Same process exit, opposite meaning — so the exit status carries none of it.
+    const passing = repo({ verification: ['npm run ok'] })
+    const failing = repo({ verification: ['npm run fails'] })
+    const a = run(passing, ['verify', '--task', 'exit', '--head', passing.head])
+    const b = run(failing, ['verify', '--task', 'exit', '--head', failing.head])
+    expect(a.status).toBe(0)
+    expect(b.status).toBe(0)
+    expect(JSON.parse(a.stdout).runs[0].exit_code).toBe(0)
+    expect(JSON.parse(b.stdout).runs[0].exit_code).toBe(1)
+
+    // The difference is only visible in the evidence, which is the point.
+    expect(verificationEvidenceFindings({
+      contract: passing.contract, evidence: JSON.parse(a.stdout), headSha: passing.head,
+    })).toEqual([])
+    expect(verificationEvidenceFindings({
+      contract: failing.contract, evidence: JSON.parse(b.stdout), headSha: failing.head,
+    }).length).toBeGreaterThan(0)
+  })
+
+  it('verify DOES exit non-zero when no usable evidence could be produced', () => {
+    const r = repo({ verification: ['npm run ok'] })
+    expect(run(r, ['verify', '--task', 'no-such-task', '--head', r.head]).status).not.toBe(0)
+    expect(run(r, ['verify', '--task', 'exit', '--head', 'not-a-ref']).status).not.toBe(0)
+    expect(run(r, ['verify', '--task', 'exit']).status).not.toBe(0)
+  })
+
+  it('snapshot exits 0 for a successful snapshot, carrying no verdict', () => {
+    const r = repo({ verification: ['npm run ok'] })
+    const out = run(r, ['snapshot', '--worktree', r.dir])
+    expect(out.status).toBe(0)
+    expect(JSON.parse(out.stdout).snapshot_version).toBe(SNAPSHOT_VERSION)
+    expect(out.stdout).not.toMatch(/APPROVE|VERDICT/)
+  })
+
+  it('brief exits 0 for a valid brief, carrying no verdict', () => {
+    const r = repo({ verification: ['npm run ok'] })
+    const out = run(r, ['brief', '--task', 'exit', '--head', r.head])
+    expect(out.status, out.stderr).toBe(0)
+    expect(out.stdout).toMatch(/Independent review: exit/)
+    expect(out.stdout).not.toMatch(/^VERDICT:/m)
+  })
+
+  it('decide exits 0 ONLY for APPROVE', () => {
+    // Driven through the real CLI so the exit code is the process's, not a
+    // function's return value.
+    const r = repo({ verification: ['npm run ok'] })
+    const ev = run(r, ['verify', '--task', 'exit', '--head', r.head]).stdout
+    const evFile = path.join(r.dir, '..', 'ev.json'); writeFileSync(evFile, ev)
+    const snap = run(r, ['snapshot', '--worktree', r.dir]).stdout
+    const before = path.join(r.dir, '..', 'before.json'); writeFileSync(before, snap)
+    const after = path.join(r.dir, '..', 'after.json'); writeFileSync(after, snap)
+
+    const decide = (result) => {
+      const f = path.join(r.dir, '..', 'res-' + Math.random().toString(36).slice(2) + '.json')
+      writeFileSync(f, JSON.stringify(result))
+      return run(r, ['decide', '--task', 'exit', '--head', r.head, '--result', f,
+        '--verification', evFile, '--before', before, '--after', after])
+    }
+    const good = cleanResult(r.contract, {
+      base_sha: JSON.parse(snap).head === r.head ? undefined : undefined,
+    })
+    // Bind the result to the commits the CLI will resolve.
+    const gov = spawnSync('git', ['rev-list', '--max-count=1', r.head, '--', TASKS_DIR + '/exit.json'],
+      { cwd: r.dir, encoding: 'utf8' }).stdout.trim()
+    const approving = { ...good, base_sha: gov, head_sha: r.head }
+
+    const ok = decide(approving)
+    expect(ok.status, ok.stdout + ok.stderr).toBe(0)
+    expect(ok.stdout).toMatch(/VERDICT: APPROVE/)
+  })
+
+  it('REQUEST_CHANGES and BLOCKED from decide are non-zero', () => {
+    const r = repo({ verification: ['npm run ok'] })
+    const ev = run(r, ['verify', '--task', 'exit', '--head', r.head]).stdout
+    const evFile = path.join(r.dir, '..', 'ev2.json'); writeFileSync(evFile, ev)
+    const snap = run(r, ['snapshot', '--worktree', r.dir]).stdout
+    const before = path.join(r.dir, '..', 'b2.json'); writeFileSync(before, snap)
+    const after = path.join(r.dir, '..', 'a2.json'); writeFileSync(after, snap)
+    const gov = spawnSync('git', ['rev-list', '--max-count=1', r.head, '--', TASKS_DIR + '/exit.json'],
+      { cwd: r.dir, encoding: 'utf8' }).stdout.trim()
+    const base = { ...cleanResult(r.contract), base_sha: gov, head_sha: r.head }
+
+    const decide = (result) => {
+      const f = path.join(r.dir, '..', 'r-' + Math.random().toString(36).slice(2) + '.json')
+      writeFileSync(f, JSON.stringify(result))
+      return run(r, ['decide', '--task', 'exit', '--head', r.head, '--result', f,
+        '--verification', evFile, '--before', before, '--after', after])
+    }
+
+    // REQUEST_CHANGES: an unmet criterion.
+    const changes = decide({
+      ...base,
+      no_blocking_findings: false,
+      criteria: base.criteria.map((c, i) => i === 0 ? { ...c, status: 'unmet' } : c),
+    })
+    expect(changes.stdout).toMatch(/VERDICT: REQUEST_CHANGES/)
+    expect(changes.status, 'REQUEST_CHANGES exited 0').not.toBe(0)
+
+    // BLOCKED: a malformed result.
+    const blocked = decide({ nonsense: true })
+    expect(blocked.stdout).toMatch(/VERDICT: BLOCKED/)
+    expect(blocked.status, 'BLOCKED exited 0').not.toBe(0)
+  })
+
+  it('the file documents the per-subcommand contract, not one global rule', () => {
+    const src = readFileSync('tools/review-task.mjs', 'utf8')
+    expect(src, 'the false global claim is back')
+      .not.toMatch(/Exit code is the machine-readable half: 0 only for APPROVE/)
+    expect(src).toMatch(/THE EXIT-CODE CONTRACT IS PER-SUBCOMMAND/)
+    expect(src).toMatch(/does NOT mean the\s*\/\/\s*contract's commands passed/)
+    expect(src).toMatch(/Only `decide` exiting 0 carries a verdict/)
+    // The usage text a caller actually reads must say it too.
+    const usage = src.slice(src.indexOf('const USAGE'), src.indexOf('function parseArgs'))
+    expect(usage).toMatch(/EXIT CODES ARE PER-SUBCOMMAND/)
+    expect(usage).toMatch(/NOT 'the verification passed'/)
+  })
+
+  it('the cleanup comment describes the copy, not the superseded symlink', () => {
+    const src = readFileSync('tools/review-task.mjs', 'utf8')
+    expect(src, 'stale symlink-era wording').not.toMatch(/Unlink the shared node_modules/)
+    expect(src).not.toMatch(/driver's real dependency tree/)
+    expect(src).toMatch(/isolated copy, not a link into the driver's tree/)
   })
 })

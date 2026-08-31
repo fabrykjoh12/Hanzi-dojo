@@ -10,12 +10,33 @@
 //             raw diff is delivered rather than fetched.
 //   snapshot  Snapshot a worktree, for the integrity check either side.
 //   decide    Produce the final verdict, independently re-resolving the
-//             identities and re-deriving the base. Exits 0 only on APPROVE.
+//             identities and re-deriving the base.
 //
-// Exit code is the machine-readable half: 0 only for APPROVE. Anything else —
-// REQUEST_CHANGES, BLOCKED, a bad argument, an unreadable contract, an
-// exception nobody predicted — exits non-zero. A caller that checks the exit
-// code cannot accidentally read a failure as an approval.
+// THE EXIT-CODE CONTRACT IS PER-SUBCOMMAND. It has to be, and stating one
+// global rule for all four was worse than useless — it was false.
+//
+//   verify    0 = verification EVIDENCE was produced. It does NOT mean the
+//             contract's commands passed. Pass, fail and refusal live in the
+//             evidence itself (`executed`, `exit_code`) and are enforced by
+//             `brief` and `decide`. Non-zero here means no usable evidence
+//             exists — an unreadable contract, an unresolvable head, a worktree
+//             that could not be created.
+//   brief     0 = a valid brief was emitted. Not a verdict of any kind.
+//   snapshot  0 = the snapshot succeeded. Not a verdict of any kind.
+//   decide    0 = the final protocol verdict is APPROVE, and nothing else.
+//             REQUEST_CHANGES, BLOCKED, a bad argument, an unreadable contract
+//             or an unforeseen exception all exit non-zero.
+//
+// Why `verify` does not fail on a failing test, which looks wrong at first: a
+// recorded failure is EVIDENCE, and the pipeline's whole job is to carry it to
+// the reviewer and to `decide`. An orchestrator checking exit codes — or any
+// script under `set -e` — would abort the run instead, so the reviewer would
+// never see the failure and no verdict would ever be produced. That is the same
+// mistake as treating a failing test as invalid evidence: it converts something
+// the review must weigh into something that stops the review.
+//
+// The one inference that must never be available: `verify` exiting 0 does not
+// mean the verification passed. Only `decide` exiting 0 carries a verdict.
 
 import { readFile } from 'node:fs/promises'
 import { lstatSync, readlinkSync, realpathSync, mkdtempSync, existsSync, readFileSync, cpSync, rmSync } from 'node:fs'
@@ -52,6 +73,13 @@ const USAGE = `Usage:
   The base is DERIVED from the governance commit. There is no --base.
   The contract is read from the reviewed commit, never from the working tree.
   The reviewer has no shell: 'verify' runs the contract's commands for it.
+
+  EXIT CODES ARE PER-SUBCOMMAND:
+    verify    0 = evidence produced. NOT 'the verification passed' — pass/fail
+                  lives in the evidence and is enforced by brief and decide.
+    brief     0 = a valid brief was emitted.
+    snapshot  0 = the snapshot succeeded.
+    decide    0 = the verdict is APPROVE. Only this one carries a verdict.
 `
 
 function parseArgs(argv) {
@@ -501,8 +529,10 @@ async function main(argv = process.argv.slice(2)) {
         { driverRoot: process.cwd(), home: sandboxHome, tmp: sandboxTmp },
       ), null, 2) + '\n')
     } finally {
-      // Unlink the shared node_modules before removing the worktree, so git
-      // never walks into the driver's real dependency tree.
+      // Remove the copied node_modules before dropping the worktree. It is an
+      // isolated copy, not a link into the driver's tree, so this is disk
+      // hygiene rather than protection — but leaving ~475MB of it behind on
+      // every review would be its own problem.
       try { rmSync(path.join(root, 'node_modules'), { recursive: true, force: true }) } catch { /* none */ }
       gitIn(process.cwd())(['worktree', 'remove', '--force', root])
       rmSync(sandboxHome, { recursive: true, force: true })
@@ -550,7 +580,7 @@ async function main(argv = process.argv.slice(2)) {
         return 1
       }
       // Validate BEFORE the renderer labels it "executed for you at <sha>".
-      // decide blocking afterwards keeps the merge safe but not the review: the
+      // decide blocking afterwards keeps the DECISION sound but not the review:
       // reviewer would already have been shown another commit's results, or an
       // incomplete set, as this commit's verification. A blocker here means the
       // evidence is not what it claims to be; a major means a required command
