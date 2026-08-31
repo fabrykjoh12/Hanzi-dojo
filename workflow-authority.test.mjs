@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync, readdirSync } from 'node:fs'
+// The required contexts, from the integration protocol rather than restated here.
+import { REQUIRED_CHECKS } from './tools/integration-protocol.mjs'
 
 // Repository-wide authority contract: WHAT MAY EACH WORKFLOW MUTATE.
 //
@@ -191,5 +193,125 @@ describe('needs-testing keeps canonical content and mutable state apart', () => 
   it('bootstraps from the frozen seed rather than starting empty', () => {
     // Starting empty would re-post a thread for all 18 existing items.
     expect(body).toContain('.github/needs-testing.ids.json')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// REQUIRED-CHECK IDENTITY — one job, one required context, no collisions.
+//
+// A required status check is identified by its CONTEXT NAME plus the producing
+// integration, never by the workflow file it came from. So two jobs with the
+// same effective name, both run by GitHub Actions, are indistinguishable to the
+// ruleset — and to anything reading check runs back, which cannot tell which of
+// the two a green result belongs to.
+//
+// That was live here: ios-signing-check.yml defined a job id `check`, colliding
+// with ci.yml's canonical required `check`. Both come from App 15368, so App
+// identity could not separate them; a manual dispatch of the diagnostic against
+// a branch would have put a second `check` run on the commit. The integration
+// gate fails closed on the ambiguity, which is correct and is not a substitute
+// for the collision not existing.
+//
+// The EFFECTIVE name matters, not the id. GitHub reports a job's `name:`
+// override where one is present and the job id otherwise, and two workflows
+// here use overrides — so an id-only check would miss a future `name: check`.
+
+describe('required check names identify exactly one job each', () => {
+  /**
+   * Every job in a workflow, as { id, effectiveName }.
+   *
+   * Deliberately a small parser rather than a YAML dependency: this repository
+   * has none, and the shape being read is two levels of fixed indentation.
+   * Comments are stripped first — only executable YAML is the contract.
+   */
+  const jobsIn = (text) => {
+    const lines = executable(text).split('\n')
+    const start = lines.findIndex(l => /^jobs:\s*$/.test(l))
+    if (start < 0) return []
+    const out = []
+    for (let i = start + 1; i < lines.length; i++) {
+      const line = lines[i]
+      if (/^\S/.test(line)) break                     // left the jobs: block
+      const job = line.match(/^ {2}([A-Za-z0-9_-]+):\s*$/)
+      if (!job) continue
+      let effectiveName = job[1]
+      for (let j = i + 1; j < lines.length; j++) {
+        if (/^ {2}\S/.test(lines[j]) || /^\S/.test(lines[j])) break   // next job
+        const named = lines[j].match(/^ {4}name:\s*(.+?)\s*$/)
+        if (named) { effectiveName = named[1].replace(/^['"]|['"]$/g, ''); break }
+      }
+      out.push({ id: job[1], effectiveName, workflow: 'unset' })
+    }
+    return out
+  }
+
+  const ALL_JOBS = WORKFLOWS.flatMap(w => jobsIn(w.text).map(j => ({ ...j, workflow: w.name })))
+
+  it('finds the jobs to check, including the name overrides', () => {
+    expect(ALL_JOBS.length).toBeGreaterThan(15)
+    // Two workflows rename their job, which is what makes id-only matching
+    // insufficient. If these stop overriding, the parser still has to handle it.
+    const overridden = ALL_JOBS.filter(j => j.id !== j.effectiveName)
+    expect(overridden.map(j => j.workflow).sort())
+      .toEqual(['gate3-apply.yml', 'gate3-prepare.yml'])
+  })
+
+  it('produces each required context from exactly one job, in the workflow that owns it', () => {
+    // ONE assertion over the whole map, not a loop.
+    //
+    // A `for (const context of REQUIRED_CHECKS)` reads fine and has a hole:
+    // narrowing the list it iterates — to a hardcoded pair, say — silently
+    // stops checking a context while every assertion inside still passes. A
+    // mutation doing exactly that survived until this became a map. Here the
+    // KEYS are part of what is asserted, so dropping one fails.
+    //
+    // REQUIRED_CHECKS is imported rather than restated, so the ruleset, the
+    // integration protocol and this spec cannot drift apart.
+    const producers = Object.fromEntries(REQUIRED_CHECKS.map(context =>
+      [context, ALL_JOBS.filter(j => j.effectiveName === context).map(p => p.workflow + ':' + p.id)]))
+
+    expect(producers).toEqual({
+      'check': ['ci.yml:check'],
+      'playwright': ['e2e.yml:playwright'],
+      'native-gate': ['native.yml:native-gate'],
+    })
+  })
+
+  it('gives the iOS signing diagnostic an identity of its own', () => {
+    // The regression this suite exists for. Its job must not be named after any
+    // required context, by id or by override.
+    const ios = ALL_JOBS.filter(j => j.workflow === 'ios-signing-check.yml')
+    expect(ios).toHaveLength(1)
+    expect(ios[0].id).toBe('ios-signing-check')
+    for (const context of REQUIRED_CHECKS) {
+      expect(ios[0].effectiveName).not.toBe(context)
+    }
+  })
+
+  it('keeps the iOS signing diagnostic dispatch-only and otherwise unchanged', () => {
+    // A rename must not become a behaviour change. These pin what the job still
+    // is: manually triggered, read-only, running the same script with the same
+    // three secrets and no added permissions.
+    const ios = executable(readFileSync(DIR + '/ios-signing-check.yml', 'utf8'))
+    const triggers = ios.slice(ios.indexOf('on:'), ios.indexOf('jobs:'))
+    expect(triggers).toContain('workflow_dispatch:')
+    expect(triggers).not.toMatch(/\b(push|pull_request|schedule|release|workflow_call):/)
+    expect(ios).toContain('node .github/scripts/asc-signing-check.mjs')
+    for (const secret of ['ASC_KEY_ID', 'ASC_ISSUER_ID', 'ASC_PRIVATE_KEY']) {
+      expect(ios).toContain('secrets.' + secret)
+    }
+    expect(ios).not.toMatch(/permissions:/)
+    expect(ios).not.toMatch(/git\s+push/)
+  })
+
+  it('does not object to duplicate job ids that are not required contexts', () => {
+    // build, run and sync are each defined by two workflows. None of them gates
+    // a merge, so none of them is this spec's business — and saying so keeps the
+    // rule about required-check identity rather than about tidiness.
+    const counts = new Map()
+    for (const j of ALL_JOBS) counts.set(j.effectiveName, (counts.get(j.effectiveName) || 0) + 1)
+    const duplicated = [...counts].filter(([, n]) => n > 1).map(([name]) => name).sort()
+    expect(duplicated).toEqual(['build', 'run', 'sync'])
+    for (const name of duplicated) expect(REQUIRED_CHECKS).not.toContain(name)
   })
 })
