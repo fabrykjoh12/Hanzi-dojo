@@ -149,9 +149,9 @@ a major forces at least `REQUEST_CHANGES`.
 
 **"Merge-blocking finding" is defined narrowly**, and the term is kept because
 the sealed acceptance criteria use it: a finding that blocks *this
-implementation* from progressing to integration. It does not mean the reviewer is
-clearing a merge, and an approval carrying "no merge-blocking findings remain"
-asserts only that this implementation passed this review.
+implementation* from progressing to integration. An approval carrying "no
+merge-blocking findings remain" asserts only that this implementation passed this
+review; it confers no merge authority.
 
 ### Silence is never approval
 

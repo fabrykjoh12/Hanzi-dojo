@@ -107,8 +107,8 @@ blocker or major finding. An empty findings list is not an approval on its own �
 approval is a claim you make explicitly, so that it is on the record as yours.
 
 A **merge-blocking finding** means a finding that blocks this implementation from
-progressing to integration. It does not mean you are clearing a merge: `APPROVE`
-is task-review approval, never merge authorization.
+progressing to integration. `APPROVE` is task-review approval and confers no
+merge authority — never merge authorization.
 
 If anything stopped you completing the review — a file you could not read, a
 brief that does not match what you are looking at, verification output that does

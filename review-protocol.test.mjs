@@ -40,7 +40,7 @@ import { ALWAYS_FORBIDDEN, TASKS_DIR, computeDigest } from './tools/verify-task-
 // that must hold whatever the reviewer concludes:
 //
 //   - the mechanical findings, computed from contract and diff alone
-//   - the shape a result must have before it is allowed to mean "merge"
+//   - the shape a result must have before it may count as an approval
 //   - the decision rule, where every failure resolves away from APPROVE
 //
 // The property under test throughout is the same one: SILENCE IS NEVER
@@ -1454,7 +1454,7 @@ describe('the CLI derives, binds and fails closed', () => {
     expect(s.entries['scratch.txt']).toMatch(/^untracked 1006\d\d [0-9a-f]{40}$/)
   })
 
-  it('marks a self-taken snapshot as self, so it cannot clear a merge', () => {
+  it('marks a self-taken snapshot as self, so it cannot support an approval', () => {
     const r = fixtureRepo()
     const out = run(['snapshot', '--worktree', r.dir, '--observer', 'self'], r.dir)
     expect(JSON.parse(out.stdout).observer).toBe('self')
@@ -2185,7 +2185,7 @@ describe('verification works when the commands actually need dependencies', () =
 // ---------------------------------------------------------------------------
 
 describe('the brief refuses to present evidence it has not validated', () => {
-  // decide blocking afterwards keeps the MERGE safe but not the REVIEW: the
+  // decide blocking afterwards keeps the DECISION safe but not the REVIEW: the
   // reviewer would already have been shown another commit's results, or an
   // incomplete set, under the heading "Verification, executed for you at <sha>".
   const CLI = path.resolve('tools/review-task.mjs')
@@ -2525,44 +2525,181 @@ describe('the selected test file must really be inside the reviewed commit', () 
 // APPROVE is task-review approval, never merge authorization
 // ---------------------------------------------------------------------------
 
+// MERGE-AUTHORITY GUARD START
+// Everything between these sentinels is stripped before the guard scans this
+// file. It has to be: the guard names the very phrasings it forbids, so
+// scanning itself would make it fail on its own vocabulary.
 describe('reviewer authority is never collapsed into integrator authority', () => {
   // The role model already separates them: `reviewer` judges and holds no merge
-  // authority; `integrator` integrates. Wording that says the reviewer decides
-  // whether something "should merge" quietly hands it the second role — and this
-  // protocol cannot support that claim, because it never looks at the base
-  // branch it would be merging into.
+  // authority; `integrator` integrates. Wording that says a reviewer verdict
+  // means, clears, decides or authorises a merge quietly hands the reviewer the
+  // second role — and this protocol cannot support that claim, because it never
+  // looks at the base branch it would be merging into.
   const DOC = readFileSync('docs/REVIEWER-PROTOCOL.md', 'utf8')
   const AGENT = readFileSync('.claude/agents/fresh-context-reviewer.md', 'utf8')
   const flat = (t) => t.replace(/\s+/g, ' ')
+
+  /**
+   * Source prose wraps THROUGH comment markers, so `mean` and `"merge"` can end
+   * up on either side of a `//`. Flattening whitespace alone leaves `mean //
+   * "merge` and the verb patterns miss it — which they did, until a mutation
+   * put the old header back and nothing failed. Comment markers are stripped
+   * for code; markdown is left alone, because `*` there is emphasis and a
+   * bullet, not a comment.
+   */
+  const scannable = (t, code) =>
+    flat(code ? t.replace(/^[ \t]*(\/\/+|\*)[ \t]?/gm, ' ') : t)
+
   const SURFACES = [
-    ['docs/REVIEWER-PROTOCOL.md', DOC],
-    ['.claude/agents/fresh-context-reviewer.md', AGENT],
-    ['tools/review-protocol.mjs', PROTOCOL_SRC],
+    ['docs/REVIEWER-PROTOCOL.md', DOC, false],
+    ['.claude/agents/fresh-context-reviewer.md', AGENT, false],
+    ['tools/review-protocol.mjs', PROTOCOL_SRC, true],
+    ['tools/review-task.mjs', readFileSync('tools/review-task.mjs', 'utf8'), true],
+    ['review-protocol.test.mjs', readFileSync('review-protocol.test.mjs', 'utf8'), true],
   ]
 
+  /**
+   * Phrasings that assert a reviewer verdict IS a merge decision.
+   *
+   * Deliberately verb-shaped rather than keyword-shaped. Banning the word
+   * "merge" would be easy and useless: `deploy-on-merge`, `merge-blocking` and
+   * `git merge-base` are all legitimate and all contain it. What is forbidden is
+   * a verdict MEANING, CLEARING, DECIDING, AUTHORISING, STOPPING, ALLOWING or
+   * APPROVING a merge.
+   */
+  const MERGE_AUTHORITY_CLAIMS = [
+    /mean(s|ing)?\s+["'“]?merge/i,
+    /clear(s|ing|ed)?\s+(a|the)\s+merge/i,
+    /stop(s|ping|ped)?\s+(a|the)\s+merge/i,
+    /author(is|iz)(e|es|ing|ed)\s+(a|the)\s+merge/i,
+    /decid(e|es|ing|ed)\s+(a|the)\s+merge/i,
+    /approv(e|es|ing|ed)\s+(a|the)\s+merge/i,
+    /allow(s|ing|ed)?\s+(a|the)\s+merge/i,
+    /permit(s|ting|ted)?\s+(a|the)\s+merge/i,
+    /gate(s|ing|d)?\s+(a|the)\s+merge/i,
+    /should\s*not\s+merge/i,
+    /what\s+allows\s+the\s+merge/i,
+  ]
+
+  /**
+   * Legitimate compounds stripped BEFORE the scan, so the verb patterns above
+   * never have to know about them:
+   *
+   *   deploy-on-merge      a production_effect value
+   *   deploys on merge     a true statement about learner-facing code
+   *   merge-blocking       the sealed acceptance criteria's own term
+   *   merge-base           git plumbing, nothing to do with review authority
+   *   merge authority /    the disclaimers themselves
+   *   merge authorization
+   */
+  const LEGITIMATE = [
+    /deploy-on-merge/gi,
+    /deploys? on merge(\s+to\s+main)?/gi,
+    /on merge to main/gi,
+    /merge-blocking/gi,
+    /merge-base/gi,
+    /merge authorization/gi,
+    /merge authority/gi,
+    /merge right/gi,
+    /automatic merge/gi,
+    /evil merge/gi,
+  ]
+  const stripLegitimate = (t) => LEGITIMATE.reduce((acc, re) => acc.replace(re, '░'), t)
+
+  // The guard names the phrasings it forbids, so it must not scan itself.
+  //
+  // The marker is assembled rather than written whole: a literal copy of the
+  // sentinel here would be found by indexOf BEFORE the real one at the bottom
+  // of the block, and the strip would end early — leaving the guard's own
+  // fixtures in the scanned text. That is exactly the bug this comment exists
+  // to stop someone reintroducing.
+  const MARKER = 'MERGE-AUTHORITY' + ' GUARD'
+  const stripGuard = (t) => {
+    const start = t.indexOf(MARKER + ' START')
+    const end = t.indexOf(MARKER + ' END')
+    return start >= 0 && end > start ? t.slice(0, start) + t.slice(end + (MARKER + ' END').length) : t
+  }
+
+  it('strips its own block before scanning, and nothing more', () => {
+    const sample = 'before ' + MARKER + ' START inner ' + MARKER + ' END after'
+    expect(stripGuard(sample)).toBe('before  after')
+    expect(stripGuard('no sentinels here')).toBe('no sentinels here')
+  })
+
+  it('the guard actually catches the phrasings it claims to', () => {
+    // A guard nobody has seen fire is a guard nobody knows works.
+    for (const bad of [
+      'a verdict that is allowed to mean "merge"',
+      'the shape a result must have before it may mean merge this',
+      'so it must not be able to clear a merge',
+      'minor and info are reportable without stopping a merge',
+      'the reviewer decides the merge',
+      'this authorises a merge',
+      'concrete reasons it should not merge',
+      'the verdict approves the merge',
+      'what allows the merge to proceed',
+    ]) {
+      const scanned = stripLegitimate(bad)
+      expect(MERGE_AUTHORITY_CLAIMS.some(re => re.test(scanned)), 'not caught: ' + bad).toBe(true)
+    }
+  })
+
+  it('the guard does NOT flag legitimate merge vocabulary', () => {
+    for (const fine of [
+      'production_effect: deploy-on-merge',
+      'learner-facing code deploys on merge to main',
+      'a merge-blocking finding blocks progression to integration',
+      "git merge-base --is-ancestor",
+      'APPROVE is task-review approval, not merge authorization',
+      'reviewer judges and holds no merge authority',
+      'this PR confers no merge right',
+      'no automatic merge',
+      'an evil merge rewriting the contract',
+      'You are not deciding whether it may be merged',
+      'whether the result may then be merged against whatever main exists',
+      'it cannot edit files, merge, or touch production',
+    ]) {
+      const scanned = stripLegitimate(fine)
+      const hit = MERGE_AUTHORITY_CLAIMS.find(re => re.test(scanned))
+      expect(hit, 'false positive on legitimate text: ' + fine + ' (matched ' + hit + ')').toBeUndefined()
+    }
+  })
+
+  it('catches a claim that wraps across a comment marker', () => {
+    // The exact shape that slipped through: a sentence broken over two comment
+    // lines, so the verb and the word sat either side of a `//`.
+    const wrapped = '// what shape must an answer take before it may mean\n// "merge this"?'
+    expect(MERGE_AUTHORITY_CLAIMS.some(re => re.test(scannable(wrapped, true))),
+      'a wrapped claim is not caught').toBe(true)
+    expect(MERGE_AUTHORITY_CLAIMS.some(re => re.test(flat(wrapped))),
+      'fixture no longer demonstrates the wrap problem').toBe(false)
+  })
+
+  it('no surface claims a reviewer verdict means, clears or decides a merge', () => {
+    for (const [name, src, code] of SURFACES) {
+      const scanned = stripLegitimate(stripGuard(scannable(src, code)))
+      for (const re of MERGE_AUTHORITY_CLAIMS) {
+        const m = scanned.match(re)
+        expect(m, name + ' asserts reviewer merge authority: ' + (m && m[0])).toBeNull()
+      }
+    }
+  })
+
   it('every surface states that APPROVE is not merge authorization', () => {
-    for (const [name, src] of SURFACES) {
+    for (const [name, src] of SURFACES.slice(0, 3)) {
       expect(flat(src), name + ' does not disclaim merge authority')
-        .toMatch(/n(ot|ever)\W+(a\W+)?merge authorization/i)
+        .toMatch(/n(ot|ever)\W+(a\W+)?merge author(ization|ity)/i)
     }
   })
 
   it('the docs disclaim it UP FRONT, not only in a table cell', () => {
     // A disclaimer that survives only as a parenthetical inside the verdict
-    // table is weaker than one a reader meets before anything else. Deleting the
-    // opening statement must not pass merely because the table still hedges.
+    // table is weaker than one a reader meets before anything else.
     const opening = flat(DOC.slice(0, DOC.indexOf('## The protocol')))
     expect(opening, 'the opening section no longer disclaims merge authority')
       .toMatch(/n(ot|ever)\W+(a\W+)?merge authorization/i)
     expect(opening).toMatch(/`?reviewer`? judges and holds no merge authority/i)
     expect(opening).toMatch(/confers no merge right|adds no integration logic/i)
-  })
-
-  it('no surface tells the reviewer to decide whether the work should merge', () => {
-    for (const [name, src] of SURFACES) {
-      expect(flat(src), name + ' asks the reviewer to decide a merge')
-        .not.toMatch(/reasons (it|this|the work) should ?not merge/i)
-    }
   })
 
   it('the generated brief says so too, in the reviewer\'s own instructions', () => {
@@ -2571,13 +2708,14 @@ describe('reviewer authority is never collapsed into integrator authority', () =
       contract: c, baseSha: BASE_SHA, headSha: HEAD_SHA,
       changedPaths: ['src/thing.js'], diffText: 'd', verificationEvidence: goodEvidence(c),
     })
-    expect(b).toMatch(/NOT ready to progress|NOT READY TO PROGRESS/)
+    expect(b).toMatch(/NOT READY TO PROGRESS/)
     expect(b).toMatch(/NOT merge authorization/)
     expect(b).toMatch(/you hold no merge\s*authority/)
-    expect(b).not.toMatch(/SHOULD NOT MERGE/)
+    const scanned = stripLegitimate(flat(b))
+    for (const re of MERGE_AUTHORITY_CLAIMS) expect(scanned.match(re), 'brief: ' + re).toBeNull()
   })
 
-  it('defines "merge-blocking" as blocking progression, not clearing a merge', () => {
+  it('defines "merge-blocking" as blocking progression to integration', () => {
     // The term stays because sealed acceptance criterion 5 uses it verbatim.
     // What changes is that it is defined rather than left to imply merge rights.
     const sealed = JSON.parse(readFileSync(TASKS_DIR + '/fresh-context-reviewer.json', 'utf8'))
@@ -2597,10 +2735,11 @@ describe('reviewer authority is never collapsed into integrator authority', () =
   it('adds no integration or merge logic', () => {
     for (const f of ['tools/review-protocol.mjs', 'tools/review-task.mjs']) {
       const src = readFileSync(f, 'utf8')
-      expect(src, f).not.toMatch(/merge_pull_request|mergePullRequest|git merge|--merge\b/)
+      expect(src, f).not.toMatch(/merge_pull_request|mergePullRequest|git merge\b|--merge\b/)
     }
   })
 })
+// MERGE-AUTHORITY GUARD END
 
 // ---------------------------------------------------------------------------
 // Documented CLI subcommands must be real ones

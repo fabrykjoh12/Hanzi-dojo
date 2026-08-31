@@ -4,7 +4,7 @@
 // The question this answers is not "does this look okay?". It is: given an
 // immutable task contract and a diff, what can be established WITHOUT judgment,
 // and what shape must a reviewer's answer take before it is allowed to mean
-// "merge this"?
+// "this implementation passed its review"?
 //
 // Two halves, deliberately separated:
 //
@@ -73,8 +73,9 @@ export const VERDICTS = ['APPROVE', 'REQUEST_CHANGES', 'BLOCKED']
 
 /**
  * Severities, ordered. blocker forces BLOCKED; major forces at least
- * REQUEST_CHANGES; minor and info are reportable without stopping a merge.
- * A reviewer cannot approve past a blocker or a major by asserting it did.
+ * REQUEST_CHANGES; minor and info are reportable without blocking the work from
+ * progressing to integration. A reviewer cannot approve past a blocker or a
+ * major by asserting it did.
  */
 export const SEVERITIES = ['blocker', 'major', 'minor', 'info']
 export const BLOCKING_SEVERITIES = ['blocker', 'major']
@@ -299,7 +300,7 @@ export const SNAPSHOT_VERSION = 2
  * Only `external` can support an APPROVE. A snapshot the reviewer takes of
  * itself is self-attestation: a reviewer that wanted to hide a write would take
  * the "after" snapshot before making it. That catches the careless case and
- * nothing else, so it must not be able to clear a merge.
+ * nothing else, so it must not be able to support an approval.
  *
  * What the protocol verifies is WHERE the snapshot was taken and WHAT it
  * describes — same worktree root either side, matching the reviewed head. It
@@ -969,7 +970,7 @@ export function buildReviewBrief({ contract, baseSha, headSha, changedPaths, dif
   lines.push('this protocol. It is NOT merge authorization, and you hold no merge')
   lines.push('authority — integration is the integrator\'s. A "merge-blocking')
   lines.push('finding" is one that blocks this implementation from progressing to')
-  lines.push('integration, not one you are clearing a merge past.')
+  lines.push('integration. Approving does not confer merge authority.')
   lines.push('')
   lines.push('The verification above was executed by the driver, bound to this')
   lines.push('commit, and is authoritative. You are judging it, not producing it,')
@@ -1012,7 +1013,8 @@ function resultTemplate(contract, baseSha, headSha) {
 
 /**
  * PROTOCOL VALIDATION. Structural only — it never decides whether the review
- * was RIGHT, only whether it is the kind of statement that may mean "merge".
+ * was RIGHT, only whether it is the kind of statement that may count as an
+ * approval of this implementation.
  *
  * Returns a list of protocol errors. A non-empty list means the result cannot
  * be trusted at all, which resolves to BLOCKED rather than to "probably fine".
