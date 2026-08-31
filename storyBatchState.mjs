@@ -172,8 +172,17 @@ export function repairBrief(validation) {
   return out
 }
 
-/** One candidate's record, as it is written to disk. */
-export function candidateRecord({ manifest, candidate, validation, attempts, history = [], outcome }) {
+/**
+ * One candidate's record, as it is written to disk.
+ *
+ * `error` is for the case the first pilot run hit: generation never returned a
+ * candidate at all, so there are no diagnostics to explain the rejection. A
+ * record saying only `accepted: false` with an empty validation is the silent
+ * outcome this design exists to prevent — the transport failure has to be on
+ * the record too, or the batch report says two stories were rejected and
+ * cannot say why.
+ */
+export function candidateRecord({ manifest, candidate, validation, attempts, history = [], outcome, error = null }) {
   return {
     version: BATCH_VERSION,
     manifest,
@@ -181,6 +190,8 @@ export function candidateRecord({ manifest, candidate, validation, attempts, his
     accepted: Boolean(validation && validation.accepted),
     outcome,
     attempts,
+    // Why no candidate exists, when none does. Null when the model answered.
+    error: error ? String(error) : null,
     validation: validation || null,
     // Every signature this candidate produced, so a reader of the file can see
     // whether the repairs were converging or going in circles.
@@ -198,6 +209,15 @@ export function summarizeBatch(records = []) {
       byCode.set(d.code, (byCode.get(d.code) || 0) + 1)
     }
   }
+  // Rejections with no diagnostics at all are not story failures — nothing was
+  // written to judge. Counting them separately keeps "the model could not be
+  // reached" from reading as "the model wrote two bad stories".
+  const errors = new Map()
+  for (const r of rejected) {
+    if (!r.error) continue
+    const key = String(r.error).slice(0, 200)
+    errors.set(key, (errors.get(key) || 0) + 1)
+  }
   return {
     version: BATCH_VERSION,
     total: records.length,
@@ -209,6 +229,11 @@ export function summarizeBatch(records = []) {
     failureCodes: [...byCode.entries()]
       .map(([code, count]) => ({ code, count }))
       .sort((a, b) => b.count - a.count || (a.code < b.code ? -1 : 1)),
+    // Never produced a candidate: infrastructure, not content.
+    generationFailures: rejected.filter(r => r.error).length,
+    generationErrors: [...errors.entries()]
+      .map(([error, count]) => ({ error, count }))
+      .sort((a, b) => b.count - a.count || (a.error < b.error ? -1 : 1)),
     // Says plainly that nothing here is published. The candidates are files.
     publication: 'none — candidates are files for review; staging is a separate, human-run step',
   }

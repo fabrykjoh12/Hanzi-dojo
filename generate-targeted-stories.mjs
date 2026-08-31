@@ -304,6 +304,7 @@ for (const item of todo) {
   let candidate = null
   let validation = null
   let outcome = ACTION.GIVE_UP
+  let error = null
 
   try {
     for (;;) {
@@ -324,11 +325,15 @@ for (const item of todo) {
       await sleep(1200)
     }
   } catch (err) {
-    console.log('FAILED: ' + ((err && err.message) || err))
+    // Transport, not content: the model never returned anything to judge. It
+    // goes on the record so the batch report can say so instead of showing a
+    // rejection with no reason.
+    error = (err && err.message) || String(err)
+    console.log('FAILED: ' + error)
     outcome = ACTION.GIVE_UP
   }
 
-  const record = candidateRecord({ manifest: m, candidate, validation, attempts, history, outcome })
+  const record = candidateRecord({ manifest: m, candidate, validation, attempts, history, outcome, error })
   writeFileSync(path.join(outDir, candidateFile(m.id)), JSON.stringify(record, null, 1) + '\n')
   records.push(record)
   if (record.accepted && candidate) {
@@ -344,5 +349,9 @@ const summary = summarizeBatch(records)
 writeFileSync(path.join(outDir, 'batch-report.json'), JSON.stringify(summary, null, 1) + '\n')
 console.log('\n' + summary.accepted + ' accepted, ' + summary.rejected + ' rejected, '
   + summary.attempts + ' generation attempts. Candidates are FILES in ' + outDir + ' — nothing was published.')
+if (summary.generationFailures) {
+  console.log(summary.generationFailures + ' of those never produced a candidate (provider/transport, not content):')
+  for (const e of summary.generationErrors) console.log('  x' + e.count + ' ' + e.error)
+}
 // A batch that accepted nothing is not a crash: the files record why, and the
 // exit code stays 0 so the workflow still commits them for review.

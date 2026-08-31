@@ -192,6 +192,36 @@ describe('the batch report says plainly what happened', () => {
     expect(summarizeBatch([rec('a', true)]).publication).toMatch(/^none —/)
   })
 
+  it('separates a story that failed from one that was never written', () => {
+    // The first real pilot hit this: the provider was unreachable, so two
+    // manifests were "rejected" with no diagnostics at all — a report that
+    // could not say why. Infrastructure and content are counted apart.
+    const unreachable = candidateRecord({
+      manifest: { id: 'z' }, candidate: null, validation: null,
+      attempts: 0, outcome: ACTION.GIVE_UP, error: 'draft: 404 model does not exist',
+    })
+    expect(unreachable.error).toBe('draft: 404 model does not exist')
+    const s = summarizeBatch([rec('a', true), unreachable])
+    expect(s.generationFailures).toBe(1)
+    expect(s.generationErrors).toEqual([{ error: 'draft: 404 model does not exist', count: 1 }])
+    expect(s.failureCodes).toEqual([])     // nothing was written to judge
+  })
+
+  it('groups identical provider errors instead of listing them once each', () => {
+    const boom = (id) => candidateRecord({
+      manifest: { id }, candidate: null, validation: null,
+      attempts: 0, outcome: ACTION.GIVE_UP, error: '429 rate limited',
+    })
+    const s = summarizeBatch([boom('a'), boom('b')])
+    expect(s.generationErrors).toEqual([{ error: '429 rate limited', count: 2 }])
+  })
+
+  it('records no error when the model answered and the story was simply wrong', () => {
+    const r = rec('b', false, [d(DIAGNOSTIC.TARGET_MISSING, { word: '车' })])
+    expect(r.error).toBeNull()
+    expect(summarizeBatch([r]).generationFailures).toBe(0)
+  })
+
   it('a record is accepted only when its validation is', () => {
     expect(rec('a', true).accepted).toBe(true)
     expect(rec('b', false, [d(DIAGNOSTIC.LINE_COUNT)]).accepted).toBe(false)
