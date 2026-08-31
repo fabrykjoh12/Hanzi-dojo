@@ -30,6 +30,7 @@
     "verify:pr": "npm run lint && npm test && npm run build && npm run build:public && npm run verify:public-bundle && node tools/verify-app-icons.mjs",
     "verify:tasks": "node tools/verify-task-contracts.mjs",
     "verify:review": "vitest run review-protocol.test.mjs",
+    "verify:integration": "vitest run integration-protocol.test.mjs",
     "verify:public-bundle": "node tools/verify-public-bundle.mjs"
   },
   "dependencies": {

@@ -153,13 +153,48 @@ Each boundary is only real once its external configuration exists. As of
 
 | Boundary | Status |
 |---|---|
-| **`main`** — ruleset, empty bypass list | ✅ **Active.** `main` reports `protected: true`; deletions and force pushes blocked; PR required; `check` + `playwright` required; no bypass, `current_user_can_bypass = never` |
+| **`main`** — ruleset, empty bypass list | ✅ **Active.** `main` reports `protected: true`; deletions and force pushes blocked; PR required; `check` + `playwright` + `native-gate` required; no bypass, `current_user_can_bypass = never` |
+| **`main`** — *up-to-date* enforcement | ⚠️ **Loose.** Required checks are enforced; being current with `main` is not. See below |
 | **Roadmap Discord** — `roadmap-discord` environment | ⚠️ **Designed in code, not yet enforced.** The workflow declares the environment, but the webhook is still a **repository** secret, so it is handed to runs on any ref |
+
+## The third gap: a stale branch cannot *push* `main`, but it can still *merge* into it
+
+The two boundaries above are about a branch **writing** to `main`. There is a
+separate question — what a branch is allowed to **merge into** `main` — and the
+ruleset currently leaves half of it open.
+
+Ruleset `21654011` requires `check`, `playwright` and `native-gate`, but carries
+`strict_required_status_checks_policy: false`. GitHub's documented loose
+semantics let a topic branch merge **without being up to date with its base**. So
+a branch reviewed and checked against yesterday's `main` can merge into today's,
+and every required check stays green while it happens.
+
+That is not hypothetical. During PR #229 the exact independently reviewed head
+was one commit behind live `main` with all three checks green — the same
+time-of-check-to-time-of-use shape as everything else in this document, one
+level up: **stale code may exist; stale authority may not, and neither may a
+stale base.**
+
+The repository-side half is [`docs/INTEGRATION-PROTOCOL.md`](INTEGRATION-PROTOCOL.md):
+a decision function that binds the exact reviewed head to the current target
+state and fails closed when either has moved. It cannot close the race by
+itself — reading state and merging are two moments, and only GitHub can make
+them one. That takes the strict policy, whose activation plan is in the same
+document and is a deliberate maintainer action rather than anything a pull
+request performs.
+
+Until that activation happens, treat "the required checks are green" as a
+statement about a commit, not about the merge result.
+
+## What each boundary actually holds
 
 So, precisely:
 
 - A stale branch **can no longer mutate `main`.** The ruleset rejects the push
   at the server whatever the branch's workflow says.
+- A branch **can still merge a stale base into `main`**, because the required
+  checks are enforced loosely. The integration protocol detects it; the strict
+  policy is what will prevent it.
 - A stale branch **can still mutate the roadmap Discord message**, because its
   old workflow reads `DISCORD_ROADMAP_WEBHOOK` and that secret is still
   repository-scoped. The `environment:` declaration does nothing until the
