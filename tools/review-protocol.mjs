@@ -27,6 +27,12 @@
 // resolves to BLOCKED. The only route to APPROVE is an explicit, complete,
 // internally consistent statement that nothing merge-blocking remains.
 //
+// And APPROVE is TASK-REVIEW APPROVAL, not merge authorization. "Merge-blocking
+// finding" — the sealed acceptance criteria's own term — means a finding that
+// blocks this implementation from progressing to integration. Whether the result
+// may then be merged against whatever main exists at that point is the
+// integrator's question, and nothing here looks at it.
+//
 // This file enforces the protocol, not the reviewer. The reviewer is bounded
 // somewhere else and more simply: its subagent definition grants Read, Grep and
 // Glob and nothing more, so it has no tool that can write. Its limits, and the
@@ -50,9 +56,10 @@ import {
  * different things — a two-value approve/reject would collapse the two ways a
  * review can fail, which are not the same conversation:
  *
- *   APPROVE           The review completed and nothing merge-blocking remains.
- *                     Requires an explicit statement to that effect. Never
- *                     inferred from an empty findings list.
+ *   APPROVE           The review completed and nothing merge-blocking remains:
+ *                     this exact implementation passed this protocol. Requires
+ *                     an explicit statement to that effect, never inferred from
+ *                     an empty findings list — and never a merge authorization.
  *   REQUEST_CHANGES   The review completed. There is specific, evidenced work
  *                     to do, and the author can do it.
  *   BLOCKED           The review could not be completed soundly, or the change
@@ -831,7 +838,7 @@ export function buildReviewBrief({ contract, baseSha, headSha, changedPaths, dif
   lines.push('You are reviewing an implementation against its sealed contract.')
   lines.push('You did not write it and have not seen the reasoning behind it.')
   lines.push('')
-  lines.push('YOUR JOB IS TO FIND CONCRETE REASONS THIS SHOULD NOT MERGE.')
+  lines.push('YOUR JOB IS TO FIND CONCRETE REASONS THIS IS NOT READY TO PROGRESS.')
   lines.push('Adversarial, but evidence-based: every finding cites something you')
   lines.push('read or ran. A suspicion you cannot evidence is not a finding, and')
   lines.push('"looks fine" is not a review.')
@@ -957,6 +964,12 @@ export function buildReviewBrief({ contract, baseSha, headSha, changedPaths, dif
   lines.push('')
   lines.push('APPROVE requires no_blocking_findings true, every criterion met,')
   lines.push('and no blocker or major finding.')
+  lines.push('')
+  lines.push('APPROVE is TASK-REVIEW approval: this exact implementation passed')
+  lines.push('this protocol. It is NOT merge authorization, and you hold no merge')
+  lines.push('authority — integration is the integrator\'s. A "merge-blocking')
+  lines.push('finding" is one that blocks this implementation from progressing to')
+  lines.push('integration, not one you are clearing a merge past.')
   lines.push('')
   lines.push('The verification above was executed by the driver, bound to this')
   lines.push('commit, and is authoritative. You are judging it, not producing it,')

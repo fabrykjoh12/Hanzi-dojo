@@ -2,7 +2,16 @@
 
 Given an immutable task contract and a diff, launch a reviewer that never saw
 the implementer's reasoning and whose job is to **find concrete reasons the work
-should not merge**.
+is not ready to progress to integration**.
+
+**`APPROVE` is task-review approval, not merge authorization.** The protocol
+binds a sealed contract, a governance boundary, an exact implementation head, its
+diff, its verification and a reviewer's result to one another. It says nothing
+about whether the result may be merged into whatever `main` exists at integration
+time — that depends on the state of the base branch, ordering against other work
+and release timing, none of which this mechanism looks at. The role model already
+separates the two: `reviewer` judges and holds no merge authority; `integrator`
+integrates. This PR adds no integration logic and confers no merge right.
 
 This document is the mechanism and the protocol. It is also, deliberately, the
 place where the limits are written down — a control you describe more strongly
@@ -77,12 +86,36 @@ breaks the review, because the docs are explicit about what it does:
 A worktree branched from `main` is not the commit under review. The reviewer,
 whose `Read`/`Grep`/`Glob` operate on whatever tree it is rooted in, would have
 been reading the wrong code — and worktree isolation also confines reads, so a
-driver-prepared exact-head tree elsewhere would be unreachable.
+driver-supplied exact-head tree elsewhere would be unreachable.
 
 Instead: **`brief` refuses unless the working tree is exactly the reviewed
 commit and clean.** The reviewer has no shell to check out anything else, so the
 tree it reads has to already be the right one, and the driver proves that rather
 than asking.
+
+### Every re-review launches a NEW reviewer
+
+When the implementation changes and is reviewed again, a **brand-new**
+`fresh-context-reviewer` invocation is launched. An earlier reviewer instance is
+never resumed for that purpose.
+
+A resumed reviewer still carries its own previous reasoning — what it concluded,
+what it decided not to worry about, the reading of the contract it settled on
+last time. That is not a fresh review of the corrected implementation; it is the
+same reviewer defending or revising its earlier position, which is precisely the
+blind spot the implementer was excluded for. Freshness that survives one round
+and quietly stops applying to the next is not freshness.
+
+What a new non-fork invocation does and does not give you:
+
+- it does **not** inherit the parent conversation's history;
+- it **does** receive its delegation message and repository context
+  (`CLAUDE.md`, a git-status snapshot);
+- manual delegation remains an editorialisation surface — see below;
+- so: every independent re-review after an implementation change uses a new
+  reviewer instance, and an earlier reviewer is never resumed for it.
+
+This PR adds no automatic dispatch. The rule binds whoever launches the review.
 
 ## The protocol
 
@@ -107,12 +140,18 @@ those are not the same conversation.
 
 | Verdict | Meaning |
 | --- | --- |
-| `APPROVE` | The review completed and nothing merge-blocking remains. |
+| `APPROVE` | The review completed and nothing merge-blocking remains — this exact implementation passed this protocol. **Not** merge authorization. |
 | `REQUEST_CHANGES` | The review completed. There is specific, evidenced work to do. |
 | `BLOCKED` | The review could not be completed soundly, or a structural invariant is violated. Nobody should be arguing about the diff's merits yet. |
 
 Severities are `blocker`, `major`, `minor`, `info`. A blocker forces `BLOCKED`;
 a major forces at least `REQUEST_CHANGES`.
+
+**"Merge-blocking finding" is defined narrowly**, and the term is kept because
+the sealed acceptance criteria use it: a finding that blocks *this
+implementation* from progressing to integration. It does not mean the reviewer is
+clearing a merge, and an approval carrying "no merge-blocking findings remain"
+asserts only that this implementation passed this review.
 
 ### Silence is never approval
 
@@ -437,8 +476,8 @@ whether that evidence is worth anything.**
   A reviewer that wanted to hide a write would take the "after" snapshot before
   making it. It catches carelessness and nothing else.
 - A snapshot taken by the **driver, in a worktree the driver created**, is an
-  external observation. `review-task.mjs prepare` exists for exactly this: it
-  creates the review worktree and snapshots it before the reviewer ever sees it.
+  external observation. `review-task.mjs snapshot --worktree <root>` is how the
+  driver takes it — before delegating, and again afterwards.
 
 Snapshots therefore carry an `observer` field, and **only `external` can support
 an APPROVE.** A self-attested pair blocks.

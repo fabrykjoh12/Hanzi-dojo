@@ -712,7 +712,7 @@ describe('the brief is derived, not written', () => {
 
   it('states the adversarial posture and that a summary is not evidence', () => {
     const b = brief()
-    expect(b).toMatch(/FIND CONCRETE REASONS THIS SHOULD NOT MERGE/)
+    expect(b).toMatch(/FIND CONCRETE REASONS THIS IS NOT READY TO PROGRESS/)
     expect(b).toMatch(/not evidence/)
   })
 
@@ -810,7 +810,7 @@ describe('the reviewer cannot write, because it has no tool that writes', () => 
 
   it('is described as review-only, so it is not delegated implementation work', () => {
     expect(frontmatter).toMatch(/description:.*review/i)
-    expect(frontmatter).toMatch(/Never use it to write, fix, or finish work/i)
+    expect(frontmatter).toMatch(/never writes, fixes, or finishes work/i)
   })
 
   it('tells the reviewer why it has no shell, and that verification was run for it', () => {
@@ -2518,5 +2518,177 @@ describe('the selected test file must really be inside the reviewed commit', () 
     const ev = run(r)
     expect(ev.runs[0].executed, ev.runs[0].evidence).toBe(true)
     expect(ev.runs[0].evidence).toContain('run inside.test.mjs')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// APPROVE is task-review approval, never merge authorization
+// ---------------------------------------------------------------------------
+
+describe('reviewer authority is never collapsed into integrator authority', () => {
+  // The role model already separates them: `reviewer` judges and holds no merge
+  // authority; `integrator` integrates. Wording that says the reviewer decides
+  // whether something "should merge" quietly hands it the second role — and this
+  // protocol cannot support that claim, because it never looks at the base
+  // branch it would be merging into.
+  const DOC = readFileSync('docs/REVIEWER-PROTOCOL.md', 'utf8')
+  const AGENT = readFileSync('.claude/agents/fresh-context-reviewer.md', 'utf8')
+  const flat = (t) => t.replace(/\s+/g, ' ')
+  const SURFACES = [
+    ['docs/REVIEWER-PROTOCOL.md', DOC],
+    ['.claude/agents/fresh-context-reviewer.md', AGENT],
+    ['tools/review-protocol.mjs', PROTOCOL_SRC],
+  ]
+
+  it('every surface states that APPROVE is not merge authorization', () => {
+    for (const [name, src] of SURFACES) {
+      expect(flat(src), name + ' does not disclaim merge authority')
+        .toMatch(/n(ot|ever)\W+(a\W+)?merge authorization/i)
+    }
+  })
+
+  it('the docs disclaim it UP FRONT, not only in a table cell', () => {
+    // A disclaimer that survives only as a parenthetical inside the verdict
+    // table is weaker than one a reader meets before anything else. Deleting the
+    // opening statement must not pass merely because the table still hedges.
+    const opening = flat(DOC.slice(0, DOC.indexOf('## The protocol')))
+    expect(opening, 'the opening section no longer disclaims merge authority')
+      .toMatch(/n(ot|ever)\W+(a\W+)?merge authorization/i)
+    expect(opening).toMatch(/`?reviewer`? judges and holds no merge authority/i)
+    expect(opening).toMatch(/confers no merge right|adds no integration logic/i)
+  })
+
+  it('no surface tells the reviewer to decide whether the work should merge', () => {
+    for (const [name, src] of SURFACES) {
+      expect(flat(src), name + ' asks the reviewer to decide a merge')
+        .not.toMatch(/reasons (it|this|the work) should ?not merge/i)
+    }
+  })
+
+  it('the generated brief says so too, in the reviewer\'s own instructions', () => {
+    const c = contract()
+    const b = buildReviewBrief({
+      contract: c, baseSha: BASE_SHA, headSha: HEAD_SHA,
+      changedPaths: ['src/thing.js'], diffText: 'd', verificationEvidence: goodEvidence(c),
+    })
+    expect(b).toMatch(/NOT ready to progress|NOT READY TO PROGRESS/)
+    expect(b).toMatch(/NOT merge authorization/)
+    expect(b).toMatch(/you hold no merge\s*authority/)
+    expect(b).not.toMatch(/SHOULD NOT MERGE/)
+  })
+
+  it('defines "merge-blocking" as blocking progression, not clearing a merge', () => {
+    // The term stays because sealed acceptance criterion 5 uses it verbatim.
+    // What changes is that it is defined rather than left to imply merge rights.
+    const sealed = JSON.parse(readFileSync(TASKS_DIR + '/fresh-context-reviewer.json', 'utf8'))
+    expect(sealed.acceptance_criteria.join(' '), 'the sealed criteria no longer use the term')
+      .toMatch(/merge-blocking/)
+    for (const [name, src] of [SURFACES[0], SURFACES[1]]) {
+      expect(flat(src), name + ' uses "merge-blocking" without defining it')
+        .toMatch(/blocks?\W+this implementation\W+from progressing to integration/i)
+    }
+  })
+
+  it('names the integrator as the role that merges', () => {
+    expect(flat(DOC)).toMatch(/`integrator` integrates|integration is the integrator/i)
+    expect(flat(AGENT)).toMatch(/integrator/i)
+  })
+
+  it('adds no integration or merge logic', () => {
+    for (const f of ['tools/review-protocol.mjs', 'tools/review-task.mjs']) {
+      const src = readFileSync(f, 'utf8')
+      expect(src, f).not.toMatch(/merge_pull_request|mergePullRequest|git merge|--merge\b/)
+    }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Documented CLI subcommands must be real ones
+// ---------------------------------------------------------------------------
+
+describe('the docs describe the CLI that exists', () => {
+  // `review-task.mjs prepare` was documented as creating the review worktree and
+  // taking the before snapshot. It was never implemented after the architecture
+  // changed. Documentation that names a command nobody can run is worse than
+  // none: it reads as a procedure and fails at the keyboard.
+  const CLI_SRC = readFileSync('tools/review-task.mjs', 'utf8')
+  const realCommands = [...CLI_SRC.matchAll(/cmd === '([a-z-]+)'/g)].map(m => m[1]).sort()
+
+  it('the CLI implements the four documented jobs', () => {
+    expect(realCommands).toEqual(['brief', 'decide', 'snapshot', 'verify'])
+  })
+
+  it('every review-task.mjs subcommand named in the docs is a real command', () => {
+    const doc = readFileSync('docs/REVIEWER-PROTOCOL.md', 'utf8')
+    const named = [...doc.matchAll(/review-task\.mjs\s+([a-z-]+)/g)].map(m => m[1])
+    expect(named.length, 'the docs name no subcommands at all').toBeGreaterThan(0)
+    for (const cmd of new Set(named)) {
+      expect(realCommands, 'docs name a subcommand the CLI does not implement: ' + cmd)
+        .toContain(cmd)
+    }
+  })
+
+  it('nothing anywhere still references the removed prepare command', () => {
+    for (const f of ['docs/REVIEWER-PROTOCOL.md', 'tools/review-task.mjs',
+      'tools/review-protocol.mjs', '.claude/agents/fresh-context-reviewer.md']) {
+      expect(readFileSync(f, 'utf8'), f + ' still references review-task.mjs prepare')
+        .not.toMatch(/review-task\.mjs prepare|`prepare`/)
+    }
+  })
+
+  it('the usage text lists exactly the implemented commands', () => {
+    const usage = CLI_SRC.slice(CLI_SRC.indexOf('const USAGE'), CLI_SRC.indexOf('function parseArgs'))
+    for (const cmd of realCommands) {
+      expect(usage, 'usage omits ' + cmd).toMatch(new RegExp('review-task\\.mjs\\s+' + cmd))
+    }
+    expect(usage).not.toMatch(/prepare/)
+  })
+
+  it('the integrity limitation stays honest about what a snapshot proves', () => {
+    const doc = readFileSync('docs/REVIEWER-PROTOCOL.md', 'utf8').replace(/\s+/g, ' ')
+    expect(doc).toMatch(/only `external` can support an APPROVE|only .external. can approve/i)
+    expect(doc).toMatch(/cannot verify \*\*who\*\* ran the command|not authenticate/i)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// A re-review is a NEW reviewer instance, never a resumed one
+// ---------------------------------------------------------------------------
+
+describe('every re-review launches a new reviewer, never resumes one', () => {
+  // A resumed reviewer still carries its own previous reasoning — what it
+  // concluded, what it decided not to worry about. That is not a fresh review of
+  // the corrected implementation, which makes it the same blind spot the
+  // implementer was excluded for. Freshness that lapses after round one is not
+  // freshness.
+  const DOC = readFileSync('docs/REVIEWER-PROTOCOL.md', 'utf8').replace(/\s+/g, ' ')
+  const AGENT = readFileSync('.claude/agents/fresh-context-reviewer.md', 'utf8').replace(/\s+/g, ' ')
+
+  it('the rule is stated in the protocol docs', () => {
+    expect(DOC).toMatch(/brand-new\W+.*invocation is launched/i)
+    expect(DOC).toMatch(/never resumed/i)
+  })
+
+  it('the rule is stated in the reviewer\'s own instructions', () => {
+    expect(AGENT).toMatch(/brand-new\W*.*reviewer is launched/i)
+    expect(AGENT).toMatch(/never resumed/i)
+  })
+
+  it('says WHY, so it is not read as ceremony', () => {
+    expect(DOC).toMatch(/carries its own previous reasoning/i)
+    expect(DOC).toMatch(/not a fresh review of the corrected implementation/i)
+  })
+
+  it('is accurate about what a new non-fork invocation does and does not inherit', () => {
+    expect(DOC).toMatch(/does \*\*not\*\* inherit the parent conversation/i)
+    expect(DOC).toMatch(/does\*\* receive its delegation message and repository context/i)
+    expect(DOC).toMatch(/manual delegation remains an editorialisation surface/i)
+  })
+
+  it('does not claim automatic dispatch was added', () => {
+    expect(DOC).toMatch(/adds no automatic dispatch/i)
+    for (const f of ['tools/review-protocol.mjs', 'tools/review-task.mjs']) {
+      expect(readFileSync(f, 'utf8'), f).not.toMatch(/SendMessage|resumeAgent|dispatchReview/i)
+    }
   })
 })
