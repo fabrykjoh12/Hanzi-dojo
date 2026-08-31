@@ -245,6 +245,40 @@ describe('required check names identify exactly one job each', () => {
   }
 
   /**
+   * A mapping entry inside a job body: { key, value }, or null when the line is
+   * not a mapping key this parser can classify.
+   *
+   * The KEY is parsed separately from the value, because YAML spells the same
+   * property several ways and GitHub honours all of them:
+   *
+   *   name: check          "name": check          'name' : 'check' # required
+   *   name : check         'name': check
+   *
+   * The earlier version matched only `^ {4}name:` and silently continued past
+   * the rest — so a job whose override was written `"name": check` produced a
+   * check run called `check` while this proof believed its effective name was
+   * the job id. That is the same required-context collision the task exists to
+   * rule out, reached by a different spelling.
+   */
+  const bodyEntry = (line) => {
+    const m = line.match(/^ {4}(?:'([^']*)'|"([^"]*)"|([^:#\s'"][^:#]*?))\s*:(\s.*)?$/)
+    if (!m) return null
+    // A BARE key must look like a property name. Without this, `    - name: x`
+    // parses as a key called "- name" and is quietly treated as some other
+    // property — a malformed job body read as a well-formed one. A QUOTED key
+    // is explicit about where it begins and ends, so it needs no such rule.
+    if (m[3] !== undefined && !/^[A-Za-z_][A-Za-z0-9_.-]*$/.test(m[3])) return null
+    const key = m[1] ?? m[2] ?? m[3]
+    if (key === undefined) return null
+    // The key is used VERBATIM. A quoted scalar preserves the whitespace inside
+    // it, so `' name '` is the key " name " and not `name` — GitHub does not
+    // treat it as the name property, and neither may this. Trimming it here
+    // would invent an override the workflow does not have. Bare keys cannot
+    // carry whitespace at all, by the shape rule above.
+    return { key, value: (m[4] ?? '').trim() }
+  }
+
+  /**
    * Every job in one workflow, as { id, effectiveName }.
    *
    * A hand parser rather than a YAML dependency — this repository has none, and
@@ -289,11 +323,21 @@ describe('required check names identify exactly one job each', () => {
 
       let effectiveName = id
       for (let j = i + 1; j < lines.length; j++) {
-        if (/^\S/.test(lines[j]) || /^ {2}\S/.test(lines[j])) break   // next job
-        const named = lines[j].match(/^ {4}name:\s*(.*)$/)
-        if (!named) continue
-        const value = scalar(named[1])
-        if (value === null) refuse(lines[j], j, 'has a job name this parser cannot classify')
+        const body = lines[j]
+        if (/^\S/.test(body) || /^ {2}\S/.test(body)) break         // next job
+        if (body.trim() === '') continue
+        if (!/^ {4}\S/.test(body)) continue                          // deeper — inside a property
+
+        // Every job property is classified, not just the one being looked for.
+        // Skipping a four-space line because its spelling is unfamiliar is how
+        // a `name` override hides; all 81 such lines in the tree parse, so a
+        // refusal here means something genuinely new.
+        const entry = bodyEntry(body)
+        if (!entry) refuse(body, j, 'is at job-property indentation but is not a mapping key')
+        if (entry.key !== 'name') continue
+
+        const value = scalar(entry.value)
+        if (value === null) refuse(body, j, 'has a job name this parser cannot classify')
         effectiveName = value
         break
       }
@@ -443,6 +487,92 @@ describe('required check names identify exactly one job each', () => {
     expect(parseJobs(wrap('  plain:'), 'evil.yml'))
       .toEqual([{ id: 'plain', effectiveName: 'plain', workflow: 'evil.yml' }])
     expect(parseJobs('jobs: # the jobs\n  plain:\n    runs-on: x\n', 'evil.yml'))
+      .toEqual([{ id: 'plain', effectiveName: 'plain', workflow: 'evil.yml' }])
+  })
+
+  it('catches a name override however the KEY is spelled', () => {
+    // Each of these is valid YAML that GitHub honours as a name override, and
+    // each was silently skipped before: the job would report a check run called
+    // `check` while this proof believed its effective name was `diagnostic`.
+    const spellings = [
+      '    name: check',
+      '    name : check',
+      '    "name": check',
+      "    'name': check",
+      '    "name" : "check" # required',
+      "    'name' : 'check' # required",
+      '    name :   "check"',
+    ]
+    for (const line of spellings) {
+      const jobs = parseJobs(wrap('  diagnostic:', line + '\n'), 'evil.yml')
+      expect(jobs, JSON.stringify(line))
+        .toEqual([{ id: 'diagnostic', effectiveName: 'check', workflow: 'evil.yml' }])
+      expect(withFixture(wrap('  diagnostic:', line + '\n')).check, JSON.stringify(line))
+        .toEqual(['ci.yml:check', 'evil.yml:diagnostic'])
+    }
+  })
+
+  it('resolves the quoted and spaced spellings to the same key identity', () => {
+    // The property is key IDENTITY, not one spelling of it: every form above
+    // must reach the same `name` key, and a different key must not.
+    for (const line of ['    name: x', '    "name": x', "    'name' : x", '    name : x']) {
+      expect(bodyEntry(line), line).toEqual({ key: 'name', value: 'x' })
+    }
+    for (const line of ['    runs-on: ubuntu-latest', '    "names": x', '    named: x']) {
+      expect(bodyEntry(line).key, line).not.toBe('name')
+    }
+    // A property with no value on the line is a key like any other.
+    expect(bodyEntry('    steps:')).toEqual({ key: 'steps', value: '' })
+  })
+
+  it('treats a padded quoted key as a different key, not as `name`', () => {
+    // YAML preserves whitespace inside quotes, so `' name '` is the key
+    // " name ". GitHub does not read it as the name property, so neither may
+    // this — inventing an override the workflow does not have would report a
+    // collision that is not there.
+    expect(bodyEntry("    ' name ': check")).toEqual({ key: ' name ', value: 'check' })
+    expect(parseJobs(wrap('  diagnostic:', "    ' name ': check\n"), 'evil.yml'))
+      .toEqual([{ id: 'diagnostic', effectiveName: 'diagnostic', workflow: 'evil.yml' }])
+    expect(withFixture(wrap('  diagnostic:', "    ' name ': check\n")).check)
+      .toEqual(['ci.yml:check'])
+  })
+
+  it('REFUSES an unclassifiable job property rather than reverting to the job id', () => {
+    // Reverting to the id is the fail-OPEN outcome: it is exactly what the old
+    // parser did, and it reports a name the job does not have.
+    const unclassifiable = [
+      '    "name: check',            // opened a quote and never closed it
+      "    'name: check",            // the same, single-quoted
+      '    ?? name check',           // no colon at all
+      '    - name: check',           // a sequence item where a mapping belongs
+    ]
+    for (const line of unclassifiable) {
+      expect(() => parseJobs(wrap('  diagnostic:', line + '\n'), 'evil.yml'), JSON.stringify(line))
+        .toThrow(/evil\.yml:\d+/)
+    }
+    // And an empty or unclassifiable VALUE under a well-formed name key.
+    for (const line of ['    name:', '    "name": "unterminated', "    name : 'unterminated"]) {
+      expect(() => parseJobs(wrap('  diagnostic:', line + '\n'), 'evil.yml'), JSON.stringify(line))
+        .toThrow(/evil\.yml:\d+/)
+    }
+  })
+
+  it('leaves ordinary job properties alone', () => {
+    // The refusal must not fire on the shapes real workflows are made of, or it
+    // would be a different kind of unsound: loud, but useless.
+    const body = [
+      '    needs: [changes, verify]',
+      '    if: needs.changes.outputs.native == \'true\'',
+      '    runs-on: ubuntu-latest',
+      '    timeout-minutes: 10',
+      '    env:',
+      '      KEY: value',
+      '    steps:',
+      '      - uses: actions/checkout@v4',
+      '      - name: a step name, not a job name',
+      '        run: echo hello',
+    ].join('\n') + '\n'
+    expect(parseJobs(wrap('  plain:', body), 'evil.yml'))
       .toEqual([{ id: 'plain', effectiveName: 'plain', workflow: 'evil.yml' }])
   })
 
