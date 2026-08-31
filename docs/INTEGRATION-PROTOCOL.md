@@ -103,7 +103,11 @@ setting flipped".
    Equality is byte equality on the full SHA. Not "the same diff", not
    "equivalent changes", not "only a metadata commit on top".
 2. **The pull request** still exists, is open, is unmerged, and targets the
-   expected branch. GitHub's `mergeable: null` is *unknown*, and unknown blocks.
+   expected branch. `mergeable` is GitHub's three-state field and only those
+   three values are accepted — `true`, `false` or `null`. `null` is *unknown*
+   and blocks; anything else (`"false"`, `0`, `1`, `{}`) is a malformed
+   observation rather than an established mergeability, and is rejected by the
+   shape pass before any semantic reasoning.
 3. **The target has not moved out from under the review.** The captured target
    must be an ancestor of the head; a target that has advanced beyond what the
    head contains blocks. If a local target ref is supplied, disagreement with the
@@ -114,7 +118,12 @@ setting flipped".
 5. **The ruleset** is the one this protocol reasons about, actively enforced,
    protecting the expected branch, requiring exactly those checks **each bound
    to the expected integration**, and carrying an **empty bypass list**.
-6. **A review result** approving *this* head. Necessary, never sufficient.
+6. **A sealed contract**, supplied to the protocol itself. Not an optional
+   argument: without terms, a reviewer's approval binds to nothing, so the
+   decision stops there rather than reasoning past it. `decideIntegration` is an
+   exported programmatic boundary and must not carry a weaker security contract
+   than the CLI that wraps it.
+7. **A review result** approving *this* head. Necessary, never sufficient.
 
 ### Why the check source is validated, not just the name
 

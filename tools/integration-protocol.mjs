@@ -293,13 +293,21 @@ export function evidenceShapeFindings(evidence) {
       'pull_request.base_ref is missing or not a string', JSON.stringify(pr.base_ref))
     need(SHA_RE.test(String(pr.head_sha || '')), 'evidence-malformed',
       'pull_request.head_sha is not a full 40-character commit SHA', JSON.stringify(pr.head_sha))
-    // `mergeable` is GitHub's own three-state field: true, false, or null while
-    // it is still computing the test merge. null is UNKNOWN, and unknown is the
-    // case this whole protocol exists to refuse — so the key must be present and
-    // its null must be carried through rather than dropped by the collector.
-    need('mergeable' in pr, 'evidence-malformed',
-      'pull_request.mergeable is absent — an unreported mergeability is indistinguishable from an unknown one',
-      'expected true, false or null')
+    // `mergeable` is GitHub's own THREE-STATE field: true, false, or null while
+    // it is still computing the test merge. Those three, and nothing else.
+    //
+    // Requiring only that the key exists was a fail-open: `"false"`, `0`, `1`,
+    // `{}`, `[]` and `NaN` are none of null, undefined or false, so they slid
+    // past the downstream unknown/not-mergeable checks and reached
+    // READY_TO_INTEGRATE — a malformed observation read as an established
+    // mergeability. Only a literal boolean `true` is a positive state, and the
+    // type is pinned here, before any semantic reasoning happens.
+    need(pr.mergeable === true || pr.mergeable === false || pr.mergeable === null,
+      'evidence-malformed',
+      'pull_request.mergeable must be exactly true, false or null — GitHub\'s three states. ' +
+      'Anything else is a malformed observation, not an established mergeability, and an ' +
+      'absent key is indistinguishable from an unknown one',
+      JSON.stringify(pr.mergeable))
   }
 
   const target = evidence.target
@@ -498,7 +506,64 @@ export function pullRequestFindings({ evidence, expectedTargetBranch = EXPECTED_
  * H2. When a branch is rebased or updated to pick up a moved target, the head
  * changes, and the approval that existed was of a different commit.
  */
+/**
+ * A CONTRACT IS A PRECONDITION, NOT AN OPTIONAL ARGUMENT.
+ *
+ * `decideIntegration` is an exported, load-bearing programmatic boundary, and it
+ * must not carry a weaker security contract than the CLI that wraps it. It did:
+ * with `contract` null or absent, the review-standard validation was skipped
+ * entirely, so a three-field result naming the right head with verdict APPROVE
+ * satisfied the review link and — against otherwise perfect evidence — reached
+ * READY_TO_INTEGRATE with `bound.task_id` and `bound.contract_digest` both null.
+ * Task identity, contract digest, dimensions and criteria: none validated.
+ *
+ * That the shipped CLI happens to load a contract first is not sufficient. A
+ * future orchestrator calling the protocol directly would inherit the weaker
+ * path, and "the only caller is careful" is not an invariant.
+ *
+ * This does NOT re-implement the task-contract validator. Retrieval and full
+ * validation stay with `loadContractAtCommit`, which reads the sealed contract
+ * from the reviewed commit. What is checked here is only that a contract
+ * capable of BINDING a review was actually supplied: it must have the identity
+ * fields `validateReviewResult` compares against, and the acceptance criteria it
+ * requires an answer for. An empty object has none of them, so it cannot bind a
+ * review and cannot authorize.
+ */
+export function contractFindings(contract) {
+  if (!isPlainObject(contract)) {
+    return [blocker('contract-missing',
+      'No task contract was supplied — there are no terms for a review to have been performed against',
+      'got ' + (contract === undefined ? 'undefined'
+        : Array.isArray(contract) ? 'an array' : JSON.stringify(contract)))]
+  }
+  const out = []
+  if (!isNonEmptyString(contract.id)) {
+    out.push(blocker('contract-unreadable',
+      'The supplied contract has no task id, so a review cannot be bound to it',
+      JSON.stringify(contract.id)))
+  }
+  if (!/^[0-9a-f]{64}$/.test(String(contract.contract_digest || ''))) {
+    out.push(blocker('contract-unreadable',
+      'The supplied contract carries no sha256 digest, so a review cannot be tied to the exact terms it was performed against',
+      JSON.stringify(contract.contract_digest)))
+  }
+  if (!Array.isArray(contract.acceptance_criteria) || contract.acceptance_criteria.length === 0) {
+    // Without criteria the review protocol's "every criterion answered
+    // individually" rule is satisfied vacuously — a review answering nothing
+    // would pass. An empty list is not a contract, it is a blank cheque.
+    out.push(blocker('contract-unreadable',
+      'The supplied contract states no acceptance criteria, so a review of it could not have been checked for completeness',
+      JSON.stringify(contract.acceptance_criteria)))
+  }
+  return out
+}
+
 export function reviewLinkFindings({ review, reviewedHead, contract = null }) {
+  // No weaker mode without a contract. Binding a review to terms we do not have
+  // is not a lighter check, it is no check at all.
+  const contractProblems = contractFindings(contract)
+  if (contractProblems.length > 0) return contractProblems
+
   const out = []
   if (!isPlainObject(review)) {
     return [blocker('review-missing',
@@ -514,11 +579,9 @@ export function reviewLinkFindings({ review, reviewedHead, contract = null }) {
   // the head-and-verdict pair as long as it named the same commit. So the
   // authoritative validator is reused, which also brings task_id,
   // contract_digest, every dimension and every criterion into scope.
-  if (contract) {
-    for (const violation of validateReviewResult(review, { contract })) {
-      out.push(blocker('review-invalid',
-        'The review result does not satisfy the review protocol', violation))
-    }
+  for (const violation of validateReviewResult(review, { contract })) {
+    out.push(blocker('review-invalid',
+      'The review result does not satisfy the review protocol', violation))
   }
 
   if (!SHA_RE.test(String(review.head_sha || ''))) {
@@ -889,11 +952,15 @@ export function decideIntegration({
 }) {
   const findings = []
 
-  // Shape first, and stop there if it fails. Reasoning about the contents of a
-  // malformed document produces findings about fields that do not exist.
-  const shape = evidenceShapeFindings(evidence)
-  if (shape.length > 0) {
-    return buildDecision({ decision: 'BLOCKED', findings: shape, contract, review, reviewedHead, evidence, now })
+  // PRECONDITIONS, and stop there if any fails.
+  //
+  // The contract is one of them, not an optional argument: without terms, a
+  // reviewer's approval binds to nothing, so nothing downstream could mean
+  // anything. The evidence shape is the other — reasoning about the contents of
+  // a malformed document produces findings about fields that do not exist.
+  const preconditions = [...contractFindings(contract), ...evidenceShapeFindings(evidence)]
+  if (preconditions.length > 0) {
+    return buildDecision({ decision: 'BLOCKED', findings: preconditions, contract, review, reviewedHead, evidence, now })
   }
 
   findings.push(...headIdentityFindings({ reviewedHead, evidence }))

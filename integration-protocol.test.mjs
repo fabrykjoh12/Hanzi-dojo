@@ -29,8 +29,10 @@ import {
   PROTOCOL_VERSION,
   authorizes,
   decideIntegration,
+  contractFindings,
   evidenceShapeFindings,
   gitCorroborationFindings,
+  pullRequestFindings,
   requiredCheckFindings,
   reviewLinkFindings,
   rulesetFindings,
@@ -874,6 +876,187 @@ describe('the bypass list is part of policy identity', () => {
   })
 })
 
+describe('mergeable is a three-state field, and only those three states', () => {
+  // The regression: the shape pass required only that the key EXIST, so
+  // "false", "true", 0, 1, {}, [] and NaN were none of null, undefined or
+  // false, slid past the downstream unknown/not-mergeable checks, and reached
+  // READY_TO_INTEGRATE — a malformed observation read as an established
+  // mergeability.
+  const withMergeable = (mergeable) => {
+    const ev = goodEvidence({ head: repo.c2, target: repo.c0, strict: true })
+    ev.pull_request.mergeable = mergeable
+    return ev
+  }
+
+  const MALFORMED = ['false', 'true', 'yes', '', 0, 1, -1, {}, [], NaN, Infinity, Symbol.for('x') && 'sym']
+
+  it('blocks every malformed value at the shape pass, before semantic reasoning', () => {
+    for (const value of MALFORMED) {
+      const ev = withMergeable(value)
+      const shape = evidenceShapeFindings(ev).map(f => f.code)
+      expect(shape, 'mergeable=' + String(value) + ' must be shape-rejected').toContain('evidence-malformed')
+      const d = decide({ evidence: ev })
+      expect(d.decision, 'mergeable=' + String(value)).toBe('BLOCKED')
+      expect(d.authorizes).toBe(false)
+    }
+  })
+
+  it('blocks an absent mergeable key', () => {
+    const ev = goodEvidence({ head: repo.c2, target: repo.c0, strict: true })
+    delete ev.pull_request.mergeable
+    const d = decide({ evidence: ev })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('evidence-malformed')
+  })
+
+  it('keeps the three real states meaning what they meant', () => {
+    expect(decide({ evidence: withMergeable(true) }).decision).toBe('READY_TO_INTEGRATE')
+
+    const unknown = decide({ evidence: withMergeable(null) })
+    expect(unknown.decision).toBe('BLOCKED')
+    expect(codes(unknown)).toContain('mergeability-unknown')
+
+    const no = decide({ evidence: withMergeable(false) })
+    expect(no.decision).toBe('BLOCKED')
+    expect(codes(no)).toContain('not-mergeable')
+  })
+
+  it('never lets a truthy non-boolean stand in for an established mergeability', () => {
+    // The sharpest one: "true" and 1 are truthy, and a `if (pr.mergeable)`
+    // reading anywhere would accept them.
+    for (const truthy of ['true', 1, {}, [], 'yes']) {
+      expect(decide({ evidence: withMergeable(truthy) }).authorizes).toBe(false)
+    }
+  })
+
+  it('keeps the downstream layer sound on its own', () => {
+    // Isolation: with the shape pass in place, pullRequestFindings never sees a
+    // malformed value, so its own null/undefined handling would go untested and
+    // a mutation restoring the weak shape rule could hide behind it.
+    const bare = (mergeable) => ({
+      repository: 'fabrykjoh12/Hanzi-dojo',
+      pull_request: { state: 'open', merged: false, base_ref: 'main', mergeable },
+      target: { branch: 'main' },
+    })
+    expect(pullRequestFindings({ evidence: bare(null) }).map(f => f.code)).toContain('mergeability-unknown')
+    expect(pullRequestFindings({ evidence: bare(undefined) }).map(f => f.code)).toContain('mergeability-unknown')
+    expect(pullRequestFindings({ evidence: bare(false) }).map(f => f.code)).toContain('not-mergeable')
+    expect(pullRequestFindings({ evidence: bare(true) })).toEqual([])
+  })
+})
+
+describe('a contract is a precondition, not an optional argument', () => {
+  // decideIntegration is an exported, load-bearing programmatic boundary. With
+  // contract null the review-standard validation was skipped entirely, so a
+  // three-field result naming the right head with verdict APPROVE reached
+  // READY_TO_INTEGRATE against otherwise perfect evidence — with bound.task_id
+  // and bound.contract_digest both null. That the shipped CLI happens to load a
+  // contract first is not an invariant.
+  const perfect = () => goodEvidence({ head: repo.c2, target: repo.c0, strict: true })
+  // A function, not a constant: `repo` is built in beforeAll, and a constant
+  // here is evaluated at collection time when it is still undefined.
+  const minimalApproval = () => ({ head_sha: repo.c2, verdict: 'APPROVE', no_blocking_findings: true })
+
+  it('BLOCKS a null contract even against a fully green review, evidence and git state', () => {
+    const d = decideIntegration({
+      contract: null,
+      review: minimalApproval(),
+      reviewedHead: repo.c2,
+      evidence: perfect(),
+      git: repo.git,
+    })
+    expect(d.decision).toBe('BLOCKED')
+    expect(d.authorizes).toBe(false)
+    expect(codes(d)).toContain('contract-missing')
+  })
+
+  it('blocks every unusable contract shape', () => {
+    for (const contract of [null, undefined, 'a string', [], 42, true]) {
+      const d = decideIntegration({
+        contract, review: minimalApproval(), reviewedHead: repo.c2, evidence: perfect(), git: repo.git,
+      })
+      expect(d.decision, 'contract=' + JSON.stringify(contract)).toBe('BLOCKED')
+      expect(codes(d)).toContain('contract-missing')
+    }
+  })
+
+  it('blocks an object that cannot bind a review', () => {
+    // An empty object is truthy, so it used to reach validateReviewResult and
+    // be caught only incidentally. Each missing binding field is named.
+    const cases = [
+      [{}, 3],
+      [{ id: 'x' }, 2],
+      [{ id: 'x', contract_digest: 'a'.repeat(64) }, 1],
+      [{ id: 'x', contract_digest: 'not-a-digest', acceptance_criteria: ['c'] }, 1],
+      [{ id: '', contract_digest: 'a'.repeat(64), acceptance_criteria: ['c'] }, 1],
+      [{ id: 'x', contract_digest: 'a'.repeat(64), acceptance_criteria: [] }, 1],
+    ]
+    for (const [contract, expected] of cases) {
+      const f = contractFindings(contract)
+      expect(f.length, JSON.stringify(contract)).toBe(expected)
+      expect(f.every(x => x.code === 'contract-unreadable')).toBe(true)
+      const d = decideIntegration({
+        contract, review: minimalApproval(), reviewedHead: repo.c2, evidence: perfect(), git: repo.git,
+      })
+      expect(d.decision).toBe('BLOCKED')
+    }
+  })
+
+  it('never records a null task identity in an authorizing decision', () => {
+    // The shape of the defect, stated as an invariant: if it authorizes, the
+    // terms it authorized against are named.
+    for (const contract of [null, undefined, {}, 'x']) {
+      const d = decideIntegration({
+        contract, review: minimalApproval(), reviewedHead: repo.c2, evidence: perfect(), git: repo.git,
+      })
+      expect(d.authorizes).toBe(false)
+      expect(d.bound.task_id).toBeNull()
+      expect(d.bound.contract_digest).toBeNull()
+    }
+    const good = decide({ evidence: perfect() })
+    expect(good.authorizes).toBe(true)
+    expect(good.bound.task_id).toBe(TASK_ID)
+    expect(good.bound.contract_digest).toBe(sealed().contract_digest)
+  })
+
+  it('gives reviewLinkFindings no weaker mode when the contract is absent', () => {
+    // It used to return [] for a null contract — no check at all, dressed as a
+    // lighter one.
+    for (const contract of [null, undefined, {}]) {
+      const f = reviewLinkFindings({ review: goodReview(repo.c2), reviewedHead: repo.c2, contract })
+      expect(f.length).toBeGreaterThan(0)
+      expect(f.every(x => x.severity === 'blocker')).toBe(true)
+      expect(f.some(x => x.code === 'contract-missing' || x.code === 'contract-unreadable')).toBe(true)
+    }
+    // And with a real contract it still passes a genuinely good review.
+    expect(reviewLinkFindings({ review: goodReview(repo.c2), reviewedHead: repo.c2, contract: sealed() })).toEqual([])
+  })
+
+  it('stops at the precondition instead of reasoning past a contract it does not have', () => {
+    // The observable difference between checking the contract as a PRECONDITION
+    // and merely catching it inside the review link. With the precondition, a
+    // decision made without terms reports exactly that and nothing else —
+    // findings about a head, a fence or a review that could not be bound would
+    // be reasoning the protocol has no standing to do.
+    const ev = goodEvidence({ head: repo.c1, target: repo.c0, strict: true })  // head ALSO moved
+    const d = decideIntegration({
+      contract: null, review: minimalApproval(), reviewedHead: repo.c2, evidence: ev, git: repo.git,
+    })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toEqual(['contract-missing'])
+    // Specifically: the head really has moved, and that is deliberately NOT
+    // reported, because without a contract there is nothing to report it against.
+    expect(codes(decide({ evidence: ev }))).toContain('head-moved-since-review')
+  })
+
+  it('still applies the full review standard once a contract is present', () => {
+    // Proving the precondition did not replace the validation it guards.
+    const d = decide({ review: minimalApproval() })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('review-invalid')
+  })
+})
+
 describe('a missing evidence field must never be the field that authorizes', () => {
   // The regression this whole block exists for. `enforcement` and
   // `target_branch` were guarded downstream with `'x' in rs`, which read as
@@ -1005,11 +1188,12 @@ describe('the evidence must describe this repository, and the review must be of 
     }
   })
 
-  it('does not apply the review standard when no contract is available to bind it to', () => {
-    // reviewLinkFindings still checks head and verdict without a contract; what
-    // it cannot do is check task identity against terms it was not given.
+  it('refuses to bind a review when no contract was supplied', () => {
+    // This spec previously asserted the opposite — that reviewLinkFindings
+    // returned [] without a contract — and that "lighter check" was the
+    // fail-open: no check at all. See the precondition suite above.
     const f = reviewLinkFindings({ review: goodReview(repo.c2), reviewedHead: repo.c2, contract: null })
-    expect(f).toEqual([])
+    expect(f.map(x => x.code)).toEqual(['contract-missing'])
   })
 })
 
