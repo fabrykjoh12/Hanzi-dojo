@@ -412,41 +412,42 @@ export function identityFindings({ result, baseSha, headSha }) {
 /**
  * THE VERIFICATION COMMAND GRAMMAR — closed, and enforced at execution.
  *
- * The problem this closes is one the reviewer found, and it is worth stating
- * plainly. `verification` is a list of strings in the sealed contract, and the
- * contract validator does NOT constrain them: `sh -c "curl … | sh"`,
- * `echo $SECRET > /tmp/x`, `npm run build && rm -rf dist` all seal without
- * complaint. Executing those with a shell and the driver's environment would
- * mean that writing a string into `verification` granted arbitrary runtime
- * authority — with the driver's credentials — to anyone who could seal a
- * contract. `production_effect: none` would not have stopped any of it.
+ * `verification` is a list of strings in the sealed contract, and the contract
+ * validator does NOT constrain them: `sh -c "curl … | sh"`,
+ * `echo $SECRET > /tmp/leak` and `npm run build && rm -rf dist` all seal without
+ * complaint. Executing those with a shell would mean that writing a string into
+ * `verification` granted arbitrary runtime authority to anyone who could seal a
+ * contract, and `production_effect: none` would not have stopped it.
  *
- * So the executor refuses rather than the validator rejects. That distinction
- * matters: the validator lives outside this task's allowed_paths, and it does
- * not need to change. A contract may still CONTAIN an unsupported string; it
- * simply cannot be run, and the review is BLOCKED instead. Fail-closed, and no
- * schema change.
+ * So the EXECUTOR refuses rather than the validator rejecting. That distinction
+ * is what keeps this in scope: the validator lives outside this task's
+ * allowed_paths and does not change. A contract may still CONTAIN an
+ * unsupported string; it cannot be run, and the review is BLOCKED instead.
  *
- * Exactly two forms, because those are the two this repository's contracts
- * actually use. Adding a third is a deliberate edit here, reviewed as such.
+ * NOTHING HERE RUNS `npx`. That was measured, not assumed: with the binary
+ * absent, `npx vitest …` requested https://registry.npmjs.org/vitest, and
+ * `npx --no` requested it too. `npx` resolves the package spec remotely before
+ * deciding it could have used a local copy, so it is a silent path to fetching
+ * and executing an arbitrary version from the network — a supply-chain hole
+ * dressed as a test runner. The `npx <bin> …` FORM is still accepted, because
+ * it is what contracts are written with, but it resolves to the local
+ * `node_modules/.bin/<bin>` and fails closed when that file is not there.
  *
  * WHAT THIS DOES NOT BUY, said out loud: `npm run <script>` runs a script
  * defined by the REVIEWED COMMIT'S package.json, which runs arbitrary code from
  * the commit under review. That is not a hole in the grammar — it is what
- * verification IS. Running the tests is running the code. The grammar bounds the
- * FORM of the command and the environment bounds its AUTHORITY; neither bounds
- * what the repository's own test suite chooses to do.
+ * verification IS. Running the tests is running the code.
  */
 export const VERIFICATION_FORMS = [
   {
     form: 'npm run <script>',
     pattern: /^npm run ([A-Za-z0-9][A-Za-z0-9:_-]*)$/,
-    argv: (m) => ['npm', 'run', m[1]],
+    plan: (m) => ({ kind: 'npm-run', command: 'npm', args: ['run', m[1]] }),
   },
   {
-    form: 'npx vitest run <path>',
-    pattern: /^npx vitest run ([A-Za-z0-9][A-Za-z0-9._/-]*)$/,
-    argv: (m) => ['npx', 'vitest', 'run', m[1]],
+    form: 'npx <bin> <args…>  (executed as node_modules/.bin/<bin>, never via npx)',
+    pattern: /^npx ([a-z0-9][a-z0-9-]*) (run) ([^\s]+)$/,
+    plan: (m) => ({ kind: 'local-bin', bin: m[1], args: [m[2], m[3]], pathArg: m[3] }),
   },
 ]
 
@@ -454,32 +455,59 @@ export const VERIFICATION_FORMS = [
 const SHELL_METACHARACTERS = /[;&|<>$`\\(){}\[\]*?!~"'\n\r]/
 
 /**
- * Parse one contract verification string into an argv, or explain the refusal.
+ * A repository-relative path that cannot leave the worktree.
  *
- * Never returns a shell string. The caller spawns argv[0] with argv.slice(1)
- * and no shell, so there is no parsing layer left to be clever about quoting.
+ * The previous grammar allowed dots anywhere, so `a/../../outside.test.mjs` and
+ * `a//b.test.mjs` were accepted — a test path that escapes the repository is a
+ * way to make the verifier read and execute something outside the commit under
+ * review. Segments are checked individually rather than the string being
+ * normalised, because normalising first and validating after is how traversal
+ * bugs are written.
+ */
+export function verificationPathError(p) {
+  if (!isNonEmptyString(p)) return 'path is empty'
+  if (p.startsWith('/')) return 'path is absolute'
+  const segments = p.split('/')
+  for (const seg of segments) {
+    if (seg === '') return 'path has an empty or repeated segment: ' + JSON.stringify(p)
+    if (seg === '.' || seg === '..') return 'path has a "' + seg + '" segment and could leave the worktree'
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(seg)) return 'path segment is not a plain name: ' + JSON.stringify(seg)
+  }
+  return null
+}
+
+/**
+ * Parse one contract verification string into an execution plan, or explain the
+ * refusal. Never returns a shell string: the caller spawns an executable with
+ * an argv and no shell, so there is no parsing layer left to be clever about.
  */
 export function parseVerificationCommand(command) {
   if (!isNonEmptyString(command)) {
-    return { argv: null, error: 'verification command is not a non-empty string' }
+    return { plan: null, error: 'verification command is not a non-empty string' }
   }
   const meta = command.match(SHELL_METACHARACTERS)
   if (meta) {
     return {
-      argv: null,
+      plan: null,
       error: 'refused: contains the shell metacharacter ' + JSON.stringify(meta[0]) +
         '. Verification runs without a shell, so chaining, redirection and ' +
         'substitution are not available and are not silently ignored',
     }
   }
-  for (const { pattern, argv } of VERIFICATION_FORMS) {
+  for (const { pattern, plan } of VERIFICATION_FORMS) {
     const m = command.match(pattern)
-    if (m) return { argv: argv(m), error: null }
+    if (!m) continue
+    const p = plan(m)
+    if (p.pathArg) {
+      const err = verificationPathError(p.pathArg)
+      if (err) return { plan: null, error: 'refused: ' + err }
+    }
+    return { plan: p, error: null }
   }
   return {
-    argv: null,
+    plan: null,
     error: 'refused: not a supported verification form. Supported: ' +
-      VERIFICATION_FORMS.map(f => f.form).join(', ') +
+      VERIFICATION_FORMS.map(f => f.form).join('; ') +
       '. An unsupported command is refused rather than guessed at',
   }
 }
@@ -488,19 +516,29 @@ export function parseVerificationCommand(command) {
  * The environment a verification command is given.
  *
  * A deliberate allowlist, not `process.env` minus a denylist — a denylist is a
- * list of the secrets someone remembered. The code under review runs here, and
- * it should not inherit whatever the driver happens to be carrying.
+ * list of the secrets someone remembered.
  *
- * `CI` is set so test runners take their non-interactive path.
+ * `HOME` is NOT forwarded. That was a real hole: stripping token variables
+ * achieves little while `~/.npmrc`, cloud config files and credential helpers
+ * remain readable at the driver's real home. The caller supplies a fresh empty
+ * home for the run instead.
+ *
+ * Read what this does and does not do precisely. It prevents inheritance of
+ * unspecified ENVIRONMENT VARIABLES. It is NOT a sandbox and does not bound
+ * execution authority: a Node process from the reviewed commit can still open
+ * any path the OS lets it, read credentials from disk, reach the network, and
+ * spawn children of its own.
  */
-export const VERIFICATION_ENV_KEYS = ['PATH', 'HOME', 'LANG', 'LC_ALL', 'TZ', 'TMPDIR', 'SystemRoot']
+export const VERIFICATION_ENV_KEYS = ['PATH', 'LANG', 'LC_ALL', 'TZ', 'SystemRoot']
 
-export function verificationEnv(source = {}) {
+export function verificationEnv(source = {}, { home, tmpdir } = {}) {
   const env = {}
   for (const k of VERIFICATION_ENV_KEYS) {
     if (typeof source[k] === 'string') env[k] = source[k]
   }
   env.CI = '1'
+  if (isNonEmptyString(home)) env.HOME = home
+  if (isNonEmptyString(tmpdir)) env.TMPDIR = tmpdir
   return env
 }
 

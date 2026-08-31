@@ -158,60 +158,101 @@ commit**, separate from the tree the reviewer reads so that build and test outpu
 cannot look like the reviewer having written a file. The record it produces is
 the only one that counts, and it is bound to `head_sha`.
 
-#### The driver's execution authority is bounded
+#### The driver's execution authority is narrowed — and what that does not mean
 
-Handing the driver a shell over contract strings would have been a bad trade for
-taking one away from the reviewer. `verification` is a list of strings in a
-sealed contract, and **the contract validator does not constrain them**:
-`sh -c "curl … | sh"`, `echo $SECRET > /tmp/leak` and `npm run build && rm -rf
-dist` all seal without complaint, and `production_effect: none` constrains none
-of it. So the executor refuses rather than the validator rejecting — which is
-also why this needed no schema change:
+Handing the driver a shell would have been a bad trade for taking one away from
+the reviewer. `verification` is a list of strings in a sealed contract, and **the
+contract validator does not constrain them**: `sh -c "curl … | sh"`,
+`echo $SECRET > /tmp/leak` and `npm run build && rm -rf dist` all seal without
+complaint, and `production_effect: none` constrains none of it. So the executor
+refuses rather than the validator rejecting — which is also why this needed no
+schema change.
 
 - **No shell.** Commands are parsed to an explicit executable and argv.
-- **A closed grammar**, exactly the two forms this repository's contracts use:
-  `npm run <script>` and `npx vitest run <path>`. Anything else is **refused**,
-  not guessed at, and a refusal records `executed: false`, which the evidence
-  rules already treat as a blocker. An unsupported command blocks the review.
-- **Metacharacters are refused outright** rather than escaped, so chaining,
-  redirection and substitution are unavailable and visibly so.
-- **A deliberate environment allowlist** — `PATH`, `HOME`, `LANG`, `LC_ALL`,
-  `TZ`, `TMPDIR`, `SystemRoot`, plus `CI=1`. Not `process.env` minus a denylist:
-  a denylist is a list of the secrets someone remembered. The code under review
-  runs here and does not inherit what the driver is carrying.
-- **No package-install or network form** exists in the grammar; `npm ci` and
-  `npm install` are not `npm run`.
+- **A closed grammar**, exactly the two forms this repository's contracts use.
+  Anything else is **refused**, not guessed at, and a refusal records
+  `executed: false`, which the evidence rules already treat as a blocker.
+- **Metacharacters are refused outright** rather than escaped.
+- **Test paths cannot leave the worktree.** Segments are validated individually
+  — no `.`, no `..`, no empty or repeated segments, no absolute paths.
+  Normalising first and validating after is how traversal bugs get written.
+- **No package install, and no `npx`.** See below.
+- **An environment-variable allowlist**: `PATH`, `LANG`, `LC_ALL`, `TZ`,
+  `SystemRoot`, plus `CI=1` and a fresh `HOME`/`TMPDIR` the run owns.
 
-**What this does not buy, said plainly:** `npm run <script>` executes a script
-defined by the *reviewed commit's* `package.json`, which runs arbitrary code
-from the commit under review. That is not a hole in the grammar — it is what
-verification *is*. Running the tests is running the code. The grammar bounds the
-**form** of the command and the allowlist bounds its **authority**; neither
-bounds what the repository's own test suite chooses to do.
+##### `npx` is gone, because it reaches the network
 
-Accounting is exact in both directions. Every entry in `contract.verification`
-must have **exactly one** record — not "at least one", because that lets a
-duplicate of an easy command stand in for a missing hard one while the count
-still looks right — and a record naming a command the contract never required is
-itself a blocker, so an easier command cannot substitute.
+Measured, not assumed. With the binary absent, `npx vitest run …` requested
+`https://registry.npmjs.org/vitest` — and so did `npx --no vitest run …`. `npx`
+resolves the package spec remotely before deciding it could have used a local
+copy, so it is a silent path to fetching and executing an arbitrary version from
+the registry: a supply-chain hole dressed as a test runner.
 
-A reviewer-authored `verification_run` is **refused outright**, not ignored. A
-second account nobody ran could only disagree with the one that was, and worse,
-it would let a reviewer satisfy a required command by naming it. Supplemental
-observations belong in a dimension note or a finding.
+The `npx <bin> run <path>` **form** is still accepted, because it is what
+contracts are written with. It resolves to `node_modules/.bin/<bin>` and is
+executed directly. A missing dependency fails closed instead of fetching one.
 
-| Case | Outcome |
-| --- | --- |
-| No evidence at all | `BLOCKED` |
-| Empty record while the contract requires commands | `BLOCKED` |
-| A required command missing | `BLOCKED` |
-| A duplicate standing in for a missing command | `BLOCKED` |
-| A command the contract does not require | `BLOCKED` |
-| `executed` missing or false | `BLOCKED` — nothing was learned |
-| Non-integer exit code | `BLOCKED` |
-| Evidence bound to another commit | `BLOCKED` |
-| Non-zero exit | cannot approve |
-| Passing run with no captured output | cannot approve |
+##### Dependencies are shared, never installed
+
+A detached worktree has no `node_modules`. That was a real blocker, not a
+theoretical one: the sealed contract's own `npm run verify:pr` failed in the
+verification worktree with `Cannot find package '@eslint/js'`, while a synthetic
+`node -e` fixture passed and hid it.
+
+Dependencies are **symlinked from the driver's checkout**, never installed —
+installing would mean a network fetch on every review, which is exactly the
+authority this executor withholds. Sharing is gated on a checkable condition:
+`package-lock.json` at the reviewed commit must be byte-identical to the driver
+checkout's, or the run is refused, because otherwise head A would be verified
+against head B's dependencies.
+
+What that does **not** prove is that `node_modules` matches that lockfile.
+Nothing re-resolves it. It binds to the *declared* graph, which is the strongest
+claim available without a network install.
+
+##### What the environment allowlist is, precisely
+
+It prevents inheritance of unspecified **environment variables**. That is all it
+is, and the earlier wording — that it "bounds authority" — was too strong.
+
+`HOME` is **not** forwarded, and that was a real hole rather than tidiness:
+stripping `GITHUB_TOKEN` and friends achieves little while `~/.npmrc`, cloud
+config files and credential helpers stay readable at the driver's real home.
+Secrets on disk are not environment variables. The run gets a fresh empty home
+it owns, removed afterwards.
+
+**A fresh home is not a sandbox.** A Node process from the reviewed commit can
+still open any path the OS permits, read credentials from disk, reach the
+network, and spawn children of its own. Nothing here prevents that.
+
+And the reason it cannot: `npm run <script>` executes a script defined by the
+*reviewed commit's* `package.json`, which runs arbitrary code from the commit
+under review. That is not a hole in the grammar — it is what verification *is*.
+Running the tests is running the code. The grammar bounds the command's **form**
+and the allowlist bounds which **variables** it inherits; neither bounds what the
+repository's own test suite does.
+
+**The `production_effect` gap therefore remains open and is deliberately
+deferred.** Arbitrary code execution cannot be proven not to reach production
+from this mechanism alone. Closing it needs a sandbox or runtime authority layer,
+which is outside this task's scope — see the limitations below.
+
+##### The evidence is the sole accepted record, not an authenticated one
+
+`decide` validates the evidence file's version, its binding to the reviewed
+commit, and its command accounting. It does **not** authenticate who produced
+it: a caller can hand-author a JSON document containing the expected `head_sha`,
+the right command names and passing exit codes, exactly as `observer: external`
+on a snapshot cannot prove who ran the snapshot command.
+
+State it as it is:
+
+- it is the **sole verification record the decision engine accepts**;
+- its **shape, command accounting and commit binding are validated**;
+- **who generated it is not authenticated**.
+
+Closing provenance needs CI or another principal generating the evidence, which
+is out of scope here.
 
 ### The contract comes from the reviewed commit
 
@@ -397,18 +438,26 @@ separated from "ran and failed": the first means nothing was learned and blocks;
 the second means something was learned and it was bad. A passing run with no
 evidence is refused too — a verification nobody can check is a claim.
 
-**4. The floors are heuristics over paths.**
+**5. The floors are heuristics over paths.**
 
 They catch the under-classifications the repo has actually seen. A change that
 reaches something dangerous through a path not on the list will not be flagged,
 and the reviewer's judgment is the only thing covering that.
 
-**6. Nothing is enforced at runtime.**
+**6. Verification evidence is validated, not authenticated.** A hand-authored
+JSON file with the right shape and the right `head_sha` is indistinguishable
+from one `verify` produced. Closing that needs CI or another principal.
+
+**7. Dependency sharing binds to the declared graph, not to `node_modules`.**
+The lockfile at the reviewed commit must match the driver checkout's, but
+nothing re-resolves the installed tree against it.
+
+**8. Nothing is enforced at runtime.**
 
 No hook, no filesystem interception, no tool-permission enforcement, no
 automatic routing, no automatic review, no automatic merge. This PR establishes
 the mechanism and the protocol; invoking them is a deliberate act, and making
 them mandatory is later hardening.
 
-**7. Nothing here reviews this repository's existing code.** The deliverable is
+**9. Nothing here reviews this repository's existing code.** The deliverable is
 the mechanism, not a review.

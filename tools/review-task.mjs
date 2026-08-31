@@ -18,7 +18,7 @@
 // code cannot accidentally read a failure as an approval.
 
 import { readFile } from 'node:fs/promises'
-import { lstatSync, readlinkSync, mkdtempSync } from 'node:fs'
+import { lstatSync, readlinkSync, mkdtempSync, existsSync, readFileSync, symlinkSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -222,34 +222,105 @@ async function resolveReview(taskId, headRef) {
 }
 
 /**
- * Run one required command in a throwaway worktree at the reviewed commit.
+ * PROVISION the verification worktree with dependencies.
  *
- * Its own worktree, separate from the tree the reviewer reads, so build and test
- * output cannot contaminate the integrity snapshot — a `dist/` written by
- * `npm run build` would otherwise look exactly like the reviewer having written
- * a file.
+ * A detached worktree contains no `node_modules` — it is gitignored — so the
+ * real contract's `npm run verify:pr` failed with
+ * "Cannot find package '@eslint/js'", and the mechanism could not verify its
+ * own sealed contract. A synthetic fixture running `node -e` passed and hid it.
+ *
+ * The dependencies are SHARED from the driver's checkout by symlink, never
+ * installed. Installing would mean a network fetch on every review, which is
+ * the authority this executor exists to withhold.
+ *
+ * Sharing is sound only under a checkable condition: the reviewed commit must
+ * declare the SAME dependency graph as the checkout being borrowed from. So
+ * `package-lock.json` is compared byte-for-byte and the run is refused when they
+ * differ — otherwise head A would be verified against head B's dependencies.
+ *
+ * What this does NOT prove: that `node_modules` actually matches that lockfile.
+ * Nobody re-resolves it here. It binds to the declared graph, which is the
+ * strongest claim available without a network install.
  */
-function runVerification(commands, headSha, root) {
+function provisionDependencies(worktree, driverRoot) {
+  const lockName = 'package-lock.json'
+  const inTree = path.join(worktree, lockName)
+  const inDriver = path.join(driverRoot, lockName)
+  if (!existsSync(inTree) || !existsSync(inDriver)) {
+    return { error: null, shared: false }
+  }
+  if (!readFileSync(inTree).equals(readFileSync(inDriver))) {
+    return {
+      error: lockName + ' at the reviewed commit differs from the driver checkout, so the ' +
+        'installed dependencies are not the ones this commit declares. Refusing to verify ' +
+        'against the wrong dependency graph',
+      shared: false,
+    }
+  }
+  const from = path.join(driverRoot, 'node_modules')
+  if (!existsSync(from)) {
+    return {
+      error: 'the driver checkout has no node_modules to share, and this executor will not ' +
+        'install from the network. Install dependencies in the checkout first',
+      shared: false,
+    }
+  }
+  symlinkSync(from, path.join(worktree, 'node_modules'), 'dir')
+  return { error: null, shared: true }
+}
+
+/**
+ * Run the contract's required commands in a driver-owned worktree at the
+ * reviewed commit.
+ *
+ * Each command is parsed against the closed grammar and REFUSED rather than
+ * guessed at; a refusal records executed:false, which the protocol turns into a
+ * blocker, so an unsupported command blocks the review instead of handing the
+ * driver a shell.
+ *
+ * `npx` is never invoked. Measured, not assumed: with the binary absent, both
+ * `npx vitest …` and `npx --no vitest …` requested the package from
+ * registry.npmjs.org. The local binary is resolved and executed directly, so a
+ * missing dependency fails closed instead of fetching one.
+ *
+ * HOME is a fresh empty directory. Stripping token variables while leaving the
+ * driver's real home readable would have achieved little — `~/.npmrc` and
+ * friends are files, not variables.
+ */
+function runVerification(commands, headSha, root, { driverRoot = process.cwd(), home, tmp } = {}) {
   const runs = []
+  const provisioned = provisionDependencies(root, driverRoot)
+  const env = verificationEnv(process.env, { home, tmpdir: tmp })
+
   for (const command of commands) {
-    // Parsed to argv against a closed grammar, and REFUSED rather than guessed
-    // at. A refusal is recorded as executed:false, which the protocol turns
-    // into a blocker — so an unsupported command blocks the review instead of
-    // handing the driver a shell.
-    const { argv, error } = parseVerificationCommand(command)
+    const { plan, error } = parseVerificationCommand(command)
     if (error) {
       runs.push({ command, executed: false, exit_code: null, evidence: error })
       continue
     }
-    const r = spawnSync(argv[0], argv.slice(1), {
-      cwd: root, shell: false, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024,
-      // A deliberate allowlist. The code under review runs here; it does not
-      // get to inherit whatever credentials the driver is carrying.
-      env: verificationEnv(process.env),
+    if (provisioned.error) {
+      runs.push({ command, executed: false, exit_code: null, evidence: provisioned.error })
+      continue
+    }
+
+    let file = plan.command
+    let args = plan.args
+    if (plan.kind === 'local-bin') {
+      file = path.join(root, 'node_modules', '.bin', plan.bin)
+      if (!existsSync(file)) {
+        runs.push({
+          command, executed: false, exit_code: null,
+          evidence: 'refused: node_modules/.bin/' + plan.bin + ' is not present in the ' +
+            'verification worktree, and this executor does not fall back to npx or the network',
+        })
+        continue
+      }
+    }
+
+    const r = spawnSync(file, args, {
+      cwd: root, shell: false, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024, env,
     })
     if (r.error) {
-      // Could not execute at all. Recorded as such, because "nothing was
-      // learned" and "something bad was learned" are different verdicts.
       runs.push({ command, executed: false, exit_code: null, evidence: String(r.error.message).slice(0, 4000) })
       continue
     }
@@ -263,6 +334,7 @@ function runVerification(commands, headSha, root) {
   }
   return { verification_version: VERIFICATION_EVIDENCE_VERSION, head_sha: headSha, runs }
 }
+
 
 async function main(argv = process.argv.slice(2)) {
   const cmd = argv[0]
@@ -289,10 +361,22 @@ async function main(argv = process.argv.slice(2)) {
       process.stderr.write('BLOCKED: git worktree add failed: ' + add.stderr + '\n')
       return 1
     }
+    // A home the run owns. The driver's real HOME is never handed over: token
+    // variables are only half the secret surface, and ~/.npmrc is the other.
+    const sandboxHome = mkdtempSync(path.join(tmpdir(), 'review-home-'))
+    const sandboxTmp = mkdtempSync(path.join(tmpdir(), 'review-tmp-'))
     try {
-      process.stdout.write(JSON.stringify(runVerification(r.contract.verification, r.headSha, root), null, 2) + '\n')
+      process.stdout.write(JSON.stringify(runVerification(
+        r.contract.verification, r.headSha, root,
+        { driverRoot: process.cwd(), home: sandboxHome, tmp: sandboxTmp },
+      ), null, 2) + '\n')
     } finally {
+      // Unlink the shared node_modules before removing the worktree, so git
+      // never walks into the driver's real dependency tree.
+      try { rmSync(path.join(root, 'node_modules'), { force: true }) } catch { /* not shared */ }
       gitIn(process.cwd())(['worktree', 'remove', '--force', root])
+      rmSync(sandboxHome, { recursive: true, force: true })
+      rmSync(sandboxTmp, { recursive: true, force: true })
     }
     return 0
   }
@@ -333,6 +417,21 @@ async function main(argv = process.argv.slice(2)) {
         verificationEvidence = await readJson(args.verification, 'verification evidence')
       } catch (err) {
         process.stderr.write('BLOCKED: ' + err.message + '\n')
+        return 1
+      }
+      // Validate BEFORE the renderer labels it "executed for you at <sha>".
+      // decide blocking afterwards keeps the merge safe but not the review: the
+      // reviewer would already have been shown another commit's results, or an
+      // incomplete set, as this commit's verification. A blocker here means the
+      // evidence is not what it claims to be; a major means a required command
+      // genuinely failed, and that is shown honestly rather than suppressed.
+      const structural = verificationEvidenceFindings({
+        contract: r.contract, evidence: verificationEvidence, headSha: r.headSha,
+      }).filter(f => f.severity === 'blocker')
+      if (structural.length > 0) {
+        process.stderr.write('BLOCKED: the verification evidence cannot be presented as this ' +
+          'commit\'s verification:\n')
+        for (const f of structural) process.stderr.write('  - ' + f.summary + ': ' + f.evidence + '\n')
         return 1
       }
     }
