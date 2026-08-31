@@ -1,0 +1,48 @@
+{
+  "id": "fresh-context-reviewer",
+  "goal": "Establish a fresh-context reviewer mechanism and a deterministic review protocol, so an implementation can be judged against its sealed contract by a reviewer that never saw the implementer's reasoning.",
+  "owner_role": "workflow-authority",
+  "risk": "r3",
+  "allowed_paths": [
+    ".claude/agents/fresh-context-reviewer.md",
+    "tools/review-protocol.mjs",
+    "tools/review-task.mjs",
+    "review-protocol.test.mjs",
+    "docs/REVIEWER-PROTOCOL.md",
+    "package.json",
+    "CLAUDE.md"
+  ],
+  "forbidden_paths": [],
+  "non_goals": [
+    "Any hook — PreToolUse, PostToolUse, or otherwise",
+    "Runtime enforcement of allowed_paths, forbidden_paths or tool permissions on a live agent",
+    "Automatic task routing, automatic role selection, or automatic dispatch of a review",
+    "Automatic merge, or making any GitHub check or reviewer required",
+    "Changing .claude/settings.json permissions, production credentials, or anything in Supabase",
+    "Judging this repository's existing code — the deliverable is the mechanism, not a review"
+  ],
+  "acceptance_criteria": [
+    "A reviewer subagent is defined whose context does not inherit the implementer's conversation, and whose read-only posture with respect to the implementation is enforced by the platform rather than by instruction alone",
+    "The reviewer's brief is generated deterministically from the sealed contract and the base/head refs, with no free-text field an implementer can use to editorialise",
+    "The protocol has a closed verdict vocabulary, and a verdict outside it is rejected",
+    "Every acceptance criterion of the contract under review must be addressed individually; a result that leaves one unaddressed cannot approve",
+    "An approval must carry an explicit statement that no merge-blocking findings remain — an empty findings list alone never approves",
+    "Every finding carries a severity, evidence, and the violated contract criterion or invariant where one applies",
+    "Any tool or protocol failure resolves to BLOCKED, never to approval",
+    "Deterministic fixtures prove the protocol catches a diff outside allowed_paths, a touched forbidden path, unmet acceptance criteria, risk under-classification, production-effect under-classification, a reviewer attempt to modify the implementation or contract, a missing or unreadable contract, and a review-tool failure — and that a clean fixture can approve",
+    "npm run verify:pr passes"
+  ],
+  "verification": [
+    "npm run verify:pr",
+    "npx vitest run review-protocol.test.mjs"
+  ],
+  "production_effect": "none",
+  "dependencies": [],
+  "stop_conditions": [
+    "The available subagent mechanism cannot establish fresh context — report rather than simulating independence with another prompt in the same context",
+    "Making the reviewer read-only would require a hook or runtime enforcement, which is out of scope",
+    "The work turns out not to fit workflow-authority / r3 / none — report before implementing"
+  ],
+  "notes": "Governance step for Workflow Hardening 2, sealed before implementation. .agent/tasks/** is absent from allowed_paths and is on the always-forbidden floor, so the implementing task cannot edit or re-seal this contract. Classification: workflow-authority because the reviewer is control-plane machinery (task-contract infrastructure and validators); r3 because it is CI/workflow authority; production_effect none because it neither reaches production nor deploys learner-facing code on merge.",
+  "contract_digest": "d4f729b59a46801764a655c6c8131895322ebcd78c260805823c280e2e19363d"
+}
