@@ -48,7 +48,7 @@
 // unparseable document, an unknown mergeability, an unreadable ruleset, a
 // shallow clone — every one of them resolves to BLOCKED.
 
-import { SHA_RE } from './review-protocol.mjs'
+import { SHA_RE, validateReviewResult } from './review-protocol.mjs'
 
 export { SHA_RE }
 
@@ -134,6 +134,17 @@ export const EXPECTED_CHECK_SOURCE = { app_id: 15368, app_slug: 'github-actions'
  */
 export const EXPECTED_RULESET_ID = 21654011
 export const EXPECTED_TARGET_BRANCH = 'main'
+
+/**
+ * The repository this protocol reasons about.
+ *
+ * Pinned for the same reason as the ruleset id, and it was an inconsistency to
+ * validate `repository` as a string and then never compare it: every other
+ * identity here is checked against a constant, and evidence describing a pull
+ * request somewhere else was caught only incidentally, by the ruleset id and
+ * the local commit graph happening to disagree too.
+ */
+export const EXPECTED_REPOSITORY = 'fabrykjoh12/Hanzi-dojo'
 
 /** Check-run states that are a completed, successful result and nothing else. */
 const SUCCESSFUL_CONCLUSION = 'success'
@@ -266,6 +277,21 @@ export function evidenceShapeFindings(evidence) {
   } else {
     need(Number.isInteger(ruleset.id), 'ruleset-unreadable',
       'ruleset.id is missing or not an integer', JSON.stringify(ruleset.id))
+    // enforcement and target_branch are REQUIRED, not optional-if-present.
+    //
+    // They were guarded downstream with `'enforcement' in rs`, which read as
+    // defensive and was the opposite: an evidence document that simply omitted
+    // the key produced no finding at all and reached READY_TO_INTEGRATE. A
+    // missing field authorized. Every other unknown in this protocol blocks, and
+    // the tool's own template already promised as much — "Every field is
+    // required. A missing or malformed field is BLOCKED, never assumed benign."
+    need(isNonEmptyString(ruleset.enforcement), 'ruleset-unreadable',
+      'ruleset.enforcement is missing or not a string — an unreported enforcement mode ' +
+      'cannot be assumed active', JSON.stringify(ruleset.enforcement))
+    need(isNonEmptyString(ruleset.target_branch), 'ruleset-unreadable',
+      'ruleset.target_branch is missing or not a string — a ruleset whose target is unknown ' +
+      'cannot be shown to protect the branch being merged into',
+      JSON.stringify(ruleset.target_branch))
     need(Array.isArray(ruleset.required_status_checks), 'ruleset-unreadable',
       'ruleset.required_status_checks is missing or not an array',
       JSON.stringify(ruleset.required_status_checks))
@@ -320,10 +346,16 @@ export function headIdentityFindings({ reviewedHead, evidence }) {
  * a task that legitimately targets something else states that explicitly instead
  * of the protocol quietly accepting whatever the evidence says.
  */
-export function pullRequestFindings({ evidence, expectedTargetBranch = EXPECTED_TARGET_BRANCH }) {
+export function pullRequestFindings({ evidence, expectedTargetBranch = EXPECTED_TARGET_BRANCH, expectedRepository = EXPECTED_REPOSITORY }) {
   const out = []
   const pr = evidence?.pull_request
   if (!isPlainObject(pr)) return out
+
+  if (evidence.repository !== expectedRepository) {
+    out.push(blocker('wrong-repository',
+      'The evidence describes a pull request in a different repository',
+      'expected ' + expectedRepository + ', got ' + JSON.stringify(evidence.repository)))
+  }
 
   if (pr.state !== 'open') {
     out.push(blocker('pull-request-not-open',
@@ -370,13 +402,29 @@ export function pullRequestFindings({ evidence, expectedTargetBranch = EXPECTED_
  * H2. When a branch is rebased or updated to pick up a moved target, the head
  * changes, and the approval that existed was of a different commit.
  */
-export function reviewLinkFindings({ review, reviewedHead }) {
+export function reviewLinkFindings({ review, reviewedHead, contract = null }) {
   const out = []
   if (!isPlainObject(review)) {
     return [blocker('review-missing',
       'No review result was supplied — integration cannot be authorized without one',
       'expected a review result document from the fresh-context reviewer protocol')]
   }
+
+  // ONE review standard, not a second weaker one.
+  //
+  // Checking only the head and the verdict here would have been a subset of the
+  // review protocol's own rules, and subsets drift: a result belonging to a
+  // different task, or performed against different contract terms, satisfied
+  // the head-and-verdict pair as long as it named the same commit. So the
+  // authoritative validator is reused, which also brings task_id,
+  // contract_digest, every dimension and every criterion into scope.
+  if (contract) {
+    for (const violation of validateReviewResult(review, { contract })) {
+      out.push(blocker('review-invalid',
+        'The review result does not satisfy the review protocol', violation))
+    }
+  }
+
   if (!SHA_RE.test(String(review.head_sha || ''))) {
     out.push(blocker('review-malformed',
       'The review result does not name a full commit SHA as the head it reviewed',
@@ -391,6 +439,14 @@ export function reviewLinkFindings({ review, reviewedHead }) {
     out.push(blocker('review-not-approved',
       'The review result does not carry an APPROVE verdict',
       'verdict ' + JSON.stringify(review.verdict)))
+  } else if (review.no_blocking_findings !== true) {
+    // The review protocol's own rule: approval is stated, never inferred. An
+    // APPROVE that does not also state it has nothing blocking is internally
+    // contradictory, and the contradiction must not be resolved in favour of
+    // the more convenient half.
+    out.push(blocker('review-approval-not-stated',
+      'The review result approves without stating that nothing blocking remains',
+      'no_blocking_findings ' + JSON.stringify(review.no_blocking_findings)))
   }
   return out
 }
@@ -499,12 +555,14 @@ export function rulesetFindings({ evidence, expectedRulesetId = EXPECTED_RULESET
       'The evidence describes a different ruleset than this protocol reasons about',
       'expected ' + expectedRulesetId + ', got ' + JSON.stringify(rs.id)))
   }
-  if ('enforcement' in rs && rs.enforcement !== 'active') {
+  // Unconditional. Presence is guaranteed by the shape pass above, so a
+  // `'enforcement' in rs` guard here could only ever weaken the rule.
+  if (rs.enforcement !== 'active') {
     out.push(blocker('ruleset-not-active',
       'The ruleset is not actively enforced',
       'enforcement ' + JSON.stringify(rs.enforcement)))
   }
-  if ('target_branch' in rs && rs.target_branch !== expectedTargetBranch) {
+  if (rs.target_branch !== expectedTargetBranch) {
     out.push(blocker('ruleset-wrong-target',
       'The ruleset protects a different branch than the one being merged into',
       'expected ' + expectedTargetBranch + ', got ' + JSON.stringify(rs.target_branch)))
@@ -691,7 +749,7 @@ export function decideIntegration({
 
   findings.push(...headIdentityFindings({ reviewedHead, evidence }))
   findings.push(...pullRequestFindings({ evidence, expectedTargetBranch }))
-  findings.push(...reviewLinkFindings({ review, reviewedHead }))
+  findings.push(...reviewLinkFindings({ review, reviewedHead, contract }))
   findings.push(...requiredCheckFindings({ evidence, reviewedHead }))
   findings.push(...rulesetFindings({ evidence, expectedTargetBranch }))
   findings.push(...evidenceAgeFindings({ evidence, now }))

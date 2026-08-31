@@ -154,6 +154,7 @@ Each boundary is only real once its external configuration exists. As of
 | Boundary | Status |
 |---|---|
 | **`main`** — ruleset, empty bypass list | ✅ **Active.** `main` reports `protected: true`; deletions and force pushes blocked; PR required; `check` + `playwright` + `native-gate` required; no bypass, `current_user_can_bypass = never` |
+| | *These values are **recorded**, not re-verified on every edit to this file. Read ruleset `21654011` back from the API before acting on them — the integration gate fails closed on a mismatch rather than trusting this row.* |
 | **`main`** — *up-to-date* enforcement | ⚠️ **Loose.** Required checks are enforced; being current with `main` is not. See below |
 | **Roadmap Discord** — `roadmap-discord` environment | ⚠️ **Designed in code, not yet enforced.** The workflow declares the environment, but the webhook is still a **repository** secret, so it is handed to runs on any ref |
 

@@ -36,6 +36,7 @@ import {
   validateDecisionValue,
 } from './tools/integration-protocol.mjs'
 import { computeDigest } from './tools/verify-task-contracts.mjs'
+import { REVIEW_DIMENSIONS } from './tools/review-protocol.mjs'
 
 // ---------------------------------------------------------------------------
 // Fixture: a real repository with a governance commit and an implementation
@@ -170,7 +171,32 @@ function goodEvidence({ head, target, strict = true, checks = null } = {}) {
   }
 }
 
-const goodReview = (head) => ({ verdict: 'APPROVE', head_sha: head, protocol_version: 1 })
+/**
+ * A COMPLETE review result, because the gate now validates against the review
+ * protocol's own standard rather than a subset of it.
+ *
+ * The subset was the bug: checking only head and verdict let a result belonging
+ * to a different task, or performed against different contract terms, satisfy
+ * the review link as long as it named the same commit.
+ */
+function goodReview(head, over = {}) {
+  const contract = sealed()
+  return {
+    protocol_version: 1,
+    task_id: contract.id,
+    contract_digest: contract.contract_digest,
+    base_sha: repo.c1,
+    head_sha: head,
+    verdict: 'APPROVE',
+    no_blocking_findings: true,
+    dimensions: Object.fromEntries(REVIEW_DIMENSIONS.map(d =>
+      [d, { inspected: true, note: 'fixture: ' + d + ' inspected' }])),
+    criteria: contract.acceptance_criteria.map(criterion =>
+      ({ criterion, status: 'met', evidence: 'fixture evidence' })),
+    findings: [],
+    ...over,
+  }
+}
 
 /**
  * The decision under the standard fixture, with one thing changed.
@@ -387,7 +413,7 @@ describe('the refresh lifecycle: a new head needs a new review', () => {
   it('blocks evidence claiming approval of one head while integrating another', () => {
     // H1 approved, H2 being integrated. This is what a rebase produces, and the
     // old approval must not travel with it.
-    const d = decide({ review: { verdict: 'APPROVE', head_sha: repo.c1, protocol_version: 1 } })
+    const d = decide({ review: goodReview(repo.c1) })
     expect(d.decision).toBe('BLOCKED')
     expect(codes(d)).toContain('review-head-mismatch')
   })
@@ -411,7 +437,7 @@ describe('the refresh lifecycle: a new head needs a new review', () => {
 
   it('blocks a review that is not an APPROVE', () => {
     for (const verdict of ['REQUEST_CHANGES', 'BLOCKED', 'approve', '', null]) {
-      const d = decide({ review: { verdict, head_sha: repo.c2, protocol_version: 1 } })
+      const d = decide({ review: goodReview(repo.c2, { verdict }) })
       expect(d.decision).toBe('BLOCKED')
       expect(codes(d)).toContain('review-not-approved')
     }
@@ -419,13 +445,13 @@ describe('the refresh lifecycle: a new head needs a new review', () => {
 
   it('blocks when no review result is supplied at all', () => {
     for (const missing of [null, undefined, 'APPROVE', []]) {
-      const f = reviewLinkFindings({ review: missing, reviewedHead: repo.c2 })
+      const f = reviewLinkFindings({ review: missing, reviewedHead: repo.c2, contract: sealed() })
       expect(f.map(x => x.code)).toContain('review-missing')
     }
   })
 
   it('blocks a review result that names no head', () => {
-    const d = decide({ review: { verdict: 'APPROVE', protocol_version: 1 } })
+    const d = decide({ review: goodReview(repo.c2, { head_sha: undefined }) })
     expect(d.decision).toBe('BLOCKED')
     expect(codes(d)).toContain('review-malformed')
   })
@@ -601,9 +627,21 @@ describe('the ruleset: identity, enforcement, and what it actually requires', ()
   })
 
   it('blocks when the ruleset is not actively enforced', () => {
-    for (const enforcement of ['evaluate', 'disabled', '']) {
+    for (const enforcement of ['evaluate', 'disabled']) {
       const ev = base(); ev.ruleset.enforcement = enforcement
       expect(codes(decide({ evidence: ev }))).toContain('ruleset-not-active')
+    }
+  })
+
+  it('blocks an enforcement mode that is absent or not a string, as unreadable rather than inactive', () => {
+    // Distinct from the above on purpose: a wrong VALUE is a ruleset that is not
+    // active; a missing or malformed one is a ruleset whose mode could not be
+    // established. Only the first is a statement about GitHub.
+    for (const enforcement of [undefined, null, '', 42, {}]) {
+      const ev = base(); ev.ruleset.enforcement = enforcement
+      const d = decide({ evidence: ev })
+      expect(d.decision).toBe('BLOCKED')
+      expect(codes(d)).toContain('ruleset-unreadable')
     }
   })
 
@@ -644,6 +682,133 @@ describe('the ruleset: identity, enforcement, and what it actually requires', ()
       expect(d.decision).toBe('BLOCKED')
       expect(codes(d)).toContain('ruleset-unreadable')
     }
+  })
+})
+
+describe('a missing evidence field must never be the field that authorizes', () => {
+  // The regression this whole block exists for. `enforcement` and
+  // `target_branch` were guarded downstream with `'x' in rs`, which read as
+  // defensive and was the opposite: omitting the key produced ZERO findings and
+  // returned READY_TO_INTEGRATE with authorizes true. Independent review found
+  // it; these fixtures make it unrepeatable.
+  const base = () => goodEvidence({ head: repo.c2, target: repo.c0, strict: true })
+
+  it('blocks evidence that omits ruleset.enforcement', () => {
+    const ev = base(); delete ev.ruleset.enforcement
+    const d = decide({ evidence: ev })
+    expect(d.decision).toBe('BLOCKED')
+    expect(d.authorizes).toBe(false)
+    expect(codes(d)).toContain('ruleset-unreadable')
+  })
+
+  it('blocks evidence that omits ruleset.target_branch', () => {
+    const ev = base(); delete ev.ruleset.target_branch
+    const d = decide({ evidence: ev })
+    expect(d.decision).toBe('BLOCKED')
+    expect(d.authorizes).toBe(false)
+    expect(codes(d)).toContain('ruleset-unreadable')
+  })
+
+  it('has each layer hold on its own, not merely in combination', () => {
+    // Isolation, and it took a surviving mutation to earn: with the shape pass
+    // requiring the key, re-adding a `'enforcement' in rs` guard downstream
+    // changed nothing observable, because no fixture ever reached
+    // rulesetFindings with the key absent. These call it directly, so each
+    // layer is asserted on its own rather than behind the other one.
+    const bare = (over) => ({
+      ruleset: {
+        id: EXPECTED_RULESET_ID,
+        target_branch: EXPECTED_TARGET_BRANCH,
+        enforcement: 'active',
+        required_status_checks: [...REQUIRED_CHECKS],
+        strict_required_status_checks_policy: true,
+        ...over,
+      },
+    })
+
+    const noEnf = bare(); delete noEnf.ruleset.enforcement
+    expect(rulesetFindings({ evidence: noEnf }).map(f => f.code)).toContain('ruleset-not-active')
+
+    const noTgt = bare(); delete noTgt.ruleset.target_branch
+    expect(rulesetFindings({ evidence: noTgt }).map(f => f.code)).toContain('ruleset-wrong-target')
+
+    // And the shape pass catches the same absences by itself, without needing
+    // rulesetFindings to run at all.
+    const shapeOnly = (mutate) => {
+      const ev = goodEvidence({ head: repo.c2, target: repo.c0, strict: true })
+      mutate(ev)
+      return evidenceShapeFindings(ev).map(f => f.code)
+    }
+    expect(shapeOnly(ev => { delete ev.ruleset.enforcement })).toContain('ruleset-unreadable')
+    expect(shapeOnly(ev => { delete ev.ruleset.target_branch })).toContain('ruleset-unreadable')
+
+    // A sound ruleset still produces nothing, so the guards are not simply loud.
+    expect(rulesetFindings({ evidence: bare() })).toEqual([])
+  })
+
+  it('blocks when EVERY optional-looking ruleset field is dropped one at a time', () => {
+    // Enumerated rather than spot-checked, so a field added later without a
+    // shape rule is caught by this spec instead of by the next reviewer.
+    for (const key of Object.keys(base().ruleset)) {
+      const ev = base(); delete ev.ruleset[key]
+      const d = decide({ evidence: ev })
+      expect(d.decision, 'dropping ruleset.' + key + ' must block').toBe('BLOCKED')
+      expect(d.authorizes).toBe(false)
+    }
+  })
+})
+
+describe('the evidence must describe this repository, and the review must be of this task', () => {
+  it('blocks evidence describing a pull request in another repository', () => {
+    const ev = goodEvidence({ head: repo.c2, target: repo.c0, strict: true })
+    ev.repository = 'someone-else/Hanzi-dojo'
+    const d = decide({ evidence: ev })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('wrong-repository')
+  })
+
+  it('blocks a review result belonging to a different task, even on the right head', () => {
+    const d = decide({ review: goodReview(repo.c2, { task_id: 'some-other-task' }) })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('review-invalid')
+  })
+
+  it('blocks a review performed against different contract terms', () => {
+    const d = decide({ review: goodReview(repo.c2, { contract_digest: 'a'.repeat(64) }) })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('review-invalid')
+  })
+
+  it('blocks a review that leaves an acceptance criterion unaddressed', () => {
+    const d = decide({ review: goodReview(repo.c2, { criteria: [] }) })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('review-invalid')
+  })
+
+  it('blocks a review that skipped a dimension', () => {
+    const dims = goodReview(repo.c2).dimensions
+    delete dims['correctness']
+    const d = decide({ review: goodReview(repo.c2, { dimensions: dims }) })
+    expect(d.decision).toBe('BLOCKED')
+    expect(codes(d)).toContain('review-invalid')
+  })
+
+  it('blocks an APPROVE that does not state that nothing blocking remains', () => {
+    // Approval is stated, never inferred — the review protocol's own rule, and
+    // an APPROVE contradicting it must not be resolved in favour of the
+    // convenient half.
+    for (const value of [false, undefined, null, 'yes']) {
+      const d = decide({ review: goodReview(repo.c2, { no_blocking_findings: value }) })
+      expect(d.decision).toBe('BLOCKED')
+      expect(codes(d).some(c => c === 'review-approval-not-stated' || c === 'review-invalid')).toBe(true)
+    }
+  })
+
+  it('does not apply the review standard when no contract is available to bind it to', () => {
+    // reviewLinkFindings still checks head and verdict without a contract; what
+    // it cannot do is check task identity against terms it was not given.
+    const f = reviewLinkFindings({ review: goodReview(repo.c2), reviewedHead: repo.c2, contract: null })
+    expect(f).toEqual([])
   })
 })
 
@@ -726,6 +891,10 @@ describe('unknown state is never turned into authorization', () => {
     drop(ev => { delete ev.ruleset.id })
     drop(ev => { delete ev.ruleset.required_status_checks })
     drop(ev => { delete ev.ruleset.strict_required_status_checks_policy })
+    // The two that used to fail OPEN: guarded downstream with `'x' in rs`, so
+    // omitting the key produced no finding at all and reached READY.
+    drop(ev => { delete ev.ruleset.enforcement })
+    drop(ev => { delete ev.ruleset.target_branch })
   })
 
   it('blocks an abbreviated SHA anywhere it appears', () => {
@@ -923,6 +1092,21 @@ describe('the CLI: exit codes are per-subcommand and only one carries authorizat
     }
   })
 
+  it('refuses to authorize a decision value outside the vocabulary, at the exit-code boundary', async () => {
+    // The exit code is derived from the decision, so the value is checked where
+    // it first starts to mean something to a caller. A corrupted decision must
+    // not be readable as "not READY, so exit 1" — that would make it
+    // indistinguishable from a sound refusal.
+    expect(readFileSync('tools/integration-gate.mjs', 'utf8'))
+      .toMatch(/validateDecisionValue\(decision\.decision\)/)
+    const { out, code } = await cli(['decide', '--task', TASK_ID, '--reviewed-head', repo.c2,
+      '--evidence', writeFixture('ev.json', goodEvidence({ head: repo.c2, target: repo.c0, strict: true })),
+      '--review', writeFixture('rv.json', goodReview(repo.c2))])
+    // The sound path still produces a vocabulary value and still exits 0.
+    expect(INTEGRATION_DECISIONS).toContain(JSON.parse(out).decision)
+    expect(code).toBe(0)
+  })
+
   it('documents the per-subcommand exit contract in the usage text', async () => {
     const { out } = await cli(['nonsense'])
     expect(out).toMatch(/EXIT CODES ARE PER-SUBCOMMAND/)
@@ -1054,10 +1238,18 @@ describe('structural: this task adds no merge authority and no enforcement', () 
       '.agent/tasks/fresh-context-reviewer.json']) {
       expect(contract.allowed_paths).not.toContain(p)
     }
-    const imported = [...source('tools/integration-protocol.mjs')
-      .matchAll(/import\s*\{([^}]*)\}\s*from\s*'\.\/review-protocol\.mjs'/g)]
-      .flatMap(m => m[1].split(',').map(s => s.trim()).filter(Boolean))
-    expect(imported).toEqual(['SHA_RE'])
+    // Reuse is allowed and desirable — a second, weaker review standard is
+    // exactly what this task must not create. What is forbidden is importing
+    // anything that WRITES or decides a review verdict.
+    const READ_ONLY_REUSE = ['SHA_RE', 'validateReviewResult', 'loadContractAtCommit']
+    for (const f of ['tools/integration-protocol.mjs', 'tools/integration-gate.mjs']) {
+      const imported = [...source(f)
+        .matchAll(/import\s*\{([^}]*)\}\s*from\s*'\.\/review-protocol\.mjs'/g)]
+        .flatMap(m => m[1].split(',').map(s => s.trim()).filter(Boolean))
+      for (const name of imported) {
+        expect(READ_ONLY_REUSE, f + ' imports ' + name).toContain(name)
+      }
+    }
   })
 
   it('keeps the sealed contract byte-identical to the governance commit', () => {

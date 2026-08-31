@@ -43,6 +43,7 @@ import {
   SHA_RE,
   decideIntegration,
   authorizes,
+  validateDecisionValue,
 } from './integration-protocol.mjs'
 import { loadContractAtCommit } from './review-protocol.mjs'
 
@@ -201,6 +202,22 @@ async function cmdDecide(args, { cwd, write, setExit }) {
   const review = await readJson(reviewFile, 'the review result')
 
   const decision = decideIntegration({ contract, review, reviewedHead, evidence, git, targetRef })
+
+  // The exit code is derived from the decision value, so the value is checked
+  // against the closed vocabulary at exactly the point where it starts to mean
+  // something to a caller. A value outside the set cannot authorize, and it must
+  // not be able to reach `authorizes()` and be quietly read as "not READY, so
+  // exit 1" either — that would make a corrupted decision indistinguishable from
+  // a sound refusal.
+  const vocabulary = validateDecisionValue(decision.decision)
+  if (vocabulary.length > 0) {
+    decision.findings = [...vocabulary, ...(decision.findings || [])]
+    decision.authorizes = false
+    write(JSON.stringify(decision, null, 2) + '\n')
+    setExit(1)
+    return
+  }
+
   write(JSON.stringify(decision, null, 2) + '\n')
   setExit(authorizes(decision.decision) ? 0 : 1)
 }
