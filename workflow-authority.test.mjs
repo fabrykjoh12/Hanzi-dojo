@@ -224,34 +224,116 @@ describe('required check names identify exactly one job each', () => {
    * has none, and the shape being read is two levels of fixed indentation.
    * Comments are stripped first — only executable YAML is the contract.
    */
-  const jobsIn = (text) => {
+  /**
+   * A YAML scalar as a job key or a `name:` value: bare, single-quoted or
+   * double-quoted, with an optional trailing comment.
+   *
+   * Returns the string, or null when the text is not a form this parser can
+   * classify. Null is never "no name" — every caller turns it into a refusal.
+   */
+  const scalar = (raw) => {
+    const text = raw.trim()
+    if (text === '') return null
+    const quoted = text.match(/^'([^']*)'\s*(?:#.*)?$/) || text.match(/^"([^"]*)"\s*(?:#.*)?$/)
+    if (quoted) return quoted[1]
+    if (/^['"]/.test(text)) return null            // opened a quote and never closed it
+    // Bare scalar. YAML starts a comment at ` #`, not at a bare `#`, so
+    // `name: a#b` is the three-character value and `name: a # b` is one.
+    const bare = text.replace(/\s+#.*$/, '').trim()
+    if (bare === '' || /[:{}[\]&*!|>%@`]/.test(bare)) return null
+    return bare
+  }
+
+  /**
+   * Every job in one workflow, as { id, effectiveName }.
+   *
+   * A hand parser rather than a YAML dependency — this repository has none, and
+   * package.json is outside this task's contract. Two rules make that safe:
+   *
+   *   1. It only reads the two levels of fixed indentation GitHub Actions
+   *      requires — a job key at two spaces, its `name:` at four.
+   *   2. IT REFUSES WHAT IT CANNOT CLASSIFY. Silently skipping an unrecognised
+   *      line is what made the earlier version unsound: `  "check":` and
+   *      `  check: # required` are both valid YAML and both matched nothing, so
+   *      a real collision could sit in the tree while this proof stayed green.
+   *      Anything at job-key indentation that does not parse now throws, named
+   *      by file and line.
+   */
+  const parseJobs = (text, workflow) => {
+    const refuse = (line, i, why) => {
+      throw new Error(workflow + ':' + (i + 1) + ' ' + why + ' — ' + JSON.stringify(line) +
+        '. This parser refuses what it cannot classify rather than skipping it: a job it ' +
+        'cannot see is a required-context collision it cannot rule out.')
+    }
+
     const lines = executable(text).split('\n')
-    const start = lines.findIndex(l => /^jobs:\s*$/.test(l))
+    const start = lines.findIndex(l => /^jobs:\s*(?:#.*)?$/.test(l))
     if (start < 0) return []
+
     const out = []
     for (let i = start + 1; i < lines.length; i++) {
       const line = lines[i]
-      if (/^\S/.test(line)) break                     // left the jobs: block
-      const job = line.match(/^ {2}([A-Za-z0-9_-]+):\s*$/)
-      if (!job) continue
-      let effectiveName = job[1]
-      for (let j = i + 1; j < lines.length; j++) {
-        if (/^ {2}\S/.test(lines[j]) || /^\S/.test(lines[j])) break   // next job
-        const named = lines[j].match(/^ {4}name:\s*(.+?)\s*$/)
-        if (named) { effectiveName = named[1].replace(/^['"]|['"]$/g, ''); break }
+      if (line.trim() === '') continue
+      if (/^\S/.test(line)) break                                  // left the jobs: block
+      if (!/^ {2}\S/.test(line)) continue                          // deeper — part of a job body
+
+      // A line at job-key indentation. It is a job key or it is a refusal.
+      const key = line.match(/^ {2}([^:]*?)\s*:\s*(?:#.*)?$/)
+      if (!key) refuse(line, i, 'is at job-key indentation but is not a job mapping key')
+      const id = scalar(key[1])
+      // A job id is not any scalar. GitHub constrains it, and without this a
+      // sequence item (`  - check:`) or a spaced key parses as an id.
+      if (id === null || !/^[A-Za-z_][A-Za-z0-9_-]*$/.test(id)) {
+        refuse(line, i, 'has a job key this parser cannot classify as a job id')
       }
-      out.push({ id: job[1], effectiveName, workflow: 'unset' })
+
+      let effectiveName = id
+      for (let j = i + 1; j < lines.length; j++) {
+        if (/^\S/.test(lines[j]) || /^ {2}\S/.test(lines[j])) break   // next job
+        const named = lines[j].match(/^ {4}name:\s*(.*)$/)
+        if (!named) continue
+        const value = scalar(named[1])
+        if (value === null) refuse(lines[j], j, 'has a job name this parser cannot classify')
+        effectiveName = value
+        break
+      }
+      out.push({ id, effectiveName, workflow })
     }
     return out
   }
 
-  const ALL_JOBS = WORKFLOWS.flatMap(w => jobsIn(w.text).map(j => ({ ...j, workflow: w.name })))
+  /** Which jobs produce each required context. The shape the real proof asserts. */
+  const producerMap = (jobs) => Object.fromEntries(REQUIRED_CHECKS.map(context =>
+    [context, jobs.filter(j => j.effectiveName === context).map(p => p.workflow + ':' + p.id)]))
 
-  it('finds the jobs to check, including the name overrides', () => {
-    expect(ALL_JOBS.length).toBeGreaterThan(15)
-    // Two workflows rename their job, which is what makes id-only matching
-    // insufficient. If these stop overriding, the parser still has to handle it.
-    const overridden = ALL_JOBS.filter(j => j.id !== j.effectiveName)
+  // Parsed once, lazily, so a refusal surfaces inside the spec that needed the
+  // jobs rather than as a bare collection error.
+  let parsed = null
+  const allJobs = () => (parsed ||= WORKFLOWS.flatMap(w => parseJobs(w.text, w.name)))
+
+  /**
+   * Workflows that declare a `jobs:` mapping but yield no jobs to the parser —
+   * by filename, which is the whole point of the guard.
+   *
+   * A repository-wide `ALL_JOBS.length > 15` was the earlier version, and it
+   * could not fail: the tree has 23 jobs, so an entire workflow could drop out
+   * of parser coverage and still clear the threshold. "Across all workflows"
+   * has to mean each of them, named.
+   */
+  const workflowsMissingJobs = (workflows) => workflows
+    .filter(w => /^jobs:\s*(?:#.*)?$/m.test(executable(w.text)))
+    .filter(w => parseJobs(w.text, w.name).length === 0)
+    .map(w => w.name)
+
+  it('yields jobs from EVERY workflow that declares them, named by file', () => {
+    expect(WORKFLOWS.filter(w => /^jobs:\s*(?:#.*)?$/m.test(executable(w.text))).length)
+      .toBe(WORKFLOWS.length)
+    expect(workflowsMissingJobs(WORKFLOWS), 'these workflows declare jobs: but yielded none')
+      .toEqual([])
+  })
+
+  it('resolves the name overrides that make id-only matching insufficient', () => {
+    const overridden = allJobs().filter(j => j.id !== j.effectiveName)
     expect(overridden.map(j => j.workflow).sort())
       .toEqual(['gate3-apply.yml', 'gate3-prepare.yml'])
   })
@@ -267,10 +349,7 @@ describe('required check names identify exactly one job each', () => {
     //
     // REQUIRED_CHECKS is imported rather than restated, so the ruleset, the
     // integration protocol and this spec cannot drift apart.
-    const producers = Object.fromEntries(REQUIRED_CHECKS.map(context =>
-      [context, ALL_JOBS.filter(j => j.effectiveName === context).map(p => p.workflow + ':' + p.id)]))
-
-    expect(producers).toEqual({
+    expect(producerMap(allJobs())).toEqual({
       'check': ['ci.yml:check'],
       'playwright': ['e2e.yml:playwright'],
       'native-gate': ['native.yml:native-gate'],
@@ -280,7 +359,7 @@ describe('required check names identify exactly one job each', () => {
   it('gives the iOS signing diagnostic an identity of its own', () => {
     // The regression this suite exists for. Its job must not be named after any
     // required context, by id or by override.
-    const ios = ALL_JOBS.filter(j => j.workflow === 'ios-signing-check.yml')
+    const ios = allJobs().filter(j => j.workflow === 'ios-signing-check.yml')
     expect(ios).toHaveLength(1)
     expect(ios[0].id).toBe('ios-signing-check')
     for (const context of REQUIRED_CHECKS) {
@@ -304,12 +383,110 @@ describe('required check names identify exactly one job each', () => {
     expect(ios).not.toMatch(/git\s+push/)
   })
 
+  // -------------------------------------------------------------------------
+  // The parser, against forms it has to survive.
+  //
+  // Every fixture below is VALID YAML that the earlier parser matched with
+  // nothing and skipped in silence — which is how a real collision could have
+  // sat in the tree while the "across all workflows" proof stayed green. Each
+  // one is fed through the same producerMap the real proof uses, so what is
+  // demonstrated is a collision surfacing, not a regex matching.
+  // -------------------------------------------------------------------------
+
+  const wrap = (jobKey, body = '    runs-on: ubuntu-latest\n') =>
+    'name: Evil\non:\n  workflow_dispatch:\n\njobs:\n' + jobKey + '\n' + body
+
+  /** The required-context producers once this fixture is added to the real tree. */
+  const withFixture = (text) => producerMap([...allJobs(), ...parseJobs(text, 'evil.yml')])
+
+  it('catches a double-quoted job id colliding with a required context', () => {
+    expect(withFixture(wrap('  "check":')).check)
+      .toEqual(['ci.yml:check', 'evil.yml:check'])
+  })
+
+  it('catches a single-quoted job id colliding with a required context', () => {
+    expect(withFixture(wrap("  'check':")).check)
+      .toEqual(['ci.yml:check', 'evil.yml:check'])
+  })
+
+  it('catches a job id followed by a trailing comment', () => {
+    expect(withFixture(wrap('  check: # required check')).check)
+      .toEqual(['ci.yml:check', 'evil.yml:check'])
+  })
+
+  it('catches a double-quoted name override', () => {
+    const jobs = parseJobs(wrap('  diagnostic:', '    name: "check"\n    runs-on: ubuntu-latest\n'), 'evil.yml')
+    expect(jobs).toEqual([{ id: 'diagnostic', effectiveName: 'check', workflow: 'evil.yml' }])
+    expect(withFixture(wrap('  diagnostic:', '    name: "check"\n')).check)
+      .toEqual(['ci.yml:check', 'evil.yml:diagnostic'])
+  })
+
+  it('catches a single-quoted name override with a trailing comment', () => {
+    expect(withFixture(wrap('  diagnostic:', "    name: 'check' # the required one\n")).check)
+      .toEqual(['ci.yml:check', 'evil.yml:diagnostic'])
+  })
+
+  it('catches a bare name override with a trailing comment', () => {
+    expect(withFixture(wrap('  diagnostic:', '    name: check # required\n')).check)
+      .toEqual(['ci.yml:check', 'evil.yml:diagnostic'])
+  })
+
+  it('reads a bare scalar that merely contains a hash as its whole value', () => {
+    // YAML starts a comment at ` #`, not at a bare `#`. Getting this wrong in
+    // the safe direction would truncate a name; in the unsafe direction it
+    // would let `name: check #x` read as something other than `check`.
+    const jobs = parseJobs(wrap('  a:', '    name: build#2\n'), 'evil.yml')
+    expect(jobs[0].effectiveName).toBe('build#2')
+  })
+
+  it('accepts the ordinary forms unchanged', () => {
+    expect(parseJobs(wrap('  plain:'), 'evil.yml'))
+      .toEqual([{ id: 'plain', effectiveName: 'plain', workflow: 'evil.yml' }])
+    expect(parseJobs('jobs: # the jobs\n  plain:\n    runs-on: x\n', 'evil.yml'))
+      .toEqual([{ id: 'plain', effectiveName: 'plain', workflow: 'evil.yml' }])
+  })
+
+  it('REFUSES anything at job-key indentation it cannot classify', () => {
+    // Fail closed, by file and line. Skipping these is what the earlier parser
+    // did, and it is the whole defect.
+    const unclassifiable = [
+      '  ??weird',                       // no colon at all
+      '  check: some-value',             // a scalar value where a mapping belongs
+      '  "check:',                       // opened a quote and never closed it
+      "  'check:",                       // the same, single-quoted
+      '  - check:',                      // a sequence item
+      '  : lonely',                      // an empty key
+    ]
+    for (const line of unclassifiable) {
+      expect(() => parseJobs(wrap(line), 'evil.yml'), JSON.stringify(line)).toThrow(/evil\.yml:\d+/)
+    }
+  })
+
+  it('REFUSES a name override it cannot classify', () => {
+    for (const name of ['    name: "unterminated', "    name: 'unterminated", '    name:']) {
+      expect(() => parseJobs(wrap('  a:', name + '\n'), 'evil.yml'), name)
+        .toThrow(/evil\.yml:\d+/)
+    }
+  })
+
+  it('names a workflow that declares jobs: but yields none, and only that one', () => {
+    // The per-file guard's failure mode, demonstrated against the REAL workflow
+    // set rather than a lone fixture. Asserting the result is EXACTLY
+    // ['ghost.yml'] proves both halves at once: the ghost is caught, and no
+    // real workflow is silently missing. That redundancy is deliberate — the
+    // primary guard above cannot catch its own deletion, so the property is
+    // enforced from a second place that a mutation would have to find too.
+    const ghost = { name: 'ghost.yml', text: 'name: Ghost\non:\n  workflow_dispatch:\n\njobs:\n' }
+    expect(parseJobs(ghost.text, ghost.name)).toEqual([])
+    expect(workflowsMissingJobs([...WORKFLOWS, ghost])).toEqual(['ghost.yml'])
+  })
+
   it('does not object to duplicate job ids that are not required contexts', () => {
     // build, run and sync are each defined by two workflows. None of them gates
     // a merge, so none of them is this spec's business — and saying so keeps the
     // rule about required-check identity rather than about tidiness.
     const counts = new Map()
-    for (const j of ALL_JOBS) counts.set(j.effectiveName, (counts.get(j.effectiveName) || 0) + 1)
+    for (const j of allJobs()) counts.set(j.effectiveName, (counts.get(j.effectiveName) || 0) + 1)
     const duplicated = [...counts].filter(([, n]) => n > 1).map(([name]) => name).sort()
     expect(duplicated).toEqual(['build', 'run', 'sync'])
     for (const name of duplicated) expect(REQUIRED_CHECKS).not.toContain(name)
