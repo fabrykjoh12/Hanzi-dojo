@@ -1,0 +1,59 @@
+{
+  "id": "integration-identity-gate",
+  "goal": "Separate task-review approval from integration authorization: given an exact independently reviewed implementation head, mechanically establish that it is still the head that would be merged and that the current target-branch state has not moved out from under the review, and fail closed whenever any of that cannot be established.",
+  "owner_role": "workflow-authority",
+  "risk": "r3",
+  "allowed_paths": [
+    "tools/integration-protocol.mjs",
+    "tools/integration-gate.mjs",
+    "integration-protocol.test.mjs",
+    "docs/INTEGRATION-PROTOCOL.md",
+    "docs/AUTOMATION-AUTHORITY.md",
+    "package.json"
+  ],
+  "forbidden_paths": [],
+  "non_goals": [
+    "Merging a pull request, enabling auto-merge, or any call that mutates merge state",
+    "Mutating the live GitHub ruleset, branch protection, or any repository setting",
+    "Any hook — PreToolUse, PostToolUse, or otherwise",
+    "Runtime enforcement of allowed_paths, forbidden_paths, tool permissions, or production_effect",
+    "Automatic reviewer dispatch, automatic task routing, or automatic role selection",
+    "Authenticating the producer of review or integration evidence",
+    "Changing .claude/settings.json, production credentials, or anything in Supabase",
+    "Depending on GitHub merge queue availability",
+    "Pinning GitHub Actions to commit SHAs, or any other opportunistic workflow cleanup",
+    "Rewriting the fresh-context reviewer, its protocol, or its contract"
+  ],
+  "acceptance_criteria": [
+    "The mechanism takes the exact independently reviewed implementation head SHA as an explicit input, and authorizes nothing unless the current pull-request head SHA is byte-identical to it — never a matching diff, equivalent change, or metadata-only difference",
+    "The mechanism establishes that the pull request still exists, is open, and targets the expected branch, and fails closed otherwise",
+    "The current target-branch SHA is captured as part of the decision, and a target that has advanced beyond the state the integration evidence describes fails closed",
+    "The required check set is exactly check, playwright and native-gate, and each must be complete and successful; absent, pending, cancelled, failed, unknown or malformed check state never authorizes",
+    "Each required check is validated against its expected source identity rather than by name alone, so a same-named check from another App is rejected, and a name matched by more than one check run is rejected as ambiguous",
+    "The decision vocabulary is closed and machine-readable, and a value outside it is rejected; only one value expresses authorization, and it is withheld while the repository's required-status-check policy leaves the final merge race open",
+    "Unknown, unreadable, absent or malformed state — GitHub API failure, unreadable ruleset, unresolvable target branch, missing evidence field, unestablished check source, unknown mergeability — resolves to a fail-closed decision and never to authorization",
+    "Integration evidence binds at minimum the pull-request identity, reviewed head, current head, target branch, target SHA, required check names, their conclusions, the expected check source identity, the ruleset identity and relevant policy state, and the protocol version",
+    "The refresh lifecycle is stated and enforced by the decision: if integrating requires updating or rebasing the branch, the implementation head changes, the prior review is stale, and evidence claiming approval of the earlier head cannot authorize the later one",
+    "Reviewer approval and integrator authorization remain distinct: a reviewer verdict is never sufficient input for authorization, and the mechanism holds no merge authority",
+    "Deterministic fixtures prove the happy case can be authorized and prove each blocking case blocks, and load-bearing identity and freshness rules are mutation-tested with fixtures that isolate independent invariants",
+    "Structural specs prove this task contains no merge command or merge API call, no live ruleset mutation, no path or tool enforcement, and no rewrite of the reviewer implementation",
+    "A written activation plan for GitHub's strict required-status-check policy records the current ruleset state, the exact setting, its effect on stale pull requests and required checks, the rollback and the post-activation verification — without changing the live setting",
+    "npm run verify:pr passes"
+  ],
+  "verification": [
+    "npm run verify:pr",
+    "npx vitest run integration-protocol.test.mjs"
+  ],
+  "production_effect": "none",
+  "dependencies": [
+    "fresh-context-reviewer"
+  ],
+  "stop_conditions": [
+    "Establishing any required identity would need production credentials, a GitHub token, or network authority this task is not granted — report the gap rather than acquiring the authority",
+    "Closing the final check-to-merge race turns out to require mutating the live ruleset from this pull request, or an automatic merge path — stop and report rather than implementing either",
+    "The mechanism cannot be made sound without changing the task-contract schema, the role model, or the reviewer protocol, all of which are outside allowed_paths",
+    "The work turns out not to fit workflow-authority / r3 / none — report before implementing"
+  ],
+  "notes": "Governance step for the integration/TOCTOU identity gate, sealed before implementation. Tracked as FAB-43 under FAB-40. Motivated by an observed gap during PR #229: the exact independently reviewed head was one commit behind live main while every required check stayed green, because ruleset 21654011 has strict_required_status_checks_policy false. .agent/tasks/** is absent from allowed_paths and on the always-forbidden floor, so the implementing task cannot edit or re-seal this contract. Classification: workflow-authority because this is control-plane merge-authority machinery; r3 because it is CI/workflow authority; production_effect none because it neither reaches production nor deploys learner-facing code on merge — it produces a decision and merges nothing. Depends on fresh-context-reviewer: the reviewed head this gate binds is produced by that protocol.",
+  "contract_digest": "cf1ea69e7d746712a76ba4a827565c044241a8f4e96adef0825da1700cbe6fd3"
+}
