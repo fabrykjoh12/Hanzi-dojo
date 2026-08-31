@@ -18,7 +18,7 @@
 // code cannot accidentally read a failure as an approval.
 
 import { readFile } from 'node:fs/promises'
-import { lstatSync, readlinkSync, mkdtempSync, existsSync, readFileSync, symlinkSync, rmSync } from 'node:fs'
+import { lstatSync, readlinkSync, realpathSync, mkdtempSync, existsSync, readFileSync, cpSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
@@ -222,51 +222,167 @@ async function resolveReview(taskId, headRef) {
 }
 
 /**
- * PROVISION the verification worktree with dependencies.
+ * PROVISION the verification worktree with dependencies — as an ISOLATED COPY.
  *
- * A detached worktree contains no `node_modules` — it is gitignored — so the
- * real contract's `npm run verify:pr` failed with
- * "Cannot find package '@eslint/js'", and the mechanism could not verify its
- * own sealed contract. A synthetic fixture running `node -e` passed and hid it.
+ * A detached worktree has no `node_modules`. That was a real blocker: the sealed
+ * contract's own `npm run verify:pr` failed in the verification worktree with
+ * "Cannot find package '@eslint/js'", while a synthetic `node -e` fixture passed
+ * and hid it.
  *
- * The dependencies are SHARED from the driver's checkout by symlink, never
- * installed. Installing would mean a network fetch on every review, which is
- * the authority this executor exists to withhold.
+ * The first fix symlinked the driver's `node_modules` in, and that was wrong in
+ * a way worth recording. A symlink is WRITE-THROUGH: code executed from the
+ * reviewed commit could edit or delete files in the driver's real dependency
+ * tree, replace `node_modules/.bin/<bin>` before the next required command ran,
+ * and leave state behind that outlives the throwaway worktree. Proved against an
+ * isolated fixture, deletion included. The lockfile gate did not see any of it,
+ * because the lockfile never changed. That defeats the entire reason
+ * verification has its own worktree.
  *
- * Sharing is sound only under a checkable condition: the reviewed commit must
- * declare the SAME dependency graph as the checkout being borrowed from. So
- * `package-lock.json` is compared byte-for-byte and the run is refused when they
- * differ — otherwise head A would be verified against head B's dependencies.
+ * So the dependencies are COPIED. Not symlinked, not hardlinked — a hardlink
+ * shares the inode, so a write still reaches the driver's bytes. `--reflink=auto`
+ * asks the filesystem for copy-on-write and falls back to a real copy where that
+ * is unsupported (it is unsupported here: ext4). ~22s and ~475MB for this
+ * repository, against a verification run that already costs longer.
  *
- * What this does NOT prove: that `node_modules` actually matches that lockfile.
- * Nobody re-resolves it here. It binds to the declared graph, which is the
+ * Nothing is installed. Installing means a network fetch on every review, which
+ * is precisely the authority this executor withholds.
+ *
+ * SHARING IS GATED ON MANIFEST **AND** LOCKFILE IDENTITY. The lockfile alone was
+ * not enough: a reviewed commit can change `package.json` dependency
+ * declarations without touching `package-lock.json`, and the installed tree
+ * would then no longer be what the reviewed manifest asks for. Both files must
+ * be byte-identical between the reviewed commit and the driver checkout, which
+ * is the "driver dependency source corresponds to the exact reviewed commit"
+ * condition rather than a hand-picked subset of fields whose sufficiency would
+ * need arguing.
+ *
+ * What this still does NOT prove: that `node_modules` was produced from those
+ * files. Nothing re-resolves it. It binds to the declared graph, which is the
  * strongest claim available without a network install.
  */
-function provisionDependencies(worktree, driverRoot) {
-  const lockName = 'package-lock.json'
-  const inTree = path.join(worktree, lockName)
-  const inDriver = path.join(driverRoot, lockName)
-  if (!existsSync(inTree) || !existsSync(inDriver)) {
-    return { error: null, shared: false }
+/**
+ * Resolve a verification test path and prove it is really inside the reviewed
+ * worktree and really part of the reviewed commit.
+ *
+ * Two checks, because each catches what the other cannot:
+ *
+ *   realpath containment   defeats a symlink escape, which no amount of
+ *                          lexical segment validation can see
+ *   tracked at head        defeats an untracked file planted in the worktree,
+ *                          and ties the selection to the commit being reviewed
+ *
+ * Refusal, never normalisation into acceptance: a path that resolves outside is
+ * not silently clamped back in, it is rejected.
+ */
+function resolveTargetInsideWorktree(root, rel, headSha) {
+  let realRoot
+  let realTarget
+  try {
+    realRoot = realpathSync(root)
+  } catch (err) {
+    return { error: 'refused: the verification worktree could not be resolved (' + err.code + ')' }
   }
-  if (!readFileSync(inTree).equals(readFileSync(inDriver))) {
-    return {
-      error: lockName + ' at the reviewed commit differs from the driver checkout, so the ' +
-        'installed dependencies are not the ones this commit declares. Refusing to verify ' +
-        'against the wrong dependency graph',
-      shared: false,
+  const candidate = path.join(realRoot, rel)
+  try {
+    realTarget = realpathSync(candidate)
+  } catch (err) {
+    return { error: 'refused: ' + rel + ' does not resolve to a file in the verification worktree (' +
+      err.code + ')' }
+  }
+  const withinRoot = realTarget === realRoot || realTarget.startsWith(realRoot + path.sep)
+  if (!withinRoot) {
+    return { error: 'refused: ' + rel + ' resolves to ' + realTarget + ', outside the reviewed ' +
+      'worktree. A symlink is still an escape even when every path segment looks ordinary' }
+  }
+  let st
+  try {
+    st = lstatSync(realTarget)
+  } catch (err) {
+    return { error: 'refused: ' + rel + ' could not be inspected (' + err.code + ')' }
+  }
+  if (!st.isFile()) {
+    return { error: 'refused: ' + rel + ' is not a regular file' }
+  }
+  const tracked = gitIn(realRoot)(['ls-tree', '-r', '--name-only', headSha, '--', rel])
+  if (tracked.status !== 0 || tracked.stdout.trim() !== rel) {
+    return { error: 'refused: ' + rel + ' is not a file tracked at ' + String(headSha).slice(0, 12) +
+      ', so it is not part of the commit under review' }
+  }
+  return { error: null, target: realTarget }
+}
+
+const DEPENDENCY_SOURCE_FILES = ['package.json', 'package-lock.json']
+const DEPENDENCY_FIELDS = ['dependencies', 'devDependencies', 'optionalDependencies', 'peerDependencies']
+
+/** Does this manifest ask for anything to be installed? */
+function declaresDependencies(manifestPath) {
+  if (!existsSync(manifestPath)) return false
+  let manifest
+  try {
+    manifest = JSON.parse(readFileSync(manifestPath, 'utf8'))
+  } catch {
+    // Unreadable manifest: assume it needs dependencies, so the run refuses
+    // rather than proceeding on a guess.
+    return true
+  }
+  return DEPENDENCY_FIELDS.some(f => manifest[f] && Object.keys(manifest[f]).length > 0)
+}
+
+function provisionDependencies(worktree, driverRoot) {
+  for (const f of DEPENDENCY_SOURCE_FILES) {
+    const inTree = path.join(worktree, f)
+    const inDriver = path.join(driverRoot, f)
+    const hasTree = existsSync(inTree)
+    const hasDriver = existsSync(inDriver)
+    // Absent on both sides is a project that declares no dependencies — nothing
+    // to reconcile. Present on one side only is drift, and drift is refused.
+    if (!hasTree && !hasDriver) continue
+    if (hasTree !== hasDriver) {
+      return { error: f + ' exists on one side only, so the reviewed commit and the driver ' +
+        'checkout do not declare the same dependencies', provisioned: false }
+    }
+    if (!readFileSync(inTree).equals(readFileSync(inDriver))) {
+      return {
+        error: f + ' at the reviewed commit differs from the driver checkout, so the installed ' +
+          'dependencies are not the ones this commit declares. Refusing to verify against the ' +
+          'wrong dependency graph',
+        provisioned: false,
+      }
     }
   }
+
   const from = path.join(driverRoot, 'node_modules')
   if (!existsSync(from)) {
-    return {
-      error: 'the driver checkout has no node_modules to share, and this executor will not ' +
-        'install from the network. Install dependencies in the checkout first',
-      shared: false,
+    // Nothing to copy. That is only a problem if the reviewed commit actually
+    // declares dependencies — a project with none needs no node_modules, and
+    // refusing there would block verification that was never going to need it.
+    //
+    // This reads the manifest to decide whether provisioning is REQUIRED; it is
+    // not a subset-identity claim. The identity gate above is still byte
+    // equality of both package.json and package-lock.json.
+    if (declaresDependencies(path.join(worktree, 'package.json'))) {
+      return {
+        error: 'the reviewed commit declares dependencies but the driver checkout has no ' +
+          'node_modules to copy, and this executor will not install from the network. ' +
+          'Install dependencies in the checkout first',
+        provisioned: false,
+      }
+    }
+    return { error: null, provisioned: false }
+  }
+
+  const to = path.join(worktree, 'node_modules')
+  // Copy-on-write where the filesystem offers it, a real copy where it does not.
+  const cp = spawnSync('cp', ['--reflink=auto', '-a', from, to], { encoding: 'utf8' })
+  if (cp.status !== 0) {
+    try {
+      cpSync(from, to, { recursive: true, verbatimSymlinks: true })
+    } catch (err) {
+      return { error: 'could not copy dependencies into the verification worktree: ' + err.message,
+        provisioned: false }
     }
   }
-  symlinkSync(from, path.join(worktree, 'node_modules'), 'dir')
-  return { error: null, shared: true }
+  return { error: null, provisioned: true }
 }
 
 /**
@@ -306,6 +422,20 @@ function runVerification(commands, headSha, root, { driverRoot = process.cwd(), 
     let file = plan.command
     let args = plan.args
     if (plan.kind === 'local-bin') {
+      // The lexical grammar rejects `..` and empty segments, but it cannot see a
+      // SYMLINK: `tests/external -> /tmp/outside` contains no `..` and passes
+      // every segment check while resolving outside the reviewed worktree.
+      // Resolve on the filesystem and require the result to stay inside, and
+      // require the target to be a file git actually tracks at the reviewed
+      // commit — a test file that is not in the commit is not this commit's test.
+      //
+      // Precisely what this constrains: WHICH FILE the executor selects. It does
+      // not sandbox the JavaScript once that file runs.
+      const selection = resolveTargetInsideWorktree(root, plan.pathArg, headSha)
+      if (selection.error) {
+        runs.push({ command, executed: false, exit_code: null, evidence: selection.error })
+        continue
+      }
       file = path.join(root, 'node_modules', '.bin', plan.bin)
       if (!existsSync(file)) {
         runs.push({
@@ -373,7 +503,7 @@ async function main(argv = process.argv.slice(2)) {
     } finally {
       // Unlink the shared node_modules before removing the worktree, so git
       // never walks into the driver's real dependency tree.
-      try { rmSync(path.join(root, 'node_modules'), { force: true }) } catch { /* not shared */ }
+      try { rmSync(path.join(root, 'node_modules'), { recursive: true, force: true }) } catch { /* none */ }
       gitIn(process.cwd())(['worktree', 'remove', '--force', root])
       rmSync(sandboxHome, { recursive: true, force: true })
       rmSync(sandboxTmp, { recursive: true, force: true })

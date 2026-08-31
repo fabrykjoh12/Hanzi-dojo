@@ -168,14 +168,33 @@ complaint, and `production_effect: none` constrains none of it. So the executor
 refuses rather than the validator rejecting — which is also why this needed no
 schema change.
 
-- **No shell.** Commands are parsed to an explicit executable and argv.
+- **The contract string is never interpreted by a driver shell.** It is parsed
+  to an explicit executable and argv, and spawned with `shell: false`. Note the
+  precise claim: this is *not* "verification executes with no shell anywhere" —
+  `npm run <script>` runs the reviewed `package.json` script under npm's own
+  script-execution semantics, which can involve a shell. What is closed is the
+  driver interpreting the contract string; what happens inside a reviewed
+  script is the arbitrary-code limitation below, not a shell this executor
+  opened.
 - **A closed grammar**, exactly the two forms this repository's contracts use.
   Anything else is **refused**, not guessed at, and a refusal records
   `executed: false`, which the evidence rules already treat as a blocker.
 - **Metacharacters are refused outright** rather than escaped.
-- **Test paths cannot leave the worktree.** Segments are validated individually
-  — no `.`, no `..`, no empty or repeated segments, no absolute paths.
-  Normalising first and validating after is how traversal bugs get written.
+- **The selected test file must really be in the reviewed commit.** Segments are
+  validated individually — no `.`, no `..`, no empty or repeated segments, no
+  absolute paths — *and then* the path is resolved on the filesystem and required
+  to stay inside the worktree, and required to be a regular file git tracks at
+  the reviewed commit.
+
+  Lexical validation alone was not enough, and the gap is worth recording:
+  `tests/external -> /tmp/outside` contains no `..` and passes every segment
+  check while resolving outside the worktree. Symlink escapes are **refused**,
+  not normalised into acceptance. The tracked-at-head check then catches a file
+  that is genuinely inside the worktree but not part of the commit — a file in
+  the copied dependency tree, for instance.
+
+  Precisely what this constrains: **which test file the executor selects**. It
+  does not sandbox the JavaScript once that file runs.
 - **No package install, and no `npx`.** See below.
 - **An environment-variable allowlist**: `PATH`, `LANG`, `LC_ALL`, `TZ`,
   `SystemRoot`, plus `CI=1` and a fresh `HOME`/`TMPDIR` the run owns.
@@ -192,23 +211,41 @@ The `npx <bin> run <path>` **form** is still accepted, because it is what
 contracts are written with. It resolves to `node_modules/.bin/<bin>` and is
 executed directly. A missing dependency fails closed instead of fetching one.
 
-##### Dependencies are shared, never installed
+##### Dependencies are COPIED, never shared and never installed
 
 A detached worktree has no `node_modules`. That was a real blocker, not a
 theoretical one: the sealed contract's own `npm run verify:pr` failed in the
 verification worktree with `Cannot find package '@eslint/js'`, while a synthetic
 `node -e` fixture passed and hid it.
 
-Dependencies are **symlinked from the driver's checkout**, never installed —
-installing would mean a network fetch on every review, which is exactly the
-authority this executor withholds. Sharing is gated on a checkable condition:
-`package-lock.json` at the reviewed commit must be byte-identical to the driver
-checkout's, or the run is refused, because otherwise head A would be verified
-against head B's dependencies.
+The first fix symlinked the driver's `node_modules` in, and that was wrong in a
+way worth keeping written down. **A symlink is write-through.** Code executed
+from the reviewed commit could edit or delete files in the driver's real
+dependency tree, replace `node_modules/.bin/<bin>` before the next required
+command ran, and leave state behind that outlived the throwaway worktree — all
+without changing the lockfile, so the identity gate never saw it. That defeats
+the entire reason verification has its own worktree.
 
-What that does **not** prove is that `node_modules` matches that lockfile.
-Nothing re-resolves it. It binds to the *declared* graph, which is the strongest
-claim available without a network install.
+So the tree is **copied**. Not symlinked, and not hardlinked either — a hardlink
+shares the inode, so a write still reaches the driver's bytes. `--reflink=auto`
+asks the filesystem for copy-on-write and falls back to a real copy where that is
+unsupported (it is unsupported here: ext4). Roughly 22s and 475MB for this
+repository, against a verification run that already costs longer.
+
+Nothing is installed. Installing means a network fetch on every review, which is
+precisely the authority this executor withholds.
+
+**Sharing is gated on manifest *and* lockfile identity.** The lockfile alone was
+not enough: a reviewed commit can change `package.json` dependency declarations
+without touching `package-lock.json`, and the installed tree would then no longer
+be what the reviewed manifest asks for. Both files must be byte-identical between
+the reviewed commit and the driver checkout — the "driver dependency source
+corresponds to the exact reviewed commit" condition, rather than a hand-picked
+subset of fields whose sufficiency would need arguing.
+
+What that still does **not** prove is that `node_modules` was produced from those
+files. Nothing re-resolves it. It binds to the *declared* graph, which is the
+strongest claim available without a network install.
 
 ##### What the environment allowlist is, precisely
 
@@ -448,9 +485,10 @@ and the reviewer's judgment is the only thing covering that.
 JSON file with the right shape and the right `head_sha` is indistinguishable
 from one `verify` produced. Closing that needs CI or another principal.
 
-**7. Dependency sharing binds to the declared graph, not to `node_modules`.**
-The lockfile at the reviewed commit must match the driver checkout's, but
-nothing re-resolves the installed tree against it.
+**7. Dependency provisioning binds to the declared graph, not to `node_modules`.**
+Both `package.json` and `package-lock.json` at the reviewed commit must match the
+driver checkout's, and the tree is copied rather than shared — but nothing
+re-resolves the installed tree against those files.
 
 **8. Nothing is enforced at runtime.**
 

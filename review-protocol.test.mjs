@@ -1,5 +1,5 @@
 import { describe, it, expect, afterAll } from 'vitest'
-import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs'
+import { readFileSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync, existsSync as existsSyncTest } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
@@ -2003,6 +2003,34 @@ describe('the executor bounds form and authority, not behaviour', () => {
     }
   })
 
+  it('does not claim verification runs with no shell anywhere', () => {
+    // The good claim and the overbroad one are close enough to blur. `npm run`
+    // executes the reviewed script under npm's own semantics, which can involve
+    // a shell; what is actually closed is the driver interpreting the string.
+    const doc = readFileSync('docs/REVIEWER-PROTOCOL.md', 'utf8').replace(/\s+/g, ' ')
+    expect(doc).toMatch(/contract string is never interpreted by a driver shell/i)
+    // The phrase appears only inside the disclaimer, so its presence IS the
+    // assertion that the overbroad claim is named and rejected.
+    expect(doc).toMatch(/verification executes with no shell anywhere/i)
+    expect(doc).toMatch(/npm run <script>. runs the reviewed .package\.json. script/i)
+  })
+
+  it('describes dependencies as copied, and says why sharing was wrong', () => {
+    const doc = readFileSync('docs/REVIEWER-PROTOCOL.md', 'utf8').replace(/\s+/g, ' ')
+    expect(doc).toMatch(/A symlink is write-through/i)
+    expect(doc).toMatch(/a hardlink shares the inode/i)
+    expect(doc).toMatch(/COPIED, never shared and never installed/i)
+    expect(doc).toMatch(/manifest \*and\* lockfile identity/i)
+    expect(doc).not.toMatch(/symlinked from the driver's checkout/i)
+  })
+
+  it('scopes the path claim to file selection, not sandboxing', () => {
+    const doc = readFileSync('docs/REVIEWER-PROTOCOL.md', 'utf8').replace(/\s+/g, ' ')
+    expect(doc).toMatch(/which test file the executor selects/i)
+    expect(doc).toMatch(/does not sandbox the JavaScript once that file runs/i)
+    expect(doc).toMatch(/contains no `\.\.` and passes every segment check/i)
+  })
+
   it('is honest in the docs that npm run executes reviewed code', () => {
     // The residual this cannot close: running the tests IS running the code
     // under review. The grammar bounds the form; it does not bound behaviour.
@@ -2041,7 +2069,16 @@ describe('verification works when the commands actually need dependencies', () =
     g(['config', 'user.email', 'f@example.test']); g(['config', 'user.name', 'F'])
     writeFileSync(path.join(dir, 'package.json'), JSON.stringify({
       name: 'dep-fixture', private: true, type: 'module',
-      scripts: { check: 'vitest run probe.test.mjs' },
+      scripts: {
+        check: 'vitest run probe.test.mjs',
+        // Writes THROUGH whatever node_modules the worktree was given. Under a
+        // symlink this reached the driver's real dependency tree.
+        poison: 'node -e "const f=require(\'node:fs\');' +
+          'f.writeFileSync(\'node_modules/sentinel.txt\',\'POISONED\');' +
+          'f.writeFileSync(\'node_modules/.bin/probe-bin\',\'#!/bin/sh\\necho HIJACKED\\n\');' +
+          'f.chmodSync(\'node_modules/.bin/probe-bin\',0o755)"',
+        second: 'node -e "console.log(require(\'node:fs\').readFileSync(\'node_modules/sentinel.txt\',\'utf8\'))"',
+      },
     }, null, 2))
     writeFileSync(path.join(dir, 'package-lock.json'), readFileSync(path.resolve('package-lock.json')))
     writeFileSync(path.join(dir, 'probe.test.mjs'),
@@ -2237,5 +2274,249 @@ describe('the brief refuses to present evidence it has not validated', () => {
     expect(out.status, out.stderr).toBe(0)
     expect(out.stdout).toContain('2 tests failed')
     expect(out.stdout).toMatch(/exit: 1/)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// Verification dependencies must be ISOLATED, not shared write-through
+// ---------------------------------------------------------------------------
+
+describe('verification cannot mutate the dependency tree it borrowed', () => {
+  // The bug this closes: symlinking the driver's node_modules into the
+  // verification worktree gave code from the reviewed commit write-through
+  // access to the driver's real dependency tree — including replacing
+  // node_modules/.bin/<bin> before the next required command ran. The lockfile
+  // gate never saw it, because the lockfile never changed.
+  const CLI = path.resolve('tools/review-task.mjs')
+  const dirs = []
+  afterAll(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }) })
+
+  /** A driver checkout with its OWN small dependency tree, never the real one. */
+  const isolatedRepo = ({ verification, manifestDrift = false } = {}) => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'iso-'))
+    dirs.push(dir)
+    const g = (args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' })
+    g(['init', '-q', '-b', 'main'])
+    g(['config', 'user.email', 'f@example.test']); g(['config', 'user.name', 'F'])
+    const manifest = {
+      name: 'iso', private: true, type: 'module', dependencies: { 'left-pad': '1.0.0' },
+      scripts: {
+        touchdeps: 'node -e "require(\'node:fs\').writeFileSync(\'node_modules/sentinel.txt\',\'POISONED\')"',
+        readdeps: 'node -e "console.log(require(\'node:fs\').readFileSync(\'node_modules/sentinel.txt\',\'utf8\').trim())"',
+        hijack: 'node -e "require(\'node:fs\').writeFileSync(\'node_modules/.bin/probe\',\'#!/bin/sh\\necho HIJACKED\')"',
+        useprobe: 'node -e "console.log(require(\'node:fs\').readFileSync(\'node_modules/.bin/probe\',\'utf8\').trim())"',
+      },
+    }
+    writeFileSync(path.join(dir, 'package.json'), JSON.stringify(manifest, null, 2))
+    writeFileSync(path.join(dir, 'package-lock.json'), JSON.stringify({ name: 'iso', lockfileVersion: 3 }, null, 2))
+    writeFileSync(path.join(dir, '.gitignore'), 'node_modules\n')
+    writeFileSync(path.join(dir, 'probe.test.mjs'), "export default 1\n")
+    g(['add', '-A']); g(['commit', '-q', '-m', 'chore: scaffolding'])
+
+    const c = contract({ id: 'iso', allowed_paths: ['src/**'], verification })
+    mkdirSync(path.join(dir, TASKS_DIR), { recursive: true })
+    writeFileSync(path.join(dir, TASKS_DIR, 'iso.json'), JSON.stringify(c, null, 2))
+    g(['add', '-A']); g(['commit', '-q', '-m', 'governance: seal iso'])
+    mkdirSync(path.join(dir, 'src'), { recursive: true })
+    writeFileSync(path.join(dir, 'src', 'a.js'), 'x\n')
+    g(['add', '-A']); g(['commit', '-q', '-m', 'feat: work'])
+    const head = g(['rev-parse', 'HEAD']).stdout.trim()
+
+    // The driver checkout's own dependency tree — small, real, and ours.
+    mkdirSync(path.join(dir, 'node_modules', '.bin'), { recursive: true })
+    writeFileSync(path.join(dir, 'node_modules', 'sentinel.txt'), 'ORIGINAL\n')
+    writeFileSync(path.join(dir, 'node_modules', '.bin', 'probe'), '#!/bin/sh\necho ORIGINAL\n')
+
+    if (manifestDrift) {
+      // package.json changes its dependency declarations; the lockfile does not.
+      writeFileSync(path.join(dir, 'package.json'),
+        JSON.stringify({ ...manifest, dependencies: { 'left-pad': '9.9.9' } }, null, 2))
+    }
+    return { dir, head, contract: c, g }
+  }
+
+  const verify = (r) => {
+    const out = spawnSync('node', [CLI, 'verify', '--task', 'iso', '--head', r.head],
+      { cwd: r.dir, encoding: 'utf8' })
+    return { out, ev: out.status === 0 ? JSON.parse(out.stdout) : null }
+  }
+  const driverFile = (r, rel) => readFileSync(path.join(r.dir, 'node_modules', rel), 'utf8')
+
+  it('verification can use the dependency tree it was given', () => {
+    const r = isolatedRepo({ verification: ['npm run readdeps'] })
+    const { ev } = verify(r)
+    expect(ev.runs[0].executed, ev.runs[0].evidence).toBe(true)
+    expect(ev.runs[0].exit_code).toBe(0)
+    expect(ev.runs[0].evidence).toContain('ORIGINAL')
+  })
+
+  it('verification MAY mutate its own local copy', () => {
+    const r = isolatedRepo({ verification: ['npm run touchdeps'] })
+    const { ev } = verify(r)
+    expect(ev.runs[0].executed, ev.runs[0].evidence).toBe(true)
+    expect(ev.runs[0].exit_code, 'writing to its own copy should succeed').toBe(0)
+  })
+
+  it("but the DRIVER's dependency tree stays byte-identical", () => {
+    // The whole invariant. Under the old symlink this read POISONED.
+    const r = isolatedRepo({ verification: ['npm run touchdeps'] })
+    const before = driverFile(r, 'sentinel.txt')
+    verify(r)
+    expect(driverFile(r, 'sentinel.txt'), 'verification wrote through to the driver').toBe(before)
+    expect(driverFile(r, 'sentinel.txt')).toBe('ORIGINAL\n')
+  })
+
+  it('command 1 cannot alter the binary command 2 receives', () => {
+    // Sequential poisoning: replace node_modules/.bin/probe, then read it back.
+    // Both run in the same worktree copy, so the second sees the first's write —
+    // what must NOT happen is the driver's binary changing.
+    const r = isolatedRepo({ verification: ['npm run hijack', 'npm run useprobe'] })
+    const before = driverFile(r, '.bin/probe')
+    const { ev } = verify(r)
+    expect(ev.runs).toHaveLength(2)
+    expect(driverFile(r, '.bin/probe'), "command 1 rewrote the driver's binary").toBe(before)
+    expect(driverFile(r, '.bin/probe')).toContain('ORIGINAL')
+  })
+
+  it('leaves nothing behind outside the throwaway worktree', () => {
+    const r = isolatedRepo({ verification: ['npm run touchdeps'] })
+    verify(r)
+    expect(existsSyncTest(path.join(r.dir, 'node_modules', 'sentinel.txt'))).toBe(true)
+    expect(existsSyncTest(path.join(r.dir, 'node_modules', 'POISONED'))).toBe(false)
+    const listed = spawnSync('git', ['worktree', 'list', '--porcelain'], { cwd: r.dir, encoding: 'utf8' })
+      .stdout.split('\n').filter(l => l.startsWith('worktree '))
+    expect(listed).toHaveLength(1)
+  })
+
+  it('never symlinks or hardlinks the dependency tree', () => {
+    const src = readFileSync('tools/review-task.mjs', 'utf8')
+    expect(src, 'symlinks node_modules again').not.toMatch(/symlinkSync\(/)
+    // Careful: readlinkSync legitimately contains "linkSync". Only a bare
+    // linkSync — the hardlink call — is the problem.
+    expect(src, 'hardlinks share the inode, so a write still reaches the driver')
+      .not.toMatch(/(?<![A-Za-z])linkSync\(|'-al'|--link\b/)
+    expect(src).toMatch(/--reflink=auto/)
+    expect(src).toMatch(/cpSync\(from, to/)
+  })
+
+  it('REFUSES when package.json drifts even though the lockfile matches', () => {
+    // Lockfile identity is not dependency-graph identity: a reviewed commit can
+    // change its dependency declarations without touching package-lock.json.
+    const r = isolatedRepo({ verification: ['npm run readdeps'], manifestDrift: true })
+    const { ev } = verify(r)
+    expect(ev.runs[0].executed, 'ran against a drifted manifest').toBe(false)
+    expect(ev.runs[0].evidence).toMatch(/package\.json at the reviewed commit differs/)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// A test path must not escape the worktree through a SYMLINK
+// ---------------------------------------------------------------------------
+
+describe('the selected test file must really be inside the reviewed commit', () => {
+  // Lexical segment validation blocks `..` and `//`. It cannot see
+  // `tests/external -> /tmp/outside`, which contains no `..` at all.
+  const CLI = path.resolve('tools/review-task.mjs')
+  const dirs = []
+  afterAll(() => { for (const d of dirs) rmSync(d, { recursive: true, force: true }) })
+
+  const repoWith = ({ verification, plant }) => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'esc-'))
+    const outside = mkdtempSync(path.join(tmpdir(), 'outside-'))
+    dirs.push(dir, outside)
+    writeFileSync(path.join(outside, 'evil.test.mjs'), "export default 'outside'\n")
+    const g = (args) => spawnSync('git', args, { cwd: dir, encoding: 'utf8' })
+    g(['init', '-q', '-b', 'main'])
+    g(['config', 'user.email', 'f@example.test']); g(['config', 'user.name', 'F'])
+    writeFileSync(path.join(dir, 'package.json'),
+      JSON.stringify({ name: 'e', private: true, dependencies: { 'left-pad': '1.0.0' } }))
+    writeFileSync(path.join(dir, 'package-lock.json'), JSON.stringify({ name: 'e', lockfileVersion: 3 }))
+    writeFileSync(path.join(dir, '.gitignore'), 'node_modules\n')
+    writeFileSync(path.join(dir, 'inside.test.mjs'), "export default 'inside'\n")
+    plant({ dir, outside, g })
+    g(['add', '-A']); g(['commit', '-q', '-m', 'chore: scaffolding'])
+    const c = contract({ id: 'esc', allowed_paths: ['src/**'], verification })
+    mkdirSync(path.join(dir, TASKS_DIR), { recursive: true })
+    writeFileSync(path.join(dir, TASKS_DIR, 'esc.json'), JSON.stringify(c, null, 2))
+    g(['add', '-A']); g(['commit', '-q', '-m', 'governance: seal esc'])
+    mkdirSync(path.join(dir, 'src'), { recursive: true })
+    writeFileSync(path.join(dir, 'src', 'a.js'), 'x\n')
+    g(['add', '-A']); g(['commit', '-q', '-m', 'feat: work'])
+    mkdirSync(path.join(dir, 'node_modules', '.bin'), { recursive: true })
+    writeFileSync(path.join(dir, 'node_modules', '.bin', 'vitest'), '#!/bin/sh\necho ran "$@"\n')
+    spawnSync('chmod', ['+x', path.join(dir, 'node_modules', '.bin', 'vitest')])
+    return { dir, head: g(['rev-parse', 'HEAD']).stdout.trim() }
+  }
+  const run = (r) => JSON.parse(spawnSync('node', [CLI, 'verify', '--task', 'esc', '--head', r.head],
+    { cwd: r.dir, encoding: 'utf8' }).stdout)
+
+  it('REFUSES a path that reaches outside through a symlinked directory', () => {
+    const r = repoWith({
+      verification: ['npx vitest run tests/external/evil.test.mjs'],
+      plant: ({ dir, outside }) => {
+        mkdirSync(path.join(dir, 'tests'), { recursive: true })
+        symlinkSync(outside, path.join(dir, 'tests', 'external'), 'dir')
+      },
+    })
+    const ev = run(r)
+    expect(ev.runs[0].executed, 'executed a file outside the reviewed worktree').toBe(false)
+    expect(ev.runs[0].evidence).toMatch(/outside the reviewed worktree|not a file tracked at/)
+  })
+
+  it('REFUSES a TRACKED symlink whose target is outside the worktree', () => {
+    // The case where containment is the only rule that bites. git tracks a
+    // symlink as a symlink, so `ls-tree` says this path IS part of the commit —
+    // the tracked-at-head check passes. Only resolving it on the filesystem
+    // shows that reading it leaves the worktree entirely.
+    const r = repoWith({
+      verification: ['npx vitest run linked.test.mjs'],
+      plant: ({ dir, outside }) => {
+        symlinkSync(path.join(outside, 'evil.test.mjs'), path.join(dir, 'linked.test.mjs'))
+      },
+    })
+    const ev = run(r)
+    expect(ev.runs[0].executed, 'executed a tracked symlink pointing outside the worktree').toBe(false)
+    expect(ev.runs[0].evidence).toMatch(/outside the reviewed worktree/)
+    expect(ev.runs[0].evidence).toMatch(/A symlink is still an escape/)
+  })
+
+  it('REFUSES a file that EXISTS in the worktree but is not tracked at the reviewed commit', () => {
+    // The constructible untracked case: the copied dependency tree. Those files
+    // are really there and really inside the worktree, so realpath containment
+    // alone would accept them — but they are not part of the commit under
+    // review, and pointing the runner at one is not verifying this commit.
+    const r = repoWith({
+      verification: ['npx vitest run node_modules/planted.test.mjs'],
+      plant: () => {},
+    })
+    writeFileSync(path.join(r.dir, 'node_modules', 'planted.test.mjs'), "export default 1\n")
+    const ev = run(r)
+    expect(ev.runs[0].executed, 'ran a file that is not in the reviewed commit').toBe(false)
+    expect(ev.runs[0].evidence).toMatch(/not a file tracked at/)
+  })
+
+  it('REFUSES a file absent from the reviewed checkout entirely', () => {
+    const r = repoWith({
+      verification: ['npx vitest run planted.test.mjs'],
+      plant: ({ dir }) => { writeFileSync(path.join(dir, '.gitignore'), 'node_modules\nplanted.test.mjs\n') },
+    })
+    writeFileSync(path.join(r.dir, 'planted.test.mjs'), "export default 1\n")
+    const ev = run(r)
+    expect(ev.runs[0].executed).toBe(false)
+    expect(ev.runs[0].evidence).toMatch(/does not resolve to a file/)
+  })
+
+  it('REFUSES a path that does not exist at all', () => {
+    const r = repoWith({ verification: ['npx vitest run nope.test.mjs'], plant: () => {} })
+    const ev = run(r)
+    expect(ev.runs[0].executed).toBe(false)
+    expect(ev.runs[0].evidence).toMatch(/does not resolve|not a file tracked/)
+  })
+
+  it('ACCEPTS an ordinary tracked test file inside the worktree', () => {
+    const r = repoWith({ verification: ['npx vitest run inside.test.mjs'], plant: () => {} })
+    const ev = run(r)
+    expect(ev.runs[0].executed, ev.runs[0].evidence).toBe(true)
+    expect(ev.runs[0].evidence).toContain('run inside.test.mjs')
   })
 })
