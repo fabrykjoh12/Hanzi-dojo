@@ -228,6 +228,13 @@ The floor is why a task cannot re-seal itself: repairing a digest means writing
 .claude/settings.json   .claude/hooks/**
 ```
 
+Today exactly one grant exists, `runtime-policy-maintenance`, and it reaches
+`.claude/settings.json` only. **`.claude/hooks/**` is therefore in the tier and
+in no grant: no contract can currently be authorised to write a hook.** That is
+the difference between the tier and the floor — the floor is unauthorisable in
+principle, while a hooks grant simply does not exist yet and would arrive as its
+own reviewed change, carrying the paths it reaches.
+
 These *do* sometimes need to change — a runtime path guard has to be installed
 by somebody. But not by an ordinary task, and never by adding a line to
 `allowed_paths`. A Tier 1 path is unreachable through `allowed_paths` (the
@@ -254,14 +261,25 @@ A declaration is honoured only if **all** of it checks out:
 - `risk` is at least `r3`. This does not widen `r4`, which stays reserved for
   direct production authority; the risk model already places control-plane
   work at `r3`.
-- `grant` is one of a **closed** vocabulary, each mapping to its own subset of
-  the tier. There is no grant over the tier as a whole, and a grant cannot
-  authorise a protected path outside its own mapping.
+- `grant` is one of a **closed** vocabulary — closed to the keys actually
+  written in the registry, checked with `hasOwnProperty` so `constructor` and
+  friends are not inherited grants — each mapping to its own **proper** subset
+  of the tier. There is no grant over the tier as a whole, and a grant cannot
+  authorise a protected path outside its own mapping. If one grant reached
+  every path in the tier, "grant" would be a synonym for "the tier" and the
+  mapping check could never fire.
 - Every protected path is inside Tier 1, outside Tier 0, and obeys the existing
   decidable path grammar — an exact path or a `dir/**` subtree, never a
   filename wildcard.
 - A `justification` is present, because a reviewer reading the contract should
   not have to infer why the authority was needed.
+- No granted path is also in `forbidden_paths`. Mechanical review tests
+  forbidden paths before scope, so such a grant could never take effect — dead
+  authority is a mistake to correct, not to reconcile.
+
+The declaration is closed to exactly those three keys. A field the schema
+accepts but nothing reads would be sealed into the digest and invite its author
+to believe it constrained the grant.
 
 If any of that fails, the grant widens **nothing**. It is not partially
 honoured: `grantedProtectedPaths()` returns an empty list, the paths it named
@@ -303,6 +321,8 @@ Any future optional binding field inherits this rule by being listed in
 - **Edit its own contract.** Independently blocking, whatever the grant says.
 - **Escape its mapping.** The grant names a subset; the tier is not a keyword
   that unlocks the rest of it.
+- **Take effect while the contract also forbids it.** A granted path that is
+  forbidden is rejected at validation, not silently ignored.
 - **Change anything at runtime.** This tier is a *rule*, checked when a contract
   is validated and when a diff is reviewed. It is not a hook, a permission or a
   sandbox, and it does not stop an agent from writing a file. See the honesty
@@ -320,6 +340,23 @@ and merged with `.claude/agents/fresh-context-reviewer.md` legitimately in its
 that contract — which could only be repaired by writing `.agent/tasks/**`. Until
 that lifecycle question is settled, agent definitions are governed by the
 ordinary Tier 2 model, and nothing here should be read as protecting them.
+
+**The registry itself is an ordinary file.** `PROTECTED_CONTROL_PLANE` and the
+grant mapping live in `tools/verify-task-contracts.mjs`, which is Tier 2 — a
+task that owns the validator can, in one change, add a path to the tier *and*
+carry a grant naming it. `.agent/roles.json` is on the floor for the analogous
+reason one level up, and this residual is not closed the same way; what holds
+here is visibility rather than prevention. The tier, the mapping and the grant
+are all covered by `contract_digest` and all appear in the sealed diff, so the
+expansion is tamper-evident and a reviewer sees it as its own term. Treat a diff
+that widens the registry as a governance change, not a refactor.
+
+**`.agent/tasks/README.md` still lists `.claude/settings.json` under the
+always-forbidden floor.** It is stale as of this change, and it is inside Tier 0,
+so no task may correct it — the file can only move through root governance. The
+operational answer it gives is still right for `allowed_paths` (a task may never
+name that path there); what it now gets wrong is "never", since a grant can
+reach it. This document is the current source of truth for the tiers.
 
 **The tiers hold through validation and review, not through the runtime.** A
 cold fresh-session probe established that the tool-use guards declared in a

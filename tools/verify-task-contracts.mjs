@@ -365,11 +365,22 @@ export const PROTECTED_CONTROL_PLANE = [
  * and `agent-definition-maintenance` arrives with the paths it would reach
  * rather than ahead of them.
  *
+ * NOTE WHAT THIS MAPPING DOES NOT COVER. `.claude/hooks/**` is in the tier and
+ * in no grant, so today NO contract can be authorised to write a hook. That is
+ * deliberate and it is the difference between the tier and the floor: the floor
+ * is unauthorisable in principle, while a hooks grant simply does not exist yet
+ * and would arrive as its own reviewed change, with the paths it reaches.
+ *
+ * Keeping the mapping a PROPER subset is also what makes the grant a grant. If
+ * the one grant reached every path in the tier, "grant" would be a synonym for
+ * "the tier", the mapping check below could never fire, and the vocabulary
+ * would be closed in name only.
+ *
  * A future runtime guard will need its own authority-bearing path added here
  * deliberately — an exact file or a dedicated subtree, never a wildcard.
  */
 export const CONTROL_PLANE_GRANTS = {
-  'runtime-policy-maintenance': ['.claude/settings.json', '.claude/hooks/**'],
+  'runtime-policy-maintenance': ['.claude/settings.json'],
 }
 
 /** Is `p` inside the protected tier? */
@@ -674,7 +685,7 @@ export function controlPlaneRoleIn(roleModel) {
 export const CONTROL_PLANE_ROLE = controlPlaneRoleIn(ROLE_MODEL)
 
 /** The keys a control_plane declaration may carry. Closed. */
-const CONTROL_PLANE_KEYS = ['grant', 'protected_paths', 'justification', 'activation']
+const CONTROL_PLANE_KEYS = ['grant', 'protected_paths', 'justification']
 
 /** The lowest risk a control-plane grant may be declared at. */
 export const CONTROL_PLANE_MIN_RISK = 'r3'
@@ -732,17 +743,21 @@ export function controlPlaneViolations(contract, at = '') {
       ' (got ' + JSON.stringify(contract.risk) + ')')
   }
 
+  // hasOwnProperty, not a bare lookup: CONTROL_PLANE_GRANTS is an object
+  // literal, so `grant: "constructor"` (or "toString", "__proto__", …) would
+  // otherwise resolve through Object.prototype, skip the unknown-grant guard
+  // below, and reach the containment check as a function. The vocabulary is
+  // closed to the keys actually written here, and to nothing else.
   const grant = cp.grant
-  const mapped = isNonEmptyString(grant) ? CONTROL_PLANE_GRANTS[grant] : undefined
-  if (!isNonEmptyString(grant) || mapped === undefined) {
+  const known = isNonEmptyString(grant) &&
+    Object.prototype.hasOwnProperty.call(CONTROL_PLANE_GRANTS, grant)
+  const mapped = known ? CONTROL_PLANE_GRANTS[grant] : undefined
+  if (!known) {
     out.push(at + 'control_plane.grant must be one of ' + Object.keys(CONTROL_PLANE_GRANTS).join(', ') +
       ' (got ' + JSON.stringify(grant) + ')')
   }
   if (!isNonEmptyString(cp.justification)) {
     out.push(at + 'control_plane.justification must say why this task needs control-plane authority')
-  }
-  if ('activation' in cp && !isNonEmptyString(cp.activation)) {
-    out.push(at + 'control_plane.activation must be a non-empty string when present')
   }
 
   const paths = cp.protected_paths
@@ -751,7 +766,13 @@ export function controlPlaneViolations(contract, at = '') {
     return out
   }
 
-  const allowed = Array.isArray(contract.allowed_paths) ? contract.allowed_paths.filter(isNonEmptyString) : []
+  // allowed_paths needs no comparison here: naming a tier path there is already
+  // refused by findContractViolations, whether spelled exactly or through a
+  // covering subtree. A second check on the same ground could never be the
+  // operative one, and dead validation reads like protection that is not there.
+  const forbidden = Array.isArray(contract.forbidden_paths)
+    ? contract.forbidden_paths.filter(isNonEmptyString).filter(f => !pathGrammarError(f))
+    : []
   for (const p of paths) {
     const grammar = pathGrammarError(p)
     if (grammar) {
@@ -772,9 +793,15 @@ export function controlPlaneViolations(contract, at = '') {
       out.push(at + 'grant "' + grant + '" does not authorise "' + p +
         '" — it reaches only ' + mapped.join(', '))
     }
-    if (allowed.some(a => normalisePath(a) === normalisePath(p))) {
-      out.push(at + '"' + p + '" is declared in both allowed_paths and control_plane.protected_paths ' +
-        '— control-plane authority has exactly one spelling')
+    // The same contradiction allowed_paths is already checked for, one tier up:
+    // an allowance that can never take effect. Mechanical review tests
+    // forbidden_paths BEFORE scope, so a granted path the contract also forbids
+    // is dead authority — which is a mistake to correct, not to reconcile.
+    for (const f of forbidden) {
+      if (normalisePath(f) === normalisePath(p) || covers(f, p)) {
+        out.push(at + 'control_plane.protected_paths entry "' + p + '" is forbidden by "' + f +
+          '" — the grant can never take effect')
+      }
     }
   }
   return out

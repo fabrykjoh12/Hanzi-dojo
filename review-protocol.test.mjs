@@ -607,16 +607,12 @@ describe('FIXTURE 11: the effective scope is allowed_paths PLUS a valid grant', 
     expect(found.map(f => f.dimension)).toEqual(['hidden-authority-expansion'])
   })
 
-  it('a grant over a subtree covers paths inside it', () => {
-    const c = contract({
-      owner_role: 'workflow-authority', risk: 'r3',
-      control_plane: {
-        grant: 'runtime-policy-maintenance',
-        protected_paths: ['.claude/hooks/**'],
-        justification: 'installs the guard',
-      },
-    })
-    expect(mechanicalFindings({ contract: c, changedPaths: ['.claude/hooks/a/b/guard.mjs'] })).toEqual([])
+  it('a granted exact path puts nothing else in scope', () => {
+    // Granted paths go through the same matching as allowed_paths, so an exact
+    // grant is exact. No grant maps to a SUBTREE today, so the subtree case is
+    // not reachable from the registry and is deliberately not faked here.
+    const found = mechanicalFindings({ contract: withGrant(), changedPaths: ['.claude/other.json'] })
+    expect(found.map(f => f.dimension)).toEqual(['path-compliance'])
   })
 
   it('leaves the absolute floor unconditionally blocking', () => {

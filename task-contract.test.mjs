@@ -766,13 +766,35 @@ describe('the Tier 1 registry is well-formed', () => {
     expect(PROTECTED_CONTROL_PLANE).toContain('.claude/settings.json')
   })
 
-  it('has one grant, whose reach is exactly the registry', () => {
+  it('maps every grant inside the tier, and NO grant to the whole of it', () => {
+    // The property that makes a grant a grant. If one grant reached every path
+    // in the tier, "grant" would be a synonym for "the tier", and the
+    // grant/path check could never fire — closed in name only.
     expect(Object.keys(CONTROL_PLANE_GRANTS)).toEqual(['runtime-policy-maintenance'])
-    const union = [...new Set(Object.values(CONTROL_PLANE_GRANTS).flat())].sort()
-    expect(union).toEqual([...PROTECTED_CONTROL_PLANE].sort())
-    for (const paths of Object.values(CONTROL_PLANE_GRANTS)) {
-      for (const p of paths) expect(PROTECTED_CONTROL_PLANE).toContain(p)
+    for (const [name, paths] of Object.entries(CONTROL_PLANE_GRANTS)) {
+      expect(paths.length, name).toBeGreaterThan(0)
+      for (const p of paths) expect(PROTECTED_CONTROL_PLANE, name).toContain(p)
+      expect(paths.length, name + ' reaches the entire tier').toBeLessThan(PROTECTED_CONTROL_PLANE.length)
     }
+  })
+
+  it('leaves a tier path reachable by no grant at all — protected, not authorisable yet', () => {
+    // .claude/hooks/** is the case today. That is the difference between the
+    // tier and the floor: the floor is unauthorisable in principle; a hooks
+    // grant simply does not exist yet, and would arrive as its own change.
+    const reachable = new Set(Object.values(CONTROL_PLANE_GRANTS).flat())
+    const unreachable = PROTECTED_CONTROL_PLANE.filter(p => !reachable.has(p))
+    expect(unreachable).toEqual(['.claude/hooks/**'])
+    const c = reseal({
+      ...good(), owner_role: 'workflow-authority', risk: 'r3',
+      control_plane: {
+        grant: 'runtime-policy-maintenance',
+        protected_paths: ['.claude/hooks/guard.mjs'],
+        justification: 'j',
+      },
+    })
+    expect(violations(c).join()).toMatch(/does not authorise ".claude\/hooks\/guard.mjs"/)
+    expect(grantedProtectedPaths(c)).toEqual([])
   })
 
   it('no grant reaches the floor', () => {
@@ -821,7 +843,10 @@ describe('the grant is the only spelling of control-plane authority', () => {
       allowed_paths: ['.claude/settings.json'],
       control_plane: { grant: 'runtime-policy-maintenance', protected_paths: ['.claude/settings.json'], justification: 'j' },
     })
-    expect(violations(c).join()).toMatch(/exactly one spelling|may not authorise the protected/)
+    // Exactly one message, from the allowed_paths side. There is deliberately
+    // no second check on this ground inside controlPlaneViolations: it could
+    // never be the operative one, and dead validation reads like protection.
+    expect(violations(c).join()).toMatch(/may not authorise the protected control-plane path/)
   })
 
   it('still allows ordinary work under .claude that is not protected', () => {
@@ -848,8 +873,47 @@ describe('a grant fails closed on every malformation', () => {
   })
 
   it('rejects an unknown grant', () => {
-    for (const g of ['control-plane-all', 'agent-definition-maintenance', '', null, 42]) {
+    for (const g of ['control-plane-all', 'agent-definition-maintenance', '', null, 42, [], {}]) {
       expect(bad({ ...ok, grant: g }), JSON.stringify(g)).toMatch(/control_plane\.grant must be one of/)
+    }
+  })
+
+  it('rejects a grant inherited from Object.prototype, and does not throw on one', () => {
+    // A bare CONTROL_PLANE_GRANTS[grant] lookup resolves "constructor" to a
+    // function, walks past the unknown-grant guard, and dies on .some() —
+    // taking the validator, the review driver and the CLI down with it. A
+    // crash is not a rejection: the vocabulary is closed to written keys only.
+    for (const g of ['constructor', 'toString', '__proto__', 'hasOwnProperty', 'valueOf', 'isPrototypeOf']) {
+      expect(() => bad({ ...ok, grant: g }), g).not.toThrow()
+      expect(bad({ ...ok, grant: g }), g).toMatch(/control_plane\.grant must be one of/)
+      expect(grantedProtectedPaths(withCp({ ...ok, grant: g })), g).toEqual([])
+    }
+  })
+
+  it('rejects a tier path the grant does not map to, naming the grant', () => {
+    // Distinct from the tier check: this path IS inside Tier 1. What it is
+    // outside is this grant's own reach.
+    const found = bad({ ...ok, protected_paths: ['.claude/hooks/guard.mjs'] })
+    expect(found).toMatch(/does not authorise/)
+    expect(found).toMatch(/it reaches only/)
+    expect(found).not.toMatch(/not inside the protected control plane/)
+  })
+
+  it('rejects a granted path the contract also forbids', () => {
+    // Dead authority. Mechanical review tests forbidden_paths before scope, so
+    // the grant could never take effect — the same contradiction allowed_paths
+    // is already checked for, one tier up.
+    expect(bad(ok, { forbidden_paths: ['.claude/settings.json'] })).toMatch(/can never take effect/)
+    expect(bad(ok, { forbidden_paths: ['.claude/**'] })).toMatch(/can never take effect/)
+    expect(grantedProtectedPaths(withCp(ok, { forbidden_paths: ['.claude/settings.json'] }))).toEqual([])
+  })
+
+  it('rejects a key that is not one of the three', () => {
+    // `activation` was briefly accepted here and read by nothing. A field that
+    // is sealed into the digest but never consulted invites an author to
+    // believe it constrains the grant; the schema stays closed to what is used.
+    for (const key of ['activation', 'expires', 'scope']) {
+      expect(bad({ ...ok, [key]: 'x' }), key).toMatch(new RegExp('unknown field: ' + key))
     }
   })
 
