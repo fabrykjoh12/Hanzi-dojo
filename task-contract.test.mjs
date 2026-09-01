@@ -919,21 +919,38 @@ describe('the grant is the only spelling of control-plane authority', () => {
     }
   })
 
-  it('leaves that child unauthorisable by any route — no grant reaches it either', () => {
-    // Closing the loop: the child is refused in allowed_paths AND refused in
-    // control_plane, because no grant maps to .claude/hooks/**. Protected, and
-    // currently not authorisable at all — which is the state this PR ships.
-    const c = reseal({
+  it('leaves that child reachable through ONE grant and no other route', () => {
+    // Closing the loop. The child is refused in allowed_paths by every accepted
+    // spelling (above), and in control_plane it is reachable only through the
+    // grant that actually maps to it.
+    //
+    // This spec used to read "unauthorisable by any route — no grant reaches it
+    // either", which was true while runtime-policy-maintenance was the only
+    // grant. runtime-hook-maintenance now reaches .claude/hooks/**, so the claim
+    // is rewritten rather than deleted: the change in authority should be
+    // visible here, not silently dropped.
+    const withGrant = (grant) => reseal({
       ...good(), owner_role: 'workflow-authority', risk: 'r3',
-      control_plane: {
-        grant: 'runtime-policy-maintenance',
-        protected_paths: ['.claude/hooks/guard.mjs'],
-        justification: 'j',
-      },
+      control_plane: { grant, protected_paths: ['.claude/hooks/guard.mjs'], justification: 'j' },
     })
-    expect(violations(c).join()).toMatch(/does not authorise ".claude\/hooks\/guard.mjs"/)
-    expect(grantedProtectedPaths(c)).toEqual([])
-    expect(effectiveAllowedPaths(c)).toEqual(good().allowed_paths)
+
+    // The settings grant does not reach it — the tier is not one authority.
+    const viaPolicy = withGrant('runtime-policy-maintenance')
+    expect(violations(viaPolicy).join()).toMatch(/does not authorise ".claude\/hooks\/guard.mjs"/)
+    expect(grantedProtectedPaths(viaPolicy)).toEqual([])
+    expect(effectiveAllowedPaths(viaPolicy)).toEqual(good().allowed_paths)
+
+    // The hooks grant does, and only over what it names.
+    const viaHooks = withGrant('runtime-hook-maintenance')
+    expect(violations(viaHooks)).toEqual([])
+    expect(grantedProtectedPaths(viaHooks)).toEqual(['.claude/hooks/guard.mjs'])
+    expect(effectiveAllowedPaths(viaHooks)).toContain('.claude/hooks/guard.mjs')
+
+    // And allowed_paths is still refused for it whichever grant is held.
+    for (const c of [viaPolicy, viaHooks]) {
+      const spelled = reseal({ ...c, allowed_paths: ['.claude/hooks/guard.mjs'] })
+      expect(violations(spelled).join()).toMatch(/may not authorise the protected control-plane path/)
+    }
   })
 
   it('rejects declaring the same path in both places', () => {
