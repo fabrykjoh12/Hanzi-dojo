@@ -285,16 +285,34 @@ export const WRITE_SIDE_PRODUCTION_EFFECTS = [
 ]
 
 /**
- * Paths no contract may ever place in allowed_paths, whatever else it says.
+ * TIER 0 — THE ABSOLUTE FLOOR. Paths no contract may ever authorise, through
+ * allowed_paths or through any other mechanism, whatever else it says.
  *
  * This is the "cannot expand its own scope" rule. A task that could authorise
  * edits to .agent/tasks/** could rewrite its own acceptance criteria and call
- * the result compliant; one that could authorise .claude/settings.json could
- * widen the harness permission allow-list. Both are refused at the contract
- * level, so the escalation cannot even be expressed.
+ * the result compliant. Refused at the contract level, so the escalation
+ * cannot even be expressed.
  *
- * .agent/roles.json is on the floor for exactly the same reason, one level up:
- * it is the taxonomy that DEFINES authority domains. A task able to edit it
+ * NOT THE SAME AS TIER 1. .claude/settings.json used to sit here on the same
+ * reasoning — a task that could edit it could widen the harness permission
+ * allow-list. It no longer does, because that reasoning proved too blunt: the
+ * file genuinely has to change when a runtime policy is installed, and a floor
+ * entry makes that impossible rather than deliberate. It now lives in
+ * PROTECTED_CONTROL_PLANE below, where the authority still cannot be spelled
+ * in allowed_paths but CAN be granted narrowly, through a digest-covered
+ * control_plane grant that names the role, the risk floor and the exact paths.
+ *
+ * So the two tiers are different claims, and the difference is the point:
+ *
+ *   Tier 0 (here) — never authorisable by a task contract. No grant exists,
+ *                   and none can be written; the only route is root governance.
+ *   Tier 1 (below) — not authorisable through ordinary allowed_paths, but
+ *                    narrowly authorisable through a valid control_plane grant,
+ *                    which is visible as its own term in the sealed diff.
+ *
+ * .agent/roles.json is on the floor for exactly the same reason as
+ * .agent/tasks/**, one level up: it is the taxonomy that DEFINES authority
+ * domains. A task able to edit it
  * could add itself a role, or rewrite the non-authority list that bounds the
  * role it already holds — self-authorisation by redefining the vocabulary
  * rather than by widening a path. Role-taxonomy governance therefore happens

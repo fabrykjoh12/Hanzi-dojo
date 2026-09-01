@@ -837,6 +837,49 @@ describe('the grant is the only spelling of control-plane authority', () => {
       .toMatch(/may not authorise the protected control-plane path/)
   })
 
+  it('rejects a narrow CHILD of a protected subtree — the tier is not divisible', () => {
+    // The other direction of the overlap guard, and the one an author would
+    // actually reach for: not `.claude/hooks/**`, which is obviously the tier,
+    // but one file inside it, which looks like an ordinary working file.
+    //
+    // This spec exists to kill a specific mutation. The guard is
+    //   covers(a, protectedPath) || covers(protectedPath, a)
+    // and the second disjunct is the only thing that catches a child. Delete
+    // it and every other spec here still passes — `.claude/hooks/guard.mjs`
+    // would validate in allowed_paths, and mechanical review would then put a
+    // hook file in scope with no finding at all. Tier 1 would be bypassable by
+    // anyone who named a path precisely enough.
+    for (const child of [
+      '.claude/hooks/guard.mjs',
+      '.claude/hooks/pre/deep/nested-guard.mjs',
+    ]) {
+      const c = reseal({ ...good(), allowed_paths: [child] })
+      const found = violations(c).join()
+      expect(found, child).toMatch(/may not authorise the protected control-plane path/)
+      // It must name the TIER entry, not just echo the path back, so the
+      // author is sent to control_plane rather than to a narrower spelling.
+      expect(found, child).toContain('.claude/hooks/**')
+      expect(found, child).toContain(child)
+    }
+  })
+
+  it('leaves that child unauthorisable by any route — no grant reaches it either', () => {
+    // Closing the loop: the child is refused in allowed_paths AND refused in
+    // control_plane, because no grant maps to .claude/hooks/**. Protected, and
+    // currently not authorisable at all — which is the state this PR ships.
+    const c = reseal({
+      ...good(), owner_role: 'workflow-authority', risk: 'r3',
+      control_plane: {
+        grant: 'runtime-policy-maintenance',
+        protected_paths: ['.claude/hooks/guard.mjs'],
+        justification: 'j',
+      },
+    })
+    expect(violations(c).join()).toMatch(/does not authorise ".claude\/hooks\/guard.mjs"/)
+    expect(grantedProtectedPaths(c)).toEqual([])
+    expect(effectiveAllowedPaths(c)).toEqual(good().allowed_paths)
+  })
+
   it('rejects declaring the same path in both places', () => {
     const c = reseal({
       ...good(), owner_role: 'workflow-authority', risk: 'r3',
