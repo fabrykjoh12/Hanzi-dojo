@@ -49,7 +49,7 @@ export const ROLES_FILE = '.agent/roles.json'
  * Deliberately excludes free-form annotation (`notes`, `links`) — a contract
  * should be annotatable without re-sealing, or nobody will annotate it.
  */
-export const BINDING_FIELDS = [
+export const REQUIRED_BINDING_FIELDS = [
   'id',
   'goal',
   'owner_role',
@@ -64,6 +64,32 @@ export const BINDING_FIELDS = [
   'stop_conditions',
 ]
 
+/**
+ * OPTIONAL BINDING FIELDS — the schema-evolution rule, stated once.
+ *
+ * A required binding field is always folded into the digest, even when absent:
+ * `canonicalise(undefined)` is the string "null", so the key still enters the
+ * canonical form. That is correct for a field every contract must carry, and
+ * fatal for one added later — adding `control_plane` to the required list
+ * changes the digest of every contract already sealed, and re-sealing them
+ * would mean writing `.agent/tasks/**`, which is on the floor and which no
+ * contract may authorise. The schema could not be extended at all.
+ *
+ * So an OPTIONAL binding field is folded into the digest IF AND ONLY IF the key
+ * is present. Absent, it contributes nothing and existing seals stand
+ * byte-for-byte; present, it is bound exactly as any other term, and changing,
+ * widening or removing it moves the digest.
+ *
+ * This is a general rule, not an accommodation for one field: anything added
+ * here later inherits the same compatibility guarantee, and a spec proves it
+ * against the contracts actually on disk.
+ */
+export const OPTIONAL_BINDING_FIELDS = ['control_plane']
+
+/** Every field the digest binds, in canonical order. */
+export const BINDING_FIELDS = [...REQUIRED_BINDING_FIELDS, ...OPTIONAL_BINDING_FIELDS]
+
+/** Annotation. Deliberately OUTSIDE the digest — see the digest comment. */
 export const OPTIONAL_FIELDS = ['notes', 'links', 'contract_digest']
 
 /**
@@ -278,10 +304,58 @@ export const WRITE_SIDE_PRODUCTION_EFFECTS = [
 export const ALWAYS_FORBIDDEN = [
   '.agent/tasks/**',
   '.agent/roles.json',
-  '.claude/settings.json',
   '.claude/settings.local.json',
   '.git/**',
 ]
+
+/**
+ * TIER 1 — THE PROTECTED CONTROL PLANE.
+ *
+ * Paths an ordinary task can never authorise, but which a specialised
+ * workflow-authority task may be granted through `control_plane`. They are the
+ * files that decide what agents may do at runtime.
+ *
+ * Why a second tier exists at all: `.claude/settings.json` used to sit on the
+ * absolute floor, and an absolute floor entry can never be maintained. Closing
+ * the file to everyone forever is not containment, it is a dead end — the only
+ * way to change it would be to edit this validator, which is precisely the
+ * escalation the floor exists to prevent. Tier 1 keeps ordinary tasks out while
+ * leaving one narrow, reviewed, digest-covered door.
+ *
+ * Tier 0 does NOT move. A task still cannot rewrite its own contract, the role
+ * taxonomy, the machine-local settings override, or git internals — no grant
+ * reaches any of them, and the two tiers are asserted disjoint.
+ *
+ * Every entry obeys the decidable grammar (exact path or `dir/**`). A filename
+ * wildcard such as `tools/runtime-policy*.mjs` is deliberately NOT used: the
+ * grammar cannot reason about it, and a registry entry nobody can decide
+ * containment against would make the tier best-effort rather than complete.
+ */
+export const PROTECTED_CONTROL_PLANE = [
+  '.claude/settings.json',
+  '.claude/agents/**',
+  '.claude/hooks/**',
+]
+
+/**
+ * GRANT -> the paths that grant may reach. Closed, and narrow on purpose.
+ *
+ * A grant is not a label that unlocks the tier. Maintaining a reviewer's prompt
+ * is not the same authority as installing a runtime policy, so the two cannot
+ * borrow each other's reach, and there is no `control-plane-all`.
+ *
+ * A future runtime guard will need its own authority-bearing path added here
+ * deliberately — an exact file or a dedicated subtree, never a wildcard.
+ */
+export const CONTROL_PLANE_GRANTS = {
+  'runtime-policy-maintenance': ['.claude/settings.json', '.claude/hooks/**'],
+  'agent-definition-maintenance': ['.claude/agents/**'],
+}
+
+/** Is `p` inside the protected tier? */
+const inProtectedTier = (p) => PROTECTED_CONTROL_PLANE.some(t => covers(t, p))
+/** Is `p` inside the absolute floor? */
+const inAbsoluteFloor = (p) => ALWAYS_FORBIDDEN.some(f => covers(f, p))
 
 /**
  * THE PATH GRAMMAR. Exactly two accepted forms:
@@ -343,10 +417,20 @@ export function canonicalise(value) {
   return JSON.stringify(value === undefined ? null : value)
 }
 
-/** The digest over the binding fields only. */
+/**
+ * The digest over the binding fields.
+ *
+ * Required fields always; optional binding fields only when the key is present.
+ * The presence test is `hasOwnProperty`, not a truthiness or `!== undefined`
+ * check — an explicit `"control_plane": null` is a statement someone wrote down
+ * and must be bound, while an absent key must leave the digest untouched.
+ */
 export function computeDigest(contract) {
   const bound = {}
-  for (const f of BINDING_FIELDS) bound[f] = contract?.[f]
+  for (const f of REQUIRED_BINDING_FIELDS) bound[f] = contract?.[f]
+  for (const f of OPTIONAL_BINDING_FIELDS) {
+    if (contract && Object.prototype.hasOwnProperty.call(contract, f)) bound[f] = contract[f]
+  }
   return createHash('sha256').update(canonicalise(bound)).digest('hex')
 }
 
@@ -389,7 +473,7 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   for (const key of Object.keys(contract)) {
     if (!allowedKeys.has(key)) out.push(at + 'unknown field: ' + key)
   }
-  for (const field of BINDING_FIELDS) {
+  for (const field of REQUIRED_BINDING_FIELDS) {
     if (!(field in contract)) out.push(at + 'missing required field: ' + field)
   }
 
@@ -469,6 +553,20 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
     }
   }
 
+  // Tier 1 is not reachable through ordinary allowed_paths, whatever the role.
+  // The grant is the ONLY spelling, which is what keeps control-plane authority
+  // visible as its own term in the sealed diff instead of hiding among the
+  // task's ordinary working files.
+  for (const a of okAllowed) {
+    for (const protectedPath of PROTECTED_CONTROL_PLANE) {
+      if (covers(a, protectedPath) || covers(protectedPath, a)) {
+        out.push(at + 'allowed_paths may not authorise the protected control-plane path ' +
+          protectedPath + ' (via "' + a + '") — declare it in control_plane.protected_paths ' +
+          'under a matching grant instead')
+      }
+    }
+  }
+
   // Contradictions. A carve-out (forbidden INSIDE allowed) is normal and fine;
   // what is contradictory is an allowance that can never take effect.
   for (const a of okAllowed) {
@@ -503,6 +601,9 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
     }
   }
 
+  // ---- control_plane -----------------------------------------------------
+  out.push(...controlPlaneViolations(contract, at))
+
   // ---- the seal ----------------------------------------------------------
   // skipDigest is for the --seal pre-flight ONLY: the digest is about to be
   // recomputed, so complaining that it is stale would be noise. Every other
@@ -522,6 +623,123 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   }
 
   return out
+}
+
+/** The keys a control_plane declaration may carry. Closed. */
+const CONTROL_PLANE_KEYS = ['grant', 'protected_paths', 'justification', 'activation']
+
+/** The lowest risk a control-plane grant may be declared at. */
+export const CONTROL_PLANE_MIN_RISK = 'r3'
+
+/**
+ * Validate a `control_plane` declaration. Absent is valid and yields nothing.
+ *
+ * Everything here fails closed. A declaration that is malformed, names an
+ * unknown grant, or reaches a path its grant does not map to is REJECTED
+ * outright rather than partially honoured — a half-understood grant is an
+ * authority nobody has actually reviewed.
+ *
+ * Note what this does NOT require: that a protected path appear verbatim in the
+ * registry. A grant may name something NARROWER than its mapping — one agent
+ * file rather than `.claude/agents/**` — because forcing every grant to the
+ * widest available spelling would be the opposite of least privilege. What is
+ * required is containment: inside the tier, and inside the grant's own reach.
+ */
+export function controlPlaneViolations(contract, at = '') {
+  if (!isPlainObject(contract)) return []
+  if (!Object.prototype.hasOwnProperty.call(contract, 'control_plane')) return []
+
+  const cp = contract.control_plane
+  const out = []
+  if (!isPlainObject(cp)) {
+    return [at + 'control_plane must be an object naming a grant and its protected_paths (got ' +
+      JSON.stringify(cp) + ')']
+  }
+
+  for (const key of Object.keys(cp)) {
+    if (!CONTROL_PLANE_KEYS.includes(key)) out.push(at + 'control_plane: unknown field: ' + key)
+  }
+
+  // The role and risk that a control-plane grant is only ever expressible at.
+  // Risk is a FLOOR, not an equality: r4 keeps its canonical meaning of direct
+  // production authority, and control-plane work does not become production
+  // work by being sensitive.
+  if (contract.owner_role !== 'workflow-authority') {
+    out.push(at + 'control_plane requires owner_role "workflow-authority" (got ' +
+      JSON.stringify(contract.owner_role) + ') — control-plane authority is not delegable to another domain')
+  }
+  const declared = RISK_LEVELS.indexOf(contract.risk)
+  const floor = RISK_LEVELS.indexOf(CONTROL_PLANE_MIN_RISK)
+  if (declared < 0 || declared < floor) {
+    out.push(at + 'control_plane requires risk of at least ' + CONTROL_PLANE_MIN_RISK +
+      ' (got ' + JSON.stringify(contract.risk) + ')')
+  }
+
+  const grant = cp.grant
+  const mapped = isNonEmptyString(grant) ? CONTROL_PLANE_GRANTS[grant] : undefined
+  if (!isNonEmptyString(grant) || mapped === undefined) {
+    out.push(at + 'control_plane.grant must be one of ' + Object.keys(CONTROL_PLANE_GRANTS).join(', ') +
+      ' (got ' + JSON.stringify(grant) + ')')
+  }
+  if (!isNonEmptyString(cp.justification)) {
+    out.push(at + 'control_plane.justification must say why this task needs control-plane authority')
+  }
+  if ('activation' in cp && !isNonEmptyString(cp.activation)) {
+    out.push(at + 'control_plane.activation must be a non-empty string when present')
+  }
+
+  const paths = cp.protected_paths
+  if (!isStringArray(paths) || paths.length === 0) {
+    out.push(at + 'control_plane.protected_paths must be a non-empty array of non-empty strings')
+    return out
+  }
+
+  const allowed = Array.isArray(contract.allowed_paths) ? contract.allowed_paths.filter(isNonEmptyString) : []
+  for (const p of paths) {
+    const grammar = pathGrammarError(p)
+    if (grammar) {
+      out.push(at + 'control_plane.protected_paths entry "' + p + '" ' + grammar)
+      continue
+    }
+    if (inAbsoluteFloor(p)) {
+      out.push(at + 'control_plane.protected_paths may never name "' + p +
+        '" — it is on the absolute floor, which no grant reaches')
+      continue
+    }
+    if (!inProtectedTier(p)) {
+      out.push(at + 'control_plane.protected_paths entry "' + p +
+        '" is not inside the protected control plane (' + PROTECTED_CONTROL_PLANE.join(', ') + ')')
+      continue
+    }
+    if (mapped !== undefined && !mapped.some(m => covers(m, p))) {
+      out.push(at + 'grant "' + grant + '" does not authorise "' + p +
+        '" — it reaches only ' + mapped.join(', '))
+    }
+    if (allowed.some(a => normalisePath(a) === normalisePath(p))) {
+      out.push(at + '"' + p + '" is declared in both allowed_paths and control_plane.protected_paths ' +
+        '— control-plane authority has exactly one spelling')
+    }
+  }
+  return out
+}
+
+/**
+ * The protected paths this contract has VALIDLY been granted — the empty list
+ * unless the whole declaration checks out.
+ *
+ * Callers use this to widen an implementation's effective scope, so a partially
+ * valid grant must widen nothing. Fail closed, not fail partial.
+ */
+export function grantedProtectedPaths(contract) {
+  if (controlPlaneViolations(contract).length > 0) return []
+  const paths = contract?.control_plane?.protected_paths
+  return Array.isArray(paths) ? [...paths] : []
+}
+
+/** allowed_paths united with any validly granted protected paths. */
+export function effectiveAllowedPaths(contract) {
+  const allowed = Array.isArray(contract?.allowed_paths) ? contract.allowed_paths : []
+  return [...allowed, ...grantedProtectedPaths(contract)]
 }
 
 // ---------------------------------------------------------------------------
