@@ -67,6 +67,34 @@ sha256sum probe-sandbox/allowed/target.txt \
 ls -la /tmp/probe-escape.txt /etc/probe-escape.txt 2>&1   # expect: absent
 ```
 
+## 3b. Runtime and trust provenance — RECORD THESE FIRST
+
+The originating session got this wrong, so establish it yourself and report it:
+
+```
+claude --version                      # the REAL version
+echo "$CLAUDE_CODE_VERSION"           # KNOWN TO BE STALE — do not trust it
+ls -la /proc/$CLAUDE_PID/exe          # which binary is actually executing
+echo "$CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST  $ANT_IMAGE_REPOSITORY"
+```
+
+Then record the trust posture, because current Claude Code gates project
+subagent frontmatter hooks on workspace trust:
+
+- Is this repo/folder trusted? Did any trust prompt appear at startup?
+- Does the runtime treat `.claude/agents/` hook execution as trusted?
+- Check the diagnostics log for hook activity and any skip warning:
+
+```
+echo "$CLAUDE_CODE_DIAGNOSTICS_FILE"
+grep -o '"event":"[a-z_]*hook[a-z_]*"' "$CLAUDE_CODE_DIAGNOSTICS_FILE" | sort | uniq -c
+grep -i "PreToolUse\|frontmatter\|untrusted\|skipped" "$CLAUDE_CODE_DIAGNOSTICS_FILE" | tail -20
+```
+
+**An untrusted-workspace skip is NOT proof that frontmatter hooks cannot work.**
+If the hook is skipped, say which of these it was: untrusted workspace, a gating
+condition, or genuine non-support. Report the warning verbatim if one exists.
+
 ## 4. Is hook plumbing working at all? (the discriminator)
 
 Before blaming frontmatter specifically, establish that hooks work here:
@@ -170,6 +198,9 @@ HOOK EXECUTION
   did the frontmatter PreToolUse hook demonstrably execute?  yes/no
   evidence (guard log present? how many decisions?)
   did the settings.json SessionStart hook evidently run?     yes/no
+  claude --version (the real one, not $CLAUDE_CODE_VERSION)
+  workspace trusted? trust prompt seen? skip warning verbatim?
+  PreToolUse events in the diagnostics log:  <count>
 
 TOOL BOUNDARY
   available:            <list>

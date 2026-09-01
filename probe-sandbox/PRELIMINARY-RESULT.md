@@ -60,3 +60,66 @@ Note the discriminator available to the fresh session: the SessionStart hook in
 `.claude/settings.json` demonstrably runs (it installs node_modules on a remote
 container). So hooks work in general — what did not work is a hook declared in
 subagent frontmatter.
+
+---
+
+# ADDENDUM — runtime provenance corrected
+
+**The version stated above and in the originating report was WRONG.** Left in
+place rather than edited out, because the mistake is itself part of the record.
+
+    CLAUDE_CODE_VERSION (env)      2.1.42     <- STALE, misleading
+    claude --version               2.1.252
+    /proc/<CLAUDE_PID>/exe   ->    /opt/claude-code/bin/claude   (214 MB ELF)
+    that binary reports            2.1.252
+    npm global @anthropic-ai/claude-code   2.1.42   <- present but NOT executing
+    npm registry latest                    2.1.252
+
+Two installations exist. The env var reflects the vestigial npm package; the
+process actually running is the host-managed binary at
+`/opt/claude-code/bin/claude`, confirmed through `/proc/<pid>/exe`.
+
+**The probe ran on 2.1.252, which is the current release** (identical to npm
+latest at time of writing). So "an early 2.1.x runtime with known frontmatter-hook
+failures" is NOT the explanation. There is nothing to upgrade to.
+
+`CLAUDE_CODE_PROVIDER_MANAGED_BY_HOST=1`, image `sandbox-ccr-default`, runner
+`release-0b91c7974-ext` — the runtime is supplied by the Anthropic-managed
+harness image, not by a repo dependency, and is not user-upgradable from here.
+A new session on this environment gets the same image, so it will run 2.1.252 or
+newer, never 2.1.42.
+
+## The mid-session-reload hypothesis is also dead
+
+    .claude/agents/probe-producer.md   mtime  10:49:54
+    session start (first diag line)           11:09:47
+    setup_hooks_captured                      11:09:48.669
+
+The agent definition existed on disk **twenty minutes before** the session
+captured hooks. It was not a file that appeared after capture.
+
+## What the diagnostics log shows
+
+Across the entire session there are exactly two `hook_spawn_started` events, both
+`SessionStart`, and **zero occurrences of `PreToolUse`**. No PreToolUse hook
+executed at any point — so nothing merely "denied by something else"; the hook
+never ran.
+
+The binary does implement the feature: it contains the message
+`frontmatter hook(s) from <source> for session <id>`, alongside
+`Converting Stop hook to SubagentStop for … (subagents trigger SubagentStop)`.
+So subagent frontmatter hooks are a real code path in 2.1.252 — it simply did
+not fire here.
+
+## Remaining explanations, narrowed
+
+1. Frontmatter `PreToolUse` hooks are not honoured for **project** (repo)
+   subagents in this workspace/trust configuration.
+2. A **resumed** session captures hooks differently from a cold start, so a
+   genuinely fresh session may behave differently.
+3. Some gating condition not visible from here (workspace trust, managed
+   policy).
+
+The fresh-session run remains the right discriminator — but it is now a test of
+**the current release**, not of an outdated one. If it fails there too, the
+frontmatter route is not viable and the decision returns to you.
