@@ -766,26 +766,51 @@ describe('the Tier 1 registry is well-formed', () => {
     expect(PROTECTED_CONTROL_PLANE).toContain('.claude/settings.json')
   })
 
-  it('maps every grant inside the tier, and NO grant to the whole of it', () => {
-    // The property that makes a grant a grant. If one grant reached every path
-    // in the tier, "grant" would be a synonym for "the tier", and the
-    // grant/path check could never fire — closed in name only.
-    expect(Object.keys(CONTROL_PLANE_GRANTS)).toEqual(['runtime-policy-maintenance'])
+  it('names both grants, and maps each of them inside the tier', () => {
+    expect(Object.keys(CONTROL_PLANE_GRANTS)).toEqual([
+      'runtime-policy-maintenance', 'runtime-hook-maintenance',
+    ])
     for (const [name, paths] of Object.entries(CONTROL_PLANE_GRANTS)) {
       expect(paths.length, name).toBeGreaterThan(0)
       for (const p of paths) expect(PROTECTED_CONTROL_PLANE, name).toContain(p)
-      expect(paths.length, name + ' reaches the entire tier').toBeLessThan(PROTECTED_CONTROL_PLANE.length)
     }
   })
 
-  it('leaves a tier path reachable by no grant at all — protected, not authorisable yet', () => {
-    // .claude/hooks/** is the case today. That is the difference between the
-    // tier and the floor: the floor is unauthorisable in principle; a hooks
-    // grant simply does not exist yet, and would arrive as its own change.
-    const reachable = new Set(Object.values(CONTROL_PLANE_GRANTS).flat())
-    const unreachable = PROTECTED_CONTROL_PLANE.filter(p => !reachable.has(p))
-    expect(unreachable).toEqual(['.claude/hooks/**'])
-    const c = reseal({
+  it('pins each grant to its own mapping, not to the union', () => {
+    // Asserted per grant rather than over the flattened union: a union check
+    // stays green if the two mappings swap, or if one quietly absorbs the
+    // other's path while some third grant sheds it.
+    expect(CONTROL_PLANE_GRANTS['runtime-policy-maintenance']).toEqual(['.claude/settings.json'])
+    expect(CONTROL_PLANE_GRANTS['runtime-hook-maintenance']).toEqual(['.claude/hooks/**'])
+  })
+
+  it('lets NO SINGLE GRANT reach the whole tier — asserted by reach, not by count', () => {
+    // The property that makes a grant a grant, and the one this spec exists to
+    // keep honest as the registry grows. Counting paths was enough while the
+    // tier had one covered entry; it is not enough now. A future grant mapping
+    // to a single covering subtree would have a shorter list than the tier and
+    // still reach all of it, so the test has to ask what each mapping COVERS.
+    for (const [name, paths] of Object.entries(CONTROL_PLANE_GRANTS)) {
+      const missed = PROTECTED_CONTROL_PLANE.filter(t => !paths.some(m => m === t || covers(m, t)))
+      expect(missed.length, name + ' reaches every path in Tier 1').toBeGreaterThan(0)
+    }
+  })
+
+  it('covers the whole tier COLLECTIVELY — protected no longer means unauthorizable', () => {
+    // What changed with runtime-hook-maintenance. Every tier path is now
+    // reachable by exactly one grant, so Tier 1 is fully governed rather than
+    // partly unreachable — while the spec above keeps any one grant from being
+    // a synonym for the tier. Tier 0 is still the unauthorizable one.
+    for (const t of PROTECTED_CONTROL_PLANE) {
+      const owners = Object.entries(CONTROL_PLANE_GRANTS)
+        .filter(([, paths]) => paths.some(m => m === t || covers(m, t)))
+        .map(([name]) => name)
+      expect(owners, t + ' is reachable by exactly one grant').toHaveLength(1)
+    }
+  })
+
+  it('keeps the two grants disjoint — neither borrows the other\'s reach', () => {
+    const policy = reseal({
       ...good(), owner_role: 'workflow-authority', risk: 'r3',
       control_plane: {
         grant: 'runtime-policy-maintenance',
@@ -793,8 +818,39 @@ describe('the Tier 1 registry is well-formed', () => {
         justification: 'j',
       },
     })
-    expect(violations(c).join()).toMatch(/does not authorise ".claude\/hooks\/guard.mjs"/)
-    expect(grantedProtectedPaths(c)).toEqual([])
+    expect(violations(policy).join()).toMatch(/does not authorise ".claude\/hooks\/guard.mjs"/)
+    expect(grantedProtectedPaths(policy)).toEqual([])
+
+    const hook = reseal({
+      ...good(), owner_role: 'workflow-authority', risk: 'r3',
+      control_plane: {
+        grant: 'runtime-hook-maintenance',
+        protected_paths: ['.claude/settings.json'],
+        justification: 'j',
+      },
+    })
+    expect(violations(hook).join()).toMatch(/does not authorise ".claude\/settings.json"/)
+    expect(grantedProtectedPaths(hook)).toEqual([])
+  })
+
+  it('lets runtime-hook-maintenance reach the subtree and anything inside it', () => {
+    const grantHooks = (paths) => reseal({
+      ...good(), owner_role: 'workflow-authority', risk: 'r3',
+      control_plane: {
+        grant: 'runtime-hook-maintenance',
+        protected_paths: paths,
+        justification: 'installs the runtime path guard',
+      },
+    })
+    for (const paths of [
+      ['.claude/hooks/**'],
+      ['.claude/hooks/guard.mjs'],
+      ['.claude/hooks/pre/deep/guard.mjs'],
+    ]) {
+      expect(violations(grantHooks(paths)), JSON.stringify(paths)).toEqual([])
+      expect(grantedProtectedPaths(grantHooks(paths))).toEqual(paths)
+      expect(effectiveAllowedPaths(grantHooks(paths))).toContain(paths[0])
+    }
   })
 
   it('no grant reaches the floor', () => {

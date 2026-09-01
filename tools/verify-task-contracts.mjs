@@ -378,27 +378,35 @@ export const PROTECTED_CONTROL_PLANE = [
  * is not the same authority as installing a runtime policy, so the two cannot
  * borrow each other's reach, and there is no `control-plane-all`.
  *
- * One grant, because one is what the runtime-enforcement work needs. A vocabulary
- * is easier to widen deliberately than to narrow after something depends on it,
- * and `agent-definition-maintenance` arrives with the paths it would reach
- * rather than ahead of them.
+ * Two grants, each reaching one part of the tier and neither reaching the other's.
+ * `runtime-policy-maintenance` maintains the permission and hook DECLARATIONS in
+ * `.claude/settings.json`; `runtime-hook-maintenance` maintains the hook scripts
+ * those declarations point at. Related work, but not the same authority: a task
+ * that writes a guard script has no business rewriting the permission allow-list,
+ * and a task that edits settings has no business rewriting the code a hook runs.
+ * A vocabulary is easier to widen deliberately than to narrow after something
+ * depends on it, and `agent-definition-maintenance` still arrives with the paths
+ * it would reach rather than ahead of them.
  *
- * NOTE WHAT THIS MAPPING DOES NOT COVER. `.claude/hooks/**` is in the tier and
- * in no grant, so today NO contract can be authorised to write a hook. That is
- * deliberate and it is the difference between the tier and the floor: the floor
- * is unauthorisable in principle, while a hooks grant simply does not exist yet
- * and would arrive as its own reviewed change, with the paths it reaches.
+ * TIER 1 IS NOW COVERED COLLECTIVELY, AND BY NO SINGLE GRANT. That distinction is
+ * the whole design. Between them the two grants reach every path in the tier, so
+ * "protected" no longer implies "unauthorizable" for any of it — but neither
+ * grant alone reaches more than its own part, so no grant is a synonym for the
+ * tier. Widening one of these to cover the other's paths, rather than adding a
+ * third narrow grant, would collapse that distinction and make the mapping check
+ * below unable to fire.
  *
- * Keeping the mapping a PROPER subset is also what makes the grant a grant. If
- * the one grant reached every path in the tier, "grant" would be a synonym for
- * "the tier", the mapping check below could never fire, and the vocabulary
- * would be closed in name only.
+ * The alternative considered and rejected for the hook script: leaving it in an
+ * ordinary Tier 2 file and pointing settings at it. That needs no grant, and it
+ * would let a task rewrite the very guard that constrains it.
  *
- * A future runtime guard will need its own authority-bearing path added here
- * deliberately — an exact file or a dedicated subtree, never a wildcard.
+ * Any future authority-bearing path is added here deliberately — an exact file or
+ * a dedicated subtree, never a wildcard, and never by widening a grant that
+ * already exists for something else.
  */
 export const CONTROL_PLANE_GRANTS = {
   'runtime-policy-maintenance': ['.claude/settings.json'],
+  'runtime-hook-maintenance': ['.claude/hooks/**'],
 }
 
 /** Is `p` inside the protected tier? */
