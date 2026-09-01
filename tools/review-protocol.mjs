@@ -45,6 +45,8 @@ import {
   RISK_LEVELS,
   PRODUCTION_EFFECTS,
   ALWAYS_FORBIDDEN,
+  PROTECTED_CONTROL_PLANE,
+  grantedProtectedPaths,
   computeDigest,
   covers,
   normalisePath,
@@ -206,7 +208,17 @@ export function mechanicalFindings({ contract, changedPaths }) {
       'a review without a diff has nothing to inspect')]
   }
 
-  const allowed = Array.isArray(contract.allowed_paths) ? contract.allowed_paths : []
+  const declared = Array.isArray(contract.allowed_paths) ? contract.allowed_paths : []
+  // THE EFFECTIVE SCOPE. allowed_paths plus whatever the contract has VALIDLY
+  // been granted over the protected control plane.
+  //
+  // grantedProtectedPaths returns nothing unless the entire control_plane
+  // declaration checks out — role, risk floor, closed grant, grant/path
+  // compatibility, tier containment, grammar. So a malformed or half-understood
+  // grant widens nothing, and the paths it named are still reported out of
+  // scope. Fail closed, not fail partial.
+  const granted = grantedProtectedPaths(contract)
+  const allowed = [...declared, ...granted]
   const forbidden = Array.isArray(contract.forbidden_paths) ? contract.forbidden_paths : []
   const contractFile = TASKS_DIR + '/' + contract.id + '.json'
 
@@ -242,10 +254,20 @@ export function mechanicalFindings({ contract, changedPaths }) {
     }
 
     if (!allowed.some(a => a === p || covers(a, p))) {
-      out.push(finding('blocker', 'path-compliance',
-        'The diff changes a path outside allowed_paths',
-        'changed path: ' + p + ' matches none of: ' + allowed.join(', '),
-        'allowed_paths'))
+      // Naming the tier explicitly, because "outside allowed_paths" would send
+      // the reader to fix the wrong field — adding a protected path there is
+      // rejected by the validator, and the grant is the only spelling.
+      const protectedHit = PROTECTED_CONTROL_PLANE.find(t => covers(t, p) || t === p)
+      out.push(protectedHit
+        ? finding('blocker', 'hidden-authority-expansion',
+          'The diff touches the protected control plane without a valid grant',
+          'changed path: ' + p + ' falls under ' + protectedHit +
+            ', which is reachable only through a valid control_plane grant',
+          'control_plane')
+        : finding('blocker', 'path-compliance',
+          'The diff changes a path outside allowed_paths',
+          'changed path: ' + p + ' matches none of: ' + allowed.join(', '),
+          'allowed_paths'))
     }
   }
 

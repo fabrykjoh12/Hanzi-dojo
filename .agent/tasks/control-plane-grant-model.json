@@ -1,0 +1,56 @@
+{
+  "id": "control-plane-grant-model",
+  "goal": "Introduce the protected control-plane tier and the digest-covered control_plane grant that expresses it, so a specialized workflow-authority task can be authorized to maintain runtime-policy files while an ordinary task still cannot reach them by adding a path to allowed_paths. Rules only: this task grants nothing and changes no runtime behaviour.",
+  "owner_role": "workflow-authority",
+  "risk": "r3",
+  "allowed_paths": [
+    "tools/verify-task-contracts.mjs",
+    "tools/review-protocol.mjs",
+    "task-contract.test.mjs",
+    "review-protocol.test.mjs",
+    "docs/AUTOMATION-AUTHORITY.md"
+  ],
+  "forbidden_paths": [],
+  "non_goals": [
+    "Carrying a control_plane grant of its own — this task introduces the mechanism and must not exercise it",
+    "Modifying .claude/settings.json, .claude/agents/**, .claude/hooks/** or any runtime policy",
+    "Any runtime enforcement: no hook, no permissions rule, no sandbox, no producer agent",
+    "Moving .agent/roles.json, .agent/tasks/**, .claude/settings.local.json or .git/** out of the absolute floor",
+    "Editing .agent/tasks/README.md, which is inside the Tier 0 floor",
+    "Re-sealing any existing contract, or changing any existing contract's digest",
+    "Widening the canonical meaning of r4, or altering the risk or production_effect taxonomies",
+    "Changing the role model in .agent/roles.json",
+    "Mutating the live GitHub ruleset, branch protection, or any repository setting",
+    "Merging anything, or making any production, database or store change"
+  ],
+  "acceptance_criteria": [
+    "A protected control-plane tier is defined as a closed registry of paths, disjoint from the absolute floor, and every entry obeys the existing decidable path grammar — exact paths or dir/** subtrees only, never a filename wildcard",
+    "A contract may express authority over a protected path only through a dedicated control_plane field carrying a grant and its protected paths; the same authority expressed through ordinary allowed_paths is rejected",
+    "The grant vocabulary is closed and each grant maps to its own subset of protected paths, so a grant cannot authorize a protected path outside its mapping and no grant authorizes the tier as a whole",
+    "A contract carrying control_plane must declare owner_role workflow-authority and risk of at least r3; any other role is rejected, and the canonical meaning of r4 is unchanged",
+    "No absolute-floor path may appear in control_plane, in allowed_paths, or in any grant mapping",
+    "Optional binding fields are a stated schema-evolution rule rather than a special case: a required binding field is always covered by the digest, an optional one is covered if and only if the key is present, and the rule is expressed generally so a future optional binding field inherits it",
+    "Adding the field leaves every existing sealed contract byte-identical, proven by a spec that recomputes the digest of each contract currently in .agent/tasks and asserts it is unchanged",
+    "A present control_plane affects the digest, and changing, widening or removing it changes the digest again",
+    "Mechanical review treats the effective implementation scope as allowed_paths united with the granted protected paths, so a validly granted protected path is in scope and an ungranted one is still reported out of scope",
+    "Mechanical review keeps the absolute floor unconditionally blocking and keeps the self-edit check on the contract's own file independently blocking, neither of which any grant can satisfy",
+    "Malformed, unknown or internally inconsistent control_plane declarations are rejected rather than partially honoured, including an unknown grant, a non-array path list, a path outside the tier, a path that fails the grammar, and a grant/path mismatch",
+    "docs/AUTOMATION-AUTHORITY.md documents the three tiers, the grant, the digest rule and what a grant still cannot do; .agent/tasks/README.md is deliberately left unchanged because it is inside the floor",
+    "npm run verify:pr passes"
+  ],
+  "verification": [
+    "npm run verify:pr",
+    "npx vitest run task-contract.test.mjs"
+  ],
+  "production_effect": "none",
+  "dependencies": [],
+  "stop_conditions": [
+    "Introducing the field would change any existing contract's digest — stop rather than re-sealing, because .agent/tasks/** is on the floor and no contract may authorize that write",
+    "The tier or the grant cannot be expressed within the existing decidable path grammar — report before widening the grammar, which would weaken containment reasoning everywhere",
+    "The change turns out to require editing .agent/roles.json, .claude/settings.json or .agent/tasks/README.md — stop and report the governance conflict",
+    "Runtime enforcement turns out to be necessary to make the model coherent — stop, because that is a separate task with its own review",
+    "The work turns out not to fit workflow-authority / r3 / none — report before implementing"
+  ],
+  "notes": "PR A of the runtime-enforcement sequence, rules only. It follows a cold-start probe which established that project-subagent frontmatter PreToolUse hooks do not execute in this managed runtime (Claude Code 2.1.252): zero hook events, zero registration, every path escape succeeded, the producer overwrote its own guard, and the deny-all control still allowed the write. The one primitive that did hold is subagent tools/disallowedTools allowlisting, which is platform-enforced. Settings-level enforcement is therefore the only remaining route, and .claude/settings.json sits on the absolute floor — hence this tier. Classification: workflow-authority because it is control-plane governance; r3 because tools/verify-task-contracts.mjs and tools/review-protocol.mjs are CI/workflow authority and the risk model already places control-plane authority at r3, with r4 reserved for direct production authority; production_effect none because no runtime behaviour changes and merging deploys nothing. This contract deliberately carries no control_plane grant: the task that introduces a mechanism must not be the first to exercise it.",
+  "contract_digest": "1c05070e59e59672fab0ae3be4890b3625a24c6173c88ebceefcaed3a82cdb32"
+}

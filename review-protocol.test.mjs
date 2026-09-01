@@ -547,6 +547,108 @@ describe('FIXTURE 10: a clean change can actually approve', () => {
 // SILENCE IS NEVER APPROVAL
 // ---------------------------------------------------------------------------
 
+describe('FIXTURE 11: the effective scope is allowed_paths PLUS a valid grant', () => {
+  const SETTINGS = '.claude/settings.json'
+  const withGrant = (over = {}) => contract({
+    owner_role: 'workflow-authority',
+    risk: 'r3',
+    control_plane: {
+      grant: 'runtime-policy-maintenance',
+      protected_paths: [SETTINGS],
+      justification: 'installs the runtime path guard',
+    },
+    ...over,
+  })
+
+  it('puts a validly granted protected path IN scope', () => {
+    expect(mechanicalFindings({ contract: withGrant(), changedPaths: [SETTINGS] })).toEqual([])
+  })
+
+  it('reports an UNGRANTED protected path, and names the tier rather than allowed_paths', () => {
+    // The wording matters: "outside allowed_paths" would send the reader to fix
+    // the wrong field. Adding a protected path there is rejected by the
+    // validator — the grant is the only spelling of this authority.
+    const found = mechanicalFindings({ contract: contract(), changedPaths: [SETTINGS] })
+    expect(found).toHaveLength(1)
+    expect(found[0].severity).toBe('blocker')
+    expect(found[0].dimension).toBe('hidden-authority-expansion')
+    expect(found[0].violates).toBe('control_plane')
+    expect(found[0].summary).toMatch(/protected control plane without a valid grant/)
+    expect(found[0].evidence).toContain(SETTINGS)
+  })
+
+  it('reports a protected path a MALFORMED grant tried to claim', () => {
+    // Fail closed: a grant nobody could validate widens nothing. Each of these
+    // is a different way for the declaration to be wrong, and all of them leave
+    // the diff exactly as out of scope as no grant at all.
+    const broken = [
+      withGrant({ risk: 'r1' }),
+      withGrant({ owner_role: 'product-app' }),
+      contract({
+        owner_role: 'workflow-authority', risk: 'r3',
+        control_plane: { grant: 'control-plane-all', protected_paths: [SETTINGS], justification: 'j' },
+      }),
+      contract({
+        owner_role: 'workflow-authority', risk: 'r3',
+        control_plane: { grant: 'runtime-policy-maintenance', protected_paths: [SETTINGS] },
+      }),
+      contract({ owner_role: 'workflow-authority', risk: 'r3', control_plane: null }),
+    ]
+    for (const c of broken) {
+      const found = mechanicalFindings({ contract: c, changedPaths: [SETTINGS] })
+      expect(found.map(f => f.dimension), JSON.stringify(c.control_plane))
+        .toEqual(['hidden-authority-expansion'])
+      expect(found[0].severity).toBe('blocker')
+    }
+  })
+
+  it('grants reach only what they name — a sibling protected path stays out', () => {
+    const found = mechanicalFindings({ contract: withGrant(), changedPaths: ['.claude/hooks/guard.mjs'] })
+    expect(found.map(f => f.dimension)).toEqual(['hidden-authority-expansion'])
+  })
+
+  it('a granted exact path puts nothing else in scope', () => {
+    // Granted paths go through the same matching as allowed_paths, so an exact
+    // grant is exact. No grant maps to a SUBTREE today, so the subtree case is
+    // not reachable from the registry and is deliberately not faked here.
+    const found = mechanicalFindings({ contract: withGrant(), changedPaths: ['.claude/other.json'] })
+    expect(found.map(f => f.dimension)).toEqual(['path-compliance'])
+  })
+
+  it('leaves the absolute floor unconditionally blocking', () => {
+    // No grant reaches Tier 0, and the floor check runs before scope is
+    // consulted — so a floor path is reported whatever the grant says.
+    for (const floorPath of ['.agent/roles.json', '.claude/settings.local.json']) {
+      const found = mechanicalFindings({ contract: withGrant(), changedPaths: [floorPath] })
+      expect(found.map(f => f.dimension), floorPath).toContain('hidden-authority-expansion')
+      expect(found.some(f => /always-forbidden/.test(f.summary)), floorPath).toBe(true)
+      expect(found.every(f => f.severity === 'blocker')).toBe(true)
+    }
+  })
+
+  it('leaves the self-edit check independently blocking', () => {
+    const c = withGrant()
+    const found = mechanicalFindings({ contract: c, changedPaths: [TASKS_DIR + '/' + c.id + '.json'] })
+    expect(found).toHaveLength(1)
+    expect(found[0].summary).toMatch(/modifies the contract it is being reviewed against/)
+    expect(found[0].severity).toBe('blocker')
+  })
+
+  it('still blocks the decision when the reviewer approved anyway', () => {
+    const c = contract()
+    const mechanical = mechanicalFindings({ contract: c, changedPaths: [SETTINGS] })
+    const d = decide({ contract: c, result: cleanResult(c), mechanical })
+    expect(d.verdict).toBe('BLOCKED')
+    expect(d.reasons.join()).toMatch(/protected control plane/)
+  })
+
+  it('changes nothing for a contract with no grant at all', () => {
+    const c = contract()
+    expect('control_plane' in c).toBe(false)
+    expect(mechanicalFindings({ contract: c, changedPaths: ['src/thing.js', 'docs/thing.md'] })).toEqual([])
+  })
+})
+
 describe('approval must be stated, never inferred', () => {
   const c = contract()
 

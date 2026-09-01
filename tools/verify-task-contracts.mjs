@@ -49,7 +49,7 @@ export const ROLES_FILE = '.agent/roles.json'
  * Deliberately excludes free-form annotation (`notes`, `links`) — a contract
  * should be annotatable without re-sealing, or nobody will annotate it.
  */
-export const BINDING_FIELDS = [
+export const REQUIRED_BINDING_FIELDS = [
   'id',
   'goal',
   'owner_role',
@@ -64,6 +64,32 @@ export const BINDING_FIELDS = [
   'stop_conditions',
 ]
 
+/**
+ * OPTIONAL BINDING FIELDS — the schema-evolution rule, stated once.
+ *
+ * A required binding field is always folded into the digest, even when absent:
+ * `canonicalise(undefined)` is the string "null", so the key still enters the
+ * canonical form. That is correct for a field every contract must carry, and
+ * fatal for one added later — adding `control_plane` to the required list
+ * changes the digest of every contract already sealed, and re-sealing them
+ * would mean writing `.agent/tasks/**`, which is on the floor and which no
+ * contract may authorise. The schema could not be extended at all.
+ *
+ * So an OPTIONAL binding field is folded into the digest IF AND ONLY IF the key
+ * is present. Absent, it contributes nothing and existing seals stand
+ * byte-for-byte; present, it is bound exactly as any other term, and changing,
+ * widening or removing it moves the digest.
+ *
+ * This is a general rule, not an accommodation for one field: anything added
+ * here later inherits the same compatibility guarantee, and a spec proves it
+ * against the contracts actually on disk.
+ */
+export const OPTIONAL_BINDING_FIELDS = ['control_plane']
+
+/** Every field the digest binds, in canonical order. */
+export const BINDING_FIELDS = [...REQUIRED_BINDING_FIELDS, ...OPTIONAL_BINDING_FIELDS]
+
+/** Annotation. Deliberately OUTSIDE the digest — see the digest comment. */
 export const OPTIONAL_FIELDS = ['notes', 'links', 'contract_digest']
 
 /**
@@ -259,16 +285,34 @@ export const WRITE_SIDE_PRODUCTION_EFFECTS = [
 ]
 
 /**
- * Paths no contract may ever place in allowed_paths, whatever else it says.
+ * TIER 0 — THE ABSOLUTE FLOOR. Paths no contract may ever authorise, through
+ * allowed_paths or through any other mechanism, whatever else it says.
  *
  * This is the "cannot expand its own scope" rule. A task that could authorise
  * edits to .agent/tasks/** could rewrite its own acceptance criteria and call
- * the result compliant; one that could authorise .claude/settings.json could
- * widen the harness permission allow-list. Both are refused at the contract
- * level, so the escalation cannot even be expressed.
+ * the result compliant. Refused at the contract level, so the escalation
+ * cannot even be expressed.
  *
- * .agent/roles.json is on the floor for exactly the same reason, one level up:
- * it is the taxonomy that DEFINES authority domains. A task able to edit it
+ * NOT THE SAME AS TIER 1. .claude/settings.json used to sit here on the same
+ * reasoning — a task that could edit it could widen the harness permission
+ * allow-list. It no longer does, because that reasoning proved too blunt: the
+ * file genuinely has to change when a runtime policy is installed, and a floor
+ * entry makes that impossible rather than deliberate. It now lives in
+ * PROTECTED_CONTROL_PLANE below, where the authority still cannot be spelled
+ * in allowed_paths but CAN be granted narrowly, through a digest-covered
+ * control_plane grant that names the role, the risk floor and the exact paths.
+ *
+ * So the two tiers are different claims, and the difference is the point:
+ *
+ *   Tier 0 (here) — never authorisable by a task contract. No grant exists,
+ *                   and none can be written; the only route is root governance.
+ *   Tier 1 (below) — not authorisable through ordinary allowed_paths, but
+ *                    narrowly authorisable through a valid control_plane grant,
+ *                    which is visible as its own term in the sealed diff.
+ *
+ * .agent/roles.json is on the floor for exactly the same reason as
+ * .agent/tasks/**, one level up: it is the taxonomy that DEFINES authority
+ * domains. A task able to edit it
  * could add itself a role, or rewrite the non-authority list that bounds the
  * role it already holds — self-authorisation by redefining the vocabulary
  * rather than by widening a path. Role-taxonomy governance therefore happens
@@ -278,10 +322,89 @@ export const WRITE_SIDE_PRODUCTION_EFFECTS = [
 export const ALWAYS_FORBIDDEN = [
   '.agent/tasks/**',
   '.agent/roles.json',
-  '.claude/settings.json',
   '.claude/settings.local.json',
   '.git/**',
 ]
+
+/**
+ * TIER 1 — THE PROTECTED CONTROL PLANE.
+ *
+ * Paths an ordinary task can never authorise, but which a specialised
+ * workflow-authority task may be granted through `control_plane`. They are the
+ * files that decide what agents may do at runtime.
+ *
+ * Why a second tier exists at all: `.claude/settings.json` used to sit on the
+ * absolute floor, and an absolute floor entry can never be maintained. Closing
+ * the file to everyone forever is not containment, it is a dead end — the only
+ * way to change it would be to edit this validator, which is precisely the
+ * escalation the floor exists to prevent. Tier 1 keeps ordinary tasks out while
+ * leaving one narrow, reviewed, digest-covered door.
+ *
+ * Tier 0 does NOT move. A task still cannot rewrite its own contract, the role
+ * taxonomy, the machine-local settings override, or git internals — no grant
+ * reaches any of them, and the two tiers are asserted disjoint.
+ *
+ * Every entry obeys the decidable grammar (exact path or `dir/**`). A filename
+ * wildcard such as `tools/runtime-policy*.mjs` is deliberately NOT used: the
+ * grammar cannot reason about it, and a registry entry nobody can decide
+ * containment against would make the tier best-effort rather than complete.
+ *
+ * WHAT IS DELIBERATELY NOT HERE YET: `.claude/agents/**`.
+ *
+ * Agent definitions hold the one capability boundary this harness has actually
+ * measured — a subagent's `tools:` allowlist is platform-enforced — so they
+ * belong in this tier on the merits. They are absent because adding them here
+ * would retroactively invalidate `fresh-context-reviewer`, a contract sealed and
+ * merged in PR #229 whose allowed_paths legitimately names
+ * `.claude/agents/fresh-context-reviewer.md`. Repairing it means writing
+ * `.agent/tasks/**`, which is Tier 0 and which no contract may authorise.
+ *
+ * So this is SEQUENCING, not a judgement that agent definitions are safe:
+ * **agent definitions are NOT protected by this tier today**, and nothing here
+ * should be read as claiming they are. A later root-governance step moves them
+ * in, migrates that historical contract, and introduces the
+ * `agent-definition-maintenance` grant at the same time — which must happen
+ * before anyone claims producer adoption protects agent definitions.
+ */
+export const PROTECTED_CONTROL_PLANE = [
+  '.claude/settings.json',
+  '.claude/hooks/**',
+]
+
+/**
+ * GRANT -> the paths that grant may reach. Closed, and narrow on purpose.
+ *
+ * A grant is not a label that unlocks the tier. Maintaining a reviewer's prompt
+ * is not the same authority as installing a runtime policy, so the two cannot
+ * borrow each other's reach, and there is no `control-plane-all`.
+ *
+ * One grant, because one is what the runtime-enforcement work needs. A vocabulary
+ * is easier to widen deliberately than to narrow after something depends on it,
+ * and `agent-definition-maintenance` arrives with the paths it would reach
+ * rather than ahead of them.
+ *
+ * NOTE WHAT THIS MAPPING DOES NOT COVER. `.claude/hooks/**` is in the tier and
+ * in no grant, so today NO contract can be authorised to write a hook. That is
+ * deliberate and it is the difference between the tier and the floor: the floor
+ * is unauthorisable in principle, while a hooks grant simply does not exist yet
+ * and would arrive as its own reviewed change, with the paths it reaches.
+ *
+ * Keeping the mapping a PROPER subset is also what makes the grant a grant. If
+ * the one grant reached every path in the tier, "grant" would be a synonym for
+ * "the tier", the mapping check below could never fire, and the vocabulary
+ * would be closed in name only.
+ *
+ * A future runtime guard will need its own authority-bearing path added here
+ * deliberately — an exact file or a dedicated subtree, never a wildcard.
+ */
+export const CONTROL_PLANE_GRANTS = {
+  'runtime-policy-maintenance': ['.claude/settings.json'],
+}
+
+/** Is `p` inside the protected tier? */
+const inProtectedTier = (p) => PROTECTED_CONTROL_PLANE.some(t => covers(t, p))
+/** Is `p` inside the absolute floor? */
+const inAbsoluteFloor = (p) => ALWAYS_FORBIDDEN.some(f => covers(f, p))
 
 /**
  * THE PATH GRAMMAR. Exactly two accepted forms:
@@ -343,10 +466,20 @@ export function canonicalise(value) {
   return JSON.stringify(value === undefined ? null : value)
 }
 
-/** The digest over the binding fields only. */
+/**
+ * The digest over the binding fields.
+ *
+ * Required fields always; optional binding fields only when the key is present.
+ * The presence test is `hasOwnProperty`, not a truthiness or `!== undefined`
+ * check — an explicit `"control_plane": null` is a statement someone wrote down
+ * and must be bound, while an absent key must leave the digest untouched.
+ */
 export function computeDigest(contract) {
   const bound = {}
-  for (const f of BINDING_FIELDS) bound[f] = contract?.[f]
+  for (const f of REQUIRED_BINDING_FIELDS) bound[f] = contract?.[f]
+  for (const f of OPTIONAL_BINDING_FIELDS) {
+    if (contract && Object.prototype.hasOwnProperty.call(contract, f)) bound[f] = contract[f]
+  }
   return createHash('sha256').update(canonicalise(bound)).digest('hex')
 }
 
@@ -389,7 +522,7 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   for (const key of Object.keys(contract)) {
     if (!allowedKeys.has(key)) out.push(at + 'unknown field: ' + key)
   }
-  for (const field of BINDING_FIELDS) {
+  for (const field of REQUIRED_BINDING_FIELDS) {
     if (!(field in contract)) out.push(at + 'missing required field: ' + field)
   }
 
@@ -469,6 +602,20 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
     }
   }
 
+  // Tier 1 is not reachable through ordinary allowed_paths, whatever the role.
+  // The grant is the ONLY spelling, which is what keeps control-plane authority
+  // visible as its own term in the sealed diff instead of hiding among the
+  // task's ordinary working files.
+  for (const a of okAllowed) {
+    for (const protectedPath of PROTECTED_CONTROL_PLANE) {
+      if (covers(a, protectedPath) || covers(protectedPath, a)) {
+        out.push(at + 'allowed_paths may not authorise the protected control-plane path ' +
+          protectedPath + ' (via "' + a + '") — declare it in control_plane.protected_paths ' +
+          'under a matching grant instead')
+      }
+    }
+  }
+
   // Contradictions. A carve-out (forbidden INSIDE allowed) is normal and fine;
   // what is contradictory is an allowance that can never take effect.
   for (const a of okAllowed) {
@@ -503,6 +650,9 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
     }
   }
 
+  // ---- control_plane -----------------------------------------------------
+  out.push(...controlPlaneViolations(contract, at))
+
   // ---- the seal ----------------------------------------------------------
   // skipDigest is for the --seal pre-flight ONLY: the digest is about to be
   // recomputed, so complaining that it is stale would be noise. Every other
@@ -522,6 +672,176 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   }
 
   return out
+}
+
+/**
+ * WHICH ROLE MAY HOLD A CONTROL-PLANE GRANT — derived, not declared here.
+ *
+ * .agent/roles.json is the one canonical role source, and this file names no
+ * role id anywhere (role-model.test.mjs enforces exactly that). So the holder
+ * of control-plane authority is read back out of the role model: the single
+ * role that claims the control plane in its own purpose or authority list.
+ *
+ * Ambiguity is not resolved, it is refused. Zero matches or more than one
+ * returns null, and a null holder means NO contract may carry a grant. The
+ * failure is loud where it matters — a contract that carries one stops
+ * validating, so CI goes red — and silent only while nobody is claiming the
+ * authority at all, which is the safe direction.
+ */
+const CLAIMS_CONTROL_PLANE = /control[-\s]plane/i
+
+export function controlPlaneRoleIn(roleModel) {
+  const roles = Array.isArray(roleModel?.roles) ? roleModel.roles : []
+  const claiming = roles.filter((r) => {
+    const authority = Array.isArray(r?.authority) ? r.authority : []
+    return [r?.purpose, ...authority].some(t => typeof t === 'string' && CLAIMS_CONTROL_PLANE.test(t))
+  })
+  return claiming.length === 1 && isNonEmptyString(claiming[0].id) ? claiming[0].id : null
+}
+
+/** The role that owns the control plane in the role model as loaded. */
+export const CONTROL_PLANE_ROLE = controlPlaneRoleIn(ROLE_MODEL)
+
+/** The keys a control_plane declaration may carry. Closed. */
+const CONTROL_PLANE_KEYS = ['grant', 'protected_paths', 'justification']
+
+/** The lowest risk a control-plane grant may be declared at. */
+export const CONTROL_PLANE_MIN_RISK = 'r3'
+
+/**
+ * Validate a `control_plane` declaration. Absent is valid and yields nothing.
+ *
+ * Everything here fails closed. A declaration that is malformed, names an
+ * unknown grant, or reaches a path its grant does not map to is REJECTED
+ * outright rather than partially honoured — a half-understood grant is an
+ * authority nobody has actually reviewed.
+ *
+ * Note what this does NOT require: that a protected path appear verbatim in the
+ * registry. A grant may name something NARROWER than its mapping — one agent
+ * file rather than `.claude/agents/**` — because forcing every grant to the
+ * widest available spelling would be the opposite of least privilege. What is
+ * required is containment: inside the tier, and inside the grant's own reach.
+ */
+export function controlPlaneViolations(contract, at = '') {
+  if (!isPlainObject(contract)) return []
+  if (!Object.prototype.hasOwnProperty.call(contract, 'control_plane')) return []
+
+  const cp = contract.control_plane
+  const out = []
+  if (!isPlainObject(cp)) {
+    return [at + 'control_plane must be an object naming a grant and its protected_paths (got ' +
+      JSON.stringify(cp) + ')']
+  }
+
+  for (const key of Object.keys(cp)) {
+    if (!CONTROL_PLANE_KEYS.includes(key)) out.push(at + 'control_plane: unknown field: ' + key)
+  }
+
+  // The role and risk that a control-plane grant is only ever expressible at.
+  // Risk is a FLOOR, not an equality: r4 keeps its canonical meaning of direct
+  // production authority, and control-plane work does not become production
+  // work by being sensitive.
+  //
+  // The ROLE is derived, never named here — see controlPlaneRoleIn. If it
+  // cannot be established, no contract may hold a grant: could not establish
+  // is not authorised.
+  const cpRole = CONTROL_PLANE_ROLE
+  if (cpRole === null) {
+    out.push(at + 'control_plane cannot be honoured: ' + ROLES_FILE + ' no longer identifies ' +
+      'exactly one role that owns the control plane, so there is no role this grant could ' +
+      'belong to. Fix the role model, or the grant stays unauthorised.')
+  } else if (contract.owner_role !== cpRole) {
+    out.push(at + 'control_plane requires owner_role ' + JSON.stringify(cpRole) + ' (got ' +
+      JSON.stringify(contract.owner_role) + ') — control-plane authority is not delegable to another domain')
+  }
+  const declared = RISK_LEVELS.indexOf(contract.risk)
+  const floor = RISK_LEVELS.indexOf(CONTROL_PLANE_MIN_RISK)
+  if (declared < 0 || declared < floor) {
+    out.push(at + 'control_plane requires risk of at least ' + CONTROL_PLANE_MIN_RISK +
+      ' (got ' + JSON.stringify(contract.risk) + ')')
+  }
+
+  // hasOwnProperty, not a bare lookup: CONTROL_PLANE_GRANTS is an object
+  // literal, so `grant: "constructor"` (or "toString", "__proto__", …) would
+  // otherwise resolve through Object.prototype, skip the unknown-grant guard
+  // below, and reach the containment check as a function. The vocabulary is
+  // closed to the keys actually written here, and to nothing else.
+  const grant = cp.grant
+  const known = isNonEmptyString(grant) &&
+    Object.prototype.hasOwnProperty.call(CONTROL_PLANE_GRANTS, grant)
+  const mapped = known ? CONTROL_PLANE_GRANTS[grant] : undefined
+  if (!known) {
+    out.push(at + 'control_plane.grant must be one of ' + Object.keys(CONTROL_PLANE_GRANTS).join(', ') +
+      ' (got ' + JSON.stringify(grant) + ')')
+  }
+  if (!isNonEmptyString(cp.justification)) {
+    out.push(at + 'control_plane.justification must say why this task needs control-plane authority')
+  }
+
+  const paths = cp.protected_paths
+  if (!isStringArray(paths) || paths.length === 0) {
+    out.push(at + 'control_plane.protected_paths must be a non-empty array of non-empty strings')
+    return out
+  }
+
+  // allowed_paths needs no comparison here: naming a tier path there is already
+  // refused by findContractViolations, whether spelled exactly or through a
+  // covering subtree. A second check on the same ground could never be the
+  // operative one, and dead validation reads like protection that is not there.
+  const forbidden = Array.isArray(contract.forbidden_paths)
+    ? contract.forbidden_paths.filter(isNonEmptyString).filter(f => !pathGrammarError(f))
+    : []
+  for (const p of paths) {
+    const grammar = pathGrammarError(p)
+    if (grammar) {
+      out.push(at + 'control_plane.protected_paths entry "' + p + '" ' + grammar)
+      continue
+    }
+    if (inAbsoluteFloor(p)) {
+      out.push(at + 'control_plane.protected_paths may never name "' + p +
+        '" — it is on the absolute floor, which no grant reaches')
+      continue
+    }
+    if (!inProtectedTier(p)) {
+      out.push(at + 'control_plane.protected_paths entry "' + p +
+        '" is not inside the protected control plane (' + PROTECTED_CONTROL_PLANE.join(', ') + ')')
+      continue
+    }
+    if (mapped !== undefined && !mapped.some(m => covers(m, p))) {
+      out.push(at + 'grant "' + grant + '" does not authorise "' + p +
+        '" — it reaches only ' + mapped.join(', '))
+    }
+    // The same contradiction allowed_paths is already checked for, one tier up:
+    // an allowance that can never take effect. Mechanical review tests
+    // forbidden_paths BEFORE scope, so a granted path the contract also forbids
+    // is dead authority — which is a mistake to correct, not to reconcile.
+    for (const f of forbidden) {
+      if (normalisePath(f) === normalisePath(p) || covers(f, p)) {
+        out.push(at + 'control_plane.protected_paths entry "' + p + '" is forbidden by "' + f +
+          '" — the grant can never take effect')
+      }
+    }
+  }
+  return out
+}
+
+/**
+ * The protected paths this contract has VALIDLY been granted — the empty list
+ * unless the whole declaration checks out.
+ *
+ * Callers use this to widen an implementation's effective scope, so a partially
+ * valid grant must widen nothing. Fail closed, not fail partial.
+ */
+export function grantedProtectedPaths(contract) {
+  if (controlPlaneViolations(contract).length > 0) return []
+  const paths = contract?.control_plane?.protected_paths
+  return Array.isArray(paths) ? [...paths] : []
+}
+
+/** allowed_paths united with any validly granted protected paths. */
+export function effectiveAllowedPaths(contract) {
+  const allowed = Array.isArray(contract?.allowed_paths) ? contract.allowed_paths : []
+  return [...allowed, ...grantedProtectedPaths(contract)]
 }
 
 // ---------------------------------------------------------------------------

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, readdirSync, existsSync, writeFileSync, rmSync } from 'node:fs'
+import { readdirSync, readFileSync, existsSync, writeFileSync, rmSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
 import {
   findContractViolations,
@@ -8,7 +8,18 @@ import {
   covers,
   normalisePath,
   BINDING_FIELDS,
+  REQUIRED_BINDING_FIELDS,
+  OPTIONAL_BINDING_FIELDS,
   OPTIONAL_FIELDS,
+  PROTECTED_CONTROL_PLANE,
+  CONTROL_PLANE_GRANTS,
+  CONTROL_PLANE_MIN_RISK,
+  controlPlaneViolations,
+  controlPlaneRoleIn,
+  CONTROL_PLANE_ROLE,
+  ROLE_MODEL,
+  grantedProtectedPaths,
+  effectiveAllowedPaths,
   PRODUCTION_EFFECTS,
   WRITE_SIDE_PRODUCTION_EFFECTS,
   RISK_LEVELS,
@@ -68,7 +79,7 @@ describe('a well-formed contract passes', () => {
 })
 
 describe('required fields fail closed', () => {
-  for (const field of BINDING_FIELDS) {
+  for (const field of REQUIRED_BINDING_FIELDS) {
     it('rejects a contract missing ' + field, () => {
       const c = good()
       delete c[field]
@@ -315,12 +326,14 @@ describe('THE SCOPE FLOOR: a contract cannot widen its own authority', () => {
   it('refuses even when the contract also forbids the same path', () => {
     // Belt-and-braces is not a reconciliation: naming it in allowed_paths at
     // all is the mistake, and adding it to forbidden_paths does not cure it.
+    // .claude/settings.json now refuses as a PROTECTED path rather than a floor
+    // path — the rule that catches it moved, the refusal did not.
     const c = reseal({
       ...good(),
       allowed_paths: ['.claude/settings.json'],
       forbidden_paths: ['.claude/settings.json'],
     })
-    expect(violations(c).join()).toMatch(/may never authorise/)
+    expect(violations(c).join()).toMatch(/may not authorise the protected control-plane path/)
   })
 
   it('still allows ordinary work under .claude that is not the permission file', () => {
@@ -456,7 +469,7 @@ describe('THE SEAL: rewrites cannot be silent', () => {
       dependencies: ['x'],
       stop_conditions: ['different'],
     }
-    for (const field of BINDING_FIELDS) {
+    for (const field of REQUIRED_BINDING_FIELDS) {
       const c = { ...good(), [field]: mutate[field] }
       expect(violations(c).join(), 'digest does not cover ' + field)
         .toMatch(/contract_digest does not match/)
@@ -615,7 +628,11 @@ describe('the contracts committed to this repository', () => {
     const readme = readFileSync(dir + '/README.md', 'utf8')
     // The README must not overclaim what this layer provides.
     expect(readme).toMatch(/tamper-EVIDENCE, not tamper-proofing/)
-    for (const field of BINDING_FIELDS) expect(readme, 'README omits ' + field).toContain(field)
+    // Only the REQUIRED fields. The README lives at .agent/tasks/README.md,
+    // which is inside the Tier 0 floor, so no contract may update it to mention
+    // an optional field added later — asserting it here would make the schema
+    // unextendable for the sake of a doc nobody is allowed to edit.
+    for (const field of REQUIRED_BINDING_FIELDS) expect(readme, 'README omits ' + field).toContain(field)
   })
 
   it('every committed contract carries a canonical risk level', () => {
@@ -646,5 +663,410 @@ describe('the contracts committed to this repository', () => {
 
   it('has a verify:tasks script that points at the validator', () => {
     expect(PKG.scripts['verify:tasks']).toBe('node tools/verify-task-contracts.mjs')
+  })
+})
+
+// ---------------------------------------------------------------------------
+// THE PROTECTED CONTROL PLANE
+//
+// A second tier between "ordinary" and "never". Tier 0 stays absolute; Tier 1
+// is unreachable through allowed_paths and reachable only through a
+// digest-covered grant on a workflow-authority contract.
+//
+// The rule these specs exist to keep honest: a grant widens scope only when the
+// WHOLE declaration checks out. Half-understood authority is authority nobody
+// reviewed.
+// ---------------------------------------------------------------------------
+
+describe('optional binding fields: the schema-evolution rule', () => {
+  it('separates required from optional, and binds both', () => {
+    expect(REQUIRED_BINDING_FIELDS).not.toContain('control_plane')
+    expect(OPTIONAL_BINDING_FIELDS).toEqual(['control_plane'])
+    expect(BINDING_FIELDS).toEqual([...REQUIRED_BINDING_FIELDS, ...OPTIONAL_BINDING_FIELDS])
+    // Annotation is a different thing entirely and stays outside the digest.
+    for (const f of OPTIONAL_BINDING_FIELDS) expect(OPTIONAL_FIELDS).not.toContain(f)
+  })
+
+  it('leaves EVERY contract already on disk byte-identical', () => {
+    // The compatibility guarantee, against the real registry rather than a
+    // fixture. Folding an optional field in unconditionally would re-seal all
+    // of these — and repairing that means writing .agent/tasks/**, which is
+    // Tier 0 and which no contract may authorise. The schema would have been
+    // unextendable.
+    const dir = '.agent/tasks'
+    const names = readdirSync(dir).filter(n => n.endsWith('.json'))
+    expect(names.length).toBeGreaterThan(0)
+    for (const n of names) {
+      const c = JSON.parse(readFileSync(dir + '/' + n, 'utf8'))
+      expect(computeDigest(c), n + ' was re-sealed by adding an optional field').toBe(c.contract_digest)
+    }
+  })
+
+  it('an absent optional field contributes nothing to the digest', () => {
+    const c = good()
+    expect('control_plane' in c).toBe(false)
+    const explicitlyAbsent = { ...c }
+    expect(computeDigest(explicitlyAbsent)).toBe(c.contract_digest)
+  })
+
+  it('a PRESENT optional field is bound, including an explicit null', () => {
+    // hasOwnProperty, not truthiness: `"control_plane": null` is something
+    // someone wrote down, and it must move the digest.
+    const c = good()
+    expect(computeDigest({ ...c, control_plane: null })).not.toBe(c.contract_digest)
+    expect(computeDigest({ ...c, control_plane: undefined })).not.toBe(c.contract_digest)
+  })
+
+  it('changing, widening or removing a grant moves the digest', () => {
+    const cp = (paths) => ({ grant: 'runtime-policy-maintenance', protected_paths: paths, justification: 'j' })
+    const base = good()
+    const one = { ...base, control_plane: cp(['.claude/settings.json']) }
+    const two = { ...base, control_plane: cp(['.claude/settings.json', '.claude/hooks/**']) }
+    const other = { ...base, control_plane: { ...cp(['.claude/settings.json']), justification: 'different' } }
+    const digests = [base, one, two, other].map(computeDigest)
+    expect(new Set(digests).size, 'each variant must have its own digest').toBe(4)
+  })
+})
+
+describe('the Tier 1 registry is well-formed', () => {
+  it('is exactly the paths the runtime work needs, and no wildcard', () => {
+    expect(PROTECTED_CONTROL_PLANE).toEqual(['.claude/settings.json', '.claude/hooks/**'])
+    for (const p of PROTECTED_CONTROL_PLANE) {
+      expect(pathGrammarError(p), p + ' must obey the decidable grammar').toBeNull()
+    }
+  })
+
+  it('does NOT yet contain .claude/agents/**, and does not pretend otherwise', () => {
+    // Sequencing, not a safety claim. Adding it here would retroactively
+    // invalidate fresh-context-reviewer, a contract sealed and merged in PR
+    // #229 whose allowed_paths legitimately names an agent definition — and
+    // repairing that needs Tier 0 write authority no contract has.
+    expect(PROTECTED_CONTROL_PLANE).not.toContain('.claude/agents/**')
+    const reviewer = JSON.parse(readFileSync('.agent/tasks/fresh-context-reviewer.json', 'utf8'))
+    expect(reviewer.allowed_paths).toContain('.claude/agents/fresh-context-reviewer.md')
+    expect(
+      findContractViolations(reviewer, { fileName: 'fresh-context-reviewer.json' }),
+      'the historical contract must still validate',
+    ).toEqual([])
+  })
+
+  it('is disjoint from the absolute floor', () => {
+    for (const t of PROTECTED_CONTROL_PLANE) {
+      for (const f of ALWAYS_FORBIDDEN) {
+        expect(covers(f, t) || covers(t, f), t + ' overlaps floor ' + f).toBe(false)
+      }
+    }
+  })
+
+  it('keeps Tier 0 intact — settings.json moved tier, nothing left the floor', () => {
+    expect(ALWAYS_FORBIDDEN).toEqual([
+      '.agent/tasks/**', '.agent/roles.json', '.claude/settings.local.json', '.git/**',
+    ])
+    expect(ALWAYS_FORBIDDEN).not.toContain('.claude/settings.json')
+    expect(PROTECTED_CONTROL_PLANE).toContain('.claude/settings.json')
+  })
+
+  it('maps every grant inside the tier, and NO grant to the whole of it', () => {
+    // The property that makes a grant a grant. If one grant reached every path
+    // in the tier, "grant" would be a synonym for "the tier", and the
+    // grant/path check could never fire — closed in name only.
+    expect(Object.keys(CONTROL_PLANE_GRANTS)).toEqual(['runtime-policy-maintenance'])
+    for (const [name, paths] of Object.entries(CONTROL_PLANE_GRANTS)) {
+      expect(paths.length, name).toBeGreaterThan(0)
+      for (const p of paths) expect(PROTECTED_CONTROL_PLANE, name).toContain(p)
+      expect(paths.length, name + ' reaches the entire tier').toBeLessThan(PROTECTED_CONTROL_PLANE.length)
+    }
+  })
+
+  it('leaves a tier path reachable by no grant at all — protected, not authorisable yet', () => {
+    // .claude/hooks/** is the case today. That is the difference between the
+    // tier and the floor: the floor is unauthorisable in principle; a hooks
+    // grant simply does not exist yet, and would arrive as its own change.
+    const reachable = new Set(Object.values(CONTROL_PLANE_GRANTS).flat())
+    const unreachable = PROTECTED_CONTROL_PLANE.filter(p => !reachable.has(p))
+    expect(unreachable).toEqual(['.claude/hooks/**'])
+    const c = reseal({
+      ...good(), owner_role: 'workflow-authority', risk: 'r3',
+      control_plane: {
+        grant: 'runtime-policy-maintenance',
+        protected_paths: ['.claude/hooks/guard.mjs'],
+        justification: 'j',
+      },
+    })
+    expect(violations(c).join()).toMatch(/does not authorise ".claude\/hooks\/guard.mjs"/)
+    expect(grantedProtectedPaths(c)).toEqual([])
+  })
+
+  it('no grant reaches the floor', () => {
+    for (const paths of Object.values(CONTROL_PLANE_GRANTS)) {
+      for (const p of paths) {
+        for (const f of ALWAYS_FORBIDDEN) expect(covers(f, p)).toBe(false)
+      }
+    }
+  })
+})
+
+describe('the grant is the only spelling of control-plane authority', () => {
+  const granted = (over = {}) => reseal({
+    ...good(),
+    owner_role: 'workflow-authority',
+    risk: 'r3',
+    control_plane: {
+      grant: 'runtime-policy-maintenance',
+      protected_paths: ['.claude/settings.json'],
+      justification: 'installs the runtime path guard',
+      ...over,
+    },
+  })
+
+  it('accepts a well-formed grant', () => {
+    expect(violations(granted())).toEqual([])
+    expect(grantedProtectedPaths(granted())).toEqual(['.claude/settings.json'])
+    expect(effectiveAllowedPaths(granted())).toContain('.claude/settings.json')
+  })
+
+  it('rejects the same authority spelled through allowed_paths', () => {
+    for (const p of PROTECTED_CONTROL_PLANE) {
+      const c = reseal({ ...good(), allowed_paths: [p] })
+      expect(violations(c).join(), p).toMatch(/may not authorise the protected control-plane path/)
+    }
+  })
+
+  it('rejects a parent subtree that would swallow a protected path', () => {
+    expect(violations(reseal({ ...good(), allowed_paths: ['.claude/**'] })).join())
+      .toMatch(/may not authorise the protected control-plane path/)
+  })
+
+  it('rejects a narrow CHILD of a protected subtree — the tier is not divisible', () => {
+    // The other direction of the overlap guard, and the one an author would
+    // actually reach for: not `.claude/hooks/**`, which is obviously the tier,
+    // but one file inside it, which looks like an ordinary working file.
+    //
+    // This spec exists to kill a specific mutation. The guard is
+    //   covers(a, protectedPath) || covers(protectedPath, a)
+    // and the second disjunct is the only thing that catches a child. Delete
+    // it and every other spec here still passes — `.claude/hooks/guard.mjs`
+    // would validate in allowed_paths, and mechanical review would then put a
+    // hook file in scope with no finding at all. Tier 1 would be bypassable by
+    // anyone who named a path precisely enough.
+    for (const child of [
+      '.claude/hooks/guard.mjs',
+      '.claude/hooks/pre/deep/nested-guard.mjs',
+    ]) {
+      const c = reseal({ ...good(), allowed_paths: [child] })
+      const found = violations(c).join()
+      expect(found, child).toMatch(/may not authorise the protected control-plane path/)
+      // It must name the TIER entry, not just echo the path back, so the
+      // author is sent to control_plane rather than to a narrower spelling.
+      expect(found, child).toContain('.claude/hooks/**')
+      expect(found, child).toContain(child)
+    }
+  })
+
+  it('leaves that child unauthorisable by any route — no grant reaches it either', () => {
+    // Closing the loop: the child is refused in allowed_paths AND refused in
+    // control_plane, because no grant maps to .claude/hooks/**. Protected, and
+    // currently not authorisable at all — which is the state this PR ships.
+    const c = reseal({
+      ...good(), owner_role: 'workflow-authority', risk: 'r3',
+      control_plane: {
+        grant: 'runtime-policy-maintenance',
+        protected_paths: ['.claude/hooks/guard.mjs'],
+        justification: 'j',
+      },
+    })
+    expect(violations(c).join()).toMatch(/does not authorise ".claude\/hooks\/guard.mjs"/)
+    expect(grantedProtectedPaths(c)).toEqual([])
+    expect(effectiveAllowedPaths(c)).toEqual(good().allowed_paths)
+  })
+
+  it('rejects declaring the same path in both places', () => {
+    const c = reseal({
+      ...good(), owner_role: 'workflow-authority', risk: 'r3',
+      allowed_paths: ['.claude/settings.json'],
+      control_plane: { grant: 'runtime-policy-maintenance', protected_paths: ['.claude/settings.json'], justification: 'j' },
+    })
+    // Exactly one message, from the allowed_paths side. There is deliberately
+    // no second check on this ground inside controlPlaneViolations: it could
+    // never be the operative one, and dead validation reads like protection.
+    expect(violations(c).join()).toMatch(/may not authorise the protected control-plane path/)
+  })
+
+  it('still allows ordinary work under .claude that is not protected', () => {
+    expect(violations(reseal({ ...good(), allowed_paths: ['.claude/commands/ship.md'] }))).toEqual([])
+    expect(violations(reseal({ ...good(), allowed_paths: ['.claude/agents/x.md'] }))).toEqual([])
+  })
+})
+
+describe('a grant fails closed on every malformation', () => {
+  const withCp = (cp, over = {}) => reseal({
+    ...good(), owner_role: 'workflow-authority', risk: 'r3', ...over, control_plane: cp,
+  })
+  const bad = (cp, over) => violations(withCp(cp, over)).join()
+  const ok = { grant: 'runtime-policy-maintenance', protected_paths: ['.claude/settings.json'], justification: 'j' }
+
+  it('rejects a non-object', () => {
+    for (const cp of [null, 'x', 42, [], true]) {
+      expect(bad(cp), JSON.stringify(cp)).toMatch(/control_plane must be an object/)
+    }
+  })
+
+  it('rejects an unknown field inside the declaration', () => {
+    expect(bad({ ...ok, sneaky: true })).toMatch(/control_plane: unknown field: sneaky/)
+  })
+
+  it('rejects an unknown grant', () => {
+    for (const g of ['control-plane-all', 'agent-definition-maintenance', '', null, 42, [], {}]) {
+      expect(bad({ ...ok, grant: g }), JSON.stringify(g)).toMatch(/control_plane\.grant must be one of/)
+    }
+  })
+
+  it('rejects a grant inherited from Object.prototype, and does not throw on one', () => {
+    // A bare CONTROL_PLANE_GRANTS[grant] lookup resolves "constructor" to a
+    // function, walks past the unknown-grant guard, and dies on .some() —
+    // taking the validator, the review driver and the CLI down with it. A
+    // crash is not a rejection: the vocabulary is closed to written keys only.
+    for (const g of ['constructor', 'toString', '__proto__', 'hasOwnProperty', 'valueOf', 'isPrototypeOf']) {
+      expect(() => bad({ ...ok, grant: g }), g).not.toThrow()
+      expect(bad({ ...ok, grant: g }), g).toMatch(/control_plane\.grant must be one of/)
+      expect(grantedProtectedPaths(withCp({ ...ok, grant: g })), g).toEqual([])
+    }
+  })
+
+  it('rejects a tier path the grant does not map to, naming the grant', () => {
+    // Distinct from the tier check: this path IS inside Tier 1. What it is
+    // outside is this grant's own reach.
+    const found = bad({ ...ok, protected_paths: ['.claude/hooks/guard.mjs'] })
+    expect(found).toMatch(/does not authorise/)
+    expect(found).toMatch(/it reaches only/)
+    expect(found).not.toMatch(/not inside the protected control plane/)
+  })
+
+  it('rejects a granted path the contract also forbids', () => {
+    // Dead authority. Mechanical review tests forbidden_paths before scope, so
+    // the grant could never take effect — the same contradiction allowed_paths
+    // is already checked for, one tier up.
+    expect(bad(ok, { forbidden_paths: ['.claude/settings.json'] })).toMatch(/can never take effect/)
+    expect(bad(ok, { forbidden_paths: ['.claude/**'] })).toMatch(/can never take effect/)
+    expect(grantedProtectedPaths(withCp(ok, { forbidden_paths: ['.claude/settings.json'] }))).toEqual([])
+  })
+
+  it('rejects a key that is not one of the three', () => {
+    // `activation` was briefly accepted here and read by nothing. A field that
+    // is sealed into the digest but never consulted invites an author to
+    // believe it constrains the grant; the schema stays closed to what is used.
+    for (const key of ['activation', 'expires', 'scope']) {
+      expect(bad({ ...ok, [key]: 'x' }), key).toMatch(new RegExp('unknown field: ' + key))
+    }
+  })
+
+  it('rejects a path the grant does not reach', () => {
+    // The grant is not a label that unlocks the tier.
+    expect(bad({ ...ok, protected_paths: ['.claude/agents/x.md'] }))
+      .toMatch(/not inside the protected control plane/)
+  })
+
+  it('rejects any Tier 0 path, whatever the grant says', () => {
+    for (const f of ALWAYS_FORBIDDEN) {
+      const found = bad({ ...ok, protected_paths: [f] })
+      expect(found, f).toMatch(/absolute floor|not inside the protected control plane/)
+    }
+  })
+
+  it('rejects a path that fails the decidable grammar', () => {
+    for (const p of ['.claude/settings.*', '.claude/*', '**', '../escape', '/abs/path']) {
+      expect(bad({ ...ok, protected_paths: [p] }), p).not.toEqual('')
+    }
+  })
+
+  it('rejects a malformed or empty path list', () => {
+    for (const paths of [[], 'x', null, undefined, [''], [42]]) {
+      expect(bad({ ...ok, protected_paths: paths }), JSON.stringify(paths))
+        .toMatch(/protected_paths must be a non-empty array/)
+    }
+  })
+
+  it('rejects a missing justification', () => {
+    expect(bad({ grant: ok.grant, protected_paths: ok.protected_paths })).toMatch(/justification/)
+    expect(bad({ ...ok, justification: '   ' })).toMatch(/justification/)
+  })
+
+  it('rejects any role but workflow-authority', () => {
+    for (const role of ['product-app', 'story-content', 'scheduler-db', 'qa', 'reviewer', 'integrator']) {
+      expect(bad(ok, { owner_role: role }), role).toMatch(/requires owner_role "workflow-authority"/)
+    }
+  })
+
+  it('rejects a risk below the floor, and accepts r3 and r4', () => {
+    expect(CONTROL_PLANE_MIN_RISK).toBe('r3')
+    for (const risk of ['r0', 'r1', 'r2']) {
+      expect(bad(ok, { risk }), risk).toMatch(/requires risk of at least r3/)
+    }
+    for (const risk of ['r3', 'r4']) {
+      expect(violations(withCp(ok, { risk })), risk).toEqual([])
+    }
+  })
+
+  it('WIDENS NOTHING when the declaration is invalid', () => {
+    // The property that matters most: a grant nobody could validate must not
+    // quietly extend scope. Fail closed, not fail partial.
+    for (const cp of [
+      { ...ok, grant: 'control-plane-all' },
+      { ...ok, protected_paths: ['.agent/roles.json'] },
+      { ...ok, justification: '' },
+      null,
+    ]) {
+      expect(grantedProtectedPaths(withCp(cp)), JSON.stringify(cp)).toEqual([])
+      expect(effectiveAllowedPaths(withCp(cp))).toEqual(good().allowed_paths)
+    }
+    for (const over of [{ owner_role: 'product-app' }, { risk: 'r1' }]) {
+      expect(grantedProtectedPaths(withCp(ok, over)), JSON.stringify(over)).toEqual([])
+    }
+  })
+
+  it('yields nothing at all when there is no declaration', () => {
+    expect(controlPlaneViolations(good())).toEqual([])
+    expect(grantedProtectedPaths(good())).toEqual([])
+    expect(effectiveAllowedPaths(good())).toEqual(good().allowed_paths)
+    expect(controlPlaneViolations(null)).toEqual([])
+  })
+})
+
+describe('the control-plane role is derived from the role model, never restated', () => {
+  const role = (id, over = {}) => ({ id, purpose: 'Owns something.', authority: ['A thing'], ...over })
+
+  it('resolves to exactly one role in the real role model', () => {
+    expect(CONTROL_PLANE_ROLE).toBe(controlPlaneRoleIn(ROLE_MODEL))
+    expect(typeof CONTROL_PLANE_ROLE).toBe('string')
+    expect(OWNER_ROLES).toContain(CONTROL_PLANE_ROLE)
+  })
+
+  it('reads the claim from purpose or from the authority list', () => {
+    expect(controlPlaneRoleIn({ roles: [role('a', { purpose: 'Owns control-plane rules.' }), role('b')] })).toBe('a')
+    expect(controlPlaneRoleIn({ roles: [role('a'), role('b', { authority: ['The control plane'] })] })).toBe('b')
+  })
+
+  it('REFUSES to guess when the claim is ambiguous or absent', () => {
+    // Could not establish is never authorised. A null holder means no contract
+    // may carry a grant at all — the safe direction, and loud for anyone who
+    // does carry one, because their contract stops validating.
+    const two = { roles: [role('a', { purpose: 'control-plane' }), role('b', { purpose: 'control plane' })] }
+    expect(controlPlaneRoleIn(two)).toBeNull()
+    expect(controlPlaneRoleIn({ roles: [role('a'), role('b')] })).toBeNull()
+    for (const junk of [null, undefined, {}, { roles: 'x' }, { roles: [] }]) {
+      expect(controlPlaneRoleIn(junk), JSON.stringify(junk)).toBeNull()
+    }
+    expect(controlPlaneRoleIn({ roles: [{ purpose: 'the control plane' }] }), 'a claim without an id').toBeNull()
+  })
+
+  it('rejects a grant held by any role that is not the derived one', () => {
+    for (const other of OWNER_ROLES.filter(r => r !== CONTROL_PLANE_ROLE)) {
+      const c = reseal({
+        ...good(), owner_role: other, risk: 'r3',
+        control_plane: { grant: 'runtime-policy-maintenance', protected_paths: ['.claude/settings.json'], justification: 'j' },
+      })
+      expect(violations(c).join(), other).toMatch(/control_plane requires owner_role/)
+      expect(grantedProtectedPaths(c)).toEqual([])
+    }
   })
 })
