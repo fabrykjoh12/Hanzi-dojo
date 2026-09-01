@@ -330,10 +330,26 @@ export const ALWAYS_FORBIDDEN = [
  * wildcard such as `tools/runtime-policy*.mjs` is deliberately NOT used: the
  * grammar cannot reason about it, and a registry entry nobody can decide
  * containment against would make the tier best-effort rather than complete.
+ *
+ * WHAT IS DELIBERATELY NOT HERE YET: `.claude/agents/**`.
+ *
+ * Agent definitions hold the one capability boundary this harness has actually
+ * measured — a subagent's `tools:` allowlist is platform-enforced — so they
+ * belong in this tier on the merits. They are absent because adding them here
+ * would retroactively invalidate `fresh-context-reviewer`, a contract sealed and
+ * merged in PR #229 whose allowed_paths legitimately names
+ * `.claude/agents/fresh-context-reviewer.md`. Repairing it means writing
+ * `.agent/tasks/**`, which is Tier 0 and which no contract may authorise.
+ *
+ * So this is SEQUENCING, not a judgement that agent definitions are safe:
+ * **agent definitions are NOT protected by this tier today**, and nothing here
+ * should be read as claiming they are. A later root-governance step moves them
+ * in, migrates that historical contract, and introduces the
+ * `agent-definition-maintenance` grant at the same time — which must happen
+ * before anyone claims producer adoption protects agent definitions.
  */
 export const PROTECTED_CONTROL_PLANE = [
   '.claude/settings.json',
-  '.claude/agents/**',
   '.claude/hooks/**',
 ]
 
@@ -344,12 +360,16 @@ export const PROTECTED_CONTROL_PLANE = [
  * is not the same authority as installing a runtime policy, so the two cannot
  * borrow each other's reach, and there is no `control-plane-all`.
  *
+ * One grant, because one is what the runtime-enforcement work needs. A vocabulary
+ * is easier to widen deliberately than to narrow after something depends on it,
+ * and `agent-definition-maintenance` arrives with the paths it would reach
+ * rather than ahead of them.
+ *
  * A future runtime guard will need its own authority-bearing path added here
  * deliberately — an exact file or a dedicated subtree, never a wildcard.
  */
 export const CONTROL_PLANE_GRANTS = {
   'runtime-policy-maintenance': ['.claude/settings.json', '.claude/hooks/**'],
-  'agent-definition-maintenance': ['.claude/agents/**'],
 }
 
 /** Is `p` inside the protected tier? */
@@ -625,6 +645,34 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   return out
 }
 
+/**
+ * WHICH ROLE MAY HOLD A CONTROL-PLANE GRANT — derived, not declared here.
+ *
+ * .agent/roles.json is the one canonical role source, and this file names no
+ * role id anywhere (role-model.test.mjs enforces exactly that). So the holder
+ * of control-plane authority is read back out of the role model: the single
+ * role that claims the control plane in its own purpose or authority list.
+ *
+ * Ambiguity is not resolved, it is refused. Zero matches or more than one
+ * returns null, and a null holder means NO contract may carry a grant. The
+ * failure is loud where it matters — a contract that carries one stops
+ * validating, so CI goes red — and silent only while nobody is claiming the
+ * authority at all, which is the safe direction.
+ */
+const CLAIMS_CONTROL_PLANE = /control[-\s]plane/i
+
+export function controlPlaneRoleIn(roleModel) {
+  const roles = Array.isArray(roleModel?.roles) ? roleModel.roles : []
+  const claiming = roles.filter((r) => {
+    const authority = Array.isArray(r?.authority) ? r.authority : []
+    return [r?.purpose, ...authority].some(t => typeof t === 'string' && CLAIMS_CONTROL_PLANE.test(t))
+  })
+  return claiming.length === 1 && isNonEmptyString(claiming[0].id) ? claiming[0].id : null
+}
+
+/** The role that owns the control plane in the role model as loaded. */
+export const CONTROL_PLANE_ROLE = controlPlaneRoleIn(ROLE_MODEL)
+
 /** The keys a control_plane declaration may carry. Closed. */
 const CONTROL_PLANE_KEYS = ['grant', 'protected_paths', 'justification', 'activation']
 
@@ -664,8 +712,17 @@ export function controlPlaneViolations(contract, at = '') {
   // Risk is a FLOOR, not an equality: r4 keeps its canonical meaning of direct
   // production authority, and control-plane work does not become production
   // work by being sensitive.
-  if (contract.owner_role !== 'workflow-authority') {
-    out.push(at + 'control_plane requires owner_role "workflow-authority" (got ' +
+  //
+  // The ROLE is derived, never named here — see controlPlaneRoleIn. If it
+  // cannot be established, no contract may hold a grant: could not establish
+  // is not authorised.
+  const cpRole = CONTROL_PLANE_ROLE
+  if (cpRole === null) {
+    out.push(at + 'control_plane cannot be honoured: ' + ROLES_FILE + ' no longer identifies ' +
+      'exactly one role that owns the control plane, so there is no role this grant could ' +
+      'belong to. Fix the role model, or the grant stays unauthorised.')
+  } else if (contract.owner_role !== cpRole) {
+    out.push(at + 'control_plane requires owner_role ' + JSON.stringify(cpRole) + ' (got ' +
       JSON.stringify(contract.owner_role) + ') — control-plane authority is not delegable to another domain')
   }
   const declared = RISK_LEVELS.indexOf(contract.risk)

@@ -187,6 +187,150 @@ request performs.
 Until that activation happens, treat "the required checks are green" as a
 statement about a commit, not about the merge result.
 
+## The fourth boundary: which paths a task contract may authorise
+
+Everything above is about a *branch*. This section is about a *task* — the
+sealed contracts in `.agent/tasks/`, and how much authority one of them may
+hand to the agent implementing it.
+
+A contract's `allowed_paths` is the scope of a piece of work. The danger is a
+task that quietly widens its own reach by naming a path that governs the
+harness itself: change `.claude/settings.json` and you change which tools run
+without a prompt, for every session afterwards. That is not a code change with
+a review; it is a change to who reviews.
+
+So paths fall into **three tiers**.
+
+### Tier 0 — the absolute floor
+
+`ALWAYS_FORBIDDEN` in `tools/verify-task-contracts.mjs`:
+
+```
+.agent/tasks/**   .agent/roles.json   .claude/settings.local.json   .git/**
+```
+
+No contract may name these, under any role, at any risk level, through any
+mechanism. There is no grant, no exception and no override — the validator
+rejects the contract, and mechanical review reports the diff independently of
+whatever the contract says. These are the files that define what a task *is*
+(`.agent/tasks/**`, including its own `README.md`), who may own one
+(`.agent/roles.json`), the machine-local permission overlay
+(`.claude/settings.local.json`), and history itself (`.git/**`).
+
+The floor is why a task cannot re-seal itself: repairing a digest means writing
+`.agent/tasks/**`, and nothing authorises that.
+
+### Tier 1 — the protected control plane
+
+`PROTECTED_CONTROL_PLANE`:
+
+```
+.claude/settings.json   .claude/hooks/**
+```
+
+These *do* sometimes need to change — a runtime path guard has to be installed
+by somebody. But not by an ordinary task, and never by adding a line to
+`allowed_paths`. A Tier 1 path is unreachable through `allowed_paths` (the
+validator rejects it, including via a covering subtree like `.claude/**`) and
+reachable only through a dedicated, digest-covered `control_plane` declaration:
+
+```json
+"control_plane": {
+  "grant": "runtime-policy-maintenance",
+  "protected_paths": [".claude/settings.json"],
+  "justification": "installs the runtime path guard"
+}
+```
+
+A declaration is honoured only if **all** of it checks out:
+
+- `owner_role` is the role that owns the control plane — today `workflow-authority`,
+  and **derived** rather than hardcoded. `.agent/roles.json` is the one canonical
+  role source and the validator names no role id anywhere, so the holder is read
+  back out of the role model: the single role claiming the control plane in its
+  own `purpose` or `authority`. If that ever resolves to zero roles or to more
+  than one, no contract may hold a grant at all — could not establish is not
+  authorised.
+- `risk` is at least `r3`. This does not widen `r4`, which stays reserved for
+  direct production authority; the risk model already places control-plane
+  work at `r3`.
+- `grant` is one of a **closed** vocabulary, each mapping to its own subset of
+  the tier. There is no grant over the tier as a whole, and a grant cannot
+  authorise a protected path outside its own mapping.
+- Every protected path is inside Tier 1, outside Tier 0, and obeys the existing
+  decidable path grammar — an exact path or a `dir/**` subtree, never a
+  filename wildcard.
+- A `justification` is present, because a reviewer reading the contract should
+  not have to infer why the authority was needed.
+
+If any of that fails, the grant widens **nothing**. It is not partially
+honoured: `grantedProtectedPaths()` returns an empty list, the paths it named
+are still reported out of scope, and the contract itself is invalid. Fail
+closed, not fail partial — a grant nobody could validate is a grant nobody
+reviewed.
+
+### Tier 2 — everything else
+
+Ordinary paths, governed by `allowed_paths` and `forbidden_paths` exactly as
+before. Most work lives here, including `.claude/commands/**` and (today)
+`.claude/agents/**`.
+
+### The digest rule
+
+`control_plane` is an **optional binding field**, and that phrase is a general
+schema rule rather than a special case for this one field:
+
+- A **required** binding field is always folded into `contract_digest`.
+- An **optional** binding field is folded in **if and only if the key is
+  present** — by `hasOwnProperty`, so an explicit `null` counts as present and
+  moves the digest.
+
+This is what let the tier be added at all. Folding a new field in
+unconditionally would have re-sealed every contract already on disk, and
+repairing those digests means writing `.agent/tasks/**`, which is Tier 0. The
+schema would have been unextendable. A spec recomputes the digest of every
+contract in `.agent/tasks/` and asserts it is unchanged; a second one proves
+that adding, changing, widening or removing a grant does move it. So a grant
+cannot be added to a contract after it was sealed and reviewed.
+
+Any future optional binding field inherits this rule by being listed in
+`OPTIONAL_BINDING_FIELDS`. Nothing else needs to change.
+
+### What a grant still cannot do
+
+- **Reach Tier 0.** No grant maps there, and mechanical review reports a floor
+  path unconditionally, before scope is consulted.
+- **Edit its own contract.** Independently blocking, whatever the grant says.
+- **Escape its mapping.** The grant names a subset; the tier is not a keyword
+  that unlocks the rest of it.
+- **Change anything at runtime.** This tier is a *rule*, checked when a contract
+  is validated and when a diff is reviewed. It is not a hook, a permission or a
+  sandbox, and it does not stop an agent from writing a file. See the honesty
+  note below.
+
+### What is deliberately not claimed here
+
+**`.claude/agents/**` is not in Tier 1 today.** Agent definitions carry real
+authority — a subagent's `tools:`/`disallowedTools:` list is platform-enforced
+and is currently the only enforcement primitive that was empirically found to
+hold — so they belong in this tier eventually. They are absent for a sequencing
+reason, not a safety judgment: `fresh-context-reviewer.json` is already sealed
+and merged with `.claude/agents/fresh-context-reviewer.md` legitimately in its
+`allowed_paths`, and adding the subtree to Tier 1 would retroactively invalidate
+that contract — which could only be repaired by writing `.agent/tasks/**`. Until
+that lifecycle question is settled, agent definitions are governed by the
+ordinary Tier 2 model, and nothing here should be read as protecting them.
+
+**The tiers hold through validation and review, not through the runtime.** A
+cold fresh-session probe established that the tool-use guards declared in a
+project subagent's own frontmatter never execute in this managed runtime: zero
+guard events, zero registration, every path escape succeeded. Settings-level
+configuration is the remaining route, and `.claude/settings.json` is exactly
+why this tier exists —
+but that work is a separate, separately reviewed change. Today the tier tells
+you what a contract may *authorise*, and makes an unauthorised diff visible. It
+does not make one impossible.
+
 ## What each boundary actually holds
 
 So, precisely:
@@ -196,6 +340,10 @@ So, precisely:
 - A branch **can still merge a stale base into `main`**, because the required
   checks are enforced loosely. The integration protocol detects it; the strict
   policy is what will prevent it.
+- A task contract **can no longer authorise the control plane by accident.**
+  Tier 0 is unauthorisable, Tier 1 needs an explicit digest-covered grant that
+  a reviewer can see, and a malformed grant widens nothing. This is a rule
+  checked at validation and review time — it is not a runtime restraint.
 - A stale branch **can still mutate the roadmap Discord message**, because its
   old workflow reads `DISCORD_ROADMAP_WEBHOOK` and that secret is still
   repository-scoped. The `environment:` declaration does nothing until the
