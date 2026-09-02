@@ -7,6 +7,7 @@ import { createHash } from 'node:crypto'
 import {
   FLOOR,
   GRANTS,
+  PROTECTED_TIER,
   BINDING_ENV,
   WRITE_TOOLS,
   canonicalise as policyCanonicalise,
@@ -27,6 +28,7 @@ import {
 import {
   ALWAYS_FORBIDDEN,
   CONTROL_PLANE_GRANTS,
+  PROTECTED_CONTROL_PLANE,
   canonicalise,
   computeDigest,
   covers,
@@ -76,6 +78,19 @@ describe('the runtime decision path is not reachable from Tier 2', () => {
     return found
   }
 
+  /** Module-loading routes a literal scan cannot follow, forbidden outright. */
+  const indirectLoadersIn = (file) => {
+    const src = readFileSync(file, 'utf8')
+    const hits = []
+    // createRequire aliased to any name defeats a /\brequire\(/ scan entirely.
+    if (/createRequire/.test(src)) hits.push('createRequire')
+    if (/\bprocess\s*\.\s*binding\b/.test(src)) hits.push('process.binding')
+    if (/\bModule\s*\.\s*_load\b/.test(src)) hits.push('Module._load')
+    if (/\beval\s*\(/.test(src)) hits.push('eval')
+    if (/new\s+Function\s*\(/.test(src)) hits.push('new Function')
+    return hits
+  }
+
   /** Any import-shaped construct whose specifier this spec could NOT read. */
   const opaqueImportsIn = (file) => {
     const src = readFileSync(file, 'utf8')
@@ -108,6 +123,16 @@ describe('the runtime decision path is not reachable from Tier 2', () => {
     expect(selfSpecifiers, 'the multi-line tools/ import in this file').toContain('./tools/verify-task-contracts.mjs')
     expect(selfSpecifiers).toContain('./.claude/hooks/task-scope-policy.mjs')
     expect(selfSpecifiers).toContain('node:fs')
+  })
+
+  it('forbids the indirect module loaders no literal scan can follow', () => {
+    // createRequire is the hole: `const req = createRequire(import.meta.url);
+    // req('../../tools/x.mjs')` satisfies every specifier check, because the
+    // only literal import is 'node:module'. A scan cannot chase an alias, so
+    // the construct itself is banned in the protected files.
+    for (const file of [POLICY, GUARD]) {
+      expect(indirectLoadersIn(file), file + ' uses an indirect module loader').toEqual([])
+    }
   })
 
   it('leaves no import whose specifier it cannot read', () => {
@@ -217,6 +242,34 @@ describe('parity with the canonical validator', () => {
     }
   })
 
+  it('drops allowed_paths spellings the grammar rejects, rather than honouring them', () => {
+    // Asserted directly, because the containment sweep below cannot see it: it
+    // passes whether or not the filter exists. A bare "**" reaching the runtime
+    // would authorise everything below Tier 0 while the validator refuses the
+    // contract outright.
+    const base = { allowed_paths: ['**'], forbidden_paths: [] }
+    expect(effectiveScope(base)).toEqual([])
+    expect(effectiveScope({ allowed_paths: ['../escape', 'src/**'], forbidden_paths: [] })).toEqual(['src/**'])
+    expect(effectiveScope({ allowed_paths: ['src/*.js', 'a/./b', 'src/**'], forbidden_paths: [] })).toEqual(['src/**'])
+    // And end to end: a '**' contract authorises nothing.
+    const c = writeContract(contract({ allowed_paths: ['**'] }))
+    const d = run(call('outside/secret.txt'), { [BINDING_ENV]: bindingFor(c) })
+    expect(d.allow, d.reason).toBe(false)
+    writeContract(contract())
+  })
+
+  it('keeps every grant mapped inside the protected tier', () => {
+    // The runtime checks tier containment as well as grant reach; the two are
+    // equivalent only while every grant maps inside the tier, and nothing made
+    // that stay true. Pinned in both directions.
+    expect(PROTECTED_TIER).toEqual(PROTECTED_CONTROL_PLANE)
+    for (const [name, paths] of Object.entries(GRANTS)) {
+      for (const p of paths) {
+        expect(PROTECTED_TIER.some(t => policyCovers(t, p)), name + ' maps ' + p + ' outside the tier').toBe(true)
+      }
+    }
+  })
+
   it('derives the same effective scope for contracts the validator REJECTS', () => {
     // The half that matters, and the half the on-disk sweep structurally cannot
     // reach: every contract in .agent/tasks already validates, so a runtime
@@ -252,6 +305,12 @@ describe('parity with the canonical validator', () => {
       { ...base, allowed_paths: ['**'] },                                  // grammar-invalid
       { ...base, allowed_paths: ['../escape', 'src/**'] },
       { ...base, forbidden_paths: ['.claude/hooks/**'], control_plane: grant },
+      // Spellings the canonical validator drops from forbidden_paths because
+      // they fail the grammar. The runtime must drop them too, or it refuses a
+      // grant the validator honours — stricter, but still a divergence.
+      { ...base, forbidden_paths: ['./.claude/hooks/**'], control_plane: grant },
+      { ...base, forbidden_paths: ['**'], control_plane: grant },
+      { ...base, forbidden_paths: ['.claude/hooks/../hooks/**'], control_plane: grant },
     ]
     for (const c of variants) {
       const label = JSON.stringify(c.control_plane) + ' / ' + c.owner_role + ' / ' + c.risk
@@ -601,6 +660,44 @@ describe('the symlink escape is closed', () => {
     const d = run(call('src/gitdoor/config'), { [BINDING_ENV]: bindingFor(c) })
     expect(d.allow, d.reason).toBe(false)
     expect(d.reason).toMatch(/Tier 0/)
+  })
+
+  it('DENIES a symlink whose target does not exist', () => {
+    // The regression test that should have shipped with the fix, and did not.
+    //
+    // realpath throws ENOENT for two different things: a file that does not
+    // exist yet, which must resolve through its parent and be allowed, and a
+    // symlink whose TARGET does not exist. Resolving the second through its
+    // parent hands back the LINK's own in-scope path — so the guard reasons
+    // about src/link while the write follows the link to wherever it points.
+    //
+    // Reproduced as an ALLOW before the fix. lstat is what separates the two
+    // cases, because it does not follow the link.
+    symlinkSync('/definitely/not/a/real/target', path.join(ROOT, 'src/dangling'))
+    const c = writeContract(contract({ allowed_paths: ['src/**'] }))
+    const d = run(call('src/dangling'), { [BINDING_ENV]: bindingFor(c) })
+    expect(d.allow, d.reason).toBe(false)
+    expect(d.reason).toMatch(/symlink whose target cannot be resolved/)
+  })
+
+  it('DENIES a dangling symlink aimed at Tier 0, which both floor checks would miss', () => {
+    // The laundering case. Neither Tier-0 pass can see it: the lexical check
+    // sees the spelling "src/gitdangler", and the resolved check would see the
+    // same string if the parent-resolution fallback had run. Only refusing to
+    // resolve a dangling link at all closes it.
+    symlinkSync(path.join(ROOT, '.git/hooks/pre-commit'), path.join(ROOT, 'src/gitdangler'))
+    const c = writeContract(contract({ allowed_paths: ['src/**'] }))
+    const d = run(call('src/gitdangler'), { [BINDING_ENV]: bindingFor(c) })
+    expect(d.allow, d.reason).toBe(false)
+  })
+
+  it('still allows a genuinely new file, so the fix did not become deny-all', () => {
+    // The other half of the same branch: an ordinary not-yet-existing file must
+    // keep resolving through its parent. A fix that denied both would pass the
+    // two specs above and break the guard's usefulness entirely.
+    const c = writeContract(contract({ allowed_paths: ['src/**'] }))
+    const d = run(call('src/deep/not-yet-written.js'), { [BINDING_ENV]: bindingFor(c) })
+    expect(d.allow, d.reason).toBe(true)
   })
 
   it('denies when nothing can be resolved', () => {

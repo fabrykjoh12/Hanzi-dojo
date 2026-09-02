@@ -22,8 +22,19 @@
 import process from 'node:process'
 import { decide } from './task-scope-policy.mjs'
 
-/** The PreToolUse deny shape. Exit 0: the JSON carries the decision. */
+/**
+ * The PreToolUse deny shape.
+ *
+ * Exits by SETTING exitCode and letting the event loop drain, never by calling
+ * process.exit(). stdout to a pipe is asynchronous in Node, and process.exit
+ * does not flush a pending write — so a truncated or lost payload would reach
+ * Claude Code as "exit 0, no decision", which is precisely the allow path. A
+ * guard whose failure mode is an allow is not a guard, and this one is small
+ * enough that the bug would almost never show up in testing and would matter
+ * every time it did.
+ */
 function emitDeny(reason) {
+  process.exitCode = 0
   process.stdout.write(JSON.stringify({
     hookSpecificOutput: {
       hookEventName: 'PreToolUse',
@@ -31,12 +42,11 @@ function emitDeny(reason) {
       permissionDecisionReason: 'task-scope-guard: ' + reason,
     },
   }))
-  process.exit(0)
 }
 
 /** Silence is the allow. Emitting no decision leaves the normal flow alone. */
 function emitAllow() {
-  process.exit(0)
+  process.exitCode = 0
 }
 
 async function readStdin() {

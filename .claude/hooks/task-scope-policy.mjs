@@ -92,6 +92,19 @@ export const GRANTS = {
   'runtime-hook-maintenance': ['.claude/hooks/**'],
 }
 
+/**
+ * TIER 1 — the protected control plane. A copy of PROTECTED_CONTROL_PLANE.
+ *
+ * The canonical validator checks tier containment as well as grant reach, and
+ * the two are equivalent only while every grant maps inside the tier. That is
+ * true today and nothing made it stay true, so the check is duplicated here and
+ * a parity spec pins both the list and the subset relationship.
+ */
+export const PROTECTED_TIER = [
+  '.claude/settings.json',
+  '.claude/hooks/**',
+]
+
 const REQUIRED_BINDING_FIELDS = [
   'id', 'goal', 'owner_role', 'risk', 'allowed_paths', 'forbidden_paths',
   'non_goals', 'acceptance_criteria', 'verification', 'production_effect',
@@ -329,12 +342,18 @@ export function effectiveScope(contract, { grants = GRANTS, root = '.', readFile
   if (!cp.protected_paths.every(isNonEmptyString)) return declared
   if (!isNonEmptyString(cp.justification)) return declared
 
+  // Grammar-filtered, exactly as the validator filters it. Without this the two
+  // disagree on a spelling like "./.claude/hooks/**": canonical drops it (the
+  // "." segment fails the grammar) and honours the grant, while the runtime
+  // would normalise the "./" away and refuse. Stricter, but a divergence all
+  // the same, and the point of the parity work is that there is none.
   const forbidden = Array.isArray(contract.forbidden_paths)
-    ? contract.forbidden_paths.filter(isNonEmptyString)
+    ? contract.forbidden_paths.filter(f => isNonEmptyString(f) && !pathGrammarError(f))
     : []
   for (const p of cp.protected_paths) {
     if (pathGrammarError(p)) return declared
     if (FLOOR.some(f => covers(f, p))) return declared
+    if (!PROTECTED_TIER.some(t => covers(t, p))) return declared
     if (!mapped.some(m => covers(m, p))) return declared
     if (forbidden.some(f => covers(f, p))) return declared
   }
@@ -410,7 +429,7 @@ export function resolveWithin(root, target, { realpath = realpathSync, lstat = l
  * police: the driver holds Bash and git by design, and pretending otherwise
  * would be a claim the mechanism cannot support.
  */
-export function decide(event, { root, env = {}, grants = GRANTS, readFile, realpath } = {}) {
+export function decide(event, { root, env = {}, grants = GRANTS, readFile, realpath, lstat } = {}) {
   const toolName = event?.tool_name
   if (!WRITE_TOOLS.includes(toolName)) return allow('not a write tool')
 
@@ -441,7 +460,7 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
   const { contract, error: contractError } = loadBoundContract(binding, { root, readFile })
   if (contractError) return deny(contractError)
 
-  const { relative, error: resolveError } = resolveWithin(root, String(target), { realpath })
+  const { relative, error: resolveError } = resolveWithin(root, String(target), { realpath, lstat })
   if (resolveError) return deny(resolveError)
 
   // (6) Tier 0 again, on what the write will REALLY touch.
