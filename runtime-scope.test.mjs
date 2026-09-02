@@ -56,10 +56,32 @@ const POLICY = '.claude/hooks/task-scope-policy.mjs'
 const GUARD = '.claude/hooks/task-scope-guard.mjs'
 
 describe('the runtime decision path is not reachable from Tier 2', () => {
+  // Multiline-aware, and deliberately paranoid about the forms an import can
+  // take. The first version of this used [^\n]*? between the keyword and
+  // `from`, so a multi-line `import {\n  X,\n} from '../../tools/x.mjs'` — the
+  // house style in this very file — matched nothing and passed silently. A
+  // boundary spec that misses the most ordinary spelling of the thing it
+  // forbids is worse than none, because it reads as coverage.
   const importsIn = (file) => {
     const src = readFileSync(file, 'utf8')
-    return [...src.matchAll(/(?:^|\s)(?:import|export)[^\n]*?from\s+['"]([^'"]+)['"]/g)].map(m => m[1])
-      .concat([...src.matchAll(/\bimport\(\s*['"]([^'"]+)['"]\s*\)/g)].map(m => m[1]))
+    const found = []
+    // static `import ... from 'x'` / `export ... from 'x'`, across lines
+    for (const m of src.matchAll(/(?:^|[\s;])(?:import|export)\b[\s\S]*?\bfrom\s*['"]([^'"]+)['"]/g)) found.push(m[1])
+    // side-effect `import 'x'` — no `from` at all
+    for (const m of src.matchAll(/(?:^|[\s;])import\s*['"]([^'"]+)['"]/g)) found.push(m[1])
+    // dynamic import with a literal specifier
+    for (const m of src.matchAll(/\bimport\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) found.push(m[1])
+    // require(), in case anyone reaches for CJS
+    for (const m of src.matchAll(/\brequire\s*\(\s*['"]([^'"]+)['"]\s*\)/g)) found.push(m[1])
+    return found
+  }
+
+  /** Any import-shaped construct whose specifier this spec could NOT read. */
+  const opaqueImportsIn = (file) => {
+    const src = readFileSync(file, 'utf8')
+    return [...src.matchAll(/\bimport\s*\(([^)]*)\)/g)]
+      .map(m => m[1].trim())
+      .filter(arg => !/^['"][^'"]+['"]$/.test(arg))
   }
 
   it('imports only Node builtins and other protected hook files', () => {
@@ -74,6 +96,26 @@ describe('the runtime decision path is not reachable from Tier 2', () => {
         const ok = spec.startsWith('node:') || (spec.startsWith('./') && spec.endsWith('.mjs'))
         expect(ok, file + ' imports "' + spec + '", which is outside node: and .claude/hooks/').toBe(true)
       }
+    }
+  })
+
+  it('detects the multi-line and side-effect forms, not just the one-liner', () => {
+    // Proves the detector on the shapes that defeated its first version, using
+    // this file itself as the multi-line specimen: it imports from tools/ in
+    // exactly that style, so if the pattern cannot see that, it cannot see the
+    // violation it exists to catch.
+    const selfSpecifiers = importsIn('runtime-scope.test.mjs')
+    expect(selfSpecifiers, 'the multi-line tools/ import in this file').toContain('./tools/verify-task-contracts.mjs')
+    expect(selfSpecifiers).toContain('./.claude/hooks/task-scope-policy.mjs')
+    expect(selfSpecifiers).toContain('node:fs')
+  })
+
+  it('leaves no import whose specifier it cannot read', () => {
+    // A computed specifier — import(base + name) — is invisible to any literal
+    // scan. Rather than pretend otherwise, forbid the construct outright in the
+    // protected files.
+    for (const file of [POLICY, GUARD]) {
+      expect(opaqueImportsIn(file), file + ' has a dynamic import with a computed specifier').toEqual([])
     }
   })
 
@@ -167,11 +209,69 @@ describe('parity with the canonical validator', () => {
     expect(GRANTS).toEqual(CONTROL_PLANE_GRANTS)
   })
 
-  it('derives the same effective scope as the validator', () => {
+  it('derives the same effective scope as the validator, for contracts on disk', () => {
     const dir = '.agent/tasks'
     for (const n of readdirSync(dir).filter(f => f.endsWith('.json'))) {
       const c = JSON.parse(readFileSync(dir + '/' + n, 'utf8'))
       expect(effectiveScope(c), n).toEqual(effectiveAllowedPaths(c))
+    }
+  })
+
+  it('derives the same effective scope for contracts the validator REJECTS', () => {
+    // The half that matters, and the half the on-disk sweep structurally cannot
+    // reach: every contract in .agent/tasks already validates, so a runtime
+    // path that is more permissive for INVALID contracts agrees on every input
+    // that spec will ever see. These are the shapes where the two could drift
+    // apart unnoticed — most sharply, a low-risk contract from an unrelated
+    // domain claiming authority over the guard's own decision logic.
+    const base = {
+      id: 'probe', goal: 'g', owner_role: 'workflow-authority', risk: 'r3',
+      allowed_paths: ['src/**'], forbidden_paths: [], non_goals: ['n'],
+      acceptance_criteria: ['a'], verification: ['npm run verify:pr'],
+      production_effect: 'none', dependencies: [], stop_conditions: ['s'],
+    }
+    const grant = {
+      grant: 'runtime-hook-maintenance',
+      protected_paths: ['.claude/hooks/task-scope-policy.mjs'],
+      justification: 'j',
+    }
+    const variants = [
+      { ...base, control_plane: grant },                                   // valid
+      { ...base, owner_role: 'story-content', control_plane: grant },      // wrong role
+      { ...base, owner_role: 'product-app', control_plane: grant },        // wrong role
+      { ...base, risk: 'r1', control_plane: grant },                       // below the floor
+      { ...base, risk: 'r0', control_plane: grant },
+      { ...base, risk: 'nonsense', control_plane: grant },
+      { ...base, control_plane: { ...grant, sneaky: true } },              // unknown key
+      { ...base, control_plane: { ...grant, justification: '' } },
+      { ...base, control_plane: { ...grant, grant: 'runtime-policy-maintenance' } },
+      { ...base, control_plane: { ...grant, protected_paths: ['.agent/roles.json'] } },
+      { ...base, control_plane: { ...grant, protected_paths: ['.claude/hooks/*.mjs'] } },
+      { ...base, control_plane: { ...grant, grant: 'constructor' } },
+      { ...base, control_plane: null },
+      { ...base, allowed_paths: ['**'] },                                  // grammar-invalid
+      { ...base, allowed_paths: ['../escape', 'src/**'] },
+      { ...base, forbidden_paths: ['.claude/hooks/**'], control_plane: grant },
+    ]
+    for (const c of variants) {
+      const label = JSON.stringify(c.control_plane) + ' / ' + c.owner_role + ' / ' + c.risk
+      const runtime = effectiveScope(c)
+      const canonical = effectiveAllowedPaths(c)
+      // THE INVARIANT, stated as containment rather than equality: the runtime
+      // may be stricter than the validator, never more permissive. It is
+      // deliberately stricter in one place — it drops allowed_paths entries the
+      // grammar rejects, because the validator refuses such a contract outright
+      // and the guard has no equivalent "refuse the whole contract" step. What
+      // must never happen is the other direction: a path the runtime authorises
+      // that the validator would not.
+      for (const p of runtime) {
+        expect(canonical, label + ' — runtime authorises "' + p + '" that the validator does not').toContain(p)
+      }
+      // And for the grant specifically, the two agree exactly: a grant the
+      // validator refuses grants nothing at runtime either.
+      const grantedRuntime = runtime.filter(x => !c.allowed_paths.includes(x))
+      const grantedCanonical = canonical.filter(x => !c.allowed_paths.includes(x))
+      expect(grantedRuntime, label).toEqual(grantedCanonical)
     }
   })
 })
@@ -229,7 +329,10 @@ beforeAll(() => {
   }
   writeFileSync(path.join(ROOT, 'src/existing.js'), 'x')
   writeFileSync(path.join(ROOT, 'outside/secret.txt'), 'x')
-  writeFileSync(path.join(ROOT, '.agent/roles.json'), '{}')
+  // The real role model, because the policy derives the control-plane role from
+  // it exactly as the validator does. A stub would make every grant fail for
+  // the wrong reason and hide whether the grant path works at all.
+  writeFileSync(path.join(ROOT, '.agent/roles.json'), readFileSync('.agent/roles.json', 'utf8'))
   // The escape the probe proved: an in-scope directory entry that is really a
   // door out of scope.
   symlinkSync(path.join(ROOT, 'outside'), path.join(ROOT, 'src/door'))
@@ -279,10 +382,23 @@ describe('the guard allows what the contract actually authorises', () => {
     expect(run(call('outside/secret.txt', { agent_type: null }), env).allow).toBe(true)
   })
 
+  it('pins the write-tool list as a literal, not by iterating itself', () => {
+    // Iterating WRITE_TOOLS to test WRITE_TOOLS proves nothing: drop Edit from
+    // the constant and the loop simply runs one fewer time and passes, while
+    // every producer Edit call silently becomes "not a write tool".
+    expect(WRITE_TOOLS).toEqual(['Write', 'Edit', 'MultiEdit', 'NotebookEdit'])
+    // And it must cover every write-capable tool the producer actually holds.
+    const producerTools = (readFileSync('.claude/agents/task-producer.md', 'utf8')
+      .split('---')[1].match(/^tools:\s*(.*)$/m)?.[1] || '').split(',').map(t => t.trim())
+    for (const t of producerTools) {
+      if (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(t)) expect(WRITE_TOOLS).toContain(t)
+    }
+  })
+
   it('covers every write tool, not just Write', () => {
     const c = writeContract(contract())
     const env = { [BINDING_ENV]: bindingFor(c) }
-    for (const tool of WRITE_TOOLS) {
+    for (const tool of ['Write', 'Edit', 'MultiEdit', 'NotebookEdit']) {
       const ev = tool === 'NotebookEdit'
         ? { tool_name: tool, agent_type: 'task-producer', tool_input: { notebook_path: 'outside/x.ipynb' } }
         : call('outside/x.txt', { tool_name: tool })
@@ -495,7 +611,9 @@ describe('the symlink escape is closed', () => {
   })
 
   it('denies an absolute path that resolves outside the repository', () => {
-    const c = writeContract(contract({ allowed_paths: ['**'] }))
+    // allowed_paths deliberately as wide as the grammar permits, so the deny
+    // comes from resolution rather than from scope.
+    const c = writeContract(contract({ allowed_paths: ['src/**', 'etc/**'] }))
     const d = run(call('/etc/hosts'), { [BINDING_ENV]: bindingFor(c) })
     expect(d.allow).toBe(false)
     expect(d.reason).toMatch(/outside the repository/)
@@ -534,6 +652,22 @@ describe('the producer definition', () => {
   it('declares a closed minimal tool set', () => {
     expect(tools.length).toBeGreaterThan(0)
     expect(tools).toEqual(['Read', 'Write', 'Edit', 'NotebookEdit', 'Glob', 'Grep'])
+  })
+
+  it('locks the shell out twice — denylist as well as allowlist', () => {
+    // disallowedTools is applied FIRST and the allowlist resolves against what
+    // remains, so someone who later adds Bash to tools: still does not get it.
+    // The sibling reviewer definition pairs the two for exactly this reason,
+    // and the producer — whose Bash-lessness is what gives the guard meaning —
+    // has more need of the second lock than anything else in the repository.
+    const denied = (frontmatter.match(/^disallowedTools:\s*(.*)$/m)?.[1] || '')
+      .split(',').map(t => t.trim()).filter(Boolean)
+    expect(denied.length, 'no disallowedTools line').toBeGreaterThan(0)
+    for (const t of ['Bash', 'BashOutput', 'KillShell', 'Agent', 'Task']) {
+      expect(denied, 'disallowedTools omits ' + t).toContain(t)
+    }
+    // The two lists must not contradict each other.
+    for (const t of tools) expect(denied, 'tools and disallowedTools both name ' + t).not.toContain(t)
   })
 
   it('has no shell, no process tool and no way to spawn an agent', () => {

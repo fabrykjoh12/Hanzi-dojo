@@ -27,12 +27,25 @@
  * documented rather than papered over, and out of the producer's reach only
  * because it is a process-launch flag and the producer has no Bash.
  *
- * FAIL CLOSED, ALWAYS. Every path out of `decide()` that is not a positive,
- * fully established allow is a deny. "Could not establish" is never authorized.
+ * FAIL CLOSED ON EVERY SECURITY QUESTION IT ANSWERS. Once `decide()` has
+ * established that this is a producer's write, every route out of it is a deny
+ * unless the write is positively established as in scope — "could not
+ * establish" is never authorized. The two early allows above that point are not
+ * exceptions to the rule but statements that the question was never this
+ * policy's: a non-write tool, and a call with no `agent_type`, which is the
+ * trusted driver. The driver holds Bash and git by design, and pretending to
+ * police it would be a claim the mechanism cannot support.
+ *
+ * PLATFORM ASSUMPTION, stated because it is not enforced: path comparison is
+ * byte-exact and case-sensitive, matching the contract grammar and Linux, where
+ * CI runs. On a case-insensitive volume a differently-cased spelling of a floor
+ * path could in principle resolve to itself and evade the comparison. Registration
+ * should either normalise case or restate this assumption for the platforms it
+ * covers.
  */
 
 import { createHash } from 'node:crypto'
-import { readFileSync, realpathSync } from 'node:fs'
+import { lstatSync, readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 
 // ---------------------------------------------------------------------------
@@ -52,6 +65,16 @@ export const BINDING_ENV = 'HANZI_TASK_BINDING'
 
 /** Where a contract may live. A binding naming anything else is refused. */
 export const TASKS_DIR = '.agent/tasks'
+
+/** The canonical role source. Tier 0, so it cannot be edited by any task. */
+export const ROLES_FILE = '.agent/roles.json'
+
+/** Risk order, and the floor a control-plane grant may be declared at. */
+export const RISK_LEVELS = ['r0', 'r1', 'r2', 'r3', 'r4']
+export const CONTROL_PLANE_MIN_RISK = 'r3'
+
+/** The only keys a control_plane declaration may carry. Closed. */
+export const CONTROL_PLANE_KEYS = ['grant', 'protected_paths', 'justification']
 
 /** Tool calls that write. Anything else is not this policy's business. */
 export const WRITE_TOOLS = ['Write', 'Edit', 'MultiEdit', 'NotebookEdit']
@@ -150,6 +173,22 @@ export function lexicalRelative(root, target) {
   return normalisePath(rel.split(path.sep).join('/'))
 }
 
+/**
+ * Which role may hold a control-plane grant — derived from the role model, not
+ * named here, exactly as the canonical validator derives it: the single role
+ * claiming the control plane in its own purpose or authority. Ambiguity is
+ * refused rather than guessed, and a null holder means no grant is honoured.
+ */
+const CLAIMS_CONTROL_PLANE = /control[-\s]plane/i
+export function controlPlaneRoleIn(roleModel) {
+  const roles = Array.isArray(roleModel?.roles) ? roleModel.roles : []
+  const claiming = roles.filter((r) => {
+    const authority = Array.isArray(r?.authority) ? r.authority : []
+    return [r?.purpose, ...authority].some(t => typeof t === 'string' && CLAIMS_CONTROL_PLANE.test(t))
+  })
+  return claiming.length === 1 && isNonEmptyString(claiming[0].id) ? claiming[0].id : null
+}
+
 const deny = (reason) => ({ allow: false, reason })
 const allow = (reason) => ({ allow: true, reason })
 
@@ -243,15 +282,43 @@ export function loadBoundContract(binding, { root, readFile = readFileSync } = {
  * authority nobody reviewed.
  *
  * This is a runtime re-derivation, not a call into the validator. Parity specs
- * hold the two to the same answer.
+ * hold the two to the same answer, over the contracts on disk AND over
+ * deliberately invalid ones — the second half matters, because a parity check
+ * that only ever sees valid contracts cannot notice a runtime path that is more
+ * permissive than the validator for the contracts the validator rejects.
  */
-export function effectiveScope(contract, { grants = GRANTS } = {}) {
+export function effectiveScope(contract, { grants = GRANTS, root = '.', readFile = readFileSync } = {}) {
+  // allowed_paths is filtered by the GRAMMAR, not merely by being a string. A
+  // spelling the canonical grammar rejects — a bare "**" above all — would
+  // otherwise authorise everything below Tier 0 at runtime while the validator
+  // refuses the contract outright.
   const declared = Array.isArray(contract.allowed_paths)
-    ? contract.allowed_paths.filter(isNonEmptyString)
+    ? contract.allowed_paths.filter(p => isNonEmptyString(p) && !pathGrammarError(p))
     : []
-  const cp = contract.control_plane
   if (!Object.prototype.hasOwnProperty.call(contract, 'control_plane')) return declared
+  const cp = contract.control_plane
   if (!isPlainObject(cp)) return declared
+
+  // ROLE AND RISK. The canonical grantedProtectedPaths() returns nothing when
+  // controlPlaneViolations() reports ANYTHING, and those violations include the
+  // owning role and the r3 floor. Checking only the shape here would honour, at
+  // runtime, a grant the validator refuses — and the gap is widest exactly
+  // where it matters: a low-risk contract in an unrelated domain claiming
+  // authority over the guard's own decision logic.
+  let roleModel
+  try {
+    roleModel = JSON.parse(readFile(path.join(root, ROLES_FILE), 'utf8'))
+  } catch {
+    return declared
+  }
+  const holder = controlPlaneRoleIn(roleModel)
+  if (holder === null || contract.owner_role !== holder) return declared
+  const declaredRisk = RISK_LEVELS.indexOf(contract.risk)
+  if (declaredRisk < 0 || declaredRisk < RISK_LEVELS.indexOf(CONTROL_PLANE_MIN_RISK)) return declared
+
+  for (const key of Object.keys(cp)) {
+    if (!CONTROL_PLANE_KEYS.includes(key)) return declared
+  }
 
   const mapped = isNonEmptyString(cp.grant) &&
     Object.prototype.hasOwnProperty.call(grants, cp.grant)
@@ -262,10 +329,14 @@ export function effectiveScope(contract, { grants = GRANTS } = {}) {
   if (!cp.protected_paths.every(isNonEmptyString)) return declared
   if (!isNonEmptyString(cp.justification)) return declared
 
+  const forbidden = Array.isArray(contract.forbidden_paths)
+    ? contract.forbidden_paths.filter(isNonEmptyString)
+    : []
   for (const p of cp.protected_paths) {
     if (pathGrammarError(p)) return declared
     if (FLOOR.some(f => covers(f, p))) return declared
     if (!mapped.some(m => covers(m, p))) return declared
+    if (forbidden.some(f => covers(f, p))) return declared
   }
   return [...declared, ...cp.protected_paths]
 }
@@ -279,7 +350,7 @@ export function effectiveScope(contract, { grants = GRANTS } = {}) {
  * does not exist yet, the parent is resolved instead and the basename
  * reattached. Anything that cannot be resolved is a deny, not a guess.
  */
-export function resolveWithin(root, target, { realpath = realpathSync } = {}) {
+export function resolveWithin(root, target, { realpath = realpathSync, lstat = lstatSync } = {}) {
   let realRoot
   try {
     realRoot = realpath(root)
@@ -291,6 +362,22 @@ export function resolveWithin(root, target, { realpath = realpathSync } = {}) {
   try {
     resolved = realpath(abs)
   } catch {
+    // realpath throws ENOENT for two very different things: a file that does
+    // not exist yet, which is ordinary and must be allowed to resolve through
+    // its parent; and a symlink whose TARGET does not exist, which is a door
+    // pointing somewhere unknowable. Treating them alike is a bypass — the
+    // write follows the dangling link to wherever it points, while the guard
+    // reasoned about the link's own in-scope path. lstat is what tells them
+    // apart, because it does not follow the link.
+    let isDanglingLink = false
+    try {
+      isDanglingLink = lstat(abs).isSymbolicLink()
+    } catch {
+      isDanglingLink = false
+    }
+    if (isDanglingLink) {
+      return { error: '"' + target + '" is a symlink whose target cannot be resolved' }
+    }
     const parent = path.dirname(abs)
     try {
       resolved = path.join(realpath(parent), path.basename(abs))
@@ -373,7 +460,7 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
     }
   }
 
-  const scope = effectiveScope(contract, { grants })
+  const scope = effectiveScope(contract, { grants, root, readFile })
   for (const a of scope) {
     if (covers(a, relative)) {
       return allow('"' + relative + '" is inside the bound contract scope (' + a + ')')

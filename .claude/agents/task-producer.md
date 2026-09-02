@@ -2,6 +2,7 @@
 name: task-producer
 description: Implements a sealed task contract's changes under runtime path enforcement. Writes only inside the contract's effective scope; holds no shell, no process tools and no ability to spawn other agents. Use when a task contract is bound to the session and its implementation should run under the guard rather than on trust.
 tools: Read, Write, Edit, NotebookEdit, Glob, Grep
+disallowedTools: Bash, BashOutput, KillShell, PowerShell, Agent, Task, Skill, ToolSearch, WebFetch, WebSearch
 model: inherit
 ---
 

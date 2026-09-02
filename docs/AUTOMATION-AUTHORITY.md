@@ -452,9 +452,19 @@ Proven by unit and adversarial specs against a real temporary repository:
 - Every invalid state denies: missing or malformed binding, missing, malformed
   or unsealed contract, id/path/filename mismatch, stale seal, digest mismatch,
   bad path grammar, invalid grant, out-of-scope path, unresolvable realpath.
-- **The symlink escape is closed.** A real symlink inside an in-scope directory
-  pointing out of it is denied, because the guard resolves the target with
-  `realpath` before matching. This matters: a cold probe on Claude Code 2.1.257,
+  "Invalid grant" is measured against the canonical rules, not a subset of them:
+  the runtime checks the owning role and the `r3` floor as well as the shape, so
+  a grant the validator refuses grants nothing at runtime either. Specs assert
+  that over deliberately invalid contracts, because a parity check that only
+  sees valid ones agrees on every input it will ever get.
+- **The symlink escape is closed, in both its forms.** A real symlink inside an
+  in-scope directory pointing out of it is denied, because the guard resolves
+  the target with `realpath` before matching. So is the harder case: a symlink
+  whose target does **not** exist. `realpath` fails identically for that and for
+  an ordinary new file, and resolving through the parent — which is right for
+  the new file — would hand back the link's own in-scope path and allow a write
+  that follows the link anywhere, including into Tier 0. The guard `lstat`s the
+  final component to tell the two apart and denies the dangling link. This matters: a cold probe on Claude Code 2.1.257,
   revalidated on 2.1.258, showed the runtime hands the hook the **unresolved**
   path, so a textual prefix check is bypassable.
 - A valid in-scope write succeeds, including a new file whose parent resolves
