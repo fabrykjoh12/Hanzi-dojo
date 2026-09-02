@@ -228,12 +228,29 @@ The floor is why a task cannot re-seal itself: repairing a digest means writing
 .claude/settings.json   .claude/hooks/**
 ```
 
-Today exactly one grant exists, `runtime-policy-maintenance`, and it reaches
-`.claude/settings.json` only. **`.claude/hooks/**` is therefore in the tier and
-in no grant: no contract can currently be authorised to write a hook.** That is
-the difference between the tier and the floor — the floor is unauthorisable in
-principle, while a hooks grant simply does not exist yet and would arrive as its
-own reviewed change, carrying the paths it reaches.
+Two grants exist, and each reaches one part of the tier:
+
+| Grant | Reaches | Maintains |
+|---|---|---|
+| `runtime-policy-maintenance` | `.claude/settings.json` | the permission and hook *declarations* |
+| `runtime-hook-maintenance` | `.claude/hooks/**` | the hook *scripts* those declarations point at |
+
+Related work, but not the same authority. A task that writes a guard script has
+no business rewriting the permission allow-list, and a task that edits settings
+has no business rewriting the code a hook runs.
+
+**Between them the two grants cover the whole tier; neither covers it alone.**
+That distinction is the design, and it is what separates Tier 1 from Tier 0:
+every Tier 1 path is now authorizable by exactly one grant, so "protected" here
+means *governed*, not *unreachable* — while no single grant is a synonym for the
+tier, so a grant still has to name what it needs. Tier 0 remains the tier
+nothing can reach. When a third protected path arrives, it arrives with its own
+narrow grant; widening an existing grant to cover it would collapse that
+distinction and leave the grant/path check unable to fire.
+
+The alternative considered and rejected for the hook script: leave it in an
+ordinary Tier 2 file and point settings at it. That needs no grant — and it
+would let a task rewrite the very guard that constrains it.
 
 These *do* sometimes need to change — a runtime path guard has to be installed
 by somebody. But not by an ordinary task, and never by adding a line to
@@ -263,11 +280,12 @@ A declaration is honoured only if **all** of it checks out:
   work at `r3`.
 - `grant` is one of a **closed** vocabulary — closed to the keys actually
   written in the registry, checked with `hasOwnProperty` so `constructor` and
-  friends are not inherited grants — each mapping to its own **proper** subset
-  of the tier. There is no grant over the tier as a whole, and a grant cannot
-  authorise a protected path outside its own mapping. If one grant reached
-  every path in the tier, "grant" would be a synonym for "the tier" and the
-  mapping check could never fire.
+  friends are not inherited grants — each mapping to its own part of the tier.
+  No single grant reaches every path in the tier, and a grant cannot authorise a
+  protected path outside its own mapping. That property is asserted by **reach**
+  rather than by counting paths: a grant mapping to one covering subtree could
+  list fewer paths than the tier holds and still reach all of them, so the spec
+  asks what each mapping *covers*.
 - Every protected path is inside Tier 1, outside Tier 0, and obeys the existing
   decidable path grammar — an exact path or a `dir/**` subtree, never a
   filename wildcard.
