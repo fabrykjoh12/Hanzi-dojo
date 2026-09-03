@@ -374,10 +374,13 @@ const bindingFor = (c, over = {}) => JSON.stringify({
   ...over,
 })
 
+// Real hook events always carry cwd — the probe saw it on every call — so the
+// fixtures carry it too. `over` can drop it to exercise the absent case.
 const call = (file, over = {}) => ({
   tool_name: 'Write',
   agent_type: 'task-producer',
   tool_input: { file_path: file },
+  cwd: ROOT,
   ...over,
 })
 
@@ -851,8 +854,13 @@ describe('the adapter, actually run', () => {
   let contractDigest
 
   const runGuard = (event, { env = {}, root = ADAPTER_ROOT, guard } = {}) => {
+    // Real events carry cwd; these fixtures do too, so a relative file_path is
+    // anchorable. Without it the guard correctly refuses to guess an anchor.
+    const payload = typeof event === 'string' || event === null || Array.isArray(event)
+      ? event
+      : { cwd: root, ...event }
     const r = spawnSync(process.execPath, [guard || path.join(root, '.claude/hooks/task-scope-guard.mjs')], {
-      input: typeof event === 'string' ? event : JSON.stringify(event),
+      input: typeof payload === 'string' ? payload : JSON.stringify(payload),
       encoding: 'utf8',
       env: { ...process.env, CLAUDE_PROJECT_DIR: root, ...env },
     })
@@ -953,6 +961,30 @@ describe('the adapter, actually run', () => {
       if (write !== null) writeFileSync(path.join(root, '.claude/hooks/task-scope-policy.mjs'), write)
       const { parsed } = runGuard({ tool_name: 'Write', agent_type: 'p', tool_input: { file_path: 'x' } }, { root })
       expect(parsed, label + ': no decision emitted').not.toBeNull()
+      expect(parsed, label).not.toBe('UNPARSEABLE')
+      expect(parsed.hookSpecificOutput.permissionDecision, label).toBe('deny')
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('denies when the policy returns nothing recognisable', () => {
+    // The last fail-closed branch, and the one a mutation could flip to an
+    // allow with every other spec still green: the real policy only ever
+    // returns {allow:true} or {allow:false}, so nothing else exercised the
+    // "not recognisably an allow" path. These policies load fine and decide
+    // nothing useful.
+    for (const [label, body] of [
+      ['undefined', 'export function decide () {}'],
+      ['empty object', 'export function decide () { return {} }'],
+      ['non-boolean allow', 'export function decide () { return { allow: "yes" } }'],
+      ['null', 'export function decide () { return null }'],
+    ]) {
+      const root = mkdtempSync(path.join(tmpdir(), 'nodecision-'))
+      mkdirSync(path.join(root, '.claude/hooks'), { recursive: true })
+      cpSync('.claude/hooks/task-scope-guard.mjs', path.join(root, '.claude/hooks/task-scope-guard.mjs'))
+      writeFileSync(path.join(root, '.claude/hooks/task-scope-policy.mjs'), body + '\n')
+      const { parsed } = runGuard({ tool_name: 'Write', agent_type: 'p', tool_input: { file_path: 'x' } }, { root })
+      expect(parsed, label + ': emitted no decision at all').not.toBeNull()
       expect(parsed, label).not.toBe('UNPARSEABLE')
       expect(parsed.hookSpecificOutput.permissionDecision, label).toBe('deny')
       rmSync(root, { recursive: true, force: true })
@@ -1084,6 +1116,23 @@ describe('where a relative file_path is anchored', () => {
     expect(run(call('existing.js', { cwd: path.join(ROOT, 'src/deep') }), env).allow).toBe(true)
     // The same spelling from the root is src/existing.js — NOT in scope.
     expect(run(call('existing.js', { cwd: ROOT }), env).allow).toBe(false)
+  })
+
+  it('denies a relative path with NO cwd rather than assuming the root', () => {
+    // The module says "an unprovable cwd is a deny, not a guess". Anchoring to
+    // the root on a missing cwd would have been exactly the guess, and its error
+    // direction is an allow: a producer working in docs/ passing
+    // "runtime-scope.test.mjs" would resolve to the root file, match an exact
+    // allowed path, and write to docs/ instead.
+    const c = writeContract(contract({ allowed_paths: ['src/**'] }))
+    const env = { [BINDING_ENV]: bindingFor(c) }
+    for (const cwd of [undefined, null, '']) {
+      const d = run(call('existing.js', { cwd }), env)
+      expect(d.allow, String(cwd)).toBe(false)
+      expect(d.reason, String(cwd)).toMatch(/no cwd on the event/)
+    }
+    // An absolute path is unaffected — it never needed an anchor.
+    expect(run(call(path.join(ROOT, 'src/existing.js'), { cwd: undefined }), env).allow).toBe(true)
   })
 
   it('denies a relative path whose cwd cannot be proved inside the repository', () => {

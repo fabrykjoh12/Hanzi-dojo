@@ -483,7 +483,15 @@ export function resolveWithin(root, target, { realpath = realpathSync, lstat = l
   // to resolve inside the repository. An unprovable cwd is a deny, not a guess.
   let anchor = realRoot
   if (!path.isAbsolute(target)) {
-    if (cwd !== undefined && cwd !== null && String(cwd) !== '') {
+    // No cwd on the event and a relative path is exactly the ambiguity this
+    // comment claims to refuse, so refuse it rather than assuming the root.
+    // Real events always carry cwd — the probe confirmed it on every call — so
+    // this costs nothing real and closes the one case where the guard would
+    // have reasoned about a different file than the one written.
+    if (cwd === undefined || cwd === null || String(cwd) === '') {
+      return { error: 'a relative path was given with no cwd on the event, so it cannot be anchored' }
+    }
+    {
       let realCwd
       try {
         realCwd = realpath(String(cwd))
