@@ -202,6 +202,99 @@ export function controlPlaneRoleIn(roleModel) {
   return claiming.length === 1 && isNonEmptyString(claiming[0].id) ? claiming[0].id : null
 }
 
+/**
+ * THE BOUND CONTRACT MUST BE VALID AS A WHOLE, or it authorises nothing.
+ *
+ * An earlier shape of this policy validated only the grant, and an invalid
+ * grant merely "lost the grant" while ordinary allowed_paths kept working. That
+ * is the wrong failure mode. A contract the canonical validator would reject is
+ * not a narrower contract — it is a contract nobody has established the meaning
+ * of, and a sealed file that says `allowed_paths: [".claude/settings.json"]`
+ * would have handed a producer the control plane with no grant at all.
+ *
+ * So: any violation here denies the whole decision, ordinary paths included.
+ * Returns violation strings; empty means the contract is safe to reason with.
+ */
+export function contractSecurityViolations(contract, { grants = GRANTS, root = '.', readFile = readFileSync } = {}) {
+  const out = []
+  if (!isPlainObject(contract)) return ['the bound contract is not an object']
+
+  for (const field of ['allowed_paths', 'forbidden_paths']) {
+    const v = contract[field]
+    if (!Array.isArray(v)) { out.push(field + ' is not an array'); continue }
+    for (const p of v) {
+      if (!isNonEmptyString(p)) { out.push(field + ' contains a non-string entry'); continue }
+      const g = pathGrammarError(p)
+      if (g) out.push(field + ' entry "' + p + '" ' + g)
+    }
+  }
+
+  // Ordinary allowed_paths may reach neither tier. The floor is unauthorisable
+  // outright; Tier 1 is reachable only through a grant, so naming it in
+  // allowed_paths is the exact escalation the tier exists to prevent.
+  const allowed = Array.isArray(contract.allowed_paths) ? contract.allowed_paths.filter(isNonEmptyString) : []
+  for (const a of allowed) {
+    if (pathGrammarError(a)) continue
+    for (const f of FLOOR) {
+      if (covers(a, f) || covers(f, a)) out.push('allowed_paths entry "' + a + '" reaches the Tier 0 floor (' + f + ')')
+    }
+    for (const t of PROTECTED_TIER) {
+      if (covers(a, t) || covers(t, a)) {
+        out.push('allowed_paths entry "' + a + '" reaches the protected control plane (' + t +
+          ') — that authority has exactly one spelling, and it is not allowed_paths')
+      }
+    }
+  }
+
+  if (!Object.prototype.hasOwnProperty.call(contract, 'control_plane')) return out
+  const cp = contract.control_plane
+  if (!isPlainObject(cp)) return [...out, 'control_plane is present but is not an object']
+
+  for (const key of Object.keys(cp)) {
+    if (!CONTROL_PLANE_KEYS.includes(key)) out.push('control_plane: unknown field: ' + key)
+  }
+
+  let roleModel
+  try {
+    roleModel = JSON.parse(readFile(path.join(root, ROLES_FILE), 'utf8'))
+  } catch {
+    return [...out, 'the role model could not be read, so no grant can be honoured']
+  }
+  const holder = controlPlaneRoleIn(roleModel)
+  if (holder === null) out.push('the role model does not identify exactly one control-plane role')
+  else if (contract.owner_role !== holder) {
+    out.push('control_plane requires owner_role ' + JSON.stringify(holder) +
+      ' (got ' + JSON.stringify(contract.owner_role) + ')')
+  }
+  const declaredRisk = RISK_LEVELS.indexOf(contract.risk)
+  if (declaredRisk < 0 || declaredRisk < RISK_LEVELS.indexOf(CONTROL_PLANE_MIN_RISK)) {
+    out.push('control_plane requires risk of at least ' + CONTROL_PLANE_MIN_RISK +
+      ' (got ' + JSON.stringify(contract.risk) + ')')
+  }
+
+  const known = isNonEmptyString(cp.grant) && Object.prototype.hasOwnProperty.call(grants, cp.grant)
+  if (!known) out.push('control_plane.grant is not a known grant (got ' + JSON.stringify(cp.grant) + ')')
+  if (!isNonEmptyString(cp.justification)) out.push('control_plane.justification is missing')
+
+  const paths = cp.protected_paths
+  if (!Array.isArray(paths) || paths.length === 0 || !paths.every(isNonEmptyString)) {
+    return [...out, 'control_plane.protected_paths must be a non-empty array of non-empty strings']
+  }
+  const mapped = known ? grants[cp.grant] : []
+  const forbidden = Array.isArray(contract.forbidden_paths)
+    ? contract.forbidden_paths.filter(f => isNonEmptyString(f) && !pathGrammarError(f))
+    : []
+  for (const p of paths) {
+    const g = pathGrammarError(p)
+    if (g) { out.push('control_plane.protected_paths entry "' + p + '" ' + g); continue }
+    if (FLOOR.some(f => covers(f, p))) out.push('control_plane.protected_paths may never name "' + p + '" — it is on the absolute floor')
+    if (!PROTECTED_TIER.some(t => covers(t, p))) out.push('control_plane.protected_paths entry "' + p + '" is not inside the protected control plane')
+    if (known && !mapped.some(m => covers(m, p))) out.push('grant "' + cp.grant + '" does not authorise "' + p + '"')
+    if (forbidden.some(f => covers(f, p))) out.push('"' + p + '" is granted and forbidden at once')
+  }
+  return out
+}
+
 const deny = (reason) => ({ allow: false, reason })
 const allow = (reason) => ({ allow: true, reason })
 
@@ -369,14 +462,42 @@ export function effectiveScope(contract, { grants = GRANTS, root = '.', readFile
  * does not exist yet, the parent is resolved instead and the basename
  * reattached. Anything that cannot be resolved is a deny, not a guess.
  */
-export function resolveWithin(root, target, { realpath = realpathSync, lstat = lstatSync } = {}) {
+export function resolveWithin(root, target, { realpath = realpathSync, lstat = lstatSync, cwd } = {}) {
   let realRoot
   try {
     realRoot = realpath(root)
   } catch {
     return { error: 'the repository root could not be resolved' }
   }
-  const abs = path.isAbsolute(target) ? target : path.join(realRoot, target)
+  // WHERE A RELATIVE PATH IS ANCHORED.
+  //
+  // Empirically, on Claude Code 2.1.258, this never arises: the runtime
+  // canonicalises file_path to an absolute path before the hook sees it — a
+  // producer that passes "relhere.txt" or "sub/relsub.txt" produces an absolute
+  // path in the event, verified by probe and pinned by a regression spec.
+  //
+  // The branch exists anyway, because assuming a property of the runtime and
+  // being wrong would mean reasoning about a different file than the one
+  // written, and that error's direction is an ALLOW. A relative path is
+  // anchored to the event's own cwd — but only after that cwd is itself proved
+  // to resolve inside the repository. An unprovable cwd is a deny, not a guess.
+  let anchor = realRoot
+  if (!path.isAbsolute(target)) {
+    if (cwd !== undefined && cwd !== null && String(cwd) !== '') {
+      let realCwd
+      try {
+        realCwd = realpath(String(cwd))
+      } catch {
+        return { error: 'a relative path was given and its cwd could not be resolved' }
+      }
+      const rel = path.relative(realRoot, realCwd)
+      if (rel !== '' && (rel.startsWith('..') || path.isAbsolute(rel))) {
+        return { error: 'a relative path was given and its cwd ' + realCwd + ' is outside the repository' }
+      }
+      anchor = realCwd
+    }
+  }
+  const abs = path.isAbsolute(target) ? target : path.join(anchor, target)
   let resolved
   try {
     resolved = realpath(abs)
@@ -430,6 +551,12 @@ export function resolveWithin(root, target, { realpath = realpathSync, lstat = l
  * would be a claim the mechanism cannot support.
  */
 export function decide(event, { root, env = {}, grants = GRANTS, readFile, realpath, lstat } = {}) {
+  // A hook event that is not an object is not something to reason about. `[]`,
+  // `null` and `42` all parse as JSON and would otherwise read as "no
+  // tool_name" — that is, as an allow — so the shape is checked before the
+  // fields are.
+  if (!isPlainObject(event)) return deny('the hook event is not an object')
+
   const toolName = event?.tool_name
   if (!WRITE_TOOLS.includes(toolName)) return allow('not a write tool')
 
@@ -460,7 +587,15 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
   const { contract, error: contractError } = loadBoundContract(binding, { root, readFile })
   if (contractError) return deny(contractError)
 
-  const { relative, error: resolveError } = resolveWithin(root, String(target), { realpath, lstat })
+  // The whole contract, not just the grant. An invalid contract authorises
+  // nothing at all — it does not quietly fall back to its ordinary paths.
+  const contractViolations = contractSecurityViolations(contract, { grants, root, readFile })
+  if (contractViolations.length > 0) {
+    return deny('the bound contract ' + contract.id + ' is not valid, so it authorises nothing: ' +
+      contractViolations.join('; '))
+  }
+
+  const { relative, error: resolveError } = resolveWithin(root, String(target), { realpath, lstat, cwd: event?.cwd })
   if (resolveError) return deny(resolveError)
 
   // (6) Tier 0 again, on what the write will REALLY touch.

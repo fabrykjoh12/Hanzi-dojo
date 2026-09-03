@@ -13,14 +13,31 @@
  * this is inert code with proofs attached, and no claim is made that Tier 0 is
  * enforced at runtime.
  *
- * FAIL CLOSED. Unreadable stdin, unparseable JSON, or an exception anywhere in
- * the policy all produce a deny. A guard that allows when it breaks is not a
- * guard — and the cost of that choice is a stuck producer, which is loud, rather
- * than an unauthorized write, which is silent.
+ * FAIL CLOSED, INCLUDING BEFORE THE POLICY EXISTS. Unreadable stdin,
+ * unparseable JSON, a policy module that will not load, an exception inside the
+ * policy, and a policy that returns nothing recognisable all produce a deny. A
+ * guard that allows when it breaks is not a guard — and the cost of that choice
+ * is a stuck producer, which is loud, rather than an unauthorized write, which
+ * is silent.
  */
 
 import process from 'node:process'
-import { decide } from './task-scope-policy.mjs'
+
+/**
+ * The policy is loaded INSIDE the caught path, not as a top-level import.
+ *
+ * A static `import { decide } from './task-scope-policy.mjs'` runs before any
+ * of this file's code exists, so a missing or unparseable policy module throws
+ * where no catch can reach it: Node exits non-zero, and only exit code 2 blocks
+ * a PreToolUse call — every other non-zero exit is non-blocking and the write
+ * proceeds. The one failure this file's header calls impossible would have been
+ * the one that failed open. Now it denies like anything else.
+ */
+async function loadPolicy() {
+  const mod = await import('./task-scope-policy.mjs')
+  if (typeof mod.decide !== 'function') throw new Error('the policy module exports no decide()')
+  return mod.decide
+}
 
 /**
  * The PreToolUse deny shape.
@@ -56,6 +73,14 @@ async function readStdin() {
 }
 
 async function main() {
+  let decide
+  try {
+    decide = await loadPolicy()
+  } catch (err) {
+    emitDeny('the policy module could not be loaded: ' + (err?.message || String(err)))
+    return
+  }
+
   let event
   try {
     const raw = await readStdin()
@@ -66,13 +91,19 @@ async function main() {
     return
   }
 
-  const verdict = decide(event, {
-    root: process.env.CLAUDE_PROJECT_DIR || process.cwd(),
-    env: process.env,
-  })
+  let verdict
+  try {
+    verdict = decide(event, {
+      root: process.env.CLAUDE_PROJECT_DIR || process.cwd(),
+      env: process.env,
+    })
+  } catch (err) {
+    emitDeny('the policy threw while deciding: ' + (err?.message || String(err)))
+    return
+  }
 
-  if (verdict.allow) emitAllow()
-  else emitDeny(verdict.reason)
+  if (verdict && verdict.allow === true) emitAllow()
+  else emitDeny(verdict?.reason || 'the policy returned no decision')
 }
 
 main().catch((err) => {

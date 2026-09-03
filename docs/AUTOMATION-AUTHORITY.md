@@ -449,9 +449,24 @@ Proven by unit and adversarial specs against a real temporary repository:
 
 - Tier 0 is the **first** branch, and applies before the binding is parsed — so
   a floor write is refused even in a session with no binding at all.
-- Every invalid state denies: missing or malformed binding, missing, malformed
-  or unsealed contract, id/path/filename mismatch, stale seal, digest mismatch,
-  bad path grammar, invalid grant, out-of-scope path, unresolvable realpath.
+- Every invalid state denies: missing or malformed binding, a malformed hook
+  event, missing, malformed or unsealed contract, id/path/filename mismatch,
+  stale seal, digest mismatch, bad path grammar, invalid grant, out-of-scope
+  path, unresolvable realpath.
+- **An invalid bound contract authorises nothing at all** — not "loses the grant
+  and carries on with its ordinary paths". A contract the canonical validator
+  would reject is one whose meaning nobody established, and the sharpest case is
+  `.claude/settings.json` sitting in ordinary `allowed_paths`: that would
+  otherwise hand a producer the control plane with no grant whatsoever. The
+  whole contract is checked — path shapes and grammar, no Tier 0 or Tier 1 in
+  `allowed_paths`, the grant's role, risk floor, closed key set, mapping and
+  tier containment — before any scope is consulted.
+- **The adapter fails closed before the policy exists.** The policy is loaded
+  inside the caught path, not as a top-level import: a static import throws
+  where no catch can reach it, Node exits non-zero, and only exit code 2 blocks
+  a tool call — so a missing or broken policy module would have failed *open*.
+  Proven by specs that spawn the real adapter and feed it real stdin, including
+  a missing policy, an unparseable one, and one that throws.
   "Invalid grant" is measured against the canonical rules, not a subset of them:
   the runtime checks the owning role and the `r3` floor as well as the shape, so
   a grant the validator refuses grants nothing at runtime either. Specs assert

@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { readFileSync, readdirSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync } from 'node:fs'
+import { readFileSync, readdirSync, mkdtempSync, mkdirSync, writeFileSync, rmSync, symlinkSync, cpSync } from 'node:fs'
+import { spawnSync } from 'node:child_process'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
@@ -19,6 +20,7 @@ import {
   loadBoundContract,
   effectiveScope,
   resolveWithin,
+  contractSecurityViolations,
   decide,
 } from './.claude/hooks/task-scope-policy.mjs'
 
@@ -827,5 +829,270 @@ describe('the seal is a real sha256 of the canonical form', () => {
     for (const f of fields) bound[f] = c[f]
     const expected = createHash('sha256').update(canonicalise(bound)).digest('hex')
     expect(policyDigest(c)).toBe(expected)
+  })
+})
+
+
+// ---------------------------------------------------------------------------
+// THE ADAPTER, EXECUTED.
+//
+// Everything above tests the policy as a module. None of it proves the file
+// Claude Code will actually run does the right thing — and the adapter is where
+// a mistake is quietest, because Claude Code ignores hook JSON it does not
+// recognise. A typo in `permissionDecision` would ship green and become an
+// ALLOW the moment the hook is registered.
+//
+// So these specs spawn the real adapter, feed it real stdin, and read what it
+// writes. Inspection is not a substitute.
+// ---------------------------------------------------------------------------
+
+describe('the adapter, actually run', () => {
+  let ADAPTER_ROOT
+  let contractDigest
+
+  const runGuard = (event, { env = {}, root = ADAPTER_ROOT, guard } = {}) => {
+    const r = spawnSync(process.execPath, [guard || path.join(root, '.claude/hooks/task-scope-guard.mjs')], {
+      input: typeof event === 'string' ? event : JSON.stringify(event),
+      encoding: 'utf8',
+      env: { ...process.env, CLAUDE_PROJECT_DIR: root, ...env },
+    })
+    let parsed = null
+    if (r.stdout && r.stdout.trim()) { try { parsed = JSON.parse(r.stdout) } catch { parsed = 'UNPARSEABLE' } }
+    return { status: r.status, stdout: r.stdout, parsed }
+  }
+
+  const binding = () => JSON.stringify({
+    contract_id: 'adapter-demo',
+    contract_digest: contractDigest,
+    contract_path: '.agent/tasks/adapter-demo.json',
+  })
+
+  beforeAll(() => {
+    ADAPTER_ROOT = mkdtempSync(path.join(tmpdir(), 'adapter-'))
+    for (const d of ['.agent/tasks', '.claude/hooks', 'src']) {
+      mkdirSync(path.join(ADAPTER_ROOT, d), { recursive: true })
+    }
+    // The REAL protected files, copied verbatim — this suite must exercise what
+    // ships, not a rewritten stand-in.
+    cpSync('.claude/hooks/task-scope-guard.mjs', path.join(ADAPTER_ROOT, '.claude/hooks/task-scope-guard.mjs'))
+    cpSync('.claude/hooks/task-scope-policy.mjs', path.join(ADAPTER_ROOT, '.claude/hooks/task-scope-policy.mjs'))
+    cpSync('.agent/roles.json', path.join(ADAPTER_ROOT, '.agent/roles.json'))
+    const c = seal({
+      id: 'adapter-demo', goal: 'g', owner_role: 'workflow-authority', risk: 'r3',
+      allowed_paths: ['src/**'], forbidden_paths: [], non_goals: ['n'],
+      acceptance_criteria: ['a'], verification: ['npm run verify:pr'],
+      production_effect: 'none', dependencies: [], stop_conditions: ['s'],
+    })
+    contractDigest = c.contract_digest
+    writeFileSync(path.join(ADAPTER_ROOT, '.agent/tasks/adapter-demo.json'), JSON.stringify(c, null, 2))
+  })
+
+  afterAll(() => { if (ADAPTER_ROOT) rmSync(ADAPTER_ROOT, { recursive: true, force: true }) })
+
+  it('emits EXACTLY the PreToolUse deny shape Claude Code recognises', () => {
+    // Field names verbatim. Claude Code ignores hook output it cannot parse, so
+    // a misspelling here is silently an allow — which is why this asserts the
+    // literal keys rather than "something deny-ish".
+    const { parsed, status } = runGuard(
+      { tool_name: 'Write', agent_type: 'task-producer', tool_input: { file_path: 'outside/x.txt' } },
+      { env: { HANZI_TASK_BINDING: binding() } })
+    expect(status).toBe(0)
+    expect(parsed).not.toBe('UNPARSEABLE')
+    expect(Object.keys(parsed)).toEqual(['hookSpecificOutput'])
+    expect(Object.keys(parsed.hookSpecificOutput).sort())
+      .toEqual(['hookEventName', 'permissionDecision', 'permissionDecisionReason'])
+    expect(parsed.hookSpecificOutput.hookEventName).toBe('PreToolUse')
+    expect(parsed.hookSpecificOutput.permissionDecision).toBe('deny')
+    expect(typeof parsed.hookSpecificOutput.permissionDecisionReason).toBe('string')
+    expect(parsed.hookSpecificOutput.permissionDecisionReason).toMatch(/^task-scope-guard: /)
+  })
+
+  it('emits NOTHING for an allow, so the normal permission flow proceeds', () => {
+    const r = runGuard({ tool_name: 'Write', agent_type: 'task-producer', tool_input: { file_path: 'src/ok.js' } },
+      { env: { HANZI_TASK_BINDING: binding() } })
+    expect(r.status).toBe(0)
+    expect(r.stdout.trim(), 'an allow must write no decision at all').toBe('')
+  })
+
+  it('denies malformed stdin and a malformed event', () => {
+    for (const input of ['', 'not json', '{"unclosed":', '[]', 'null', '42']) {
+      const { parsed } = runGuard(input, { env: { HANZI_TASK_BINDING: binding() } })
+      expect(parsed, JSON.stringify(input)).not.toBeNull()
+      expect(parsed.hookSpecificOutput.permissionDecision, JSON.stringify(input)).toBe('deny')
+    }
+  })
+
+  it('denies when the policy THROWS', () => {
+    // A policy that loads but explodes. The adapter must catch it, not inherit
+    // the crash — an uncaught throw exits non-zero, and only exit 2 blocks.
+    const root = mkdtempSync(path.join(tmpdir(), 'throwing-'))
+    mkdirSync(path.join(root, '.claude/hooks'), { recursive: true })
+    cpSync('.claude/hooks/task-scope-guard.mjs', path.join(root, '.claude/hooks/task-scope-guard.mjs'))
+    writeFileSync(path.join(root, '.claude/hooks/task-scope-policy.mjs'),
+      'export function decide () { throw new Error("boom") }\n')
+    const { parsed } = runGuard({ tool_name: 'Write', agent_type: 'p', tool_input: { file_path: 'x' } }, { root })
+    expect(parsed).not.toBeNull()
+    expect(parsed.hookSpecificOutput.permissionDecision).toBe('deny')
+    expect(parsed.hookSpecificOutput.permissionDecisionReason).toMatch(/threw while deciding|boom/)
+    rmSync(root, { recursive: true, force: true })
+  })
+
+  it('denies when the policy module CANNOT BE LOADED', () => {
+    // The case a top-level static import could not have caught: the throw
+    // happens before any of the adapter's code exists, Node exits non-zero, and
+    // a non-2 exit is non-blocking — the write proceeds. Two shapes: missing,
+    // and present but syntactically broken.
+    for (const [label, write] of [
+      ['missing policy', null],
+      ['unparseable policy', 'export function decide( {{{ syntax error\n'],
+      ['policy with no decide()', 'export const nothing = 1\n'],
+    ]) {
+      const root = mkdtempSync(path.join(tmpdir(), 'noload-'))
+      mkdirSync(path.join(root, '.claude/hooks'), { recursive: true })
+      cpSync('.claude/hooks/task-scope-guard.mjs', path.join(root, '.claude/hooks/task-scope-guard.mjs'))
+      if (write !== null) writeFileSync(path.join(root, '.claude/hooks/task-scope-policy.mjs'), write)
+      const { parsed } = runGuard({ tool_name: 'Write', agent_type: 'p', tool_input: { file_path: 'x' } }, { root })
+      expect(parsed, label + ': no decision emitted').not.toBeNull()
+      expect(parsed, label).not.toBe('UNPARSEABLE')
+      expect(parsed.hookSpecificOutput.permissionDecision, label).toBe('deny')
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  it('denies Tier 0 and a dangling symlink through the real adapter', () => {
+    symlinkSync('/nowhere/at/all', path.join(ADAPTER_ROOT, 'src/dangling'))
+    for (const [p, label] of [['.git/config', 'Tier 0'], ['src/dangling', 'dangling symlink']]) {
+      const { parsed } = runGuard(
+        { tool_name: 'Write', agent_type: 'task-producer', tool_input: { file_path: p } },
+        { env: { HANZI_TASK_BINDING: binding() } })
+      expect(parsed, label).not.toBeNull()
+      expect(parsed.hookSpecificOutput.permissionDecision, label).toBe('deny')
+    }
+  })
+
+  it('denies with no binding at all', () => {
+    const { parsed } = runGuard({ tool_name: 'Write', agent_type: 'task-producer', tool_input: { file_path: 'src/ok.js' } })
+    expect(parsed).not.toBeNull()
+    expect(parsed.hookSpecificOutput.permissionDecision).toBe('deny')
+  })
+})
+
+describe('an invalid bound contract authorises NOTHING', () => {
+  // Not "loses the grant and carries on". A contract the canonical validator
+  // would reject is one whose meaning nobody established, and the most dangerous
+  // shape — settings.json sitting in ordinary allowed_paths — would otherwise
+  // have handed a producer the control plane with no grant at all.
+  const invalid = (over) => {
+    const c = writeContract(contract({ id: 'demo-task', ...over }))
+    return run(call('src/thing.js'), { [BINDING_ENV]: bindingFor(c) })
+  }
+
+  it('denies when .claude/settings.json is directly in allowed_paths', () => {
+    const d = invalid({ allowed_paths: ['src/**', '.claude/settings.json'] })
+    expect(d.allow, d.reason).toBe(false)
+    expect(d.reason).toMatch(/protected control plane/)
+    // Even the ordinary in-scope write is refused: the contract is void, not narrowed.
+    expect(d.reason).toMatch(/authorises nothing/)
+  })
+
+  it('denies when allowed_paths reaches the Tier 0 floor', () => {
+    for (const p of ['.agent/tasks/**', '.agent/roles.json', '.git/**', '.agent/**', '.claude/**']) {
+      const d = invalid({ allowed_paths: ['src/**', p] })
+      expect(d.allow, p).toBe(false)
+      expect(d.reason, p).toMatch(/Tier 0 floor|protected control plane/)
+    }
+  })
+
+  it('denies an otherwise-valid src/** contract when the GRANT is invalid', () => {
+    for (const cp of [
+      { grant: 'no-such-grant', protected_paths: ['.claude/hooks/x.mjs'], justification: 'j' },
+      { grant: 'runtime-policy-maintenance', protected_paths: ['.claude/hooks/x.mjs'], justification: 'j' },
+      { grant: 'runtime-hook-maintenance', protected_paths: ['.agent/roles.json'], justification: 'j' },
+      { grant: 'runtime-hook-maintenance', protected_paths: ['src/x.js'], justification: 'j' },
+      { grant: 'runtime-hook-maintenance', protected_paths: ['.claude/hooks/x.mjs'] },
+      { grant: 'runtime-hook-maintenance', protected_paths: ['.claude/hooks/x.mjs'], justification: 'j', extra: 1 },
+      { grant: 'constructor', protected_paths: ['.claude/hooks/x.mjs'], justification: 'j' },
+      'not an object',
+    ]) {
+      const d = invalid({ owner_role: 'workflow-authority', risk: 'r3', control_plane: cp })
+      expect(d.allow, JSON.stringify(cp)).toBe(false)
+      expect(d.reason, JSON.stringify(cp)).toMatch(/authorises nothing/)
+    }
+  })
+
+  it('denies an otherwise-valid src/** contract when the ROLE or RISK is wrong', () => {
+    const grant = { grant: 'runtime-hook-maintenance', protected_paths: ['.claude/hooks/x.mjs'], justification: 'j' }
+    for (const over of [
+      { owner_role: 'story-content', risk: 'r3' },
+      { owner_role: 'product-app', risk: 'r3' },
+      { owner_role: 'workflow-authority', risk: 'r1' },
+      { owner_role: 'workflow-authority', risk: 'r0' },
+      { owner_role: 'workflow-authority', risk: 'nonsense' },
+    ]) {
+      const d = invalid({ ...over, control_plane: grant })
+      expect(d.allow, JSON.stringify(over)).toBe(false)
+      expect(d.reason, JSON.stringify(over)).toMatch(/owner_role|risk of at least/)
+    }
+  })
+
+  it('denies when allowed_paths or forbidden_paths has invalid shape or grammar', () => {
+    for (const over of [
+      { allowed_paths: ['**'] },
+      { allowed_paths: ['../escape'] },
+      { allowed_paths: ['src/*.js'] },
+      { allowed_paths: 'src/**' },
+      { allowed_paths: [42] },
+      { forbidden_paths: ['**'] },
+      { forbidden_paths: ['a/./b'] },
+      { forbidden_paths: 'x' },
+    ]) {
+      const d = invalid(over)
+      expect(d.allow, JSON.stringify(over)).toBe(false)
+      expect(d.reason, JSON.stringify(over)).toMatch(/authorises nothing/)
+    }
+  })
+
+  it('still allows the same write once the contract is valid again', () => {
+    // The control: these denials must come from the contract being invalid, not
+    // from the guard having become deny-all.
+    const c = writeContract(contract())
+    expect(run(call('src/thing.js'), { [BINDING_ENV]: bindingFor(c) }).allow).toBe(true)
+  })
+})
+
+describe('where a relative file_path is anchored', () => {
+  it('never arises in practice: the runtime hands the hook an absolute path', () => {
+    // Pinned from a probe on Claude Code 2.1.258. A producer that passes
+    // "relhere.txt" or "sub/relsub.txt" produces an ABSOLUTE, canonicalised
+    // file_path in the hook event — the runtime resolves before the hook sees
+    // it. This spec records the assumption so that if it ever stops holding,
+    // the reason a later change starts failing is written down here.
+    const c = writeContract(contract({ allowed_paths: ['src/**'] }))
+    const env = { [BINDING_ENV]: bindingFor(c) }
+    expect(run(call(path.join(ROOT, 'src/existing.js')), env).allow).toBe(true)
+  })
+
+  it('anchors a relative path to the event cwd, not blindly to the root', () => {
+    // Defence in depth for the assumption above. If a relative path ever did
+    // arrive, anchoring it to the root while the runtime anchored it to the cwd
+    // would mean reasoning about a different file than the one written — and
+    // that error's direction is an allow.
+    const c = writeContract(contract({ allowed_paths: ['src/deep/**'] }))
+    const env = { [BINDING_ENV]: bindingFor(c) }
+    // "existing.js" from src/deep/ is src/deep/existing.js — in scope.
+    writeFileSync(path.join(ROOT, 'src/deep/existing.js'), 'x')
+    expect(run(call('existing.js', { cwd: path.join(ROOT, 'src/deep') }), env).allow).toBe(true)
+    // The same spelling from the root is src/existing.js — NOT in scope.
+    expect(run(call('existing.js', { cwd: ROOT }), env).allow).toBe(false)
+  })
+
+  it('denies a relative path whose cwd cannot be proved inside the repository', () => {
+    const c = writeContract(contract({ allowed_paths: ['src/**'] }))
+    const env = { [BINDING_ENV]: bindingFor(c) }
+    for (const cwd of ['/tmp', '/definitely/not/here', path.join(ROOT, '..')]) {
+      const d = run(call('existing.js', { cwd }), env)
+      expect(d.allow, String(cwd)).toBe(false)
+      expect(d.reason, String(cwd)).toMatch(/cwd/)
+    }
   })
 })
