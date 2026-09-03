@@ -638,6 +638,31 @@ describe('the guard fails closed on every invalid state', () => {
     }
   })
 
+  it('denies a non-string path that WOULD stringify into scope', () => {
+    // The fixtures above all deny for the wrong reason: String(42) is '42' and
+    // String({}) is '[object Object]', neither of which matches the contract, so
+    // removing the type check left them denying anyway and the branch was not
+    // load-bearing. A single-element array is the discriminating case —
+    // String(['src/ok.js']) is exactly 'src/ok.js', which covers('src/**', …)
+    // accepts. Without the type check this ALLOWS on a value that is not a path.
+    const c = writeContract(contract({ allowed_paths: ['src/**'] }))
+    const env = { [BINDING_ENV]: bindingFor(c) }
+    const d = run({
+      tool_name: 'Write', agent_type: 'task-producer', cwd: ROOT,
+      tool_input: { file_path: ['src/ok.js'] },
+    }, env)
+    expect(d.allow, d.reason).toBe(false)
+    expect(d.reason, 'must deny for BEING non-string, not for landing out of scope')
+      .toMatch(/not a string/)
+    // The same shape on the second key, so neither position is unguarded.
+    const d2 = run({
+      tool_name: 'Write', agent_type: 'task-producer', cwd: ROOT,
+      tool_input: { notebook_path: ['src/ok.ipynb'] },
+    }, env)
+    expect(d2.allow).toBe(false)
+    expect(d2.reason).toMatch(/not a string/)
+  })
+
   it('denies a write with no file path at all', () => {
     const c = writeContract(contract())
     const d = run({ tool_name: 'Write', agent_type: 'task-producer', tool_input: {} },

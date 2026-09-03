@@ -397,11 +397,15 @@ it works — and about being precise on how much of that is real today.
 Two trust domains. A **trusted driver** holds the shell, git, the test runner
 and the network. An **untrusted producer** — a subagent with a platform-enforced
 tool list containing no Bash, no process tool and no ability to spawn agents —
-does the implementing. A tool-use guard runs outside both and decides every
-producer write against the sealed contract bound to the session.
+does the implementing. A tool-use guard **will** run outside both and decide
+every producer write against the sealed contract bound to the session — once it
+is registered. It is written and proven but registered nowhere, so nothing in
+this section describes behaviour that happens today; the whole arrangement is
+described in the future tense deliberately, and "What is NOT claimed" below says
+so again where a reader is most likely to stop.
 
-The producer and the driver are told apart structurally, not by trusting a name:
-a producer's tool call carries `agent_type`, and a driver's carries none.
+The producer and the driver will be told apart structurally, not by trusting a
+name: a producer's tool call carries `agent_type`, and a driver's carries none.
 
 ### Where the decision logic lives, and why
 
@@ -427,9 +431,10 @@ drift fails a test rather than quietly producing two security models.
 
 The launcher sets `HANZI_TASK_BINDING` on the process, carrying the contract id,
 its exact digest, and a path required to equal `.agent/tasks/<id>.json`. The
-guard re-reads that file and recomputes its seal on **every** decision, and
-denies unless the recomputed digest matches both the file's own claim and the
-launcher's.
+guard re-reads that file and recomputes its seal on **every** decision, denying
+unless the recomputed digest matches both the file's own claim and the
+launcher's. As above, that is what the code does when it runs, not something
+happening in this repository today.
 
 There is no discovery of any kind — no directory scan, no newest-file
 heuristic, no inference from the prompt, cwd or branch, and no fallback when the
@@ -469,15 +474,24 @@ Proven by unit and adversarial specs against a real temporary repository:
   input it will ever get.
 
   **That is narrower than the canonical validator, deliberately and stated so.**
-  `tools/verify-task-contracts.mjs` also rejects an unknown top-level field, a
-  missing required field, a malformed id, an unknown `owner_role` or
-  `production_effect`, an unresolved dependency and a verification command that
-  names no npm script. The guard does not re-implement those: none of them can
-  widen authority, every widening vector *is* covered above, and the granted set
-  is at exact parity with the validator. A contract failing only one of the
-  validator-only rules is refused by `npm run verify:tasks` and by CI, and would
-  still authorise its own ordinary paths at runtime — which is why the parity
-  specs assert containment, not equality.
+  `tools/verify-task-contracts.mjs` rejects a good deal more — **including**, and
+  not limited to, an unknown top-level field, a missing required field, a
+  malformed id, an unknown `owner_role`, `risk` or `production_effect`, an empty
+  required array, an allowed path lying entirely inside a forbidden one, an
+  unresolved dependency, and a verification command naming no npm script. That
+  list is illustrative, not a specification: the guard does not re-implement
+  those rules and does not track them, so treat the validator as the authority
+  on contract validity and this section as an account of what the *runtime*
+  checks.
+
+  What makes the gap safe is not the list but the shape of it: none of those
+  rules is a widening vector. Every route by which a contract could reach beyond
+  its own ordinary paths — Tier 0 or Tier 1 in `allowed_paths`, a bad path
+  spelling, any malformed or unauthorised grant — is checked above, and the
+  granted set is at exact parity with the validator. A contract failing only a
+  validator-only rule is refused by `npm run verify:tasks` and by CI, and would
+  still authorise its own ordinary paths at runtime. That asymmetry is why the
+  parity specs assert containment rather than equality.
 - **The adapter fails closed before the policy exists.** The policy is loaded
   inside the caught path, not as a top-level import: a static import throws
   where no catch can reach it, Node exits non-zero, and only exit code 2 blocks
