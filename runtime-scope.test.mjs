@@ -608,6 +608,36 @@ describe('the guard fails closed on every invalid state', () => {
     expect(d.reason).toMatch(/forbidden/)
   })
 
+  it('checks EVERY path key an event carries, not just the first', () => {
+    // `input.file_path ?? input.notebook_path` would authorise on the path it
+    // did not write. Whether the runtime ever sends both keys is not something
+    // the guard should depend on — the error direction is an allow.
+    const c = writeContract(contract({ allowed_paths: ['src/**'] }))
+    const env = { [BINDING_ENV]: bindingFor(c) }
+    const both = (fp, np) => run({
+      tool_name: 'Write', agent_type: 'task-producer', cwd: ROOT,
+      tool_input: { file_path: fp, notebook_path: np },
+    }, env)
+    // In-scope first key, out-of-scope second: the second must still deny.
+    expect(both('src/ok.js', 'outside/secret.txt').allow, 'second key ignored').toBe(false)
+    // And the reverse ordering.
+    expect(both('outside/secret.txt', 'src/ok.ipynb').allow).toBe(false)
+    // Tier 0 in either position denies.
+    expect(both('src/ok.js', '.git/config').allow).toBe(false)
+    expect(both('.agent/roles.json', 'src/ok.ipynb').allow).toBe(false)
+    // Both in scope allows, so this is not a blanket refusal of paired keys.
+    expect(both('src/ok.js', 'src/ok.ipynb').allow, 'both in scope').toBe(true)
+  })
+
+  it('denies a write whose path key is present but not a string', () => {
+    const c = writeContract(contract())
+    const env = { [BINDING_ENV]: bindingFor(c) }
+    for (const bad of [42, {}, [], true]) {
+      const d = run({ tool_name: 'Write', agent_type: 'task-producer', cwd: ROOT, tool_input: { file_path: bad } }, env)
+      expect(d.allow, JSON.stringify(bad)).toBe(false)
+    }
+  })
+
   it('denies a write with no file path at all', () => {
     const c = writeContract(contract())
     const d = run({ tool_name: 'Write', agent_type: 'task-producer', tool_input: {} },

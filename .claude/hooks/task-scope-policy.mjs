@@ -79,6 +79,9 @@ export const CONTROL_PLANE_KEYS = ['grant', 'protected_paths', 'justification']
 /** Tool calls that write. Anything else is not this policy's business. */
 export const WRITE_TOOLS = ['Write', 'Edit', 'MultiEdit', 'NotebookEdit']
 
+/** Every tool_input key that can name a write target. All of them are checked. */
+export const TARGET_KEYS = ['file_path', 'notebook_path']
+
 /**
  * GRANT -> the paths it reaches. A protected copy of CONTROL_PLANE_GRANTS.
  *
@@ -287,6 +290,10 @@ export function contractSecurityViolations(contract, { grants = GRANTS, root = '
   for (const p of paths) {
     const g = pathGrammarError(p)
     if (g) { out.push('control_plane.protected_paths entry "' + p + '" ' + g); continue }
+    // Redundant today — FLOOR and PROTECTED_TIER are disjoint, so the tier
+    // check below refuses every floor path anyway. Kept as defence in depth and
+    // noted as such, so a later change that narrows the tier cannot silently
+    // promote this line from redundant to load-bearing without a reader noticing.
     if (FLOOR.some(f => covers(f, p))) out.push('control_plane.protected_paths may never name "' + p + '" — it is on the absolute floor')
     if (!PROTECTED_TIER.some(t => covers(t, p))) out.push('control_plane.protected_paths entry "' + p + '" is not inside the protected control plane')
     if (known && !mapped.some(m => covers(m, p))) out.push('grant "' + cp.grant + '" does not authorise "' + p + '"')
@@ -571,9 +578,21 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
   const agentType = event?.agent_type
   if (!isNonEmptyString(agentType)) return allow('no agent_type — trusted driver call, not a producer')
 
+  // EVERY path key the event carries, not the first one found.
+  //
+  // `input.file_path ?? input.notebook_path` picks one and ignores the other,
+  // so an event carrying an in-scope file_path beside an out-of-scope
+  // notebook_path would be authorised on the path it did not write. Whether the
+  // runtime ever sends both is not something this policy should depend on: the
+  // error direction is an allow, and the doctrine in this file's header is that
+  // an unprovable case denies rather than being guessed at. So collect them all
+  // and require every one to clear every gate.
   const input = isPlainObject(event?.tool_input) ? event.tool_input : {}
-  const target = input.file_path ?? input.notebook_path
-  if (!isNonEmptyString(target)) return deny('write tool call carries no file path')
+  const targets = TARGET_KEYS.map(k => input[k]).filter(v => v !== undefined && v !== null)
+  if (targets.length === 0) return deny('write tool call carries no file path')
+  for (const t of targets) {
+    if (!isNonEmptyString(t)) return deny('write tool call carries a path that is not a string')
+  }
 
   // (2) Tier 0 on the REQUESTED spelling, before anything is parsed, so a floor
   // write is refused even when the session carries no binding at all. Made
@@ -582,10 +601,12 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
   // else is compared as given. Step 6 repeats this on the resolved path, which
   // is the authoritative check; this one exists so the floor never depends on
   // the binding being present or the filesystem being readable.
-  const lexical = lexicalRelative(root, String(target))
-  for (const f of FLOOR) {
-    if (covers(f, lexical)) {
-      return deny('Tier 0: "' + target + '" is on the absolute floor (' + f + '), which no contract may authorize')
+  for (const target of targets) {
+    const lexical = lexicalRelative(root, String(target))
+    for (const f of FLOOR) {
+      if (covers(f, lexical)) {
+        return deny('Tier 0: "' + target + '" is on the absolute floor (' + f + '), which no contract may authorize')
+      }
     }
   }
 
@@ -603,31 +624,35 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
       contractViolations.join('; '))
   }
 
-  const { relative, error: resolveError } = resolveWithin(root, String(target), { realpath, lstat, cwd: event?.cwd })
-  if (resolveError) return deny(resolveError)
-
-  // (6) Tier 0 again, on what the write will REALLY touch.
-  for (const f of FLOOR) {
-    if (covers(f, relative)) {
-      return deny('Tier 0: "' + target + '" resolves to ' + relative + ', on the absolute floor (' + f + ')')
-    }
-  }
-
+  const scope = effectiveScope(contract, { grants, root, readFile })
   const forbidden = Array.isArray(contract.forbidden_paths)
     ? contract.forbidden_paths.filter(isNonEmptyString)
     : []
-  for (const f of forbidden) {
-    if (covers(f, relative)) {
-      return deny('"' + relative + '" is forbidden by the bound contract (' + f + ')')
-    }
-  }
 
-  const scope = effectiveScope(contract, { grants, root, readFile })
-  for (const a of scope) {
-    if (covers(a, relative)) {
-      return allow('"' + relative + '" is inside the bound contract scope (' + a + ')')
+  const matched = []
+  for (const target of targets) {
+    const { relative, error: resolveError } = resolveWithin(root, String(target), { realpath, lstat, cwd: event?.cwd })
+    if (resolveError) return deny(resolveError)
+
+    // (6) Tier 0 again, on what the write will REALLY touch.
+    for (const f of FLOOR) {
+      if (covers(f, relative)) {
+        return deny('Tier 0: "' + target + '" resolves to ' + relative + ', on the absolute floor (' + f + ')')
+      }
     }
+
+    for (const f of forbidden) {
+      if (covers(f, relative)) {
+        return deny('"' + relative + '" is forbidden by the bound contract (' + f + ')')
+      }
+    }
+
+    const hit = scope.find(a => covers(a, relative))
+    if (!hit) {
+      return deny('"' + relative + '" is outside the scope of contract ' + contract.id +
+        ' — allowed: ' + (scope.length ? scope.join(', ') : '(nothing)'))
+    }
+    matched.push(relative + ' (' + hit + ')')
   }
-  return deny('"' + relative + '" is outside the scope of contract ' + contract.id +
-    ' — allowed: ' + (scope.length ? scope.join(', ') : '(nothing)'))
+  return allow(matched.join(', ') + ' — inside the bound contract scope')
 }

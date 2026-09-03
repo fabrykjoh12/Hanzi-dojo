@@ -453,25 +453,38 @@ Proven by unit and adversarial specs against a real temporary repository:
   event, missing, malformed or unsealed contract, id/path/filename mismatch,
   stale seal, digest mismatch, bad path grammar, invalid grant, out-of-scope
   path, unresolvable realpath.
-- **An invalid bound contract authorises nothing at all** — not "loses the grant
-  and carries on with its ordinary paths". A contract the canonical validator
-  would reject is one whose meaning nobody established, and the sharpest case is
-  `.claude/settings.json` sitting in ordinary `allowed_paths`: that would
-  otherwise hand a producer the control plane with no grant whatsoever. The
-  whole contract is checked — path shapes and grammar, no Tier 0 or Tier 1 in
-  `allowed_paths`, the grant's role, risk floor, closed key set, mapping and
-  tier containment — before any scope is consulted.
+- **A contract that fails any of the guard's checks authorises nothing at all**
+  — not "loses the grant and carries on with its ordinary paths". The sharpest
+  case is `.claude/settings.json` sitting in ordinary `allowed_paths`: that
+  would otherwise hand a producer the control plane with no grant whatsoever.
+  What the guard checks, before any scope is consulted: path shapes and grammar
+  for `allowed_paths` and `forbidden_paths`, no Tier 0 and no Tier 1 reachable
+  through `allowed_paths`, and for a grant its closed key set, owning role, risk
+  floor, mapping and tier containment, and no overlap with `forbidden_paths`.
+  Any one of those denies the whole decision. "Invalid grant" is measured
+  against the canonical rules rather than a subset: the owning role and the `r3`
+  floor are checked as well as the shape, so a grant the validator refuses
+  grants nothing at runtime either. Specs assert that over deliberately invalid
+  contracts, because a parity check that only sees valid ones agrees on every
+  input it will ever get.
+
+  **That is narrower than the canonical validator, deliberately and stated so.**
+  `tools/verify-task-contracts.mjs` also rejects an unknown top-level field, a
+  missing required field, a malformed id, an unknown `owner_role` or
+  `production_effect`, an unresolved dependency and a verification command that
+  names no npm script. The guard does not re-implement those: none of them can
+  widen authority, every widening vector *is* covered above, and the granted set
+  is at exact parity with the validator. A contract failing only one of the
+  validator-only rules is refused by `npm run verify:tasks` and by CI, and would
+  still authorise its own ordinary paths at runtime — which is why the parity
+  specs assert containment, not equality.
 - **The adapter fails closed before the policy exists.** The policy is loaded
   inside the caught path, not as a top-level import: a static import throws
   where no catch can reach it, Node exits non-zero, and only exit code 2 blocks
   a tool call — so a missing or broken policy module would have failed *open*.
   Proven by specs that spawn the real adapter and feed it real stdin, including
   a missing policy, an unparseable one, and one that throws.
-  "Invalid grant" is measured against the canonical rules, not a subset of them:
-  the runtime checks the owning role and the `r3` floor as well as the shape, so
-  a grant the validator refuses grants nothing at runtime either. Specs assert
-  that over deliberately invalid contracts, because a parity check that only
-  sees valid ones agrees on every input it will ever get.
+
 - **The symlink escape is closed, in both its forms.** A real symlink inside an
   in-scope directory pointing out of it is denied, because the guard resolves
   the target with `realpath` before matching. So is the harder case: a symlink
@@ -501,6 +514,15 @@ project settings **cannot** pin it back — verified empirically. It is out of t
 producer's reach only because it is a process-launch flag and the producer has
 no shell. Static deny rules survive it, which is why they are the Tier-0
 backstop once registered.
+
+**The guard only sees four write tools, so it rests on the producer's tool
+list.** It is an allowlist over `Write`, `Edit`, `MultiEdit` and `NotebookEdit`;
+everything else, Bash included, it passes through untouched as none of its
+business. That is correct given a producer with no shell — but it means editing
+the Tier 2 producer definition to add Bash or an MCP write tool does not merely
+falsify the "no Bash" sentence, it defeats the guard entirely. The two halves
+compose into one requirement: the guard is worth what the producer's tool list
+is worth.
 
 **The producer definition is not protected.** `.claude/agents/**` is Tier 2. The
 platform enforces the `tools:` list of whatever definition is launched, so a
