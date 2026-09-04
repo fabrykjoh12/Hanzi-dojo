@@ -1238,6 +1238,46 @@ treating single-character residue as structural (as `storyTargetability.mjs`
 already does for targeting), and what the change does to FAB-5's per-word
 `availableByLevel` numbers.
 
+### The Groq standby model no longer exists (found 2026-08-31, first real pilot)
+
+`providerChain()` in `llmProviders.mjs` names `llama-3.3-70b-versatile` as the
+standby. Groq now answers **404 "The model `llama-3.3-70b-versatile` does not
+exist or you do not have access to it"**, so the failover chain has no working
+second leg: Gemini 429s (credits still depleted), the chain switches to Groq as
+designed, and every subsequent call 404s.
+
+Measured in [story-pilot run 33418327980](https://github.com/fabrykjoh12/Hanzi-dojo/actions/runs/33418327980):
+2 manifests, 0 candidates, ~7 provider calls, all refused. The failover logic
+itself worked exactly as written — it is the model id that is stale.
+
+**Not fixed here on purpose.** Picking the replacement is a model decision, and
+the current writer decision is INSUFFICIENT EVIDENCE; changing it inside a
+pipeline PR would smuggle a model choice in as a bug fix. Whoever fixes it
+should check what Groq actually serves today (the smoke mode of `llm-bench.yml`
+does exactly this) and change only the standby id.
+
+**Until it is fixed, every content generator that outlives the Gemini quota
+fails** — serial stories, examples, meanings — not just the targeted pipeline.
+
+### The target manifest inherits the vocabulary's gloss defects (found 2026-08-31)
+
+The first production manifests asked for 被 and 中, and carried their database
+glosses verbatim: **被 "quilt; to cover (with)"** and **中 "China; Chinese"**.
+Both are the known `forms[0]` ingestion casualties (see the vocabulary-ingestion
+section and `docs/VOCAB-INGESTION.md`) — 被 is overwhelmingly the passive
+marker, 中 the ordinary "middle/in".
+
+This is working as designed: the pipeline **consumes** the curriculum authority
+rather than fixing it, and the manifest is a faithful copy of what the course
+currently teaches. But it has a generation consequence worth knowing before the
+first real batch: a writer told "被 = quilt" will write about blankets, and the
+validator cannot tell the difference — it checks that the word is present and
+resolvable, not that it was used in the sense the learner needs.
+
+**So the ingestion fix is now upstream of good targeted stories, not parallel
+to them.** Nothing to do in the pipeline; the entry exists so a disappointing
+first batch is not misread as a writer-model problem.
+
 ### Targeted story generation: the free-tier ceiling (FAB-9, measured 2026-08-21)
 
 **Anthropic is not available to this project** (no API billing), and the
