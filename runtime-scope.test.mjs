@@ -894,7 +894,7 @@ describe('the producer definition', () => {
 // ---------------------------------------------------------------------------
 
 describe('who the policy governs', () => {
-  const asAgent = (agentType, file) => call(file, { agent_type: agentType })
+  const asAgent = (agentType, file, over = {}) => call(file, { agent_type: agentType, ...over })
   const bound = (c) => ({ [BINDING_ENV]: bindingFor(c) })
 
   it('enforces the real producer: in scope allows, out of scope denies', () => {
@@ -923,9 +923,12 @@ describe('who the policy governs', () => {
   })
 
   it('still holds recognised helpers to Tier 0', () => {
-    // The ordering property. Exempting helpers BEFORE the floor check would
-    // have read identically at the call site and handed .git/** and the sealed
-    // contracts to every helper agent in the repository.
+    // Not an ordering proof — the exempt branch does its own resolved floor
+    // check, so hoisting it above the lexical one would leave all three of
+    // these denying anyway. What this pins is the property itself: the floor
+    // applies to a recognised helper and not only to a producer. The ordering
+    // is defence in depth, and the spec below is what actually holds the
+    // resolved half of it.
     for (const floorPath of ['.git/config', '.agent/tasks/demo-task.json', '.agent/roles.json']) {
       const d = run(asAgent('general-purpose', floorPath), {})
       expect(d.allow, floorPath + ' was allowed for a helper').toBe(false)
@@ -987,6 +990,20 @@ describe('who the policy governs', () => {
     // tier — the tier loops never run when resolution fails.
     expect(run(asAgent('general-purpose', 'src/exemptdangler'), {}).reason).toMatch(/symlink whose target cannot be resolved/)
     expect(run(asAgent('general-purpose', '/etc/passwd'), {}).reason).toMatch(/outside the repository/)
+  })
+
+  it('checks every target key in the exempt branch, not just the first', () => {
+    // The producer path guards this at 'checks EVERY path key an event
+    // carries'; the exempt branch mirrors that loop and had no equivalent.
+    // Reduce it to targets[0] and this is the case that goes quiet: an
+    // in-scope-looking file_path alongside a Tier 1 notebook_path, authorised
+    // on the path it did not write. The error direction is an allow, which is
+    // why it is worth a spec rather than a reading.
+    const d = run(asAgent('general-purpose', 'src/ok.js', {
+      tool_input: { file_path: 'src/ok.js', notebook_path: '.claude/settings.json' },
+    }), {})
+    expect(d.allow, 'the second target key was never examined: ' + d.reason).toBe(false)
+    expect(d.reason).toMatch(/Tier 1/)
   })
 
   it('still allows an ordinary Tier 2 write, so the tier checks are not deny-all', () => {

@@ -704,7 +704,7 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
   // write is refused even when the session carries no binding at all. Made
   // repository-relative lexically — no filesystem access, no heuristics: an
   // absolute path under the root is stripped to its relative form, and anything
-  // else is compared as given. Step 6 repeats this on the resolved path, which
+  // else is compared as given. Step 7 repeats this on the resolved path, which
   // is the authoritative check; this one exists so the floor never depends on
   // the binding being present or the filesystem being readable.
   for (const target of targets) {
@@ -746,9 +746,18 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
     //
     // Tier 1 is refused for the same reason it is refused anywhere: reaching
     // the protected control plane takes an explicit digest-covered grant, and
-    // a session with no bound contract has no grant to offer. So an unbound
-    // helper writes ordinary Tier 2 paths, and nothing else — notably not
-    // `.claude/hooks/**`, which is this policy's own module.
+    // a session with no bound contract has no grant to offer.
+    //
+    // WHAT THAT IS WORTH, exactly. Through the four write tools, an unbound
+    // helper reaches ordinary Tier 2 paths and nothing else. It is NOT a
+    // statement about the caller, because this policy is an allowlist over
+    // those four tools and passes everything else — Bash included — straight
+    // through. The producer is constrained because its definition gives it no
+    // shell; most of the exempted helpers are platform agents with no
+    // definition in this repository and no such limit, so one of them can
+    // write any of these paths through a shell without this file ever seeing
+    // the call. The tier loops below are worth the caller's tool list, exactly
+    // as the producer's case is, and that is the honest scope of the claim.
     for (const target of targets) {
       const { relative, error: resolveError } = resolveWithin(root, String(target), { realpath, lstat, cwd: event?.cwd })
       if (resolveError) return deny(resolveError)
@@ -791,7 +800,7 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
     const { relative, error: resolveError } = resolveWithin(root, String(target), { realpath, lstat, cwd: event?.cwd })
     if (resolveError) return deny(resolveError)
 
-    // (6) Tier 0 again, on what the write will REALLY touch.
+    // (7) Tier 0 again, on what the write will REALLY touch.
     for (const f of FLOOR) {
       if (covers(f, relative)) {
         return deny('Tier 0: "' + target + '" resolves to ' + relative + ', on the absolute floor (' + f + ')')

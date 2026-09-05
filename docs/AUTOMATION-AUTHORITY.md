@@ -406,6 +406,8 @@ so again where a reader is most likely to stop.
 
 The producer and the driver will be told apart structurally, not by trusting a
 name: a producer's tool call carries `agent_type`, and a driver's carries none.
+(Carrying `agent_type` does not by itself make a caller a producer — see
+"Who the guard governs" below for the set that is actually held to a contract.)
 
 ### Where the decision logic lives, and why
 
@@ -469,13 +471,28 @@ rename produces *more* enforcement, not less.
 **What the exemption exempts, exactly.** One thing: the contract scope, which
 an unbound helper has no contract to be measured against. It exempts nothing
 from the tiers. Once the guard runs, a recognised helper in an unbound session
-would still be refused Tier 0 *and* Tier 1, on the **resolved** path — so a
-symlink could not launder either, and `.claude/hooks/**`, this guard's own
-module, would not be writable by a helper carrying no grant. In one line: an
-unbound helper writes ordinary Tier 2 paths and nothing else. As everywhere in
-this section, that is what the code decides when it runs, not something in
-force in this repository today — nothing registers the guard, so today
-`.claude/hooks/**` is writable by anything.
+would still be refused Tier 0 *and* Tier 1 **through the four write tools**, on
+the **resolved** path — so a symlink could not launder either.
+
+That qualifier is the whole of the claim, and it is the same one the producer
+carries below. This guard is an allowlist over `Write`, `Edit`, `MultiEdit` and
+`NotebookEdit`; a shell goes straight past it. The producer is contained
+because its definition gives it no shell and a spec pins that. Of the exempted
+helpers, only `fresh-context-reviewer` has a definition in this repository at
+all — the rest are platform agents whose tool lists nothing here constrains,
+and at least one of them is dispatched with a shell by our own skills. **So a
+recognised helper can write `.claude/hooks/**` — this guard's own module —
+without this guard ever seeing the call.** The tier checks are worth the
+caller's tool list, exactly as the producer's case is.
+
+Do not read the tier checks as containment of helper agents, then. They are
+containment of one class of mistake: a helper reaching a protected path through
+the ordinary file tools, which is how it would happen by accident. A helper
+that means to get past them can.
+
+As everywhere in this section, that is also what the code decides when it runs
+rather than something in force today — nothing registers the guard, so today
+`.claude/hooks/**` is writable by anything at all.
 
 That resolution is done by the exemption itself rather than inherited. The
 lexical floor check upstream sees only the spelling it was handed, and the
@@ -509,7 +526,8 @@ this is robustness rather than a boundary the producer could push on.
 
 **The residual this does not close.** `agent_type` originates in a Tier 2 file,
 so an edit that renames the producer *to* one of the recognised helper names
-would exempt it. That is not a new weakness: the same edit could give the
+would exempt it — in an *unbound* session, since the exemption is conditional on
+no binding being present, and a real producer session always carries one. That is not a new weakness: the same edit could give the
 producer Bash, which defeats the guard outright — see the tool-list dependency
 below. A spec pins the policy's constant to the name the producer definition
 declares, so drift between them fails CI; the tier itself is what would have to
