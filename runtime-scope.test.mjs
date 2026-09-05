@@ -856,11 +856,13 @@ describe('the producer definition', () => {
 
   it('cannot reach an exempt agent_type, because it cannot spawn one', () => {
     // The exemption list is only safe while the producer cannot arrive wearing
-    // one of those names. It cannot choose its own agent_type — the runtime
-    // sets that from the launched definition — and it holds no tool that
-    // launches another definition. Both halves are asserted: the second is the
-    // platform-enforced tool list above, and this pins it against the exact
-    // names that would grant an exemption.
+    // one of those names. Two things stop it. It cannot choose its own
+    // agent_type — the runtime sets that from the launched definition — and it
+    // holds no tool that launches another definition. Only the second is
+    // assertable here: the first is a platform property recorded in the
+    // contract's notes from the 2.1.259 recon, and no spec in this repository
+    // can pin it. So this asserts the half that can be asserted, and says
+    // plainly that it is a half.
     for (const spawner of ['Task', 'Agent', 'Skill', 'Bash']) {
       expect(tools, 'producer holds ' + spawner + ', so it could reach another agent_type').not.toContain(spawner)
     }
@@ -912,9 +914,21 @@ describe('who the policy governs', () => {
   })
 
   it('leaves every recognised helper alone in an unbound session', () => {
-    // Asserted across the whole list rather than one representative, so adding
-    // a name without meaning it is a decision someone has to make on purpose.
-    expect(EXEMPT_AGENT_TYPES.length).toBeGreaterThan(1)
+    // The list is pinned LITERALLY first. Iterating EXEMPT_AGENT_TYPES to test
+    // EXEMPT_AGENT_TYPES proves nothing — adding a name makes the loop run once
+    // more and pass, removing one makes it run once less and pass — which is
+    // the trap this file already refuses for WRITE_TOOLS. Deleting five of
+    // these names left the whole suite green before this assertion existed,
+    // while the authority doc's copy of the list silently became wrong.
+    expect(EXEMPT_AGENT_TYPES).toEqual([
+      'claude',
+      'claude-code-guide',
+      'Explore',
+      'fresh-context-reviewer',
+      'general-purpose',
+      'Plan',
+      'statusline-setup',
+    ])
     for (const helper of EXEMPT_AGENT_TYPES) {
       const d = run(asAgent(helper, 'src/thing.js'), {})
       expect(d.allow, helper + ' was denied an ordinary write').toBe(true)
@@ -1099,6 +1113,17 @@ describe('what this change does NOT claim', () => {
     const doc = readFileSync('docs/AUTOMATION-AUTHORITY.md', 'utf8')
     expect(doc).toMatch(/disableAllHooks/)
     expect(doc).toMatch(/inert/)
+  })
+
+  it('keeps the authority doc\'s copy of the exemption list honest', () => {
+    // The doc names the exempted agents in prose. Nothing tied that list to the
+    // constant, so an entry could be added or removed and the doc would quietly
+    // describe a policy that no longer exists — in the one document this task's
+    // contract requires to state the enforcement scope exactly.
+    const doc = readFileSync('docs/AUTOMATION-AUTHORITY.md', 'utf8')
+    for (const name of EXEMPT_AGENT_TYPES) {
+      expect(doc, 'the authority doc does not name the exempt agent ' + name).toContain('`' + name + '`')
+    }
   })
 })
 

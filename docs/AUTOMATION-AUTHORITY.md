@@ -526,8 +526,12 @@ this is robustness rather than a boundary the producer could push on.
 
 **The residual this does not close.** `agent_type` originates in a Tier 2 file,
 so an edit that renames the producer *to* one of the recognised helper names
-would exempt it — in an *unbound* session, since the exemption is conditional on
-no binding being present, and a real producer session always carries one. That is not a new weakness: the same edit could give the
+would exempt it — but only in an *unbound* session, since the exemption is
+conditional on no binding being present. How much comfort that is depends
+entirely on the launcher always binding a producer session, and no launcher
+exists in this repository yet to hold to it: nothing here sets
+`HANZI_TASK_BINDING`. Treat the mitigation as a property of a launcher still to
+be written, not one already in force. That is not a new weakness: the same edit could give the
 producer Bash, which defeats the guard outright — see the tool-list dependency
 below. A spec pins the policy's constant to the name the producer definition
 declares, so drift between them fails CI; the tier itself is what would have to
@@ -539,10 +543,14 @@ Proven by unit and adversarial specs against a real temporary repository:
 
 - Tier 0 is the **first** branch, and applies before the binding is parsed — so
   a floor write is refused even in a session with no binding at all.
-- Every invalid state denies: missing or malformed binding, a malformed hook
-  event, missing, malformed or unsealed contract, id/path/filename mismatch,
-  stale seal, digest mismatch, bad path grammar, invalid grant, out-of-scope
-  path, unresolvable realpath.
+- Every invalid state denies **for a governed caller** — a producer, or any
+  agent_type the exemption list does not recognise, or anyone at all once a
+  binding is present: missing or malformed binding, a malformed hook event,
+  missing, malformed or unsealed contract, id/path/filename mismatch, stale
+  seal, digest mismatch, bad path grammar, invalid grant, out-of-scope path,
+  unresolvable realpath. The qualifier is load-bearing and new: a *recognised
+  helper in an unbound session* is allowed rather than denied on a missing
+  binding, which is the whole point of "Who the guard governs" above.
 - **A contract that fails any of the guard's checks authorises nothing at all**
   — not "loses the grant and carries on with its ordinary paths". The sharpest
   case is `.claude/settings.json` sitting in ordinary `allowed_paths`: that

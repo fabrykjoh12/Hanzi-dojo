@@ -624,7 +624,9 @@ export function resolveWithin(root, target, { realpath = realpathSync, lstat = l
  *
  * Order is load-bearing and each step is a gate, not a hint:
  *
- *   1. Not a write, or no agent_type at all  -> not this policy's business.
+ *   1. Not a write, or no agent_type at all  -> not this policy's business;
+ *                                              an agent_type present but not a
+ *                                              usable name -> deny.
  *   2. TIER 0, lexically                    -> deny, before anything is parsed.
  *   3. Exempt helper in an unbound session   -> resolve, then deny TIER 0 and
  *                                              TIER 1 on the resolved path;
@@ -648,8 +650,13 @@ export function resolveWithin(root, target, { realpath = realpathSync, lstat = l
  * forbidden and the authoritative check at step 7 never runs for this caller.
  * Tier 1 is refused there too: reaching the protected control plane takes an
  * explicit digest-covered grant, and an unbound session has none to offer. So
- * an unbound helper writes ordinary Tier 2 paths and nothing else — in
- * particular not `.claude/hooks/**`, which is this file.
+ * through these four write tools an unbound helper reaches ordinary Tier 2
+ * paths and nothing else. That is a statement about the tools, NOT about the
+ * caller: this policy passes everything else through, Bash included, and most
+ * of the exempted helpers have no definition in this repository limiting what
+ * they hold. One of them with a shell writes `.claude/hooks/**` — this file —
+ * without this file ever seeing the call. The branch itself says so again at
+ * the point of decision, because that is where it matters.
  */
 export function decide(event, { root, env = {}, grants = GRANTS, readFile, realpath, lstat } = {}) {
   // A hook event that is not an object is not something to reason about. `[]`,
