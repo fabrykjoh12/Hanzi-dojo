@@ -466,6 +466,22 @@ an ordinary file switch enforcement off silently. Stated as an exemption
 instead, an unrecognised name is governed rather than exempt, so that same
 rename produces *more* enforcement, not less.
 
+**What the exemption exempts, exactly.** One thing: the contract scope, which
+an unbound helper has no contract to be measured against. It exempts nothing
+from the tiers. A recognised helper in an unbound session is still refused
+Tier 0 *and* Tier 1, on the **resolved** path — so a symlink cannot launder
+either, and `.claude/hooks/**`, this guard's own module, is not writable by a
+helper that carries no grant. In one line: an unbound helper writes ordinary
+Tier 2 paths and nothing else.
+
+That resolution is done by the exemption itself rather than inherited. The
+lexical floor check upstream sees only the spelling it was handed, and the
+authoritative resolved check sits downstream of the exemption, where it never
+runs for this caller. An earlier draft of this change relied on the upstream
+check alone, and `src/door/config` with `src/door` symlinked to `.git` went
+through — caught in review, closed, and pinned by a spec that asserts the deny
+names the resolved path rather than the spelling.
+
 Two consequences worth stating plainly:
 
 - **A binding overrides the exemption.** Once a session is bound to a contract,
@@ -475,8 +491,14 @@ Two consequences worth stating plainly:
 - **A new helper agent is denied until it is listed.** That is the intended
   direction: a loud, cheap failure rather than a silent exemption.
 
-The floor is checked before any of this, so a recognised helper is still refused
-Tier 0. Only the contract-scope machinery is producer-specific.
+One name on the list is not a platform built-in: `fresh-context-reviewer` is a
+repository-defined Tier 2 definition like the producer's. It holds no write
+tool, so it never reaches the branch the list guards.
+
+**An `agent_type` that is present but unusable is denied, not read as the
+driver.** The driver is identified by the key being *absent*, which is what a
+real main-thread call sends. An array, object or number in that field is a
+malformed event, and this guard does not guess at events it cannot read.
 
 **The residual this does not close.** `agent_type` originates in a Tier 2 file,
 so an edit that renames the producer *to* one of the recognised helper names

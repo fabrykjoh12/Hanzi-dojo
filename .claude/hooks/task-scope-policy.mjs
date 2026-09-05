@@ -133,6 +133,11 @@ export const EXEMPT_AGENT_TYPES = [
   'claude',
   'claude-code-guide',
   'Explore',
+  // Not a platform built-in: `.claude/agents/fresh-context-reviewer.md` is a
+  // repository-defined Tier 2 definition, listed here for the same reason as
+  // the rest. It holds no write tool today, so it never reaches the branch
+  // this list guards — but its name is Tier 2 like the producer's, and saying
+  // so is cheaper than someone rediscovering it.
   'fresh-context-reviewer',
   'general-purpose',
   'Plan',
@@ -610,25 +615,31 @@ export function resolveWithin(root, target, { realpath = realpathSync, lstat = l
  * Order is load-bearing and each step is a gate, not a hint:
  *
  *   1. Not a write, or no agent_type at all  -> not this policy's business.
- *   2. TIER 0                               -> deny, before anything is parsed.
- *   3. Exempt helper agent, unbound session -> allow; not a task producer.
- *   4. Binding                              -> deny if absent or malformed.
- *   5. Contract re-read and seal verified   -> deny on any mismatch.
- *   6. Realpath resolution                  -> deny if unresolvable or outside.
- *   7. TIER 0 again, on the RESOLVED path   -> deny; a symlink cannot launder it.
- *   8. forbidden_paths                      -> deny.
- *   9. Effective scope                      -> allow only on a positive match.
+ *   2. TIER 0, lexically                    -> deny, before anything is parsed.
+ *   3. Exempt helper in an unbound session   -> resolve, then deny TIER 0 and
+ *                                              TIER 1 on the resolved path;
+ *                                              otherwise allow.
+ *   4. Binding                               -> deny if absent or malformed.
+ *   5. Contract re-read and seal verified    -> deny on any mismatch.
+ *   6. Realpath resolution                   -> deny if unresolvable or outside.
+ *   7. TIER 0 again, on the RESOLVED path    -> deny; a symlink cannot launder it.
+ *   8. forbidden_paths                       -> deny.
+ *   9. Effective scope                       -> allow only on a positive match.
  *
  * A call with no `agent_type` is the trusted driver, which this policy does not
  * police: the driver holds Bash and git by design, and pretending otherwise
  * would be a claim the mechanism cannot support.
  *
- * Step 3 sits AFTER step 2 on purpose. The floor is absolute — it is the one
- * thing no contract and no caller may reach — so every subagent is held to it,
- * exempt or not. Only the contract-scope machinery below is specific to the
- * task producer. Exempting helpers before the floor would have cost nothing to
- * write and quietly handed `.git/**` and `.agent/tasks/**` to every helper
- * agent in the repository.
+ * WHAT STEP 3 IS AND IS NOT. It exempts a recognised helper from one thing:
+ * the contract scope, which it has no contract to be measured against. It does
+ * not exempt anything from the tiers. Step 2 catches only the spelling it was
+ * handed, so step 3 resolves the path itself before allowing — otherwise
+ * `src/door/config`, where `src/door` is a symlink to `.git`, spells nothing
+ * forbidden and the authoritative check at step 7 never runs for this caller.
+ * Tier 1 is refused there too: reaching the protected control plane takes an
+ * explicit digest-covered grant, and an unbound session has none to offer. So
+ * an unbound helper writes ordinary Tier 2 paths and nothing else — in
+ * particular not `.claude/hooks/**`, which is this file.
  */
 export function decide(event, { root, env = {}, grants = GRANTS, readFile, realpath, lstat } = {}) {
   // A hook event that is not an object is not something to reason about. `[]`,
@@ -640,8 +651,22 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
   const toolName = event?.tool_name
   if (!WRITE_TOOLS.includes(toolName)) return allow('not a write tool')
 
+  // ABSENT is the driver. MALFORMED is not.
+  //
+  // A real main-thread call omits the key entirely — verified on 2.1.259,
+  // where the driver's event carried no `agent_type` property at all rather
+  // than a null one. Treating every unusable value as "absent" folded a
+  // malformed event into the one unconditional allow this policy has, so
+  // `agent_type: ['task-producer']` was a trusted driver call. Absent is a
+  // fact about the caller; a non-string is a fact about the event, and this
+  // file does not guess at events it cannot read.
   const agentType = event?.agent_type
-  if (!isNonEmptyString(agentType)) return allow('no agent_type — trusted driver call, not a producer')
+  if (agentType === undefined || agentType === null) {
+    return allow('no agent_type — trusted driver call, not a producer')
+  }
+  if (!isNonEmptyString(agentType)) {
+    return deny('the hook event carries an agent_type that is not a name, so the caller cannot be identified')
+  }
 
   // EVERY path key the event carries, not the first one found.
   //
@@ -694,6 +719,35 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
   // that contract governs every subagent in it, not merely the producer. A
   // helper spawned inside a bound session is doing that task's work.
   if (!bindingPresent && EXEMPT_AGENT_TYPES.includes(agentType)) {
+    // An exemption from CONTRACT SCOPE is not an exemption from the tiers.
+    //
+    // Reaching the allow below without resolving the path first would have let
+    // a symlink launder a floor write: the lexical check above sees only the
+    // spelling it was handed, and `src/door/config` where `src/door -> .git`
+    // spells nothing forbidden. That is the one escape a cold probe proved
+    // live, and the resolved check further down — the authoritative one — is
+    // downstream of this branch, so this branch has to do its own.
+    //
+    // Tier 1 is refused for the same reason it is refused anywhere: reaching
+    // the protected control plane takes an explicit digest-covered grant, and
+    // a session with no bound contract has no grant to offer. So an unbound
+    // helper writes ordinary Tier 2 paths, and nothing else — notably not
+    // `.claude/hooks/**`, which is this policy's own module.
+    for (const target of targets) {
+      const { relative, error: resolveError } = resolveWithin(root, String(target), { realpath, lstat, cwd: event?.cwd })
+      if (resolveError) return deny(resolveError)
+      for (const f of FLOOR) {
+        if (covers(f, relative)) {
+          return deny('Tier 0: "' + target + '" resolves to ' + relative + ', on the absolute floor (' + f + ')')
+        }
+      }
+      for (const p of PROTECTED_TIER) {
+        if (covers(p, relative)) {
+          return deny('Tier 1: "' + target + '" resolves to ' + relative + ', in the protected control plane (' + p +
+            '), which only a granted contract may authorize — and "' + agentType + '" carries no bound contract')
+        }
+      }
+    }
     return allow('"' + agentType + '" is not a task producer, and the session carries no contract binding')
   }
 

@@ -932,6 +932,52 @@ describe('who the policy governs', () => {
     }
   })
 
+  it('resolves the path before exempting, so a symlink cannot launder Tier 0', () => {
+    // The lexical floor check above sees only the spelling it was handed, and
+    // `src/floordoor/config` spells nothing forbidden. The authoritative
+    // resolved check lives downstream of the exemption and never runs for this
+    // caller, so the exemption has to resolve for itself. Without that, a
+    // helper writes .git through an in-scope-looking name — which is exactly
+    // the escape a cold probe proved live against an earlier design.
+    symlinkSync(path.join(ROOT, '.git'), path.join(ROOT, 'src/floordoor'))
+    const d = run(asAgent('general-purpose', 'src/floordoor/config'), {})
+    expect(d.allow, d.reason).toBe(false)
+    expect(d.reason).toMatch(/Tier 0/)
+    expect(d.reason, 'denied on the spelling rather than the resolved path').toMatch(/resolves to \.git\/config/)
+  })
+
+  it('refuses Tier 1 to an unbound helper, including through a symlink', () => {
+    // Reaching the protected control plane takes a digest-covered grant, and a
+    // session with no bound contract has none to offer. The sharpest case is
+    // .claude/hooks/** — this policy's own module — where an unbound helper
+    // rewriting the guard would end the tier model one layer down.
+    symlinkSync(path.join(ROOT, '.claude'), path.join(ROOT, 'src/planedoor'))
+    for (const target of [
+      '.claude/hooks/task-scope-policy.mjs',
+      '.claude/settings.json',
+      'src/planedoor/settings.json',
+    ]) {
+      const d = run(asAgent('general-purpose', target), {})
+      expect(d.allow, target + ' reached Tier 1: ' + d.reason).toBe(false)
+      expect(d.reason).toMatch(/Tier 1/)
+    }
+  })
+
+  it('still allows an ordinary Tier 2 write, so the tier checks are not deny-all', () => {
+    expect(run(asAgent('general-purpose', 'src/ordinary.js'), {}).allow).toBe(true)
+  })
+
+  it('denies a malformed agent_type instead of reading it as the driver', () => {
+    // ABSENT is the driver; MALFORMED is not. Folding every unusable value
+    // into the absent case put `agent_type: ['task-producer']` through the one
+    // unconditional allow this policy has.
+    for (const bad of [['task-producer'], { name: 'task-producer' }, 42, '', '   ', true]) {
+      const d = run(call('.claude/settings.json', { agent_type: bad }), {})
+      expect(d.allow, 'agent_type ' + JSON.stringify(bad) + ' was allowed').toBe(false)
+    }
+    expect(run(call('src/thing.js', { agent_type: ['x'] }), {}).reason).toMatch(/not a name/)
+  })
+
   it('enforces an agent_type it does not recognise — the rename fails closed', () => {
     // THE spec this design exists for. A probe on 2.1.259 showed agent_type is
     // the frontmatter name, not the filename: a definition in renamed-file.md
