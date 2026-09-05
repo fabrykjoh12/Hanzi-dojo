@@ -128,6 +128,16 @@ export const PRODUCER_AGENT_TYPE = 'task-producer'
  * The cost is maintenance: a genuinely new helper agent is denied until it is
  * added here. That failure is loud and cheap, which is the direction this
  * whole file errs in.
+ *
+ * PROVENANCE, because "is this list complete?" is otherwise unanswerable from
+ * the repository. These are the agent types the harness offered on Claude Code
+ * 2.1.259 at the time of writing, minus the producer. Nothing in the repository
+ * enumerates the platform's built-ins, so this cannot be pinned by a spec the
+ * way the producer's name is — a built-in added upstream, or one this
+ * environment did not offer, will simply be absent. That is why the list is an
+ * exemption rather than a denylist: an unlisted helper is denied, which is
+ * visible the first time someone runs it, rather than exempted, which would
+ * never be visible at all.
  */
 export const EXEMPT_AGENT_TYPES = [
   'claude',
@@ -651,15 +661,21 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
   const toolName = event?.tool_name
   if (!WRITE_TOOLS.includes(toolName)) return allow('not a write tool')
 
-  // ABSENT is the driver. MALFORMED is not.
+  // ABSENT is the driver. A VALUE THAT IS NOT A NAME is not.
   //
   // A real main-thread call omits the key entirely — verified on 2.1.259,
-  // where the driver's event carried no `agent_type` property at all rather
-  // than a null one. Treating every unusable value as "absent" folded a
-  // malformed event into the one unconditional allow this policy has, so
-  // `agent_type: ['task-producer']` was a trusted driver call. Absent is a
-  // fact about the caller; a non-string is a fact about the event, and this
-  // file does not guess at events it cannot read.
+  // where the driver's event carried no `agent_type` property at all. `null`
+  // is treated the same as absent rather than denied: no observed runtime
+  // sends it, and the cost of being wrong runs the wrong way. Denying it would
+  // refuse the trusted driver outright on some future runtime that spells
+  // "no agent" as null, which is a worse failure than allowing an event the
+  // producer cannot forge in the first place — hook events come from the
+  // runtime, so this branch is a robustness question, not an attack surface.
+  //
+  // Everything else that is not a usable name — an array, an object, a number,
+  // an empty string — is a malformed event and denies. Folding those into the
+  // absent case put `agent_type: ['task-producer']` through the one
+  // unconditional allow this policy has.
   const agentType = event?.agent_type
   if (agentType === undefined || agentType === null) {
     return allow('no agent_type — trusted driver call, not a producer')

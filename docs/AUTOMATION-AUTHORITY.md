@@ -468,11 +468,14 @@ rename produces *more* enforcement, not less.
 
 **What the exemption exempts, exactly.** One thing: the contract scope, which
 an unbound helper has no contract to be measured against. It exempts nothing
-from the tiers. A recognised helper in an unbound session is still refused
-Tier 0 *and* Tier 1, on the **resolved** path — so a symlink cannot launder
-either, and `.claude/hooks/**`, this guard's own module, is not writable by a
-helper that carries no grant. In one line: an unbound helper writes ordinary
-Tier 2 paths and nothing else.
+from the tiers. Once the guard runs, a recognised helper in an unbound session
+would still be refused Tier 0 *and* Tier 1, on the **resolved** path — so a
+symlink could not launder either, and `.claude/hooks/**`, this guard's own
+module, would not be writable by a helper carrying no grant. In one line: an
+unbound helper writes ordinary Tier 2 paths and nothing else. As everywhere in
+this section, that is what the code decides when it runs, not something in
+force in this repository today — nothing registers the guard, so today
+`.claude/hooks/**` is writable by anything.
 
 That resolution is done by the exemption itself rather than inherited. The
 lexical floor check upstream sees only the spelling it was handed, and the
@@ -495,10 +498,14 @@ One name on the list is not a platform built-in: `fresh-context-reviewer` is a
 repository-defined Tier 2 definition like the producer's. It holds no write
 tool, so it never reaches the branch the list guards.
 
-**An `agent_type` that is present but unusable is denied, not read as the
-driver.** The driver is identified by the key being *absent*, which is what a
-real main-thread call sends. An array, object or number in that field is a
-malformed event, and this guard does not guess at events it cannot read.
+**An `agent_type` that is present but is not a usable name would be denied
+rather than read as the driver.** The driver is identified by the key being
+*absent*, which is what a real main-thread call sends; `null` is treated the
+same as absent, deliberately, because no observed runtime sends it and refusing
+the trusted driver on a runtime that did would be the worse failure. An array,
+object, number or empty string is a malformed event and denies — the guard does
+not guess at events it cannot read, and a hook event comes from the runtime, so
+this is robustness rather than a boundary the producer could push on.
 
 **The residual this does not close.** `agent_type` originates in a Tier 2 file,
 so an edit that renames the producer *to* one of the recognised helper names

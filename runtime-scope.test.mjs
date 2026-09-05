@@ -864,9 +864,10 @@ describe('the producer definition', () => {
     for (const spawner of ['Task', 'Agent', 'Skill', 'Bash']) {
       expect(tools, 'producer holds ' + spawner + ', so it could reach another agent_type').not.toContain(spawner)
     }
-    for (const helper of EXEMPT_AGENT_TYPES) {
-      expect(src, 'the producer definition names the exempt agent ' + helper).not.toContain('subagent_type: ' + helper)
-    }
+    // Deliberately NOT also scanning the definition's prose for exempt agent
+    // names: with no spawning tool such a string could never be acted on, so
+    // that assertion would pass for a reason unrelated to what it claims. The
+    // tool list is the whole of the evidence here.
   })
 
   it('says plainly that it is not itself protected', () => {
@@ -961,6 +962,31 @@ describe('who the policy governs', () => {
       expect(d.allow, target + ' reached Tier 1: ' + d.reason).toBe(false)
       expect(d.reason).toMatch(/Tier 1/)
     }
+  })
+
+  it('denies an unresolvable path in the exempt branch, rather than allowing it', () => {
+    // The deny that carries the two checks above. Without it `relative` is
+    // undefined, covers() compares against the string 'undefined' and matches
+    // nothing, and both tier loops fall through to the allow — so a dangling
+    // link aimed at the floor, and any path outside the repository, would be
+    // written. Every other unresolvable-path spec in this file runs as the
+    // producer through the main path's resolution, so none of them reaches
+    // this branch: without these three cases the line is unpinned and its
+    // deletion leaves the suite green.
+    symlinkSync(path.join(ROOT, '.git/nothing-here'), path.join(ROOT, 'src/exemptdangler'))
+    const cases = [
+      ['a dangling link aimed at Tier 0', 'src/exemptdangler'],
+      ['an absolute path outside the repository', '/etc/passwd'],
+      ['a new file whose parent does not exist', 'src/no/such/parent/file.js'],
+    ]
+    for (const [label, target] of cases) {
+      const d = run(asAgent('general-purpose', target), {})
+      expect(d.allow, label + ' was allowed: ' + d.reason).toBe(false)
+    }
+    // And it denies for the resolution reason, not by accidentally matching a
+    // tier — the tier loops never run when resolution fails.
+    expect(run(asAgent('general-purpose', 'src/exemptdangler'), {}).reason).toMatch(/symlink whose target cannot be resolved/)
+    expect(run(asAgent('general-purpose', '/etc/passwd'), {}).reason).toMatch(/outside the repository/)
   })
 
   it('still allows an ordinary Tier 2 write, so the tier checks are not deny-all', () => {
