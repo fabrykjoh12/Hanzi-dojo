@@ -1115,15 +1115,22 @@ describe('what this change does NOT claim', () => {
     expect(doc).toMatch(/inert/)
   })
 
-  it('keeps the authority doc\'s copy of the exemption list honest', () => {
-    // The doc names the exempted agents in prose. Nothing tied that list to the
-    // constant, so an entry could be added or removed and the doc would quietly
-    // describe a policy that no longer exists — in the one document this task's
-    // contract requires to state the enforcement scope exactly.
+  it('keeps the authority doc\'s copy of the exemption list honest, both ways', () => {
+    // The doc names the exempted agents in prose, and nothing tied that list to
+    // the constant — so the two could drift and the doc would quietly describe
+    // a policy that no longer exists, in the one document this task's contract
+    // requires to state the enforcement scope exactly.
+    //
+    // Compared as SETS, not by containment. Checking only that the doc mentions
+    // every constant entry catches an addition but not a removal: drop a name
+    // from the constant and this would simply iterate once less and pass, while
+    // the doc went on listing an agent the policy no longer exempts. That is
+    // the same one-directional weakness this file refuses elsewhere.
     const doc = readFileSync('docs/AUTOMATION-AUTHORITY.md', 'utf8')
-    for (const name of EXEMPT_AGENT_TYPES) {
-      expect(doc, 'the authority doc does not name the exempt agent ' + name).toContain('`' + name + '`')
-    }
+    const sentence = doc.match(/closed list of\s+recognised helper agents —([^.]+)\./)
+    expect(sentence, 'the authority doc no longer names the exempt agents where this spec looks').toBeTruthy()
+    const documented = [...sentence[1].matchAll(/`([^`]+)`/g)].map(m => m[1])
+    expect([...documented].sort()).toEqual([...EXEMPT_AGENT_TYPES].sort())
   })
 })
 

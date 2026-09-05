@@ -490,6 +490,15 @@ containment of one class of mistake: a helper reaching a protected path through
 the ordinary file tools, which is how it would happen by accident. A helper
 that means to get past them can.
 
+**One more thing the exemption does not exempt, and it will be felt.** The
+resolution itself. A helper's target has to resolve inside the repository before
+either tier is checked, so an unresolvable one is denied — and that includes the
+ordinary case of writing a file into a directory that does not exist yet, which
+`Write` would otherwise create. `src/no/such/dir/file.js` is refused for a
+helper exactly as it is for a producer. That is the price of resolving before
+allowing, and resolving before allowing is what closes the symlink escape; the
+two cannot be separated. Registration should expect it rather than discover it.
+
 As everywhere in this section, that is also what the code decides when it runs
 rather than something in force today — nothing registers the guard, so today
 `.claude/hooks/**` is writable by anything at all.

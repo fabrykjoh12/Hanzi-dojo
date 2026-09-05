@@ -1,8 +1,10 @@
 /**
  * THE RUNTIME TASK-SCOPE POLICY — protected control plane, Tier 1.
  *
- * Decides whether one tool call by an untrusted producer subagent may write one
- * path, from the sealed task contract the launcher bound to this session.
+ * Decides whether one tool call may write one path, from the sealed task
+ * contract the launcher bound to this session. Chiefly a call by an untrusted
+ * producer subagent — but it answers for every caller the runtime hands it, and
+ * WHO THIS POLICY GOVERNS below is the exact set.
  *
  * WHY THIS FILE IS HERE AND NOT IN tools/.
  *
