@@ -448,6 +448,44 @@ a Bash-less producer has no tool that touches process environment. v1 is
 deliberately one bound contract per launcher session; running another task means
 starting another bound session.
 
+### Who the guard governs
+
+Not every subagent. The guard holds a caller to its contract when the session
+carries a binding, **or** when the caller is not one of a closed list of
+recognised helper agents — `general-purpose`, `Explore`, `Plan`, `claude`,
+`claude-code-guide`, `fresh-context-reviewer`, `statusline-setup`. A call with
+no `agent_type` at all is the trusted driver and is not held to any contract.
+
+The obvious rule — govern the agent named `task-producer` — is the one this
+deliberately avoids, because it fails in the wrong direction. `agent_type` is
+the frontmatter `name:` of the launched definition, not its filename: a
+definition in `renamed-file.md` declaring `name: inner-declared-name` emits
+exactly `inner-declared-name`, verified on Claude Code 2.1.259. Since
+`.claude/agents/**` is Tier 2, a name-equality rule would let a one-line edit to
+an ordinary file switch enforcement off silently. Stated as an exemption
+instead, an unrecognised name is governed rather than exempt, so that same
+rename produces *more* enforcement, not less.
+
+Two consequences worth stating plainly:
+
+- **A binding overrides the exemption.** Once a session is bound to a contract,
+  every subagent in it is held to that contract, helpers included — a helper
+  spawned inside a bound session is doing that task's work. This is a decision,
+  not a derivation; the opposite is defensible.
+- **A new helper agent is denied until it is listed.** That is the intended
+  direction: a loud, cheap failure rather than a silent exemption.
+
+The floor is checked before any of this, so a recognised helper is still refused
+Tier 0. Only the contract-scope machinery is producer-specific.
+
+**The residual this does not close.** `agent_type` originates in a Tier 2 file,
+so an edit that renames the producer *to* one of the recognised helper names
+would exempt it. That is not a new weakness: the same edit could give the
+producer Bash, which defeats the guard outright — see the tool-list dependency
+below. A spec pins the policy's constant to the name the producer definition
+declares, so drift between them fails CI; the tier itself is what would have to
+change to close the residual, and that waits on the contract-lifecycle work.
+
 ### What is proven, and what is merely written down
 
 Proven by unit and adversarial specs against a real temporary repository:

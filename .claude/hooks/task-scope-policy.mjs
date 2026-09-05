@@ -30,11 +30,23 @@
  * FAIL CLOSED ON EVERY SECURITY QUESTION IT ANSWERS. Once `decide()` has
  * established that this is a producer's write, every route out of it is a deny
  * unless the write is positively established as in scope — "could not
- * establish" is never authorized. The two early allows above that point are not
- * exceptions to the rule but statements that the question was never this
- * policy's: a non-write tool, and a call with no `agent_type`, which is the
- * trusted driver. The driver holds Bash and git by design, and pretending to
- * police it would be a claim the mechanism cannot support.
+ * establish" is never authorized. The three early allows above that point are
+ * not exceptions to the rule but statements that the question was never this
+ * policy's: a non-write tool; a call with no `agent_type`, which is the trusted
+ * driver; and a recognised helper agent in a session with no contract bound to
+ * it. The driver holds Bash and git by design, and pretending to police it
+ * would be a claim the mechanism cannot support.
+ *
+ * WHO THIS POLICY GOVERNS, and why it is stated as an exemption. Enforcement
+ * applies to every subagent EXCEPT a closed list of recognised helpers, rather
+ * than only to the agent named `task-producer`. The narrower form would be
+ * fail-open on a one-line Tier 2 edit: `agent_type` is the frontmatter `name:`
+ * of the launched definition, so renaming the producer would silently exempt
+ * it. Stated as an exemption, a rename produces MORE enforcement instead. What
+ * this does not close — an edit that renames the producer *to* a recognised
+ * helper name — is the pre-existing Tier 2 residual, since the same edit could
+ * hand the producer Bash and defeat the guard outright. It is documented in
+ * docs/AUTOMATION-AUTHORITY.md, not claimed closed.
  *
  * PLATFORM ASSUMPTION, stated because it is not enforced: path comparison is
  * byte-exact and case-sensitive, matching the contract grammar and Linux, where
@@ -81,6 +93,51 @@ export const WRITE_TOOLS = ['Write', 'Edit', 'MultiEdit', 'NotebookEdit']
 
 /** Every tool_input key that can name a write target. All of them are checked. */
 export const TARGET_KEYS = ['file_path', 'notebook_path']
+
+/**
+ * The agent this policy exists to constrain.
+ *
+ * `agent_type` is the frontmatter `name:` of the launched definition, NOT its
+ * filename — an agent defined in `renamed-file.md` declaring
+ * `name: inner-declared-name` emits exactly `inner-declared-name`. So this
+ * constant must equal the name `.claude/agents/task-producer.md` declares, and
+ * a spec asserts that rather than trusting the two to stay in step.
+ *
+ * It is deliberately NOT what the decision below keys on. See EXEMPT_AGENT_TYPES.
+ */
+export const PRODUCER_AGENT_TYPE = 'task-producer'
+
+/**
+ * The agents that are NOT task producers, and the reason this is an exemption
+ * list rather than the obvious `agentType === PRODUCER_AGENT_TYPE`.
+ *
+ * That obvious form is fail-OPEN on a Tier 2 edit. `agent_type` comes from the
+ * producer definition's frontmatter, and `.claude/agents/**` is Tier 2 — so
+ * renaming one line of a file an ordinary task can be authorized to write would
+ * make the producer stop matching and run with no contract enforcement at all,
+ * silently. Inverting it fixes the direction of that failure: anything not
+ * recognised here is enforced, so a rename yields MORE enforcement, not less,
+ * and an unknown agent fails closed loudly instead of escaping quietly.
+ *
+ * The residual this does not close: an attacker who can edit the producer
+ * definition could rename it TO one of these names. That is the same residual
+ * already documented for Tier 2 — the same edit could simply give the producer
+ * Bash and defeat the guard outright — so this changes nothing about it. It is
+ * recorded in docs/AUTOMATION-AUTHORITY.md rather than claimed closed.
+ *
+ * The cost is maintenance: a genuinely new helper agent is denied until it is
+ * added here. That failure is loud and cheap, which is the direction this
+ * whole file errs in.
+ */
+export const EXEMPT_AGENT_TYPES = [
+  'claude',
+  'claude-code-guide',
+  'Explore',
+  'fresh-context-reviewer',
+  'general-purpose',
+  'Plan',
+  'statusline-setup',
+]
 
 /**
  * GRANT -> the paths it reaches. A protected copy of CONTROL_PLANE_GRANTS.
@@ -552,18 +609,26 @@ export function resolveWithin(root, target, { realpath = realpathSync, lstat = l
  *
  * Order is load-bearing and each step is a gate, not a hint:
  *
- *   1. Not a write, or not a producer call  -> not this policy's business.
+ *   1. Not a write, or no agent_type at all  -> not this policy's business.
  *   2. TIER 0                               -> deny, before anything is parsed.
- *   3. Binding                              -> deny if absent or malformed.
- *   4. Contract re-read and seal verified   -> deny on any mismatch.
- *   5. Realpath resolution                  -> deny if unresolvable or outside.
- *   6. TIER 0 again, on the RESOLVED path   -> deny; a symlink cannot launder it.
- *   7. forbidden_paths                      -> deny.
- *   8. Effective scope                      -> allow only on a positive match.
+ *   3. Exempt helper agent, unbound session -> allow; not a task producer.
+ *   4. Binding                              -> deny if absent or malformed.
+ *   5. Contract re-read and seal verified   -> deny on any mismatch.
+ *   6. Realpath resolution                  -> deny if unresolvable or outside.
+ *   7. TIER 0 again, on the RESOLVED path   -> deny; a symlink cannot launder it.
+ *   8. forbidden_paths                      -> deny.
+ *   9. Effective scope                      -> allow only on a positive match.
  *
  * A call with no `agent_type` is the trusted driver, which this policy does not
  * police: the driver holds Bash and git by design, and pretending otherwise
  * would be a claim the mechanism cannot support.
+ *
+ * Step 3 sits AFTER step 2 on purpose. The floor is absolute — it is the one
+ * thing no contract and no caller may reach — so every subagent is held to it,
+ * exempt or not. Only the contract-scope machinery below is specific to the
+ * task producer. Exempting helpers before the floor would have cost nothing to
+ * write and quietly handed `.git/**` and `.agent/tasks/**` to every helper
+ * agent in the repository.
  */
 export function decide(event, { root, env = {}, grants = GRANTS, readFile, realpath, lstat } = {}) {
   // A hook event that is not an object is not something to reason about. `[]`,
@@ -610,7 +675,29 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
     }
   }
 
-  const { binding, error: bindingError } = parseBinding(env[BINDING_ENV])
+  // (3) Is this caller a task producer at all?
+  //
+  // PRESENCE of the binding, deliberately, not its validity. A present-but-
+  // malformed binding must reach parseBinding below and be DENIED, so the test
+  // here is the same emptiness test parseBinding treats as "absent" — anything
+  // else and a session could unbind itself by corrupting its own binding.
+  const bindingRaw = env[BINDING_ENV]
+  const bindingPresent = bindingRaw !== undefined && bindingRaw !== null && String(bindingRaw).trim() !== ''
+
+  // Enforce unless this is a known helper agent in an unbound session. Stated
+  // in this direction so an UNKNOWN agent_type is enforced rather than exempt:
+  // the exemption list lives here, in the protected tier, but agent_type itself
+  // is declared in Tier 2, so the recognised set is the safe thing to enumerate
+  // and the unrecognised case is the safe default. See EXEMPT_AGENT_TYPES.
+  //
+  // A binding overrides the exemption: once a session is bound to a contract,
+  // that contract governs every subagent in it, not merely the producer. A
+  // helper spawned inside a bound session is doing that task's work.
+  if (!bindingPresent && EXEMPT_AGENT_TYPES.includes(agentType)) {
+    return allow('"' + agentType + '" is not a task producer, and the session carries no contract binding')
+  }
+
+  const { binding, error: bindingError } = parseBinding(bindingRaw)
   if (bindingError) return deny(bindingError)
 
   const { contract, error: contractError } = loadBoundContract(binding, { root, readFile })

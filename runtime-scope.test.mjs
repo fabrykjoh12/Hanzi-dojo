@@ -11,6 +11,8 @@ import {
   PROTECTED_TIER,
   BINDING_ENV,
   WRITE_TOOLS,
+  PRODUCER_AGENT_TYPE,
+  EXEMPT_AGENT_TYPES,
   canonicalise as policyCanonicalise,
   computeDigest as policyDigest,
   covers as policyCovers,
@@ -837,11 +839,150 @@ describe('the producer definition', () => {
     }
   })
 
+  it('declares the exact name the policy enforces against', () => {
+    // THE drift spec. agent_type is this frontmatter `name:` — proven on
+    // 2.1.259 by a definition in renamed-file.md declaring
+    // `name: inner-declared-name`, which emitted exactly that rather than the
+    // filename. So the protected policy's constant and this line are the same
+    // fact written twice, and they must be kept identical by CI rather than by
+    // memory. Renaming the producer no longer disables enforcement — the
+    // exemption list sees to that — but it would silently make this constant
+    // describe nothing, and a security constant that names no real agent is
+    // exactly the kind of quiet rot this file exists to prevent.
+    const declaredName = frontmatter.match(/^name:\s*(.*)$/m)?.[1]?.trim()
+    expect(declaredName, 'no name: line in the producer frontmatter').toBeTruthy()
+    expect(declaredName).toBe(PRODUCER_AGENT_TYPE)
+  })
+
+  it('cannot reach an exempt agent_type, because it cannot spawn one', () => {
+    // The exemption list is only safe while the producer cannot arrive wearing
+    // one of those names. It cannot choose its own agent_type — the runtime
+    // sets that from the launched definition — and it holds no tool that
+    // launches another definition. Both halves are asserted: the second is the
+    // platform-enforced tool list above, and this pins it against the exact
+    // names that would grant an exemption.
+    for (const spawner of ['Task', 'Agent', 'Skill', 'Bash']) {
+      expect(tools, 'producer holds ' + spawner + ', so it could reach another agent_type').not.toContain(spawner)
+    }
+    for (const helper of EXEMPT_AGENT_TYPES) {
+      expect(src, 'the producer definition names the exempt agent ' + helper).not.toContain('subagent_type: ' + helper)
+    }
+  })
+
   it('says plainly that it is not itself protected', () => {
     // .claude/agents/** is Tier 2. Claiming otherwise would be the kind of
     // half-true security statement this whole workstream exists to avoid.
     expect(src).toMatch(/Tier 2/)
     expect(src).toMatch(/not sealed|not protected/)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// WHO THE POLICY GOVERNS.
+//
+// The policy used to treat every `agent_type` as an untrusted producer. That is
+// fail-closed, but registering it would have denied writes from every ordinary
+// helper subagent in the repository — proven on Claude Code 2.1.259, where a
+// `general-purpose` subagent with no binding had an ordinary write denied.
+//
+// The fix cannot be `agentType === PRODUCER_AGENT_TYPE`, because `agent_type`
+// is the frontmatter `name:` of the launched definition and `.claude/agents/**`
+// is Tier 2 — that form would let a one-line rename silently switch enforcement
+// off. So the rule is stated as an exemption, and these specs pin the direction
+// of the failure as much as the behaviour.
+// ---------------------------------------------------------------------------
+
+describe('who the policy governs', () => {
+  const asAgent = (agentType, file) => call(file, { agent_type: agentType })
+  const bound = (c) => ({ [BINDING_ENV]: bindingFor(c) })
+
+  it('enforces the real producer: in scope allows, out of scope denies', () => {
+    const c = writeContract(contract())
+    expect(run(asAgent(PRODUCER_AGENT_TYPE, 'src/thing.js'), bound(c)).allow).toBe(true)
+    const out = run(asAgent(PRODUCER_AGENT_TYPE, 'docs/other.md'), bound(c))
+    expect(out.allow).toBe(false)
+    expect(out.reason).toMatch(/scope/)
+  })
+
+  it('denies the real producer when the session carries no binding', () => {
+    const d = run(asAgent(PRODUCER_AGENT_TYPE, 'src/thing.js'), {})
+    expect(d.allow).toBe(false)
+    expect(d.reason).toMatch(/not bound to a task contract/)
+  })
+
+  it('leaves every recognised helper alone in an unbound session', () => {
+    // Asserted across the whole list rather than one representative, so adding
+    // a name without meaning it is a decision someone has to make on purpose.
+    expect(EXEMPT_AGENT_TYPES.length).toBeGreaterThan(1)
+    for (const helper of EXEMPT_AGENT_TYPES) {
+      const d = run(asAgent(helper, 'src/thing.js'), {})
+      expect(d.allow, helper + ' was denied an ordinary write').toBe(true)
+      expect(d.reason).toMatch(/not a task producer/)
+    }
+  })
+
+  it('still holds recognised helpers to Tier 0', () => {
+    // The ordering property. Exempting helpers BEFORE the floor check would
+    // have read identically at the call site and handed .git/** and the sealed
+    // contracts to every helper agent in the repository.
+    for (const floorPath of ['.git/config', '.agent/tasks/demo-task.json', '.agent/roles.json']) {
+      const d = run(asAgent('general-purpose', floorPath), {})
+      expect(d.allow, floorPath + ' was allowed for a helper').toBe(false)
+      expect(d.reason).toMatch(/Tier 0/)
+    }
+  })
+
+  it('enforces an agent_type it does not recognise — the rename fails closed', () => {
+    // THE spec this design exists for. A probe on 2.1.259 showed agent_type is
+    // the frontmatter name, not the filename: a definition in renamed-file.md
+    // declaring `name: inner-declared-name` emitted exactly that. Under a
+    // name-equality rule this call would be unenforced; here it is denied.
+    const d = run(asAgent('inner-declared-name', 'src/thing.js'), {})
+    expect(d.allow).toBe(false)
+    expect(d.reason).toMatch(/not bound to a task contract/)
+  })
+
+  it('enforces a recognised helper once a contract is bound to the session', () => {
+    // Deliberate: a binding means the session is doing one task's work, and a
+    // helper spawned inside it is doing that work too. Recorded as a decision
+    // rather than derived, because the opposite is defensible.
+    const c = writeContract(contract())
+    expect(run(asAgent('general-purpose', 'src/thing.js'), bound(c)).allow).toBe(true)
+    const out = run(asAgent('general-purpose', 'docs/other.md'), bound(c))
+    expect(out.allow).toBe(false)
+    expect(out.reason).toMatch(/scope/)
+  })
+
+  it('treats a present-but-broken binding as bound, for helpers too', () => {
+    // Presence, not validity. If the exemption tested whether the binding
+    // PARSES, a session could unbind itself by corrupting its own binding and
+    // every helper would fall back to unenforced.
+    for (const agent of [PRODUCER_AGENT_TYPE, 'general-purpose']) {
+      const d = run(asAgent(agent, 'src/thing.js'), { [BINDING_ENV]: '{ not json' })
+      expect(d.allow, agent + ' escaped through a corrupt binding').toBe(false)
+      expect(d.reason).toMatch(/not valid JSON/)
+    }
+    // Whitespace is the same as absent, matching parseBinding's own test.
+    expect(run(asAgent('general-purpose', 'src/thing.js'), { [BINDING_ENV]: '   ' }).allow).toBe(true)
+  })
+
+  it('leaves the trusted driver alone, bound session or not', () => {
+    const c = writeContract(contract())
+    for (const env of [{}, bound(c)]) {
+      // No agent_type key at all, which is what a real main-thread call sends.
+      const event = call('docs/other.md')
+      delete event.agent_type
+      const d = run(event, env)
+      expect(d.allow).toBe(true)
+      expect(d.reason).toMatch(/trusted driver/)
+    }
+  })
+
+  it('never exempts the producer itself', () => {
+    // The one entry that would undo the whole change if it were ever added.
+    expect(EXEMPT_AGENT_TYPES).not.toContain(PRODUCER_AGENT_TYPE)
+    expect(new Set(EXEMPT_AGENT_TYPES).size, 'duplicate exempt entries').toBe(EXEMPT_AGENT_TYPES.length)
+    for (const name of EXEMPT_AGENT_TYPES) expect(typeof name).toBe('string')
   })
 })
 
