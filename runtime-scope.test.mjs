@@ -1020,6 +1020,26 @@ describe('who the policy governs', () => {
     expect(d.reason).toMatch(/Tier 1/)
   })
 
+  it('refuses the bare root of a tier subtree, not only what is inside it', () => {
+    // covers('.git/**', '.git') is false — the subtree test is a prefix match
+    // on '.git/', and '.git' does not start with it. Correct for covers(), which
+    // is at parity with the canonical validator, so the exempt branch asks the
+    // question separately instead of changing it.
+    //
+    // It bites because a directory is not always a directory: in a git WORKTREE
+    // `.git` is a regular FILE holding a gitdir pointer, and this repository's
+    // parallel-work flow uses worktrees. Before the exemption existed every
+    // agent_type without a binding was denied, so this became reachable only
+    // when helpers stopped being governed by the contract.
+    for (const [tier, target] of [['Tier 0', '.git'], ['Tier 0', '.agent/tasks'], ['Tier 1', '.claude/hooks']]) {
+      const d = run(asAgent('general-purpose', target), {})
+      expect(d.allow, target + ' was allowed as a bare subtree root: ' + d.reason).toBe(false)
+      expect(d.reason).toMatch(new RegExp(tier))
+    }
+    // A sibling whose name merely starts the same way is NOT the root.
+    expect(run(asAgent('general-purpose', '.gitignore'), {}).allow).toBe(true)
+  })
+
   it('still allows an ordinary Tier 2 write, so the tier checks are not deny-all', () => {
     expect(run(asAgent('general-purpose', 'src/ordinary.js'), {}).allow).toBe(true)
   })

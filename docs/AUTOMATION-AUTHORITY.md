@@ -406,8 +406,10 @@ so again where a reader is most likely to stop.
 
 The producer and the driver will be told apart structurally, not by trusting a
 name: a producer's tool call carries `agent_type`, and a driver's carries none.
-(Carrying `agent_type` does not by itself make a caller a producer — see
-"Who the guard governs" below for the set that is actually held to a contract.)
+(Structurally in *that* sense only: producer-versus-driver is key-absence, which
+no name can forge. Which of the agent_type-carrying callers is then held to a
+contract *is* decided by name, against a list — see "Who the guard governs"
+below, and the Tier 2 residual that comes with it.)
 
 ### Where the decision logic lives, and why
 
@@ -553,8 +555,9 @@ Proven by unit and adversarial specs against a real temporary repository:
 - Tier 0 is the **first** branch, and applies before the binding is parsed — so
   a floor write is refused even in a session with no binding at all.
 - Every invalid state denies **for a governed caller** — a producer, or any
-  agent_type the exemption list does not recognise, or anyone at all once a
-  binding is present: missing or malformed binding, a malformed hook event,
+  agent_type the exemption list does not recognise, or any caller *carrying an
+  agent_type* once a binding is present (never the driver, which carries none
+  and is not governed in either case): missing or malformed binding, a malformed hook event,
   missing, malformed or unsealed contract, id/path/filename mismatch, stale
   seal, digest mismatch, bad path grammar, invalid grant, out-of-scope path,
   unresolvable realpath. The qualifier is load-bearing and new: a *recognised

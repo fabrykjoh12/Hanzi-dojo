@@ -622,6 +622,30 @@ export function resolveWithin(root, target, { realpath = realpathSync, lstat = l
 }
 
 /**
+ * Does this path name the ROOT of a `dir/**` pattern, rather than something
+ * inside it?
+ *
+ * `covers('.git/**', '.git')` is false: the subtree test is a prefix match on
+ * `.git/`, and `.git` does not start with `.git/`. That is right for `covers`,
+ * which answers "is this path within the pattern", and it is why this is a
+ * separate question rather than a change to it — `covers` is at parity with the
+ * canonical validator and a parity spec would fail if it drifted.
+ *
+ * It matters because a directory is not always a directory. In a git WORKTREE
+ * `.git` is a regular FILE holding a gitdir pointer, and this repository's
+ * parallel-work flow uses worktrees. Overwriting it detaches the worktree from
+ * its repository. `.claude/hooks` and `.agent/tasks` are the same shape of
+ * question even where writing them would fail for being directories: a floor
+ * that stops at the children of the thing it names is not a floor.
+ *
+ * Used only by the exemption below. The producer path never reaches an allow
+ * without a positive scope match, so a bare subtree root fails there already.
+ */
+function isSubtreeRoot(pattern, relative) {
+  return pattern.endsWith('/**') && relative === pattern.slice(0, -3)
+}
+
+/**
  * THE DECISION.
  *
  * Order is load-bearing and each step is a gate, not a hint:
@@ -771,12 +795,12 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
       const { relative, error: resolveError } = resolveWithin(root, String(target), { realpath, lstat, cwd: event?.cwd })
       if (resolveError) return deny(resolveError)
       for (const f of FLOOR) {
-        if (covers(f, relative)) {
+        if (covers(f, relative) || isSubtreeRoot(f, relative)) {
           return deny('Tier 0: "' + target + '" resolves to ' + relative + ', on the absolute floor (' + f + ')')
         }
       }
       for (const p of PROTECTED_TIER) {
-        if (covers(p, relative)) {
+        if (covers(p, relative) || isSubtreeRoot(p, relative)) {
           return deny('Tier 1: "' + target + '" resolves to ' + relative + ', in the protected control plane (' + p +
             '), which only a granted contract may authorize — and "' + agentType + '" carries no bound contract')
         }
