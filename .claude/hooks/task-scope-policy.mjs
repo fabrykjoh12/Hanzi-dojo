@@ -681,8 +681,10 @@ export function resolveWithin(root, target, { realpath = realpathSync, lstat = l
  * contract may authorise git internals, so the two halves belong in one change
  * — and `tools/verify-task-contracts.mjs` is outside this task's scope. Filed
  * as its own task (FAB-60) with the reproduction attached. It IS recorded here —
- * this paragraph, the doc and a spec all describe it — but nothing in the
- * repository *tracks* it as work, so the tracker is where the fix is scheduled. Until then it is a
+ * this paragraph and the authority doc both describe it — but no spec asserts
+ * the governed-path behaviour (the specs cover the exempt branch, which does
+ * refuse the root), and nothing in the repository *tracks* it as work. The
+ * tracker is where the fix is scheduled. Until then it is a
  * residual of the tier patterns — both tiers, not the floor alone — and not a
  * property of the exemption.
  */
@@ -854,9 +856,16 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
     for (const target of targets) {
       const { relative, error: resolveError } = resolveWithin(root, String(target), { realpath, lstat, cwd: event?.cwd })
       if (resolveError) return deny(resolveError)
+      // Split for the same reason the Tier 1 loop below is: the bare root is not
+      // ON the floor pattern — covers('.git/**', '.git') is false — so saying it
+      // is would assert a membership this module denies four times over.
       for (const f of FLOOR) {
-        if (covers(f, relative) || isSubtreeRoot(f, relative)) {
+        if (covers(f, relative)) {
           return deny('Tier 0: "' + target + '" resolves to ' + relative + ', on the absolute floor (' + f + ')')
+        }
+        if (isSubtreeRoot(f, relative)) {
+          return deny('Tier 0: "' + target + '" resolves to ' + relative + ', the root of the absolute floor (' + f +
+            '). Not inside the pattern, which is the residual isSubtreeRoot documents — refused here all the same')
         }
       }
       for (const p of PROTECTED_TIER) {
@@ -878,11 +887,12 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
         }
       }
     }
-    // Says what the branch ESTABLISHED, not what it hopes. All :825 proved is
-    // membership of the closed list — and the residual documented above is
-    // precisely that a renamed producer can hold one of those names, at which
-    // point "is not a task producer" would be the reverse of the truth. Same
-    // defect as the Tier 1 root message corrected below, in the allow direction.
+    // Says what the branch ESTABLISHED, not what it hopes: membership of the
+    // closed list AND no binding, which is what the guard above tested and what
+    // this string now reports. The residual documented earlier is precisely that
+    // a renamed producer can hold one of those names, at which point "is not a
+    // task producer" would have been the reverse of the truth — the same defect
+    // as the tier root messages above, in the allow direction.
     return allow('"' + agentType + '" is on the closed exemption list, and the session carries no contract binding')
   }
 

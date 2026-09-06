@@ -1050,6 +1050,15 @@ describe('who the policy governs', () => {
       expect(d.allow, target + ' was allowed as a bare subtree root: ' + d.reason).toBe(false)
       expect(d.reason).toMatch(new RegExp(tier))
     }
+    // The two Tier 0 sentences must differ for the same reason the Tier 1 pair
+    // does: the bare root is not ON the floor pattern, so saying it is asserts a
+    // membership the module denies. Pinned so the split cannot be collapsed.
+    const floorRoot = run(asAgent('general-purpose', '.git'), {})
+    expect(floorRoot.reason).toMatch(/the root of the absolute floor/)
+    expect(floorRoot.reason, 'the bare root claims to be inside the pattern').not.toMatch(/, on the absolute floor/)
+    const inside = run(asAgent('general-purpose', '.git/config'), {})
+    expect(inside.reason).toMatch(/on the absolute floor/)
+
     // A sibling whose name merely starts the same way is NOT the root.
     expect(run(asAgent('general-purpose', '.gitignore'), {}).allow).toBe(true)
 
@@ -1182,10 +1191,13 @@ describe('what this change does NOT claim', () => {
     // protected module, which is the security artefact, and once in the
     // paragraph that DEFINES the floor.
     //
-    // What this spec is, exactly: a list of the phrasings that failure has
-    // actually taken, not a detector for the idea — and only those. A
-    // speculative entry was removed rather than left: it matched nothing, so it
-    // read as coverage while proving the list was not what this comment says. A new way of saying "nothing
+    // What this spec is, exactly: a list of the phrasings this failure has
+    // actually taken, not a detector for the idea. Entries ACCUMULATE and are
+    // not pruned when the text moves on — a phrasing that matches nothing at
+    // this head still guards against its return, which is the cheaper error.
+    // What is not kept is a phrasing that was never written: one such was
+    // removed, because a speculative entry reads as coverage the list does not
+    // have. So a dead entry here is expected; an unwritten one is not. A new way of saying "nothing
     // can reach Tier 0" passes it — the round-11 review found precisely that,
     // where the definitional sentence used none of the four phrasings then
     // listed. So this narrows the class rather than closing it, and the honest
@@ -1205,15 +1217,38 @@ describe('what this change does NOT claim', () => {
       'can(?:not| never)? authorize any of it',
     ].join('|'))
     const QUALIFIER = /bare[- ]subtree[- ]root|BARE SUBTREE ROOT|subtree root/i
-    const bare = []
-    for (const file of ['.claude/hooks/task-scope-policy.mjs', 'docs/AUTOMATION-AUTHORITY.md']) {
+    // Scanned on a WHITESPACE-NORMALISED join, not line by line. A prose file
+    // wraps, so a line-by-line scan misses any phrasing that straddles a
+    // newline — and one already did: re-wrapping the floor's opening sentence
+    // pushed "under any role, at any risk level" across two lines and silently
+    // disabled that entry, with nothing failing. A guard a re-flow can switch
+    // off is not a guard. Matching runs over the joined text; the offset is
+    // mapped back to a line so the window and the message stay readable.
+    const scanFile = (file) => {
       const lines = readFileSync(file, 'utf8').split('\n')
-      lines.forEach((line, i) => {
-        if (!ABSOLUTE.test(line)) return
+      const starts = []
+      let joined = ''
+      for (const line of lines) {
+        starts.push(joined.length)
+        joined += line.replace(/\s+/g, ' ') + ' '
+      }
+      const lineAt = (offset) => {
+        let lo = 0
+        for (let i = 0; i < starts.length; i++) if (starts[i] <= offset) lo = i
+        return lo
+      }
+      const out = []
+      for (const m of joined.matchAll(new RegExp(ABSOLUTE.source, 'g'))) {
+        const i = lineAt(m.index)
         const near = lines.slice(Math.max(0, i - 8), i + 9).join(' ')
-        if (!QUALIFIER.test(near)) bare.push(file + ':' + (i + 1) + ' — ' + line.trim())
-      })
+        if (!QUALIFIER.test(near)) out.push(file + ':' + (i + 1) + ' — ' + m[0])
+      }
+      return out
     }
+    const bare = [
+      ...scanFile('.claude/hooks/task-scope-policy.mjs'),
+      ...scanFile('docs/AUTOMATION-AUTHORITY.md'),
+    ]
     expect(bare, 'the tier absolute is stated with no exception in reach').toEqual([])
 
     // The SAME shape, for the ordering claim. Round 12 found "Tier 0 is the

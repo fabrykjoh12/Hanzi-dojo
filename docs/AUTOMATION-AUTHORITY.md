@@ -544,8 +544,9 @@ about the tree rather than a property the guard enforces. It is a property of th
 exemption, it predates this change, and the canonical validator has the same
 shape — so fixing it means fixing both halves in one change. That is filed as its own
 task (FAB-60) with the reproduction attached, rather than half-done here; note
-that nothing *in this repository* records it, so the issue tracker is the only
-place it lives.
+that the residual is recorded here — this paragraph and the policy's own comment
+both set it out — but nothing in the repository *tracks* it as work, so the
+tracker is where the fix is scheduled.
 
 **One more thing the exemption does not exempt, and it will be felt.** The
 resolution itself. A helper's target has to resolve inside the repository before
