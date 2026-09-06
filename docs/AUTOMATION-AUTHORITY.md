@@ -586,8 +586,9 @@ Proven by unit and adversarial specs against a real temporary repository:
   a floor write is refused even in a session with no binding at all.
 - Every invalid state denies **for a governed caller** — a producer, or any
   agent_type the exemption list does not recognise, or any caller *carrying an
-  agent_type* once a binding is present (never the driver, which carries none
-  and is not governed in either case): missing or malformed binding, a malformed hook event,
+  agent_type* once a binding is present (never the driver on any of these —
+  except a malformed event, which is refused before the caller is even read, so
+  it denies for everyone): missing or malformed binding, a malformed hook event,
   missing, malformed or unsealed contract, id/path/filename mismatch, stale
   seal, digest mismatch, bad path grammar, invalid grant, out-of-scope path,
   unresolvable realpath. The qualifier is load-bearing and new: a *recognised

@@ -67,9 +67,20 @@ import { lstatSync, readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 
 // ---------------------------------------------------------------------------
-// TIER 0 — the absolute floor. Checked first, before the binding is even parsed,
-// because no contract and no grant can authorize any of it. A copy of
-// ALWAYS_FORBIDDEN, pinned to the canonical list by a parity spec.
+// TIER 0 — the absolute floor. Checked before the binding is even parsed (only
+// the event-shape and caller-identity gates run earlier), because no grant can
+// authorize any of it and no contract is meant to.
+//
+// "No contract" is the half that is not quite true, and saying so here is the
+// point of this paragraph. A `dir/**` entry does not cover its own root —
+// `covers('.git/**', '.git')` is false in both directions — so a contract
+// naming a BARE SUBTREE ROOT in ordinary allowed_paths is refused by nothing:
+// not the containment check below, not the resolved loop in decide(), not the
+// canonical validator. Everything INSIDE the subtree is unauthorisable as
+// stated. See isSubtreeRoot for the whole account and FAB-60 for the fix, which
+// has to move both this module and the validator together.
+//
+// A copy of ALWAYS_FORBIDDEN, pinned to the canonical list by a parity spec.
 // ---------------------------------------------------------------------------
 export const FLOOR = [
   '.agent/tasks/**',
@@ -310,9 +321,18 @@ export function contractSecurityViolations(contract, { grants = GRANTS, root = '
     }
   }
 
-  // Ordinary allowed_paths may reach neither tier. The floor is unauthorisable
-  // outright; Tier 1 is reachable only through a grant, so naming it in
-  // allowed_paths is the exact escalation the tier exists to prevent.
+  // Ordinary allowed_paths may reach neither tier — with one exception this
+  // loop does not catch. The floor is meant to be unauthorisable outright and
+  // Tier 1 reachable only through a grant, since naming it in allowed_paths is
+  // the exact escalation the tiers exist to prevent.
+  //
+  // What the test below misses: a BARE SUBTREE ROOT. It asks covers() in both
+  // directions, and neither relates `.git` to `.git/**` or `.claude/hooks` to
+  // `.claude/hooks/**`, so such an entry raises nothing here, survives
+  // effectiveScope, and is matched exactly by the scope test in decide().
+  // Verified against this module, not reasoned about. The canonical validator
+  // has the identical shape, which is why the fix is FAB-60 and spans both
+  // rather than being patched here — see isSubtreeRoot.
   const allowed = Array.isArray(contract.allowed_paths) ? contract.allowed_paths.filter(isNonEmptyString) : []
   for (const a of allowed) {
     if (pathGrammarError(a)) continue

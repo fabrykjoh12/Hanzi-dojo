@@ -1060,9 +1060,9 @@ describe('who the policy governs', () => {
     // into the absent case put `agent_type: ['task-producer']` through the one
     // unconditional allow this policy has.
     // The REASON is asserted for every case, not just the allow/deny. Without
-    // it five of these six pass for an adjacent reason: none is on the
-    // exemption list, so with this branch deleted they fall through to
-    // parseBinding and deny for "no binding" instead. That is the same trap
+    // it ALL SIX pass for an adjacent reason: none is on the exemption list, so
+    // with this branch deleted every one falls through to parseBinding and
+    // denies for "no binding" instead. That is the same trap
     // this file names and fixes for path values further up.
     for (const bad of [['task-producer'], { name: 'task-producer' }, 42, '', '   ', true]) {
       const d = run(call('.claude/settings.json', { agent_type: bad }), {})
@@ -1150,6 +1150,34 @@ describe('what this change does NOT claim', () => {
     ])
     // The grant reaches the whole subtree; this contract deliberately does not.
     expect(contractFile.control_plane.protected_paths).not.toContain('.claude/hooks/**')
+  })
+
+  it('never states the tier absolute without the exception beside it', () => {
+    // The class, not the instance. Three review rounds running caught the same
+    // failure: the bare-subtree-root residual gets documented in one place and
+    // the sentences asserting the opposite are left standing elsewhere — twice
+    // inside the protected module itself, which is the security artefact.
+    // Fixing each occurrence by hand did not stop it recurring, so the rule is
+    // mechanical now: anywhere the absolute is stated, the exception is within
+    // reach of the same reader.
+    const ABSOLUTE = /unauthorisable|may reach neither tier|nothing can reach|unreachable through/
+    const QUALIFIER = /bare[- ]subtree[- ]root|BARE SUBTREE ROOT|subtree root/i
+    const bare = []
+    for (const file of ['.claude/hooks/task-scope-policy.mjs', 'docs/AUTOMATION-AUTHORITY.md']) {
+      const lines = readFileSync(file, 'utf8').split('\n')
+      lines.forEach((line, i) => {
+        if (!ABSOLUTE.test(line)) return
+        const near = lines.slice(Math.max(0, i - 8), i + 9).join(' ')
+        if (!QUALIFIER.test(near)) bare.push(file + ':' + (i + 1) + ' — ' + line.trim())
+      })
+    }
+    expect(bare, 'the tier absolute is stated with no exception in reach').toEqual([])
+    // And the rule is only worth anything if the absolute is actually stated
+    // somewhere — otherwise a rewrite that deleted every occurrence would pass.
+    expect(bare.length + 1).toBeGreaterThan(0)
+    const stated = ['.claude/hooks/task-scope-policy.mjs', 'docs/AUTOMATION-AUTHORITY.md']
+      .flatMap(f => readFileSync(f, 'utf8').split('\n').filter(l => ABSOLUTE.test(l)))
+    expect(stated.length, 'no occurrence left to guard — this spec has gone vacuous').toBeGreaterThan(2)
   })
 
   it('documents the residuals rather than claiming they are closed', () => {
