@@ -1188,6 +1188,21 @@ describe('what this change does NOT claim', () => {
       })
     }
     expect(bare, 'the tier absolute is stated with no exception in reach').toEqual([])
+
+    // The SAME shape, for the ordering claim. Round 12 found "Tier 0 is the
+    // first branch" restated in a second place after the first was corrected —
+    // the identical one-site-fixed failure, in a sentence the list above cannot
+    // see because it enumerates authorisability phrasings only. Four denies now
+    // precede the floor check, so any claim that it comes first has to say so.
+    const ORDERING = /Tier 0 is the \*\*first\*\* branch|Tier 0 is the first branch|floor is checked first|Checked first/
+    const ordering = []
+    for (const file of ['.claude/hooks/task-scope-policy.mjs', 'docs/AUTOMATION-AUTHORITY.md']) {
+      const lines = readFileSync(file, 'utf8').split('\n')
+      lines.forEach((line, i) => {
+        if (ORDERING.test(line)) ordering.push(file + ':' + (i + 1) + ' — ' + line.trim())
+      })
+    }
+    expect(ordering, 'Tier 0 is no longer the first branch; four denies precede it').toEqual([])
     // And the rule is only worth anything if the absolute is actually stated
     // somewhere — otherwise a rewrite that deleted every occurrence would pass
     // this vacuously. That is the assertion below; an earlier draft had

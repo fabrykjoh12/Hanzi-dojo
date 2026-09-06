@@ -594,11 +594,14 @@ change to close the residual, and that waits on the contract-lifecycle work.
 Proven by unit and adversarial specs against a real temporary repository:
 
 - Tier 0 is checked **before the binding is parsed** — so a floor write is
-  refused even in a session with no binding at all. Two gates run ahead of it,
-  both about the event rather than the path: a malformed event, and an
-  `agent_type` that is present but is not a usable name. Either denies on its
-  own reason, so a floor write by such a caller is refused for identity rather
-  than for the floor. It is refused either way.
+  refused even in a session with no binding at all. It is not the first gate,
+  though: four denies run ahead of it. Two are about the event and the caller —
+  an event that is not an object, and an `agent_type` present but not a usable
+  name — and two are about the path itself: a write carrying no path, and one
+  carrying a path that is not a string. Each denies on its own reason, so a
+  floor write by such a caller is refused for *that* reason rather than for the
+  floor. It is refused either way, which is the property that matters; the
+  ordering only decides which sentence the deny carries.
 - Every invalid state denies **for a governed caller** — a producer, or any
   agent_type the exemption list does not recognise, or any caller *carrying an
   agent_type* once a binding is present (never the driver on any of these —
@@ -669,8 +672,8 @@ Proven by unit and adversarial specs against a real temporary repository:
 
 **The hook is intentionally inert.** Nothing registers it in
 `.claude/settings.json`; that is a separate change under `runtime-policy-maintenance`.
-So Tier 0 is the first branch of *protected hook logic that has been proven in
-tests* — it is **not** globally enforced at runtime, and this change does not
+So Tier 0 is an early branch of *protected hook logic that has been proven in
+tests* — four event- and path-shape denies precede it, as above — it is **not** globally enforced at runtime, and this change does not
 make it so. The **static Tier-0 deny rules** arrive with registration too; note
 that only `Edit(path)` and `Read(path)` rules are consulted, since `Write(path)`
 rules are accepted and silently never checked.
