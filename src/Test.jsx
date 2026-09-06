@@ -4,7 +4,8 @@ import { getTestStatus, getAttemptsToday, canStartTest } from './testLogic'
 import { fetchPagedResult } from './supabasePaging'
 import { getLevelLabel, getNextLevel, shuffle } from './utils'
 import { languageTheme, langAttr } from './languageTheme'
-import { schedule } from './srs'
+import { testWrongAnswerWrite, testResultSummaryLine } from './testReschedule'
+import { gradeCardWrite, newOpId } from './syncQueue'
 import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
@@ -229,6 +230,7 @@ export default function Test({ session, profile, track, onBack }) {
   const [lastResult, setLastResult] = useState(null)
   // Two-step in-UI confirm for ending the quiz early (no native dialogs).
   const [confirmingEnd, setConfirmingEnd] = useState(false)
+  const [rescheduleError, setRescheduleError] = useState(null)
 
   const { accentHex, fontFamily, languageName } = getLanguageDetails(profile, track)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
@@ -359,13 +361,29 @@ export default function Test({ session, profile, track, onBack }) {
       const cardByVocabId = {}
       ;(wrongCards || []).forEach(c => { cardByVocabId[c.vocab_id] = c })
 
+      // Through the canonical grade write, not a bare UPDATE. See
+      // testReschedule.js: the direct write left `reps` without a review log,
+      // and on a prior-knowledge claim it was rejected outright by
+      // cards_unverified_claim_is_inert and the error was never read — so the
+      // learner got the word wrong and the card was neither rescheduled nor
+      // un-claimed.
+      let rescheduleFailed = null
       for (const w of finalWrong) {
-        const card = cardByVocabId[w.id]
-        if (card) {
-          const { updates } = schedule(card, 0)
-          await supabase.from('cards').update(updates).eq('id', card.id).eq('user_id', session.user.id)
+        const payload = testWrongAnswerWrite(cardByVocabId[w.id])
+        if (!payload) continue
+        const write = await gradeCardWrite(supabase, {
+          userId: session.user.id,
+          ...payload,
+          opId: newOpId(),
+        })
+        // Not swallowed. One failure here means a word the learner demonstrably
+        // does not know keeps counting as known, which is worth saying out loud.
+        if (!write.ok) {
+          rescheduleFailed = write.error
+          console.error('[Test] wrong-answer reschedule failed', w.id, write.error)
         }
       }
+      if (rescheduleFailed) setRescheduleError(rescheduleFailed.message || 'Some words could not be rescheduled.')
     }
 
     if (passed) {
@@ -741,9 +759,11 @@ export default function Test({ session, profile, track, onBack }) {
         </div>
 
         <p style={bodyTextStyle}>
-          {lastResult.passed
-            ? 'All correct. Your next level is now unlocking.'
-            : lastResult.wrongCount + ' wrong words have been returned to review. You need 100% to pass.'}
+          {testResultSummaryLine({
+            passed: lastResult.passed,
+            wrongCount: lastResult.wrongCount,
+            rescheduleFailed: Boolean(rescheduleError),
+          })}
         </p>
 
         {!lastResult.passed && attempts.count < 3 && (
