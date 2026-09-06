@@ -492,13 +492,19 @@ containment of one class of mistake: a helper reaching a protected path through
 the ordinary file tools, which is how it would happen by accident. A helper
 that means to get past them can.
 
-**A residual in the floor's pattern semantics, found while writing the above.**
-`.git/**` does not cover `.git` itself — the subtree test is a prefix match on
-`.git/` — and the floor carries no exact `.git` entry. The exemption compensates
-for that in its own branch, but the *governed* path does not: a contract naming
-`.git` in ordinary `allowed_paths` is accepted by `npm run verify:tasks` and
-authorises the write. In a git worktree `.git` is a regular file, so this is not
-theoretical. It is a property of the pattern semantics rather than of the
+**A residual in the tier patterns, found while writing the above.** `.git/**`
+does not cover `.git` itself — the subtree test is a prefix match on `.git/` —
+and neither tier carries an exact entry for its own subtree roots. The exemption
+compensates for that in its own branch, but the *governed* path does not: a
+contract naming `.git` in ordinary `allowed_paths` is accepted by
+`npm run verify:tasks` and authorises the write. In a git worktree `.git` is a
+regular file, so this is not theoretical.
+
+**It is not only the floor.** `.claude/hooks` behaves the same way — a Tier 1
+subtree root in ordinary `allowed_paths` raises no violation and is matched
+exactly by the scope test, with no grant anywhere. `.claude/hooks` is always a
+directory, so the write fails for that reason rather than because the guard
+stopped it, which is luck rather than containment. It is a property of the pattern semantics rather than of the
 exemption, it predates this change, and the canonical validator has the same
 shape — so fixing it means fixing both halves in one change, which is tracked
 separately rather than half-done here.
@@ -580,7 +586,9 @@ Proven by unit and adversarial specs against a real temporary repository:
   would otherwise hand a producer the control plane with no grant whatsoever.
   What the guard checks, before any scope is consulted: path shapes and grammar
   for `allowed_paths` and `forbidden_paths`, no Tier 0 and no Tier 1 reachable
-  through `allowed_paths`, and for a grant its closed key set, owning role, risk
+  through `allowed_paths` — *except a bare subtree root, which neither direction
+  of the pattern test relates to its own `dir/**` pattern; see the residual
+  above* — and for a grant its closed key set, owning role, risk
   floor, mapping and tier containment, and no overlap with `forbidden_paths`.
   Any one of those denies the whole decision. "Invalid grant" is measured
   against the canonical rules rather than a subset: the owning role and the `r3`

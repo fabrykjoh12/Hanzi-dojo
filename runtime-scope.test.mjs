@@ -1098,6 +1098,13 @@ describe('who the policy governs', () => {
     }
     // Whitespace is the same as absent, matching parseBinding's own test.
     expect(run(asAgent('general-purpose', 'src/thing.js'), { [BINDING_ENV]: '   ' }).allow).toBe(true)
+
+    // And so is null. process.env cannot produce it, but the presence test
+    // spells it out, and an unpinned conjunct is an unpinned conjunct: without
+    // it String(null) is 'null', which is truthy, so a null binding would read
+    // as bound and deny. Stricter than intended rather than looser — still not
+    // what the line says it does.
+    expect(run(asAgent('general-purpose', 'src/thing.js'), { [BINDING_ENV]: null }).allow).toBe(true)
   })
 
   it('leaves the trusted driver alone, bound session or not', () => {
