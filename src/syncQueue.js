@@ -19,7 +19,80 @@ import { outboxAdd, outboxAll, outboxDelete, outboxCount } from './offline'
 export function enqueueGrade(op) {
   // Stamp a stable id so a replayed grade can be recognised server-side.
   // Assigned after the spread so an explicit `opId: undefined` can't erase it.
+  //
+  // Callers also pass `language` and `system`. That is what lets a progress
+  // reset drop exactly this track's queued writes and leave another language's
+  // alone — see dropQueuedGradesForTrack below.
   return outboxAdd({ kind: 'grade', ...op, opId: (op && op.opId) || newOpId() })
+}
+
+// ── Reset: a queued grade for a deleted card must not outlive the cards ─────
+//
+// `reset_language_progress` DELETES this track's cards. Anything already in the
+// outbox for those cards is a write against rows that no longer exist, and
+// replaying it does one of two bad things:
+//
+//   - An op with `cardId: null` — a card first graded offline, so no row was
+//     ever written — takes grade_card's INSERT branch and RECREATES the card at
+//     its pre-reset state, real reps and stability included. The reset is
+//     silently, partially undone, and the learner is not told.
+//   - An op with `cardId` set raises 'Card not found'. replayOp returns
+//     ok:false, flushOutbox leaves the row in place, and there is no attempt
+//     counter — so it is retried forever and pendingWrites() never returns to
+//     zero. A permanent poison pill in a queue the UI reports on.
+//
+// Neither is hypothetical: outboxClear() exists and is called from exactly one
+// place, account deletion. The reset paths never called anything.
+//
+// Why not outboxClear() here: it wipes the WHOLE outbox, and a reset is
+// per-language. Discarding another language's unsynced grades to clean up this
+// one trades a silent bug for a silent data loss.
+
+/**
+ * Does this queued op belong to the track being reset?
+ *
+ * Pure, and deliberately the only place the rule lives.
+ *
+ * Non-grade ops (analytics, story reads, story claims) are NOT dropped: they
+ * are not writes against `cards`, so the delete cannot strand them.
+ *
+ * An untagged grade op — one enqueued before this stamp existed and not yet
+ * flushed — IS dropped, and that is a judgement worth stating rather than
+ * hiding. It cannot be attributed to a language, so the choice is between
+ * possibly discarding another track's unsynced grade and possibly resurrecting
+ * a card the learner explicitly asked to delete. A reset is an explicit,
+ * destructive, confirmed action; silently undoing part of it is the worse
+ * failure, and the window for an untagged op is one app version and one
+ * offline session wide.
+ */
+export function gradeOpBelongsToTrack(op, track) {
+  if (!op || op.kind !== 'grade') return false
+  if (!track || !track.language || !track.system) return false
+  if (!op.language && !op.system) return true   // untagged: see above
+  return op.language === track.language && op.system === track.system
+}
+
+/**
+ * Drop this track's queued grades. Call it AFTER a reset RPC succeeds — before
+ * would leave the queue emptied for a reset that then failed.
+ *
+ * Returns how many ops were dropped, so a caller can report it. Never throws:
+ * a browser with no IndexedDB has no outbox to drain, and a reset must not fail
+ * because of it.
+ */
+export async function dropQueuedGradesForTrack(track) {
+  try {
+    const rows = (await outboxAll()) || []
+    let dropped = 0
+    for (const row of rows) {
+      if (!gradeOpBelongsToTrack(row.op, track)) continue
+      await outboxDelete(row.id)
+      dropped += 1
+    }
+    return dropped
+  } catch {
+    return 0
+  }
 }
 
 // A client-generated uuid identifying one grade, so the same grade written

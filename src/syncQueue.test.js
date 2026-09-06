@@ -12,6 +12,7 @@ vi.mock('./offline', () => ({
 import {
   dayCountsOf, nextActivityCounts, isMissingRpc, newOpId,
   gradeCardWrite, resetGradeRpcProbe, enqueueGrade, flushOutbox,
+  gradeOpBelongsToTrack,
 } from './syncQueue'
 
 // ── A minimal chainable Supabase double ─────────────────────────────────────
@@ -324,5 +325,77 @@ describe('offline replay', () => {
     expect(out.flushed).toBe(0)
     expect(store.rows).toHaveLength(1)
     expect(sb.calls.upsert).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FAB-28 finding 4: a reset must not leave queued writes for deleted cards.
+// ---------------------------------------------------------------------------
+// reset_language_progress DELETES this track's cards. outboxClear() existed and
+// was called from exactly one place — account deletion — so every reset path
+// left the outbox untouched. Replaying one of those ops either recreates a
+// deleted card at its pre-reset state (cardId: null takes grade_card's INSERT
+// branch) or wedges the queue forever on 'Card not found'.
+describe("a progress reset drops that track's queued grades, and only those", () => {
+  const CN = { language: 'chinese', system: 'hsk_3' }
+  const JA = { language: 'japanese', system: 'jlpt' }
+
+  const grade = (over = {}) => ({
+    kind: 'grade', userId: 'u1', vocabId: 'v1', cardId: 'c1',
+    updates: {}, opId: 'op-1', ...over,
+  })
+
+  it('drops a queued grade for the track being reset', () => {
+    expect(gradeOpBelongsToTrack(grade({ ...CN }), CN)).toBe(true)
+  })
+
+  it("keeps another language's queued grade", () => {
+    // The reason this is a predicate and not outboxClear(): a reset is
+    // per-language, and discarding another track's unsynced grades to tidy up
+    // this one trades a silent bug for silent data loss.
+    expect(gradeOpBelongsToTrack(grade({ ...JA }), CN)).toBe(false)
+  })
+
+  it('keeps a grade for the same language on a different system', () => {
+    expect(gradeOpBelongsToTrack(grade({ language: 'chinese', system: 'other' }), CN)).toBe(false)
+  })
+
+  it('never drops a non-grade op', () => {
+    // Analytics, story reads and story claims are not writes against `cards`,
+    // so deleting cards cannot strand them. Dropping them would lose a story
+    // read the learner earned.
+    for (const kind of ['analytics', 'storyRead', 'storyClaim']) {
+      expect(gradeOpBelongsToTrack({ kind, ...CN }, CN), kind).toBe(false)
+    }
+  })
+
+  it('drops an UNTAGGED grade, deliberately', () => {
+    // An op enqueued before the language stamp existed and not yet flushed. It
+    // cannot be attributed, so the choice is between possibly discarding
+    // another track's unsynced grade and possibly resurrecting a card the
+    // learner explicitly asked to delete. A reset is explicit, confirmed and
+    // destructive; silently undoing part of it is the worse failure.
+    expect(gradeOpBelongsToTrack(grade(), CN)).toBe(true)
+  })
+
+  it('drops nothing when the track is unknown', () => {
+    // A caller with no track must not accidentally empty the queue.
+    expect(gradeOpBelongsToTrack(grade({ ...CN }), null)).toBe(false)
+    expect(gradeOpBelongsToTrack(grade({ ...CN }), {})).toBe(false)
+    expect(gradeOpBelongsToTrack(grade({ ...CN }), { language: 'chinese' })).toBe(false)
+  })
+
+  it('covers the op that RESURRECTS a deleted card', () => {
+    // The worst of the two outcomes, and the one that is silent. A card first
+    // graded offline has no row, so cardId is null; grade_card's INSERT branch
+    // recreates it with the pre-reset reps and stability.
+    const resurrector = grade({ ...CN, cardId: null, updates: { state: 'review', reps: 6, stability: 30 } })
+    expect(gradeOpBelongsToTrack(resurrector, CN)).toBe(true)
+  })
+
+  it('covers the op that WEDGES the queue', () => {
+    // The other outcome: 'Card not found' -> ok:false -> left in place, with no
+    // attempt counter, so pendingWrites() never returns to zero.
+    expect(gradeOpBelongsToTrack(grade({ ...CN, cardId: 'gone' }), CN)).toBe(true)
   })
 })

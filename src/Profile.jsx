@@ -8,6 +8,8 @@ import { isMastered } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
 import { evaluateAchievements } from './achievements'
 import { todayStr } from './streak'
+import { dropQueuedGradesForTrack } from './syncQueue'
+import { clearPreparedSession } from './sessionPrep'
 import { monthReview, monthHeadline, monthShareText } from './monthReview'
 import { knownWordMap, readableSummary, rowA11yLabel } from './knownWordMap'
 import { last30A11yLabel } from './reviewAccuracy'
@@ -293,6 +295,12 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       return
     }
 
+    // The cards this track had are gone. Any queued offline grade for them
+    // would either recreate a deleted card at its pre-reset state or wedge the
+    // outbox forever on 'Card not found' — so they go too, and only they.
+    await dropQueuedGradesForTrack(targetTrack)
+    clearPreparedSession()
+
     setResetting(false)
     setConfirmingReset(false)
     setClearHistory(false)
@@ -340,6 +348,11 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       setRemoving(false)
       return
     }
+
+    // Same reason as the reset panel above: the cards are deleted, so their
+    // queued writes must not outlive them.
+    await dropQueuedGradesForTrack({ language: langCode, system: target.system })
+    clearPreparedSession()
 
     const { error } = await supabase
       .from('language_tracks')
