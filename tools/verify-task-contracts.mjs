@@ -514,6 +514,119 @@ export function covers(outer, inner) {
 }
 
 /**
+ * THE VERIFICATION COMMAND GRAMMAR — closed, and the same one at both ends.
+ *
+ * `verification` is a list of strings in a sealed contract, and this grammar is
+ * the only thing that turns one into something the automated driver will run.
+ * `findContractViolations` refuses a contract carrying an entry it cannot parse,
+ * so `sh -c "curl … | sh"`, `echo $SECRET > /tmp/leak` and
+ * `npm run build && rm -rf dist` do not seal. Writing a string into
+ * `verification` is not a way to hand runtime authority to anyone who can seal
+ * a contract, and `production_effect: none` never constrained that.
+ *
+ * IT LIVES HERE, in the canonical contract module, rather than beside the
+ * executor that runs it. The reason is structural, not stylistic:
+ * `tools/review-protocol.mjs` already imports from this file, so defining the
+ * grammar there and importing it back would close a cycle. It is re-exported
+ * from there instead, which leaves every existing import site unchanged.
+ *
+ * VALIDATION DOES NOT REPLACE THE EXECUTOR'S REFUSAL, and the executor keeps
+ * it. A contract sealed before this rule existed can still carry an unsupported
+ * command; a contract can be loaded from an older commit; and a digest proves a
+ * contract was not edited, never that it was validated by a version of this
+ * file that had this rule. Two refusals over one grammar — the second is not
+ * redundancy, it is the only one that holds for a contract this process never
+ * validated.
+ *
+ * NOTHING HERE RUNS `npx`. That was measured, not assumed: with the binary
+ * absent, `npx vitest …` requested https://registry.npmjs.org/vitest, and
+ * `npx --no` requested it too. `npx` resolves the package spec remotely before
+ * deciding it could have used a local copy, so it is a silent path to fetching
+ * and executing an arbitrary version from the network — a supply-chain hole
+ * dressed as a test runner. The `npx <bin> …` FORM is still accepted, because
+ * it is what contracts are written with, but it resolves to the local
+ * `node_modules/.bin/<bin>` and fails closed when that file is not there.
+ *
+ * WHAT THIS DOES NOT BUY, said out loud: `npm run <script>` runs a script
+ * defined by the REVIEWED COMMIT'S package.json, which runs arbitrary code from
+ * the commit under review. That is not a hole in the grammar — it is what
+ * verification IS. Running the tests is running the code.
+ */
+export const VERIFICATION_FORMS = [
+  {
+    form: 'npm run <script>',
+    pattern: /^npm run ([A-Za-z0-9][A-Za-z0-9:_-]*)$/,
+    plan: (m) => ({ kind: 'npm-run', command: 'npm', args: ['run', m[1]] }),
+  },
+  {
+    form: 'npx <bin> <args…>  (executed as node_modules/.bin/<bin>, never via npx)',
+    pattern: /^npx ([a-z0-9][a-z0-9-]*) (run) ([^\s]+)$/,
+    plan: (m) => ({ kind: 'local-bin', bin: m[1], args: [m[2], m[3]], pathArg: m[3] }),
+  },
+]
+
+/** Anything that could chain, redirect, substitute, or reach a second command. */
+const SHELL_METACHARACTERS = /[;&|<>$`\\(){}\[\]*?!~"'\n\r]/
+
+/**
+ * A repository-relative path that cannot leave the worktree.
+ *
+ * The previous grammar allowed dots anywhere, so `a/../../outside.test.mjs` and
+ * `a//b.test.mjs` were accepted — a test path that escapes the repository is a
+ * way to make the verifier read and execute something outside the commit under
+ * review. Segments are checked individually rather than the string being
+ * normalised, because normalising first and validating after is how traversal
+ * bugs are written.
+ */
+export function verificationPathError(p) {
+  if (!isNonEmptyString(p)) return 'path is empty'
+  if (p.startsWith('/')) return 'path is absolute'
+  const segments = p.split('/')
+  for (const seg of segments) {
+    if (seg === '') return 'path has an empty or repeated segment: ' + JSON.stringify(p)
+    if (seg === '.' || seg === '..') return 'path has a "' + seg + '" segment and could leave the worktree'
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(seg)) return 'path segment is not a plain name: ' + JSON.stringify(seg)
+  }
+  return null
+}
+
+/**
+ * Parse one contract verification string into an execution plan, or explain the
+ * refusal. Never returns a shell string: the caller spawns an executable with
+ * an argv and no shell, so there is no parsing layer left to be clever about.
+ */
+export function parseVerificationCommand(command) {
+  if (!isNonEmptyString(command)) {
+    return { plan: null, error: 'verification command is not a non-empty string' }
+  }
+  const meta = command.match(SHELL_METACHARACTERS)
+  if (meta) {
+    return {
+      plan: null,
+      error: 'refused: contains the shell metacharacter ' + JSON.stringify(meta[0]) +
+        '. Verification runs without a shell, so chaining, redirection and ' +
+        'substitution are not available and are not silently ignored',
+    }
+  }
+  for (const { pattern, plan } of VERIFICATION_FORMS) {
+    const m = command.match(pattern)
+    if (!m) continue
+    const p = plan(m)
+    if (p.pathArg) {
+      const err = verificationPathError(p.pathArg)
+      if (err) return { plan: null, error: 'refused: ' + err }
+    }
+    return { plan: p, error: null }
+  }
+  return {
+    plan: null,
+    error: 'refused: not a supported verification form. Supported: ' +
+      VERIFICATION_FORMS.map(f => f.form).join('; ') +
+      '. An unsupported command is refused rather than guessed at',
+  }
+}
+
+/**
  * Every rule, over an already-parsed contract. Returns violation strings —
  * empty means the contract is well-formed. `knownIds` lets dependency
  * resolution be checked across the whole set; `npmScripts` lets verification
@@ -638,10 +751,42 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   }
 
   // ---- verification ------------------------------------------------------
-  if (isStringArray(contract.verification) && npmScripts) {
+  //
+  // Two checks, and the order matters.
+  //
+  // FIRST: can the automated driver execute this command at all? A contract
+  // whose sealed verification plan the driver refuses is not automation-ready.
+  // It used to seal cleanly and then fail closed later, during review, with
+  // `executed: false` — the evidence rules treat that as a blocker, so the work
+  // stopped at the last possible moment instead of the first. Moving the
+  // refusal to seal time is the whole point of this check. The message carries
+  // the parser's OWN error rather than a restatement, so a contract is rejected
+  // here with the same sentence the executor would have printed.
+  //
+  // This check does NOT need `npmScripts`: it is a fact about the grammar, not
+  // about this repository, and gating it on an optional argument would make an
+  // unrunnable contract seal for any caller that omitted one.
+  //
+  // SECOND, and only for a command that parsed: does the npm script it names
+  // exist? That IS a fact about the repository, so it needs `npmScripts` and is
+  // skipped without it.
+  //
+  // The script name comes from the PARSED PLAN and is never re-matched here. A
+  // second regex is how the two drift, and it already had: this check used to
+  // run /^npm run ([\w:-]+)$/, which accepts a leading underscore the grammar
+  // refuses. `npm run _internal` therefore reached this check, passed it if the
+  // script existed, sealed — and was then refused by the driver. That is the
+  // same mismatch as the one above, one level down, and deriving the name
+  // instead of re-matching it is what closes it rather than patching the regex.
+  if (isStringArray(contract.verification)) {
     for (const cmd of contract.verification) {
-      const m = cmd.match(/^npm run ([\w:-]+)$/)
-      if (m && !(m[1] in npmScripts)) {
+      const { plan, error } = parseVerificationCommand(cmd)
+      if (!plan) {
+        out.push(at + 'verification command cannot be executed by the automated driver: ' +
+          JSON.stringify(cmd) + ' — ' + error)
+        continue
+      }
+      if (npmScripts && plan.kind === 'npm-run' && !(plan.args[1] in npmScripts)) {
         out.push(at + 'verification names an npm script that does not exist: ' + cmd)
       }
     }

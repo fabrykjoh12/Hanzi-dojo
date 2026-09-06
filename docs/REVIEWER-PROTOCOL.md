@@ -200,12 +200,37 @@ the only one that counts, and it is bound to `head_sha`.
 #### The driver's execution authority is narrowed — and what that does not mean
 
 Handing the driver a shell would have been a bad trade for taking one away from
-the reviewer. `verification` is a list of strings in a sealed contract, and **the
-contract validator does not constrain them**: `sh -c "curl … | sh"`,
-`echo $SECRET > /tmp/leak` and `npm run build && rm -rf dist` all seal without
-complaint, and `production_effect: none` constrains none of it. So the executor
-refuses rather than the validator rejecting — which is also why this needed no
-schema change.
+the reviewer. `verification` is a list of strings in a sealed contract, and
+**one closed grammar decides both whether such a string may seal and whether it
+will run**. `sh -c "curl … | sh"`, `echo $SECRET > /tmp/leak` and
+`npm run build && rm -rf dist` are refused at both ends; `production_effect:
+none` never constrained any of it, and does not have to.
+
+*(Until FAB-57 the validator constrained nothing here. A contract carrying a
+command the driver could not execute — `node tools/verify-task-contracts.mjs`,
+or the two-path `npx vitest run a.mjs b.mjs` — sealed cleanly and then failed
+closed at review time as `executed: false`, which the evidence rules already
+treat as a blocker. The work stopped at the last possible moment instead of the
+first, and was called sealed the whole way. That is what "automation-ready"
+now excludes.)*
+
+The grammar is **defined in `tools/verify-task-contracts.mjs`** and re-exported
+by `tools/review-protocol.mjs`. The direction is forced rather than chosen: the
+protocol module already imports from the contract module, so defining it beside
+the executor and importing it back would close a cycle. A spec pins both the
+single definition and the one-way dependency.
+
+**The executor's refusal stays, and is not redundant.** Validation covers a
+contract *this process validated*; the executor covers every contract that
+reaches it — one sealed before this rule existed, or loaded from an older
+commit. A digest proves a contract was not edited, never that it was checked by
+a version of the validator that had this rule. Two refusals over one grammar.
+
+What this changed for a reviewer in practice: a contract whose verification the
+driver cannot run no longer produces a verification record at all. It is
+rejected when the driver loads it, with the parser's own words, and no evidence
+document is emitted — because a record of a run that did not happen is worse
+than no record.
 
 - **The contract string is never interpreted by a driver shell.** It is parsed
   to an explicit executable and argv, and spawned with `shell: false`. Note the

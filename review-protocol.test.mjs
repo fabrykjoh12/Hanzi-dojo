@@ -1909,6 +1909,45 @@ describe('there is no working-tree contract loader to fall back to', () => {
 // ---------------------------------------------------------------------------
 
 describe('verification runs under a closed grammar, without a shell', () => {
+  it('re-exports the ONE grammar rather than defining a second copy', async () => {
+    // FAB-57 moved the definition into the canonical contract module, because
+    // this module already imports from that one and the other direction would
+    // close a cycle. What matters downstream is that both names resolve to the
+    // SAME objects: a copy would satisfy every behavioural spec in this file on
+    // the day it was written, and drift the moment either side was edited.
+    // Identity, therefore, not deep equality.
+    const canonical = await import('./tools/verify-task-contracts.mjs')
+    expect(VERIFICATION_FORMS, 'a second VERIFICATION_FORMS array')
+      .toBe(canonical.VERIFICATION_FORMS)
+    expect(parseVerificationCommand).toBe(canonical.parseVerificationCommand)
+    expect(verificationPathError).toBe(canonical.verificationPathError)
+  })
+
+  it('the same grammar decides sealing, so an unrunnable command never seals', async () => {
+    const { findContractViolations } = await import('./tools/verify-task-contracts.mjs')
+    // The other half of FAB-57, asserted from this side too. The executor's
+    // refusal is not redundant with the validator's — a contract sealed before
+    // that rule existed, or loaded from an older commit, still reaches here —
+    // but the two must refuse the same set.
+    const c = {
+      id: 'grammar-probe',
+      goal: 'probe',
+      owner_role: 'workflow-authority',
+      risk: 'r1',
+      allowed_paths: ['src/**'],
+      forbidden_paths: [],
+      non_goals: ['none'],
+      acceptance_criteria: ['done'],
+      verification: ['node tools/x.mjs'],
+      production_effect: 'none',
+      dependencies: [],
+      stop_conditions: ['none'],
+    }
+    expect(parseVerificationCommand(c.verification[0]).plan).toBeNull()
+    expect(findContractViolations(c, { fileName: 'grammar-probe.json', skipDigest: true }).join('\n'))
+      .toMatch(/cannot be executed by the automated driver/)
+  })
+
   it('accepts the two forms this repository actually uses', () => {
     expect(parseVerificationCommand('npm run verify:pr').plan)
       .toEqual({ kind: 'npm-run', command: 'npm', args: ['run', 'verify:pr'] })
@@ -2002,7 +2041,24 @@ describe('verification runs under a closed grammar, without a shell', () => {
     expect(decide({ contract: c, result: cleanResult(c), verification: f }).verdict).toBe('BLOCKED')
   })
 
-  it('the EXECUTOR records a refusal as not-executed, end to end', () => {
+  it('the DRIVER refuses an unrunnable command at contract load, before executing anything', () => {
+    // This spec used to drive the EXECUTOR's refusal end to end and assert the
+    // recorded `executed: false`. FAB-57 moved the refusal earlier: the same
+    // grammar now runs inside findContractViolations, so a contract carrying an
+    // unrunnable command is not valid and the driver stops when it loads it.
+    //
+    // Both outcomes BLOCK, so nothing was weakened — the block simply happens
+    // sooner, and says why in the contract's own words rather than as an
+    // evidence finding derived from a run that did not happen.
+    //
+    // The executor's own refusal is NOT removed, and must not be: it is what
+    // holds for a contract this validator never saw. It is no longer reachable
+    // THROUGH A VALIDATED CONTRACT, which is exactly the change, so it is
+    // covered where it still is reachable — 'the executor never uses a shell
+    // and never invokes npx' below pins that the executor consults
+    // parseVerificationCommand, and the unit specs above pin that
+    // parseVerificationCommand refuses. Together those are the claim; an
+    // end-to-end path that validation now closes is not.
     const CLI = path.resolve('tools/review-task.mjs')
     const dir = mkdtempSync(path.join(tmpdir(), 'refuse-'))
     try {
@@ -2025,13 +2081,14 @@ describe('verification runs under a closed grammar, without a shell', () => {
 
       const out = spawnSync('node', [CLI, 'verify', '--task', 'evil', '--head', head],
         { cwd: dir, encoding: 'utf8' })
-      expect(out.status, out.stderr).toBe(0)
-      const ev = JSON.parse(out.stdout)
-      expect(ev.runs[0].executed, 'a refused command was recorded as executed').toBe(false)
-      expect(ev.runs[0].exit_code).toBeNull()
-      expect(ev.runs[0].evidence).toMatch(/refused/)
-      expect(verificationEvidenceFindings({ contract: evil, evidence: ev, headSha: head })[0].severity)
-        .toBe('blocker')
+      expect(out.status, 'the driver accepted a contract the grammar refuses').toBe(1)
+      expect(out.stderr).toMatch(/cannot be executed by the automated driver/)
+      // The parser's own reason reaches the operator, not a paraphrase.
+      expect(out.stderr).toMatch(/shell metacharacter/)
+      // And nothing ran: no evidence document is emitted for a contract that
+      // never became valid. A refusal that still produced a verification record
+      // would be a record of a run that did not happen.
+      expect(out.stdout.trim(), 'an evidence document was emitted anyway').toBe('')
     } finally { rmSync(dir, { recursive: true, force: true }) }
   })
 
