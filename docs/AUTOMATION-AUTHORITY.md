@@ -209,10 +209,12 @@ So paths fall into **three tiers**.
 .agent/tasks/**   .agent/roles.json   .claude/settings.local.json   .git/**
 ```
 
-No contract may name anything *inside* these, under any role, at any risk level,
-through any mechanism. There is no grant and no override — the validator rejects
-the contract, and mechanical review reports the diff independently of whatever
-the contract says.
+No contract may name these, or anything inside them, under any role, at any
+risk level, through any mechanism. There is no grant and no override — the
+validator rejects the contract, and mechanical review reports the diff
+independently of whatever the contract says. The two exact entries,
+`.agent/roles.json` and `.claude/settings.local.json`, are refused by name;
+verified against the validator rather than assumed.
 
 **One exception — the bare subtree root — and it is the first thing to know
 about this list.** A `dir/**` entry does not cover its own root: `.git/**` does
@@ -498,8 +500,19 @@ needs a shell, so it is inside the concession below rather than beside it, but
 "reaches ordinary Tier 2 paths and nothing else" is false as an absolute and is
 hedged accordingly. The governed path has the same property.
 
-That qualifier is the whole of the claim, and it is the same one the producer
-carries below. This guard is an allowlist over `Write`, `Edit`, `MultiEdit` and
+A third, and then the list is closed for what this repository can establish.
+**Path comparison is byte-exact and case-sensitive.** That is right on Linux,
+where CI runs and where `.GIT` and `.git` are different files. On a
+case-insensitive volume the tier checks would depend on whether `realpath`
+hands back the canonical on-disk spelling — which it does on some such
+filesystems and not others, and which nothing here establishes either way. So
+this is an untested platform assumption rather than a demonstrated escape, and
+it is recorded as one: the protected module states it too, and registration
+should either normalise case or restate the assumption for the platforms it
+covers.
+
+Those three qualifiers are the whole of the claim, and the hard-link one is the
+same the producer carries below. This guard is an allowlist over `Write`, `Edit`, `MultiEdit` and
 `NotebookEdit`; a shell goes straight past it. The producer is contained
 because its definition gives it no shell and a spec pins that. Of the exempted
 helpers, only `fresh-context-reviewer` has a definition in this repository at

@@ -32,9 +32,8 @@
  * FAIL CLOSED ON EVERY SECURITY QUESTION IT ANSWERS. Once `decide()` has
  * established that this is a GOVERNED write — a producer's, or any caller the
  * exemption does not recognise, or anyone at all in a bound session — every
- * route out of it is a deny
- * unless the write is positively established as in scope — "could not
- * establish" is never authorized. The three early allows above that point are
+ * route out of it is a deny unless the write is positively established as in
+ * scope; "could not establish" is never authorized. The three early allows above that point are
  * not exceptions to the rule but statements that the question was never this
  * policy's: a non-write tool; a call with no `agent_type`, which is the trusted
  * driver; and a recognised helper agent in a session with no contract bound to
@@ -67,9 +66,12 @@ import { lstatSync, readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 
 // ---------------------------------------------------------------------------
-// TIER 0 — the absolute floor. Checked before the binding is even parsed (only
-// the event-shape and caller-identity gates run earlier), because no grant can
-// authorize any of it and no contract is meant to.
+// TIER 0 — the absolute floor. Checked before the binding is even parsed,
+// though four denies run earlier: two about the event and the caller (an event
+// that is not an object, an agent_type that is not a usable name) and two about
+// the path (no path at all, a path that is not a string). Each denies on its own
+// reason, so the outcome is the same and only the message differs. Checked here
+// because no grant can authorize any of it and no contract is meant to.
 //
 // "No contract" is the half that is not quite true, and saying so here is the
 // point of this paragraph. A `dir/**` entry does not cover its own root —
@@ -718,11 +720,14 @@ function isSubtreeRoot(pattern, relative) {
  * Tier 1 is refused there too: reaching the protected control plane takes an
  * explicit digest-covered grant, and an unbound session has none to offer. So
  * through these four write tools an unbound helper reaches ordinary Tier 2
- * paths and, hard links aside, nothing else. Resolution follows symlinks
- * because that is what realpath does; a hard link has nothing to resolve, so
- * one placed at an in-scope name over a protected inode passes both tier
- * checks. Making one needs a shell, which is already conceded below, but the
- * absolute would be false without the clause. That is a statement about the
+ * paths and — hard links and case-folding aside — nothing else. Resolution
+ * follows symlinks because that is what realpath does; a hard link has nothing
+ * to resolve, so one placed at an in-scope name over a protected inode passes
+ * both tier checks. Making one needs a shell, which is already conceded below.
+ * The second clause is the PLATFORM ASSUMPTION above: comparison is byte-exact,
+ * so on a case-insensitive volume the outcome turns on whether realpath returns
+ * the canonical spelling, which nothing here establishes. The absolute would be
+ * false without both clauses. That is a statement about the
  * tools, NOT about the
  * caller: this policy passes everything else through, Bash included, and most
  * of the exempted helpers have no definition in this repository limiting what
@@ -828,10 +833,12 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
     // a session with no bound contract has no grant to offer.
     //
     // WHAT THAT IS WORTH, exactly. Through the four write tools, an unbound
-    // helper reaches ordinary Tier 2 paths and, hard links aside, nothing else
-    // — realpath resolves symlinks and has nothing to resolve for a hard link,
-    // so one placed at an in-scope name over a protected inode passes both
-    // loops here exactly as it does on the governed path. It is NOT a
+    // helper reaches ordinary Tier 2 paths and — hard links and case-folding
+    // aside — nothing else. realpath resolves symlinks and has nothing to
+    // resolve for a hard link, so one placed at an in-scope name over a
+    // protected inode passes both loops here exactly as it does on the governed
+    // path; and both loops compare byte-exact, so the case-sensitivity
+    // assumption in this file's header applies to them as much as anywhere. It is NOT a
     // statement about the caller, because this policy is an allowlist over
     // those four tools and passes everything else — Bash included — straight
     // through. The producer is constrained because its definition gives it no
