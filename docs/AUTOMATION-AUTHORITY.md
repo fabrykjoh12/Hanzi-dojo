@@ -244,7 +244,8 @@ That distinction is the design, and it is what separates Tier 1 from Tier 0:
 every Tier 1 path is now authorizable by exactly one grant, so "protected" here
 means *governed*, not *unreachable* — while no single grant is a synonym for the
 tier, so a grant still has to name what it needs. Tier 0 remains the tier
-nothing can reach. When a third protected path arrives, it arrives with its own
+nothing can reach — with the bare-subtree-root exception recorded below, which
+applies to both tiers. When a third protected path arrives, it arrives with its own
 narrow grant; widening an existing grant to cover it would collapse that
 distinction and leave the grant/path check unable to fire.
 
@@ -255,7 +256,9 @@ would let a task rewrite the very guard that constrains it.
 These *do* sometimes need to change — a runtime path guard has to be installed
 by somebody. But not by an ordinary task, and never by adding a line to
 `allowed_paths`. A Tier 1 path is unreachable through `allowed_paths` (the
-validator rejects it, including via a covering subtree like `.claude/**`) and
+validator rejects it, including via a covering subtree like `.claude/**`) —
+*except the bare subtree root itself, `.claude/hooks`, which neither direction
+of the pattern test relates to `.claude/hooks/**`; see the residual below* — and
 reachable only through a dedicated, digest-covered `control_plane` declaration:
 
 ```json
@@ -476,6 +479,14 @@ from the tiers. Once the guard runs, a recognised helper in an unbound session
 would still be refused Tier 0 *and* Tier 1 **through the four write tools**, on
 the **resolved** path — so a symlink could not launder either.
 
+A second qualifier, smaller and easy to miss: resolution follows **symlinks**,
+because that is what `realpath` does. A **hard link** has nothing to resolve — a
+pre-existing hard link at an ordinary Tier 2 name, pointing at a protected
+inode, resolves to its own in-scope name and passes both tier checks. Making one
+needs a shell, so it is inside the concession below rather than beside it, but
+"reaches ordinary Tier 2 paths and nothing else" is false as an absolute and is
+hedged accordingly. The governed path has the same property.
+
 That qualifier is the whole of the claim, and it is the same one the producer
 carries below. This guard is an allowlist over `Write`, `Edit`, `MultiEdit` and
 `NotebookEdit`; a shell goes straight past it. The producer is contained
@@ -506,8 +517,10 @@ exactly by the scope test, with no grant anywhere. `.claude/hooks` is always a
 directory, so the write fails for that reason rather than because the guard
 stopped it, which is luck rather than containment. It is a property of the pattern semantics rather than of the
 exemption, it predates this change, and the canonical validator has the same
-shape — so fixing it means fixing both halves in one change, which is tracked
-separately rather than half-done here.
+shape — so fixing it means fixing both halves in one change. That is filed as its own
+task (FAB-60) with the reproduction attached, rather than half-done here; note
+that nothing *in this repository* records it, so the issue tracker is the only
+place it lives.
 
 **One more thing the exemption does not exempt, and it will be felt.** The
 resolution itself. A helper's target has to resolve inside the repository before
@@ -683,9 +696,13 @@ So, precisely:
 - A branch **can still merge a stale base into `main`**, because the required
   checks are enforced loosely. The integration protocol detects it; the strict
   policy is what will prevent it.
-- A task contract **can no longer authorise the control plane by accident.**
-  Tier 0 is unauthorisable, Tier 1 needs an explicit digest-covered grant that
-  a reviewer can see, and a malformed grant widens nothing. This is a rule
+- A task contract **can no longer authorise the control plane by accident,
+  with one exception.** Tier 0 is unauthorisable, Tier 1 needs an explicit
+  digest-covered grant that a reviewer can see, and a malformed grant widens
+  nothing — but a *bare subtree root* (`.git`, `.agent/tasks`, `.claude/hooks`)
+  slips through both, because neither direction of the pattern test relates a
+  root to its own `dir/**`. That is the residual recorded above, and it is the
+  one thing to look for by eye when reading a contract's `allowed_paths`. This is a rule
   checked at validation and review time — it is not a runtime restraint.
 - An untrusted producer **is not yet constrained at runtime**, because the
   guard that would constrain it is deliberately not registered. What exists is

@@ -30,7 +30,9 @@
  * because it is a process-launch flag and the producer has no Bash.
  *
  * FAIL CLOSED ON EVERY SECURITY QUESTION IT ANSWERS. Once `decide()` has
- * established that this is a producer's write, every route out of it is a deny
+ * established that this is a GOVERNED write — a producer's, or any caller the
+ * exemption does not recognise, or anyone at all in a bound session — every
+ * route out of it is a deny
  * unless the write is positively established as in scope — "could not
  * establish" is never authorized. The three early allows above that point are
  * not exceptions to the rule but statements that the question was never this
@@ -654,9 +656,11 @@ export function resolveWithin(root, target, { realpath = realpathSync, lstat = l
  * and closing it only at runtime would leave `npm run verify:tasks` accepting a
  * contract the guard then refuses. The floor is supposed to mean that no
  * contract may authorise git internals, so the two halves belong in one change
- * — and `tools/verify-task-contracts.mjs` is outside this task's scope. Tracked
- * separately; until then this is a residual of the floor's pattern semantics,
- * not a property of the exemption.
+ * — and `tools/verify-task-contracts.mjs` is outside this task's scope. Filed
+ * as its own task (FAB-60) with the reproduction attached; nothing in this
+ * repository records it, so that tracker is where it lives. Until then it is a
+ * residual of the tier patterns — both tiers, not the floor alone — and not a
+ * property of the exemption.
  */
 function isSubtreeRoot(pattern, relative) {
   return pattern.endsWith('/**') && relative === pattern.slice(0, -3)
@@ -694,7 +698,12 @@ function isSubtreeRoot(pattern, relative) {
  * Tier 1 is refused there too: reaching the protected control plane takes an
  * explicit digest-covered grant, and an unbound session has none to offer. So
  * through these four write tools an unbound helper reaches ordinary Tier 2
- * paths and nothing else. That is a statement about the tools, NOT about the
+ * paths and, hard links aside, nothing else. Resolution follows symlinks
+ * because that is what realpath does; a hard link has nothing to resolve, so
+ * one placed at an in-scope name over a protected inode passes both tier
+ * checks. Making one needs a shell, which is already conceded below, but the
+ * absolute would be false without the clause. That is a statement about the
+ * tools, NOT about the
  * caller: this policy passes everything else through, Bash included, and most
  * of the exempted helpers have no definition in this repository limiting what
  * they hold. One of them with a shell writes `.claude/hooks/**` — this file —
@@ -799,7 +808,10 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
     // a session with no bound contract has no grant to offer.
     //
     // WHAT THAT IS WORTH, exactly. Through the four write tools, an unbound
-    // helper reaches ordinary Tier 2 paths and nothing else. It is NOT a
+    // helper reaches ordinary Tier 2 paths and, hard links aside, nothing else
+    // — realpath resolves symlinks and has nothing to resolve for a hard link,
+    // so one placed at an in-scope name over a protected inode passes both
+    // loops here exactly as it does on the governed path. It is NOT a
     // statement about the caller, because this policy is an allowlist over
     // those four tools and passes everything else — Bash included — straight
     // through. The producer is constrained because its definition gives it no

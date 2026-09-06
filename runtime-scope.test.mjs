@@ -1059,11 +1059,16 @@ describe('who the policy governs', () => {
     // ABSENT is the driver; MALFORMED is not. Folding every unusable value
     // into the absent case put `agent_type: ['task-producer']` through the one
     // unconditional allow this policy has.
+    // The REASON is asserted for every case, not just the allow/deny. Without
+    // it five of these six pass for an adjacent reason: none is on the
+    // exemption list, so with this branch deleted they fall through to
+    // parseBinding and deny for "no binding" instead. That is the same trap
+    // this file names and fixes for path values further up.
     for (const bad of [['task-producer'], { name: 'task-producer' }, 42, '', '   ', true]) {
       const d = run(call('.claude/settings.json', { agent_type: bad }), {})
       expect(d.allow, 'agent_type ' + JSON.stringify(bad) + ' was allowed').toBe(false)
+      expect(d.reason, 'agent_type ' + JSON.stringify(bad) + ' denied for the wrong reason').toMatch(/not a name/)
     }
-    expect(run(call('src/thing.js', { agent_type: ['x'] }), {}).reason).toMatch(/not a name/)
   })
 
   it('enforces an agent_type it does not recognise — the rename fails closed', () => {
