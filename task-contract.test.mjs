@@ -550,8 +550,13 @@ describe('ONE verification grammar, enforced at both ends', () => {
     // Comments in this block quote the old regex on purpose, so the scan looks
     // for a live call rather than the text of one.
     const code = block.split('\n').filter(l => !l.trim().startsWith('//')).join('\n')
-    expect(code, 'a second regex over the raw command is how the two drift apart')
-      .not.toMatch(/cmd\.match\(/)
+    // Every spelling of "match the raw command again", not just the one the old
+    // code happened to use — `cmd.match(re)`, `re.test(cmd)`, `re.exec(cmd)`.
+    // A guard that only knows the shape of the bug it replaced is not a guard.
+    for (const spelling of [/cmd\.match\s*\(/, /\.test\s*\(\s*cmd\b/, /\.exec\s*\(\s*cmd\b/]) {
+      expect(code, 'a second regex over the raw command is how the two drift apart: ' + spelling)
+        .not.toMatch(spelling)
+    }
   })
 
   it('refuses an unrunnable command even when no npm-script table is supplied', () => {
@@ -591,11 +596,17 @@ describe('ONE verification grammar, enforced at both ends', () => {
     // And the cycle stays open. review-protocol.mjs imports from this module,
     // so an import the other way would close a loop — which is the reason the
     // grammar lives in the validator rather than beside the executor that runs
-    // it. Both spellings, because a dynamic import would close it just as well.
-    expect(validator, 'a static import from review-protocol would close a cycle')
-      .not.toMatch(/from\s+'\.\/review-protocol\.mjs'/)
-    expect(validator, 'a dynamic import from review-protocol would close a cycle')
-      .not.toMatch(/import\(\s*['"]\.\/review-protocol\.mjs/)
+    // it.
+    //
+    // Matched on the SPECIFIER rather than on one import syntax. Quoting style
+    // and static-versus-dynamic are incidental; naming that module at all, from
+    // this one, is the hazard. Scanning code only, since the specifier is
+    // discussed in the comments above.
+    const validatorCode = validator.split('\n')
+      .filter(l => !l.trim().startsWith('//') && !l.trim().startsWith('*') && !l.trim().startsWith('/*'))
+      .join('\n')
+    expect(validatorCode, 'naming review-protocol.mjs here, in any import form, would close a cycle')
+      .not.toMatch(/['"`][^'"`]*review-protocol\.mjs['"`]/)
   })
 })
 

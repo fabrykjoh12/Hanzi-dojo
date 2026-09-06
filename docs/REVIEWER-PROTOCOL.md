@@ -220,17 +220,28 @@ protocol module already imports from the contract module, so defining it beside
 the executor and importing it back would close a cycle. A spec pins both the
 single definition and the one-way dependency.
 
-**The executor's refusal stays, and is not redundant.** Validation covers a
-contract *this process validated*; the executor covers every contract that
-reaches it — one sealed before this rule existed, or loaded from an older
-commit. A digest proves a contract was not edited, never that it was checked by
-a version of the validator that had this rule. Two refusals over one grammar.
+**The executor's refusal stays** — removing it would be removing the only check
+that holds where validation did not run. But be exact about which cases those
+are, because the obvious two are not among them: a contract sealed before this
+rule existed, and a contract read from an older commit, are **both** refused at
+load. `loadContractAtCommit` re-validates with the *current* validator whatever
+commit the JSON came from, and the driver hands `runVerification` only a
+contract that passed it. A digest proves a contract was not edited; the
+re-validation is what makes the rule apply retroactively anyway.
 
-What this changed for a reviewer in practice: a contract whose verification the
-driver cannot run no longer produces a verification record at all. It is
-rejected when the driver loads it, with the parser's own words, and no evidence
-document is emitted — because a record of a run that did not happen is worse
-than no record.
+What genuinely still reaches the executor without this rule: an **older driver
+checkout**, whose validator predates it, and any caller that invokes
+`runVerification` directly rather than through the loader. Neither is
+hypothetical enough to drop the check — but neither is "an old contract".
+
+What this changed for a reviewer in practice: a contract refused **by the
+grammar** no longer produces a verification record at all. It is rejected when
+the driver loads it, with the parser's own words, and no evidence document is
+emitted — a record of a run that did not happen is worse than no record. That
+is narrower than "anything the driver cannot run": a command that parses but
+fails for another reason — an `npx` path not tracked at the reviewed commit, a
+missing `node_modules/.bin/<bin>` — still runs the executor's path and still
+records `executed: false`, as the bullet below describes.
 
 - **The contract string is never interpreted by a driver shell.** It is parsed
   to an explicit executable and argv, and spawned with `shell: false`. Note the
@@ -241,8 +252,11 @@ than no record.
   script is the arbitrary-code limitation below, not a shell this executor
   opened.
 - **A closed grammar**, exactly the two forms this repository's contracts use.
-  Anything else is **refused**, not guessed at, and a refusal records
-  `executed: false`, which the evidence rules already treat as a blocker.
+  Anything else is **refused**, not guessed at. Since FAB-57 a command outside
+  the grammar is normally refused earlier still, when the driver validates the
+  contract, and then no record is written at all; a refusal at *this* point
+  records `executed: false`, which the evidence rules already treat as a
+  blocker. Both block — the difference is only how far the run got.
 - **Metacharacters are refused outright** rather than escaped.
 - **The selected test file must really be in the reviewed commit.** Segments are
   validated individually — no `.`, no `..`, no empty or repeated segments, no

@@ -2051,14 +2051,20 @@ describe('verification runs under a closed grammar, without a shell', () => {
     // sooner, and says why in the contract's own words rather than as an
     // evidence finding derived from a run that did not happen.
     //
-    // The executor's own refusal is NOT removed, and must not be: it is what
-    // holds for a contract this validator never saw. It is no longer reachable
-    // THROUGH A VALIDATED CONTRACT, which is exactly the change, so it is
-    // covered where it still is reachable — 'the executor never uses a shell
-    // and never invokes npx' below pins that the executor consults
-    // parseVerificationCommand, and the unit specs above pin that
-    // parseVerificationCommand refuses. Together those are the claim; an
-    // end-to-end path that validation now closes is not.
+    // The executor's own refusal is NOT removed and must not be — but be exact
+    // about what it now covers. NOT "a contract sealed before the rule
+    // existed", and NOT "a contract from an older commit": loadContractAtCommit
+    // re-validates with the CURRENT validator whatever commit the JSON came
+    // from, so both of those are refused here, at load. What is left is an
+    // older DRIVER checkout, or a caller that invokes runVerification without
+    // going through the loader.
+    //
+    // So the executor's refusal is covered where it is still reachable rather
+    // than end to end: 'the executor never uses a shell and never invokes npx'
+    // below pins that review-task.mjs consults parseVerificationCommand, and
+    // the unit specs above pin that parseVerificationCommand refuses. Together
+    // those are the claim. An end-to-end path that validation now closes is
+    // not, and asserting one would be asserting a fiction.
     const CLI = path.resolve('tools/review-task.mjs')
     const dir = mkdtempSync(path.join(tmpdir(), 'refuse-'))
     try {

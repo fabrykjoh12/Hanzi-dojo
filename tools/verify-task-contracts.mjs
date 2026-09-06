@@ -531,12 +531,19 @@ export function covers(outer, inner) {
  * from there instead, which leaves every existing import site unchanged.
  *
  * VALIDATION DOES NOT REPLACE THE EXECUTOR'S REFUSAL, and the executor keeps
- * it. A contract sealed before this rule existed can still carry an unsupported
- * command; a contract can be loaded from an older commit; and a digest proves a
- * contract was not edited, never that it was validated by a version of this
- * file that had this rule. Two refusals over one grammar — the second is not
- * redundancy, it is the only one that holds for a contract this process never
- * validated.
+ * it — but be exact about what that buys, because the two obvious cases are
+ * NOT among them. A contract sealed before this rule existed, and a contract
+ * read from an older commit, are both refused at load: `loadContractAtCommit`
+ * re-validates with the CURRENT validator whatever commit the JSON came from,
+ * and the driver hands `runVerification` only a contract that passed. The
+ * re-validation is what makes this rule apply retroactively; the digest only
+ * proves the file was not edited.
+ *
+ * What actually still reaches the executor without this rule: an older DRIVER
+ * checkout, whose copy of this file predates it, and any caller that invokes
+ * `runVerification` directly instead of through the loader. Thin, and still
+ * worth keeping — a refusal that costs nothing and covers the one path where
+ * validation did not run.
  *
  * NOTHING HERE RUNS `npx`. That was measured, not assumed: with the binary
  * absent, `npx vitest …` requested https://registry.npmjs.org/vitest, and
