@@ -932,7 +932,7 @@ describe('who the policy governs', () => {
     for (const helper of EXEMPT_AGENT_TYPES) {
       const d = run(asAgent(helper, 'src/thing.js'), {})
       expect(d.allow, helper + ' was denied an ordinary write').toBe(true)
-      expect(d.reason).toMatch(/not a task producer/)
+      expect(d.reason).toMatch(/on the closed exemption list/)
     }
   })
 
@@ -1183,7 +1183,9 @@ describe('what this change does NOT claim', () => {
     // paragraph that DEFINES the floor.
     //
     // What this spec is, exactly: a list of the phrasings that failure has
-    // actually taken, not a detector for the idea. A new way of saying "nothing
+    // actually taken, not a detector for the idea — and only those. A
+    // speculative entry was removed rather than left: it matched nothing, so it
+    // read as coverage while proving the list was not what this comment says. A new way of saying "nothing
     // can reach Tier 0" passes it — the round-11 review found precisely that,
     // where the definitional sentence used none of the four phrasings then
     // listed. So this narrows the class rather than closing it, and the honest
@@ -1197,8 +1199,10 @@ describe('what this change does NOT claim', () => {
       'no exception and no override',
       'no grant and no override',
       'under any role, at any risk level',
-      'cannot be authoris',
-      'can(?:not| never) authorize any of it',
+      // `?` on the negation: the live sentence reads "no grant CAN authorize any
+      // of it", and the earlier form required "cannot" or "can never", so it
+      // could never fire against the line it was written for.
+      'can(?:not| never)? authorize any of it',
     ].join('|'))
     const QUALIFIER = /bare[- ]subtree[- ]root|BARE SUBTREE ROOT|subtree root/i
     const bare = []

@@ -878,7 +878,12 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
         }
       }
     }
-    return allow('"' + agentType + '" is not a task producer, and the session carries no contract binding')
+    // Says what the branch ESTABLISHED, not what it hopes. All :825 proved is
+    // membership of the closed list — and the residual documented above is
+    // precisely that a renamed producer can hold one of those names, at which
+    // point "is not a task producer" would be the reverse of the truth. Same
+    // defect as the Tier 1 root message corrected below, in the allow direction.
+    return allow('"' + agentType + '" is on the closed exemption list, and the session carries no contract binding')
   }
 
   const { binding, error: bindingError } = parseBinding(bindingRaw)
