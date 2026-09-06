@@ -978,7 +978,21 @@ describe('who the policy governs', () => {
       const d = run(asAgent('general-purpose', target), {})
       expect(d.allow, target + ' reached Tier 1: ' + d.reason).toBe(false)
       expect(d.reason).toMatch(/Tier 1/)
+      // INSIDE the tier, a grant is what would authorize it, so the message
+      // says so.
+      expect(d.reason, target + ' got the bare-root message').toMatch(/only a granted contract may authorize/)
     }
+
+    // The BARE ROOT is the opposite on both halves and must not share that
+    // sentence: no grant reaches it (contractSecurityViolations requires a
+    // protected_path to be inside PROTECTED_TIER, and a root is not inside its
+    // own dir/**), while an ordinary allowed_paths entry is accepted and does
+    // authorize it. One message for both said the reverse of the truth here.
+    const root = run(asAgent('general-purpose', '.claude/hooks'), {})
+    expect(root.allow, '.claude/hooks reached Tier 1: ' + root.reason).toBe(false)
+    expect(root.reason).toMatch(/the root of the protected control plane/)
+    expect(root.reason, 'the bare root claims a grant could authorize it').not.toMatch(/only a granted contract may authorize/)
+    expect(root.reason).toMatch(/No grant reaches it/)
   })
 
   it('denies an unresolvable path in the exempt branch, rather than allowing it', () => {
@@ -1202,7 +1216,9 @@ describe('what this change does NOT claim', () => {
     // first branch" restated in a second place after the first was corrected —
     // the identical one-site-fixed failure, in a sentence the list above cannot
     // see because it enumerates authorisability phrasings only. Four denies now
-    // precede the floor check, so any claim that it comes first has to say so.
+    // precede the floor check. Unlike the scan above, this is a flat BAN rather
+    // than a qualifier-in-reach rule: the claim is simply false now, so there is
+    // no qualified form of it worth keeping, and erring strict costs nothing.
     const ORDERING = /Tier 0 is the \*\*first\*\* branch|Tier 0 is the first branch|floor is checked first|Checked first/
     const ordering = []
     for (const file of ['.claude/hooks/task-scope-policy.mjs', 'docs/AUTOMATION-AUTHORITY.md']) {

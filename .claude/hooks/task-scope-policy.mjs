@@ -30,8 +30,9 @@
  * because it is a process-launch flag and the producer has no Bash.
  *
  * FAIL CLOSED ON EVERY SECURITY QUESTION IT ANSWERS. Once `decide()` has
- * established that this is a GOVERNED write — a producer's, or any caller the
- * exemption does not recognise, or anyone at all in a bound session — every
+ * established that this is a GOVERNED write — a producer's, or any caller
+ * CARRYING AN agent_type that the exemption does not recognise, or any such
+ * caller in a bound session, the driver never being one of them — every
  * route out of it is a deny unless the write is positively established as in
  * scope; "could not establish" is never authorized. The three early allows above that point are
  * not exceptions to the rule but statements that the question was never this
@@ -679,8 +680,9 @@ export function resolveWithin(root, target, { realpath = realpathSync, lstat = l
  * contract the guard then refuses. The floor is supposed to mean that no
  * contract may authorise git internals, so the two halves belong in one change
  * — and `tools/verify-task-contracts.mjs` is outside this task's scope. Filed
- * as its own task (FAB-60) with the reproduction attached; nothing in this
- * repository records it, so that tracker is where it lives. Until then it is a
+ * as its own task (FAB-60) with the reproduction attached. It IS recorded here —
+ * this paragraph, the doc and a spec all describe it — but nothing in the
+ * repository *tracks* it as work, so the tracker is where the fix is scheduled. Until then it is a
  * residual of the tier patterns — both tiers, not the floor alone — and not a
  * property of the exemption.
  */
@@ -726,8 +728,10 @@ function isSubtreeRoot(pattern, relative) {
  * both tier checks. Making one needs a shell, which is already conceded below.
  * The second clause is the PLATFORM ASSUMPTION above: comparison is byte-exact,
  * so on a case-insensitive volume the outcome turns on whether realpath returns
- * the canonical spelling, which nothing here establishes. The absolute would be
- * false without both clauses. That is a statement about the
+ * the canonical spelling, which nothing here establishes either way — an
+ * untested assumption, not a demonstrated escape. The hard link alone is what
+ * makes the absolute false; the second clause is there because an assumption
+ * this load-bearing should not sit unstated beside a word like "nothing". That is a statement about the
  * tools, NOT about the
  * caller: this policy passes everything else through, Bash included, and most
  * of the exempted helpers have no definition in this repository limiting what
@@ -856,9 +860,21 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
         }
       }
       for (const p of PROTECTED_TIER) {
-        if (covers(p, relative) || isSubtreeRoot(p, relative)) {
+        // Two different facts, so two different sentences. INSIDE the tier, a
+        // grant is what authorizes the write and this caller has none. At the
+        // bare ROOT, the opposite is true on both halves: no grant can reach it
+        // — `contractSecurityViolations` requires a protected_path to be inside
+        // PROTECTED_TIER, and the root is not inside its own `dir/**` — while an
+        // ordinary allowed_paths entry is accepted and does authorize it. One
+        // message covering both said the reverse of the truth for the root.
+        if (covers(p, relative)) {
           return deny('Tier 1: "' + target + '" resolves to ' + relative + ', in the protected control plane (' + p +
             '), which only a granted contract may authorize — and "' + agentType + '" carries no bound contract')
+        }
+        if (isSubtreeRoot(p, relative)) {
+          return deny('Tier 1: "' + target + '" resolves to ' + relative + ', the root of the protected control plane (' +
+            p + '). No grant reaches it and no contract is bound here, so nothing authorizes this caller. ' +
+            'An ordinary contract could still name it — that is the residual isSubtreeRoot documents, not a grant')
         }
       }
     }
