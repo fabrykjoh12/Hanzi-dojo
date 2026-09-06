@@ -9,6 +9,7 @@ import { dueLearningCards, dueReviewCards, weakCards } from './studyAvailability
 import { reviewForecast } from './reviewForecast'
 import { studyRhythm, dateKey } from './studyRhythm'
 import { countDueGrammar } from './grammarReview'
+import { isCalibrationReady, CALIBRATION_SESSION_CAP } from './calibration'
 
 export async function getHomeCounts(userId, track, dailyNewCards) {
   const now = new Date()
@@ -94,6 +95,32 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   // builds its queue from, so the promise and the delivery cannot drift.
   const learnCount = dueLearningCards(deckCards, now).length
   const dueCount = dueReviewCards(deckCards, now).length
+
+  // Calibration checks ride in the review pool of a `review` session
+  // (sessionPrep.js), drawn from the same deck these two counts run over — but
+  // Home counted only due learning plus due review, so they were invisible
+  // here.
+  //
+  // That is not a cosmetic undercount. A learner with no due reviews and 270
+  // ready checks was told "all caught up", and calibration is the ONLY path by
+  // which a claimed word can ever be observed (see calibration.js) — so the
+  // claims could never be worked off at all. Home also flips its primary action
+  // to "Read a story" on that same `clear` flag.
+  //
+  // Counted through the same predicate the session picks with, and capped by
+  // the same constant, so the promise and the delivery cannot drift here
+  // either. `pickCalibrationChecks` is not called directly because it needs
+  // each card joined to its vocabulary row, which Home does not fetch and does
+  // not need: the pick is by readiness and the cap, and the join only orders
+  // and renders. Readiness is therefore counted here and the cap applied.
+  //
+  // One honest limit, shared with dueCount and learnCount rather than new: all
+  // three run over `deckCards` without checking that a card's vocabulary row
+  // could be fetched. A session drops a card whose vocabulary is unavailable
+  // (offline, mid-fetch), so in that state Home can promise one more item than
+  // the session serves — for every one of these counts, exactly as before.
+  const calibrationReadyCount = deckCards.filter(c => isCalibrationReady(c, now)).length
+  const calibrationCount = Math.min(calibrationReadyCount, CALIBRATION_SESSION_CAP)
   const easyCount = levelCards.filter(c => c.is_easy).length
   const totalWords = vocabIds.size
 
@@ -140,7 +167,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const lifetimeMastered = (cards || []).filter(isMastered).length
 
   return {
-    newCount, learnCount, dueCount, easyCount, totalWords,
+    newCount, learnCount, dueCount, calibrationCount, easyCount, totalWords,
     learnedCount, masteredCount, masteredPct,
     newDoneToday, dueTomorrow, weakCount, forecast7, rhythm7,
     lifetimeLearned, lifetimeMastered, grammarDueCount,

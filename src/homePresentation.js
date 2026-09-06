@@ -2,10 +2,16 @@ export function homeQueueSummary(counts = {}) {
   const dueCount = counts.dueCount || 0
   const learnCount = counts.learnCount || 0
   const newCount = counts.newCount || 0
+  // Calibration checks are part of what a session serves, and they ride in the
+  // review pool (sessionPrep.js), so they belong in reviewCount rather than
+  // alongside it. Leaving them out is what let `clear` go true — "all caught
+  // up", primary action flipped to Read a story — while hundreds of claims
+  // waited, with calibration the only path that can ever observe them.
+  const calibrationCount = counts.calibrationCount || 0
   const failed = Boolean(counts.failed)
-  const reviewCount = dueCount + learnCount
+  const reviewCount = dueCount + learnCount + calibrationCount
   const totalReady = reviewCount + newCount
-  return { totalReady, reviewCount, newCount, clear: !failed && totalReady === 0, failed }
+  return { totalReady, reviewCount, newCount, calibrationCount, clear: !failed && totalReady === 0, failed }
 }
 
 export function homeProgressPct(learned, totalWords) {

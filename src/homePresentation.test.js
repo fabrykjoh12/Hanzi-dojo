@@ -7,9 +7,50 @@ describe('Home presentation data', () => {
       totalReady: 137,
       reviewCount: 127,
       newCount: 10,
+      calibrationCount: 0,
       clear: false,
       failed: false,
     })
+  })
+
+  // FAB-28 blocker 2. Calibration checks ride in the review pool of a session
+  // (sessionPrep.js) but were counted nowhere in Home, so a learner with no due
+  // reviews and hundreds of ready checks was told "all caught up" — and
+  // calibration is the ONLY path by which a claimed word can ever be observed,
+  // so those claims could never be worked off.
+  it('counts calibration checks as part of the review pool, not beside it', () => {
+    expect(homeQueueSummary({ dueCount: 15, learnCount: 0, newCount: 0, calibrationCount: 20 }))
+      .toEqual({
+        totalReady: 35,
+        reviewCount: 35,
+        newCount: 0,
+        calibrationCount: 20,
+        clear: false,
+        failed: false,
+      })
+  })
+
+  it('is NOT clear while calibration checks are waiting and nothing else is', () => {
+    // The exact production shape: 0 due, 0 learning, 0 new, 270 claims ready.
+    // Before this, `clear` went true here — which also flipped Home's primary
+    // action from studying to "Read a story".
+    const summary = homeQueueSummary({ dueCount: 0, learnCount: 0, newCount: 0, calibrationCount: 20 })
+    expect(summary.clear).toBe(false)
+    expect(summary.totalReady).toBe(20)
+  })
+
+  it('still reports clear when there is genuinely nothing, calibration included', () => {
+    // The other direction, so the fix cannot be "never clear".
+    expect(homeQueueSummary({ dueCount: 0, learnCount: 0, newCount: 0, calibrationCount: 0 }).clear).toBe(true)
+    expect(homeQueueSummary({}).clear).toBe(true)
+  })
+
+  it('keeps the learner on cards while only calibration is waiting', () => {
+    // homeDailyStage reads the same `clear` flag, so the undercount reached the
+    // stage machine too: with a completed daily story it returned 'complete'
+    // while hundreds of checks waited.
+    expect(homeDailyStage({ counts: { calibrationCount: 20 }, daily: { completedToday: true } }))
+      .toBe('cards')
   })
 
   it('does not present failed zeroes as a completed queue', () => {
