@@ -217,3 +217,128 @@ describe('previewLabels', () => {
     }
   })
 })
+
+// ---------------------------------------------------------------------------
+// FAB-28 finding 1: elapsed days are LOCAL calendar days, not UTC ones.
+// ---------------------------------------------------------------------------
+// ts-fsrs counts elapsed days on the UTC calendar (`dateDiffInDays` compares
+// Date.UTC(...) of each timestamp). This app serves reviews on the LOCAL day
+// boundary (`endOfLocalDay`). Before this suite existed, nothing here ran under
+// a timezone other than the container's, so the mismatch was invisible.
+//
+// These specs pick the wall-clock instants deliberately, which is why
+// schedule() takes a `now` test seam: the defect is entirely about which days
+// two instants fall between.
+describe('elapsed days follow the LOCAL day grid', () => {
+  // vi.stubEnv rather than touching process.env directly: `process` is not a
+  // defined global for src/** under this repo's ESLint config, and
+  // unstubAllEnvs restores the container's own zone even if a spec throws.
+  afterEach(() => { vi.unstubAllEnvs() })
+
+  // A settled review card at a low stability, where one elapsed day changes the
+  // answer by a lot. Fuzz is on in production, so assertions are on
+  // elapsed_days and on ordering rather than on an exact stability.
+  const settled = (lastReviewIso) => ({
+    id: 'c1',
+    state: 'review',
+    due_at: lastReviewIso,
+    stability: 1.0,
+    difficulty: 5.0,
+    elapsed_days: 0,
+    scheduled_days: 1,
+    reps: 3,
+    lapses: 0,
+    learning_step: 0,
+    last_review: lastReviewIso,
+  })
+
+  it('counts an overnight review west of UTC as one day, not zero', () => {
+    // The everyday case this fixes. Los Angeles, last studied 20:00, back at
+    // 09:00 the next morning — 13 hours later, and the morning the app offers
+    // the card. Both instants are the SAME UTC day (03:00Z and 16:00Z), so the
+    // UTC grid scored this as no time passed at all: stability 1.0 -> 1.051
+    // instead of 4.233, on every single overnight review.
+    vi.stubEnv('TZ', 'America/Los_Angeles')
+    const res = schedule(
+      settled('2026-09-07T20:00:00-07:00'), 2,
+      { now: '2026-09-08T09:00:00-07:00', targetRetention: 0.9 },
+    )
+    expect(res.updates.elapsed_days).toBe(1)
+    expect(res.updates.stability).toBeGreaterThan(3)
+  })
+
+  it('counts a few hours on ONE local day east of UTC as zero days, not one', () => {
+    // The mirror, and the reason this is not fixed by "just add a day". In
+    // Auckland 09:00 and 14:00 on the same local day straddle UTC midnight
+    // (21:00Z and 02:00Z), so the UTC grid credited five hours as a full day
+    // and inflated stability instead of suppressing it.
+    vi.stubEnv('TZ', 'Pacific/Auckland')
+    const res = schedule(
+      settled('2026-09-07T09:00:00+12:00'), 2,
+      { now: '2026-09-07T14:00:00+12:00', targetRetention: 0.9 },
+    )
+    expect(res.updates.elapsed_days).toBe(0)
+  })
+
+  it('is unchanged where the offset is zero', () => {
+    // UTC and Europe/London-in-winter shift by nothing, so this change must be
+    // a no-op there. If a future edit starts shifting unconditionally, this is
+    // what catches it.
+    vi.stubEnv('TZ', 'UTC')
+    const res = schedule(
+      settled('2026-09-07T20:00:00Z'), 2,
+      { now: '2026-09-08T09:00:00Z', targetRetention: 0.9 },
+    )
+    expect(res.updates.elapsed_days).toBe(1)
+  })
+
+  it('counts local days across a DST boundary, where the two offsets differ', () => {
+    // US DST ended 2026-11-01. Last review Oct 31 20:00 PDT (UTC-7), graded
+    // Nov 1 09:00 PST (UTC-8) — one local day apart, and the two timestamps sit
+    // at DIFFERENT offsets. Shifting both by a single offset would be wrong
+    // here; each is shifted by its own.
+    vi.stubEnv('TZ', 'America/Los_Angeles')
+    const res = schedule(
+      settled('2026-10-31T20:00:00-07:00'), 2,
+      { now: '2026-11-01T09:00:00-08:00', targetRetention: 0.9 },
+    )
+    expect(res.updates.elapsed_days).toBe(1)
+  })
+
+  it('leaks no grid timestamp into the row it writes', () => {
+    // The shift is an internal device. If either direction were dropped, the
+    // stored last_review would be off by the UTC offset — hours wrong in the
+    // database, and wrong again on the next grading.
+    vi.stubEnv('TZ', 'America/Los_Angeles')
+    const now = '2026-09-08T09:00:00-07:00'
+    const res = schedule(settled('2026-09-07T20:00:00-07:00'), 2, { now })
+    expect(new Date(res.updates.last_review).toISOString()).toBe(new Date(now).toISOString())
+  })
+
+  it('preserves the interval exactly: due_at is now plus scheduled_days', () => {
+    // The safety property that makes the shift legitimate. ts-fsrs computes the
+    // next due as exact millisecond addition from the review time, so moving
+    // the grid must move nothing else. Fuzz is disabled via a fixed retention
+    // and an exact comparison would fight it, so this asserts the round trip:
+    // whatever interval was chosen, due_at is that many days after the REAL
+    // now — not the shifted one, which would be off by seven hours here.
+    vi.stubEnv('TZ', 'America/Los_Angeles')
+    const now = new Date('2026-09-08T09:00:00-07:00')
+    const res = schedule(settled('2026-09-07T20:00:00-07:00'), 2, { now: now.toISOString() })
+    const actualMs = new Date(res.updates.due_at) - now
+    expect(actualMs).toBe(res.updates.scheduled_days * 86400000)
+  })
+
+  it('previewLabels and schedule agree about the same review', () => {
+    // The buttons must not promise an interval grading will not honour. Scoring
+    // the preview on the UTC grid while grading on the local one would diverge
+    // by a whole elapsed day on exactly the overnight case above.
+    vi.stubEnv('TZ', 'America/Los_Angeles')
+    const card = settled('2026-09-07T20:00:00-07:00')
+    const now = '2026-09-08T09:00:00-07:00'
+    const labels = previewLabels(card, { now, targetRetention: 0.9 })
+    const good = schedule(card, 2, { now, targetRetention: 0.9 })
+    const days = good.updates.scheduled_days
+    expect(labels[2]).toBe(days === 1 ? '1 day' : days + ' days')
+  })
+})

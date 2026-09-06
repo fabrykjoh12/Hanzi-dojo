@@ -177,17 +177,81 @@ export function isCardDue(card, now = new Date()) {
   return false
 }
 
+// ── The local day grid ──────────────────────────────────────────────────────
+// FSRS scores a review by how many CALENDAR days have passed since the last
+// one, and ts-fsrs counts those days on the UTC calendar: `dateDiffInDays`
+// builds `Date.UTC(getUTCFullYear(), getUTCMonth(), getUTCDate())` for each
+// timestamp and subtracts. Its day boundary is UTC midnight.
+//
+// This app serves reviews on the LOCAL day boundary — see `endOfLocalDay`
+// above, where a card scheduled for today becomes available at local midnight,
+// deliberately, so reviews arrive with the daily new-card allotment.
+//
+// Two different day grids, and the gap is not cosmetic. Measured against
+// ts-fsrs 5.4.1, a review card at stability 1.0 / difficulty 5, graded Good:
+//
+//   TZ=America/Los_Angeles, last review Mon 20:00 local
+//     graded Tue 09:00 local — 13h later, the morning the app offers it:
+//       elapsed_days 0  ->  stability 1.051, next interval 2d
+//     graded Tue 20:00 local — a real 24h:
+//       elapsed_days 1  ->  stability 4.233, next interval 4d
+//
+//   TZ=Pacific/Auckland, last review Mon 09:00 local
+//     graded Mon 14:00 local — 5h later, the SAME local day:
+//       elapsed_days 1  ->  stability 4.233
+//
+// So west of UTC an overnight review — the ordinary morning session — is scored
+// as no elapsed time at all and stability growth is suppressed roughly
+// fourfold; east of UTC a few hours on one local day are credited as a whole
+// day and it is inflated. `isMastered` is `stability >= 21` days, so both land
+// straight on the level-test gate and the mastery display, and both compound.
+//
+// The fix hands FSRS timestamps whose UTC calendar date IS the local calendar
+// date, then converts its answer back.
+//
+// WHAT THIS CANNOT DISTURB, and why it is safe to do at this seam: the only
+// date ts-fsrs reads to decide the next state is `last_review` (via
+// `dateDiffInDays`); `card.due` is never consulted — every branch computes the
+// next due as `date_scheduler(review_time, interval)`, which is exact
+// millisecond addition with no truncation. So shifting `now` and shifting the
+// result back by the same amount leaves every interval bit-identical. Only
+// which calendar day an instant falls on changes, which is the entire point.
+//
+// Each timestamp is shifted by ITS OWN offset rather than one offset for both.
+// That is what keeps the day count right across a DST boundary, where
+// `last_review` and `now` genuinely sit at different offsets.
+//
+// Where the offset is zero — UTC, and Europe/London in winter — every shift is
+// zero and behaviour is byte-identical to before this change.
+
+/** Milliseconds to add to a Date so that UTC calendar arithmetic reads it as local. */
+export function localGridShiftMs(date) {
+  return -date.getTimezoneOffset() * 60000
+}
+
+/** Move an instant onto the local day grid: its UTC date becomes its local date. */
+export function toLocalGrid(date) {
+  return new Date(date.getTime() + localGridShiftMs(date))
+}
+
+/** Move an instant back off the grid, undoing the shift that put it there. */
+export function fromLocalGrid(date, shiftMs) {
+  return new Date(date.getTime() - shiftMs)
+}
+
 // Build an FSRS card object from a DB card row.
 // New cards (id=null or state='new') start as empty cards.
 // The existing `learning_step` column is repurposed to store FSRS's `learning_steps`
 // (index within the learning-step sequence), since they represent the same concept.
-function buildFsrsCard(card) {
-  const now = new Date()
+//
+// `gridNow` is `now` already moved onto the local day grid. `last_review` is put
+// on the grid too, by its own offset — those two are what FSRS subtracts.
+function buildFsrsCard(card, gridNow) {
   if (!card.id || card.state === 'new') {
-    return createEmptyCard(now)
+    return createEmptyCard(gridNow)
   }
   return {
-    due: new Date(card.due_at || now),
+    due: new Date(card.due_at || gridNow),
     stability: card.stability || 0,
     difficulty: card.difficulty || 0,
     elapsed_days: card.elapsed_days || 0,
@@ -196,7 +260,7 @@ function buildFsrsCard(card) {
     lapses: card.lapses || 0,
     learning_steps: card.learning_step || 0,
     state: TEXT_TO_STATE[card.state] ?? State.New,
-    last_review: card.last_review ? new Date(card.last_review) : null,
+    last_review: card.last_review ? toLocalGrid(new Date(card.last_review)) : null,
   }
 }
 
@@ -216,15 +280,38 @@ function formatLabel(resultCard, now) {
 // updates: object to spread into the Supabase cards update/insert
 // stay:    true if the card should re-enter the session queue (learning/relearning)
 // gap:     position in queue at which to reinsert (if stay=true)
-// options: { targetRetention } — optional. Omitted (the offline replay path in
-//          syncQueue.js, and any other caller without the profile at hand) means
-//          "use this device's preference", which defaults to today's behavior.
+// options: { targetRetention, now } — optional. Omitting targetRetention (the
+//          offline replay path in syncQueue.js, and any other caller without
+//          the profile at hand) means "use this device's preference", which
+//          defaults to today's behavior.
+//
+//          `now` is a TEST SEAM and nothing else: no production caller passes
+//          it. It exists because the local-day-grid behaviour below cannot be
+//          asserted otherwise — the defect it fixes is entirely about which
+//          wall-clock instants a review falls between, and a test that cannot
+//          choose those instants cannot see it. Kept as an option rather than a
+//          module-level clock so it cannot leak between tests.
 export function schedule(card, grade, options) {
   const rating = GRADE_TO_RATING[grade]
-  const now = new Date()
-  const fsrsCard = buildFsrsCard(card)
-  const scheduling = schedulerFor(resolveRetention(options)).repeat(fsrsCard, now)
-  const nextCard = scheduling[rating].card
+  const now = options && options.now ? new Date(options.now) : new Date()
+
+  // Score the review on the LOCAL day grid, then bring the answer back to real
+  // time. See the block above buildFsrsCard for what this fixes and why it
+  // cannot change any interval.
+  const shiftMs = localGridShiftMs(now)
+  const gridNow = toLocalGrid(now)
+  const fsrsCard = buildFsrsCard(card, gridNow)
+  const scheduling = schedulerFor(resolveRetention(options)).repeat(fsrsCard, gridNow)
+  const graded = scheduling[rating].card
+
+  // Every Date FSRS hands back was computed from gridNow, so it comes off the
+  // grid by the same shift. Undone here, once, rather than at each use below —
+  // a caller must never see a grid timestamp.
+  const nextCard = {
+    ...graded,
+    due: fromLocalGrid(new Date(graded.due), shiftMs),
+    last_review: graded.last_review ? fromLocalGrid(new Date(graded.last_review), shiftMs) : null,
+  }
 
   const state = STATE_TO_TEXT[nextCard.state] ?? 'learning'
   const isLearning = nextCard.state === State.Learning || nextCard.state === State.Relearning
@@ -267,13 +354,24 @@ export function schedule(card, grade, options) {
 // Uses the same retention as schedule(), so the buttons never promise an
 // interval the scheduler won't honour.
 export function previewLabels(card, options) {
-  const now = new Date()
-  const fsrsCard = buildFsrsCard(card)
-  const scheduling = schedulerFor(resolveRetention(options)).repeat(fsrsCard, now)
+  const now = options && options.now ? new Date(options.now) : new Date()
+
+  // The SAME local day grid schedule() uses. This is not tidiness: the buttons
+  // must not promise an interval the scheduler will not honour, and scoring the
+  // preview on the UTC grid while grading on the local one is exactly how they
+  // would diverge — by a whole elapsed day, on every overnight review.
+  const shiftMs = localGridShiftMs(now)
+  const gridNow = toLocalGrid(now)
+  const fsrsCard = buildFsrsCard(card, gridNow)
+  const scheduling = schedulerFor(resolveRetention(options)).repeat(fsrsCard, gridNow)
+  const label = (rating) => formatLabel(
+    { ...scheduling[rating].card, due: fromLocalGrid(new Date(scheduling[rating].card.due), shiftMs) },
+    now,
+  )
   return {
-    0: formatLabel(scheduling[Rating.Again].card, now),
-    1: formatLabel(scheduling[Rating.Hard].card, now),
-    2: formatLabel(scheduling[Rating.Good].card, now),
-    3: formatLabel(scheduling[Rating.Easy].card, now),
+    0: label(Rating.Again),
+    1: label(Rating.Hard),
+    2: label(Rating.Good),
+    3: label(Rating.Easy),
   }
 }
