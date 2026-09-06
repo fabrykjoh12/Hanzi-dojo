@@ -209,10 +209,21 @@ So paths fall into **three tiers**.
 .agent/tasks/**   .agent/roles.json   .claude/settings.local.json   .git/**
 ```
 
-No contract may name these, under any role, at any risk level, through any
-mechanism. There is no grant, no exception and no override — the validator
-rejects the contract, and mechanical review reports the diff independently of
-whatever the contract says. These are the files that define what a task *is*
+No contract may name anything *inside* these, under any role, at any risk level,
+through any mechanism. There is no grant and no override — the validator rejects
+the contract, and mechanical review reports the diff independently of whatever
+the contract says.
+
+**One exception — the bare subtree root — and it is the first thing to know
+about this list.** A `dir/**` entry does not cover its own root: `.git/**` does
+not match `.git`, and neither does the reverse. So a contract naming that bare
+subtree root — `.git`, `.agent/tasks` — is refused by nothing, at validation or
+at runtime. In a git
+worktree `.git` is a regular file, so that is a real write rather than a
+curiosity. The residual is set out in full further down and tracked as FAB-60;
+it is named here because this paragraph is where a reader learns what the floor
+means, and the floor means slightly less than the sentence above would suggest
+on its own. These are the files that define what a task *is*
 (`.agent/tasks/**`, including its own `README.md`), who may own one
 (`.agent/roles.json`), the machine-local permission overlay
 (`.claude/settings.local.json`), and history itself (`.git/**`).
@@ -582,8 +593,12 @@ change to close the residual, and that waits on the contract-lifecycle work.
 
 Proven by unit and adversarial specs against a real temporary repository:
 
-- Tier 0 is the **first** branch, and applies before the binding is parsed — so
-  a floor write is refused even in a session with no binding at all.
+- Tier 0 is checked **before the binding is parsed** — so a floor write is
+  refused even in a session with no binding at all. Two gates run ahead of it,
+  both about the event rather than the path: a malformed event, and an
+  `agent_type` that is present but is not a usable name. Either denies on its
+  own reason, so a floor write by such a caller is refused for identity rather
+  than for the floor. It is refused either way.
 - Every invalid state denies **for a governed caller** — a producer, or any
   agent_type the exemption list does not recognise, or any caller *carrying an
   agent_type* once a binding is present (never the driver on any of these —

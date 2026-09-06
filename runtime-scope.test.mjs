@@ -1153,14 +1153,30 @@ describe('what this change does NOT claim', () => {
   })
 
   it('never states the tier absolute without the exception beside it', () => {
-    // The class, not the instance. Three review rounds running caught the same
-    // failure: the bare-subtree-root residual gets documented in one place and
-    // the sentences asserting the opposite are left standing elsewhere — twice
-    // inside the protected module itself, which is the security artefact.
-    // Fixing each occurrence by hand did not stop it recurring, so the rule is
-    // mechanical now: anywhere the absolute is stated, the exception is within
-    // reach of the same reader.
-    const ABSOLUTE = /unauthorisable|may reach neither tier|nothing can reach|unreachable through/
+    // Four review rounds running caught the same failure: the
+    // bare-subtree-root residual gets documented in one place and the sentences
+    // asserting the opposite are left standing elsewhere — twice inside the
+    // protected module, which is the security artefact, and once in the
+    // paragraph that DEFINES the floor.
+    //
+    // What this spec is, exactly: a list of the phrasings that failure has
+    // actually taken, not a detector for the idea. A new way of saying "nothing
+    // can reach Tier 0" passes it — the round-11 review found precisely that,
+    // where the definitional sentence used none of the four phrasings then
+    // listed. So this narrows the class rather than closing it, and the honest
+    // move when a new phrasing turns up is to add it here rather than to
+    // believe the guard already covered it.
+    const ABSOLUTE = new RegExp([
+      'unauthorisable',
+      'may reach neither tier',
+      'nothing can reach',
+      'unreachable through',
+      'no exception and no override',
+      'no grant and no override',
+      'under any role, at any risk level',
+      'cannot be authoris',
+      'can(?:not| never) authorize any of it',
+    ].join('|'))
     const QUALIFIER = /bare[- ]subtree[- ]root|BARE SUBTREE ROOT|subtree root/i
     const bare = []
     for (const file of ['.claude/hooks/task-scope-policy.mjs', 'docs/AUTOMATION-AUTHORITY.md']) {
@@ -1173,8 +1189,10 @@ describe('what this change does NOT claim', () => {
     }
     expect(bare, 'the tier absolute is stated with no exception in reach').toEqual([])
     // And the rule is only worth anything if the absolute is actually stated
-    // somewhere — otherwise a rewrite that deleted every occurrence would pass.
-    expect(bare.length + 1).toBeGreaterThan(0)
+    // somewhere — otherwise a rewrite that deleted every occurrence would pass
+    // this vacuously. That is the assertion below; an earlier draft had
+    // `expect(bare.length + 1).toBeGreaterThan(0)` here, which is true for
+    // every possible input and established nothing at all.
     const stated = ['.claude/hooks/task-scope-policy.mjs', 'docs/AUTOMATION-AUTHORITY.md']
       .flatMap(f => readFileSync(f, 'utf8').split('\n').filter(l => ABSOLUTE.test(l)))
     expect(stated.length, 'no occurrence left to guard — this spec has gone vacuous').toBeGreaterThan(2)
