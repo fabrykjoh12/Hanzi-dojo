@@ -492,6 +492,17 @@ containment of one class of mistake: a helper reaching a protected path through
 the ordinary file tools, which is how it would happen by accident. A helper
 that means to get past them can.
 
+**A residual in the floor's pattern semantics, found while writing the above.**
+`.git/**` does not cover `.git` itself — the subtree test is a prefix match on
+`.git/` — and the floor carries no exact `.git` entry. The exemption compensates
+for that in its own branch, but the *governed* path does not: a contract naming
+`.git` in ordinary `allowed_paths` is accepted by `npm run verify:tasks` and
+authorises the write. In a git worktree `.git` is a regular file, so this is not
+theoretical. It is a property of the pattern semantics rather than of the
+exemption, it predates this change, and the canonical validator has the same
+shape — so fixing it means fixing both halves in one change, which is tracked
+separately rather than half-done here.
+
 **One more thing the exemption does not exempt, and it will be felt.** The
 resolution itself. A helper's target has to resolve inside the repository before
 either tier is checked, so an unresolvable one is denied — and that includes the

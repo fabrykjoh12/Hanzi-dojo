@@ -1038,6 +1038,17 @@ describe('who the policy governs', () => {
     }
     // A sibling whose name merely starts the same way is NOT the root.
     expect(run(asAgent('general-purpose', '.gitignore'), {}).allow).toBe(true)
+
+    // And the predicate applies only to `dir/**` patterns. Without that
+    // conjunct an EXACT floor entry is truncated by slice(0, -3) and matches
+    // the wrong thing: '.agent/roles.json' minus three characters is
+    // '.agent/roles.j', so a helper writing that would be denied as Tier 0 and
+    // '.claude/settings.j' as Tier 1. Both are over-denies rather than escapes,
+    // which is why they need asserting — nothing else in this file would notice.
+    for (const nearMiss of ['.agent/roles.j', '.claude/settings.j']) {
+      expect(run(asAgent('general-purpose', nearMiss), {}).allow,
+        nearMiss + ' was denied by a truncated exact-path entry').toBe(true)
+    }
   })
 
   it('still allows an ordinary Tier 2 write, so the tier checks are not deny-all', () => {

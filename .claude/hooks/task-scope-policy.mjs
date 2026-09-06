@@ -40,8 +40,10 @@
  * would be a claim the mechanism cannot support.
  *
  * WHO THIS POLICY GOVERNS, and why it is stated as an exemption. Enforcement
- * applies to every subagent EXCEPT a closed list of recognised helpers, rather
- * than only to the agent named `task-producer`. The narrower form would be
+ * applies to every subagent EXCEPT a closed list of recognised helpers IN A
+ * SESSION WITH NO CONTRACT BOUND TO IT — a binding governs every subagent in
+ * the session, helpers included. And it is an exemption rather than a rule
+ * naming `task-producer`. The narrower form would be
  * fail-open on a one-line Tier 2 edit: `agent_type` is the frontmatter `name:`
  * of the launched definition, so renaming the producer would silently exempt
  * it. Stated as an exemption, a rename produces MORE enforcement instead. What
@@ -638,8 +640,23 @@ export function resolveWithin(root, target, { realpath = realpathSync, lstat = l
  * question even where writing them would fail for being directories: a floor
  * that stops at the children of the thing it names is not a floor.
  *
- * Used only by the exemption below. The producer path never reaches an allow
- * without a positive scope match, so a bare subtree root fails there already.
+ * Used only by the exemption below — and the producer path has the SAME GAP,
+ * which this does not close. Stated rather than assumed, because an earlier
+ * draft of this comment claimed the opposite and was wrong.
+ *
+ * A contract naming a bare subtree root in ordinary `allowed_paths` — say
+ * `.git` — is not refused: neither direction of `covers` relates `.git` to
+ * `.git/**`, so `contractSecurityViolations` raises nothing, the resolved floor
+ * loop below matches nothing, and the scope test matches `.git` exactly and
+ * allows. Verified against this module rather than reasoned about.
+ *
+ * Not fixed here on purpose. The canonical validator has the identical shape,
+ * and closing it only at runtime would leave `npm run verify:tasks` accepting a
+ * contract the guard then refuses. The floor is supposed to mean that no
+ * contract may authorise git internals, so the two halves belong in one change
+ * — and `tools/verify-task-contracts.mjs` is outside this task's scope. Tracked
+ * separately; until then this is a residual of the floor's pattern semantics,
+ * not a property of the exemption.
  */
 function isSubtreeRoot(pattern, relative) {
   return pattern.endsWith('/**') && relative === pattern.slice(0, -3)
