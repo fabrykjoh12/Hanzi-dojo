@@ -537,9 +537,10 @@ regular file, so this is not theoretical.
 
 **It is not only the floor.** `.claude/hooks` behaves the same way — a Tier 1
 subtree root in ordinary `allowed_paths` raises no violation and is matched
-exactly by the scope test, with no grant anywhere. `.claude/hooks` is always a
-directory, so the write fails for that reason rather than because the guard
-stopped it, which is luck rather than containment. It is a property of the pattern semantics rather than of the
+exactly by the scope test, with no grant anywhere. `.claude/hooks` is a directory in
+every checkout anyone has run, so the write fails for that reason rather than
+because the guard stopped it — luck rather than containment, and an observation
+about the tree rather than a property the guard enforces. It is a property of the pattern semantics rather than of the
 exemption, it predates this change, and the canonical validator has the same
 shape — so fixing it means fixing both halves in one change. That is filed as its own
 task (FAB-60) with the reproduction attached, rather than half-done here; note
@@ -656,8 +657,10 @@ Proven by unit and adversarial specs against a real temporary repository:
   What makes the gap safe is not the list but the shape of it: none of those
   rules is a widening vector. Every route by which a contract could reach beyond
   its own ordinary paths — Tier 0 or Tier 1 in `allowed_paths`, a bad path
-  spelling, any malformed or unauthorised grant — is checked above, and the
-  granted set is at exact parity with the validator. A contract failing only a
+  spelling, any malformed or unauthorised grant — is checked above, *save the
+  bare subtree root, which is checked by neither the guard nor the validator and
+  is the residual recorded earlier* — and the granted set is at exact parity with
+  the validator. A contract failing only a
   validator-only rule is refused by `npm run verify:tasks` and by CI, and would
   still authorise its own ordinary paths at runtime. That asymmetry is why the
   parity specs assert containment rather than equality.

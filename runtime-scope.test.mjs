@@ -1121,6 +1121,15 @@ describe('who the policy governs', () => {
       const d = run(event, env)
       expect(d.allow).toBe(true)
       expect(d.reason).toMatch(/trusted driver/)
+
+      // And explicitly null, which is the OTHER disjunct of the same branch and
+      // was pinned only by an older spec asserting allow with no reason. No
+      // observed runtime sends it; the policy folds it into "absent" on purpose
+      // and says why. An unpinned disjunct is an unpinned disjunct — the same
+      // argument this file makes for the null binding a few suites below.
+      const nulled = call('docs/other.md', { agent_type: null })
+      expect(run(nulled, env).allow).toBe(true)
+      expect(run(nulled, env).reason, 'null agent_type denied, or allowed for another reason').toMatch(/trusted driver/)
     }
   })
 
