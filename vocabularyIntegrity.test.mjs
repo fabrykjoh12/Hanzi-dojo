@@ -279,13 +279,19 @@ describe('each directional check fires on the defect and only on the defect', ()
     expect(fires('reading-has-digit', { vocabulary: [row()] })).toBe(0)
   })
 
-  it('is not asked to count level-null rows, because they are learner saves', () => {
+  it('is not asked to count level-null rows, because a learner can create them', () => {
     // dict_add_to_deck inserts `level null, sort_order 0` for any dictionary
-    // word a learner taps to save, from three shipped screens. Counting those
-    // as curriculum debt would grow a directional count on ordinary use and red
-    // the gate — so the corpus is the curriculum and this check is gone.
-    expect(DIRECTIONAL_CHECKS.map(c => c.id), 'level-null is measured as debt again')
-      .not.toContain('level-null')
+    // word a learner taps to save, from three shipped screens. Counting rows of
+    // that shape as curriculum debt would grow a directional count on ordinary
+    // use and red the gate — so the corpus is the curriculum and this check is
+    // gone. (What the rows in production today actually ARE is a separate
+    // question the gate cannot answer; see the check's own comment.)
+    //
+    // Matched by PREFIX, not by equality: `.not.toContain` is element equality,
+    // so it would pass on a re-added `level-null-count` while reporting that it
+    // had caught one.
+    const reAdded = DIRECTIONAL_CHECKS.map(c => c.id).filter(id => id.startsWith('level-null'))
+    expect(reAdded, 'level-null is measured as debt again').toEqual([])
   })
 })
 
@@ -385,8 +391,14 @@ describe('the baseline comparison', () => {
     const src = readFileSync('check-vocabulary-integrity.mjs', 'utf8')
     const acceptBlock = src.slice(src.indexOf('if (update) {'), src.indexOf('if (!existsSync(BASELINE))'))
     expect(acceptBlock, 'the accept path no longer consults the refusal').toContain('baselineWriteRefusal(result)')
-    expect(acceptBlock.indexOf('process.exit(1)'), 'the write happens before the refusal')
-      .toBeLessThan(acceptBlock.indexOf('writeFileSync'))
+    // Both indexes are asserted present first: indexOf returns -1 for a missing
+    // term, so a deleted `process.exit(1)` would satisfy the ordering test while
+    // removing the refusal it is there to order.
+    const refusalAt = acceptBlock.indexOf('process.exit(1)')
+    const writeAt = acceptBlock.indexOf('writeFileSync')
+    expect(refusalAt, 'the refusal no longer exits').toBeGreaterThan(-1)
+    expect(writeAt, 'the accept path no longer writes').toBeGreaterThan(-1)
+    expect(refusalAt, 'the write happens before the refusal').toBeLessThan(writeAt)
   })
 
   it('every directional check appears in a generated baseline', () => {
