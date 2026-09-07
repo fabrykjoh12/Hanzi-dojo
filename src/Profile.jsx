@@ -304,22 +304,25 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     //
     // The dialog above used to end "Your other languages are untouched", then
     // briefly "keep their progress". Both are gone, and the second was not an
-    // improvement — it changed the noun, not the truth conditions. The untagged
-    // rule in queuedOpBelongsToTrack drops an unsynced write that carries no
-    // language tag whichever track it came from, and untagged is what the
-    // CURRENT production build queues, so resetting one language really can
-    // discard another's unsynced grades. Redefining "progress" as "rows on the
-    // server" is not how a learner reads the word, and the sentence sat
-    // directly above an irreversible button.
+    // improvement — it changed the noun, not the truth conditions. An op that
+    // carries no language tag cannot be attributed, and untagged is what the
+    // CURRENT production build queues, so resetting the track you are ON can
+    // still discard an unsynced grade that came from another one. Redefining
+    // "progress" as "rows on the server" is not how a learner reads the word,
+    // and the sentence sat directly above an irreversible button.
     //
-    // Nothing replaces it. The line above already names the language and the
-    // scope; a promise about the other tracks cannot be made truthfully while
-    // the untagged rule stands, and a hedge ("anything you graded offline and
-    // haven't synced may be cleared") would alarm every learner about a case
-    // that needs an old build, an offline session and a second active track.
-    // The exact fix — attributing an untagged op through its vocab_id or
-    // story_id — is in docs/BACKLOG.md.
-    await dropQueuedWritesForTrack(targetTrack, session.user.id)
+    // Narrower than it was: shouldDropUntaggedOps keeps untagged ops whenever
+    // the track being cleaned is not the active one, so resetting a track you
+    // are not studying no longer costs your current track's queued writes. The
+    // remaining case needs an old build, an offline session and a reset of the
+    // very track you are on.
+    //
+    // Nothing replaces the sentence. The line above already names the language
+    // and the scope; a hedge ("anything you graded offline and haven't synced
+    // may be cleared") would alarm every learner about that narrow case. The
+    // exact fix — attributing an untagged op through its vocab_id or story_id —
+    // is in docs/BACKLOG.md.
+    await dropQueuedWritesForTrack(targetTrack, session.user.id, { activeLanguage: profile.active_language })
     clearPreparedSession()
 
     setResetting(false)
@@ -373,13 +376,13 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     // Same reason as the reset panel above: the rows are deleted, so their
     // queued writes must not outlive them.
     //
-    // With one asymmetry worth naming, because it is the reverse of the usual
-    // one: here the track being cleaned up is the one being REMOVED, so the
-    // untagged rule discards unsynced writes that most likely belong to the
-    // learner's ACTIVE track — removing a language they had stopped using can
-    // cost them queued grades from the language they are actually studying.
-    // Same root cause, same fix, in docs/BACKLOG.md.
-    await dropQueuedWritesForTrack({ language: langCode, system: target.system }, session.user.id)
+    // The track being cleaned up here is by construction never the one the
+    // learner is on — this panel only lists tracks for a language nobody can
+    // start — so an op carrying no language tag is most likely the ACTIVE
+    // track's, and dropping it would destroy a write with nothing deleted
+    // behind it. shouldDropUntaggedOps reads active_language and keeps it.
+    // Tagged ops for this track are dropped exactly as before.
+    await dropQueuedWritesForTrack({ language: langCode, system: target.system }, session.user.id, { activeLanguage: profile.active_language })
     clearPreparedSession()
 
     const { error } = await supabase

@@ -198,7 +198,7 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
           if (error) throw new Error(error.message)
           // The rows are gone; queued offline writes for them must not outlive
           // them, or the next flush puts a deleted card or story read back.
-          await dropQueuedWritesForTrack(track, session.user.id)
+          await dropQueuedWritesForTrack(track, session.user.id, { activeLanguage: profile.active_language })
           clearPreparedSession()
           toast({ kind: 'info', title: 'Progress reset — back to a fresh account for this language' })
           onNavigate('home')

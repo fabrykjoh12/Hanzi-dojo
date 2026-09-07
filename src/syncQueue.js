@@ -78,12 +78,14 @@ const RESET_DELETED_OP_KINDS = ['grade', 'storyRead', 'storyClaim']
  * drops it, so {language:'japanese'} — plainly NOT this track's — is destroyed.
  * Comparing only the tags present is right in both directions.
  *
- * An op carrying no LANGUAGE tag at all is dropped, and that is a judgement
- * worth stating rather than hiding. It cannot be attributed to a language, so
- * the choice is between possibly discarding another track's unsynced write and
- * possibly resurrecting progress the learner explicitly asked to delete. A
- * reset is an explicit, destructive, confirmed action; silently undoing part of
- * it is the worse failure. The window is one app version wide for an op that
+ * An op carrying no LANGUAGE tag at all cannot be attributed, so the choice is
+ * between possibly discarding another track's unsynced write and possibly
+ * resurrecting progress the learner explicitly asked to delete. Which of those
+ * is worse depends on the track being cleaned, so the caller says which through
+ * `dropUntagged` — see shouldDropUntaggedOps for the reasoning. When it IS the
+ * learner's active track the op is dropped: a reset is an explicit,
+ * destructive, confirmed action, and silently undoing part of it is the worse
+ * failure. The window is one app version wide for an op that
  * flushes normally — but NOT for one that does not: flushOutbox has no attempt
  * counter and leaves a failing op in place forever (the poison pill described
  * at the top of this section), so an untagged op that never replays cleanly
@@ -114,13 +116,42 @@ const RESET_DELETED_OP_KINDS = ['grade', 'storyRead', 'storyClaim']
  * while this rule does not — so for the three kinds this governs, its absence
  * is not a version window to trade away.
  */
-export function queuedOpBelongsToTrack(op, track, userId) {
+export function queuedOpBelongsToTrack(op, track, userId, { dropUntagged = true } = {}) {
   if (!op || !RESET_DELETED_OP_KINDS.includes(op.kind)) return false
   if (!track || !track.language || !track.system) return false
   if (!userId || op.userId !== userId) return false
+  if (!op.language && !op.system && !dropUntagged) return false
   if (op.language && op.language !== track.language) return false
   if (op.system && op.system !== track.system) return false
   return true
+}
+
+/**
+ * Should an op that carries no language tag be dropped when THIS track is
+ * cleaned up?
+ *
+ * The untagged rule above weighs "possibly discard another track's unsynced
+ * write" against "possibly resurrect progress the learner asked to delete", and
+ * concludes the second is worse. That conclusion holds when the track being
+ * cleaned is the one the learner is on — an untagged op is then almost
+ * certainly its own.
+ *
+ * It inverts when it is not. Resetting a track you are not studying, or
+ * removing a language outright, cleans up a track that by construction is not
+ * where your recent grades came from; the untagged op in the queue is most
+ * likely your ACTIVE track's, and dropping it is a strict regression on the
+ * behaviour before this change, where it would have replayed correctly against
+ * cards that still exist. Nothing is being resurrected in that case, because
+ * nothing of that track's was deleted.
+ *
+ * So the decision is made from the one fact that separates the two situations,
+ * rather than per call site. `activeLanguage` unknown keeps the old, wider
+ * behaviour, which is the safer default of the two — and the call-site spec
+ * requires every site to pass one, so "unknown" is not reachable from the app.
+ */
+export function shouldDropUntaggedOps(track, activeLanguage) {
+  if (!activeLanguage) return true
+  return Boolean(track) && track.language === activeLanguage
 }
 
 /**
@@ -146,15 +177,20 @@ export function queuedOpBelongsToTrack(op, track, userId) {
  * placement is already correct. Never throws — a browser with no IndexedDB has
  * no outbox to drain, and a reset must not fail because of it.
  *
+ * `activeLanguage` decides what happens to an op carrying no language tag —
+ * see shouldDropUntaggedOps. Pass the learner's current active_language; every
+ * call site does, and a spec requires it.
+ *
  * NOT a lock. flushOutbox can be mid-replay when this runs; see docs/BACKLOG.md
  * ("Reset races an in-flight outbox flush").
  */
-export async function dropQueuedWritesForTrack(track, userId) {
+export async function dropQueuedWritesForTrack(track, userId, { activeLanguage = null } = {}) {
+  const dropUntagged = shouldDropUntaggedOps(track, activeLanguage)
   let dropped = 0
   try {
     const rows = (await outboxAll()) || []
     for (const row of rows) {
-      if (!queuedOpBelongsToTrack(row.op, track, userId)) continue
+      if (!queuedOpBelongsToTrack(row.op, track, userId, { dropUntagged })) continue
       await outboxDelete(row.id)
       dropped += 1
     }

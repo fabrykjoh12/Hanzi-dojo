@@ -238,7 +238,7 @@ export default function CreativeMode({ session, profile, track }) {
     // The cards and story rows are gone; queued offline writes for them must
     // not outlive them, or the next flush recreates a deleted card at its
     // pre-reset state and re-marks deleted story reads.
-    await dropQueuedWritesForTrack(track, userId)
+    await dropQueuedWritesForTrack(track, userId, { activeLanguage: profile.active_language })
     clearPreparedSession()
     setLevel(1)
     return getSystemLabel(track.system) + ' progress reset — go Home to reload'

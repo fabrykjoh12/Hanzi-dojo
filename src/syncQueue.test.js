@@ -26,7 +26,7 @@ import {
   dayCountsOf, nextActivityCounts, isMissingRpc, newOpId,
   gradeCardWrite, resetGradeRpcProbe, enqueueGrade, flushOutbox,
   enqueueStoryRead, enqueueStoryClaim, enqueueAnalytics,
-  queuedOpBelongsToTrack, dropQueuedWritesForTrack,
+  queuedOpBelongsToTrack, shouldDropUntaggedOps, dropQueuedWritesForTrack,
   opIsReplayableBy, pendingWrites,
 } from './syncQueue'
 
@@ -518,20 +518,53 @@ describe("a progress reset drops that track's queued writes, and only those", ()
     expect(gradeU({ system: 'jlpt' }, CN)).toBe(false)
   })
 
-  it('drops an UNTAGGED op, deliberately', () => {
+  it('drops an UNTAGGED op when this IS the active track, deliberately', () => {
     // One enqueued before the stamp existed and not yet flushed. It cannot be
     // attributed, so the choice is between possibly discarding another track's
     // unsynced write and possibly resurrecting progress the learner explicitly
-    // asked to delete. A reset is explicit, confirmed and destructive;
-    // silently undoing part of it is the worse failure.
+    // asked to delete. Resetting the track you are on makes the second the
+    // likelier and the worse one: the reset is explicit, confirmed and
+    // destructive, and silently undoing part of it is the bad outcome.
     expect(gradeU({}, CN)).toBe(true)
   })
 
+  it('KEEPS an untagged op when the track being cleaned is not the active one', () => {
+    // The inversion. Resetting a track you are not studying, or removing a
+    // language outright, deletes nothing an untagged op could resurrect — so
+    // dropping it destroys a write with nothing behind it, which is strictly
+    // worse than the behaviour before any of this existed, where it would have
+    // replayed correctly.
+    expect(queuedOpBelongsToTrack(grade({}), CN, U, { dropUntagged: false })).toBe(false)
+    // Tagged ops for the track are still dropped: this narrows the untagged
+    // rule, it does not switch the drop off.
+    expect(queuedOpBelongsToTrack(grade({ ...CN }), CN, U, { dropUntagged: false })).toBe(true)
+    expect(queuedOpBelongsToTrack(grade({ language: 'chinese' }), CN, U, { dropUntagged: false })).toBe(true)
+  })
+
   it('drops nothing when the track is unknown', () => {
-    // A caller with no track must not accidentally empty the queue.
+    // A caller with no track must not accidentally empty the queue. Judged with
+    // an UNTAGGED op on purpose: with a fully tagged one the tag-mismatch rules
+    // reject {} and { language } anyway, so the test would pass with this guard
+    // deleted — which is what it used to do.
+    expect(gradeU({}, null)).toBe(false)
+    expect(gradeU({}, {})).toBe(false)
+    expect(gradeU({}, { language: 'chinese' })).toBe(false)
+    expect(gradeU({}, { system: 'hsk_3' })).toBe(false)
+    // And with a tagged one, so the guard is pinned from both directions.
     expect(gradeU({ ...CN }, null)).toBe(false)
     expect(gradeU({ ...CN }, {})).toBe(false)
-    expect(gradeU({ ...CN }, { language: 'chinese' })).toBe(false)
+  })
+
+  it('decides the untagged rule from the active language, not the call site', () => {
+    // shouldDropUntaggedOps is the whole decision, so it is worth stating
+    // directly. Unknown keeps the wider behaviour — the call-site spec is what
+    // stops the app ever reaching that branch.
+    expect(shouldDropUntaggedOps(CN, 'chinese')).toBe(true)
+    expect(shouldDropUntaggedOps(CN, 'japanese')).toBe(false)
+    expect(shouldDropUntaggedOps(JA, 'chinese')).toBe(false)
+    expect(shouldDropUntaggedOps(CN, null)).toBe(true)
+    expect(shouldDropUntaggedOps(null, 'chinese')).toBe(false)
+    expect(shouldDropUntaggedOps(null, null)).toBe(true)
   })
 
   it("keeps another ACCOUNT's queued write, even on the very track being reset", () => {
@@ -581,6 +614,29 @@ describe("a progress reset drops that track's queued writes, and only those", ()
   // the track in (Study.jsx, useStoryReaderCore.js, StoryReaderImmersive.jsx,
   // storyRewardData.js); an op arriving untagged from one of those is covered
   // only by the untagged rule above.
+
+  it('leaves an untagged write alone when another track is being cleaned', async () => {
+    // End to end through the store, not just the predicate: removing a language
+    // the learner had stopped using must not cost them a queued grade from the
+    // language they are actually studying.
+    await enqueueGrade({ userId: U, vocabId: 'v1', cardId: 'c1', updates: {} })
+    await enqueueGrade({ userId: U, vocabId: 'v9', cardId: 'c9', updates: {}, ...JA })
+
+    const dropped = await dropQueuedWritesForTrack(JA, U, { activeLanguage: 'chinese' })
+
+    expect(dropped).toBe(1)
+    expect(store.rows.map(r => [r.op.kind, r.op.language ?? null])).toEqual([['grade', null]])
+  })
+
+  it('still takes the untagged write when the active track is the one reset', async () => {
+    await enqueueGrade({ userId: U, vocabId: 'v1', cardId: 'c1', updates: {} })
+    await enqueueGrade({ userId: U, vocabId: 'v9', cardId: 'c9', updates: {}, ...JA })
+
+    const dropped = await dropQueuedWritesForTrack(CN, U, { activeLanguage: 'chinese' })
+
+    expect(dropped).toBe(1)
+    expect(store.rows.map(r => [r.op.kind, r.op.language ?? null])).toEqual([['grade', 'japanese']])
+  })
 
   it("deletes this track's queued writes from the outbox and leaves the rest", async () => {
     await enqueueGrade({ userId: U, vocabId: 'v1', cardId: 'c1', updates: {}, ...CN })
