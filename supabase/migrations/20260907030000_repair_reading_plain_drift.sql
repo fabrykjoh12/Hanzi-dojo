@@ -214,7 +214,9 @@ update public.vocabulary v
    -- change an answer key. This is what makes the migration idempotent AND what
    -- keeps it off the eleven hand-curated rows above — six of which keep a
    -- space, four a capital and one an apostrophe. Measured 2026-09-07: ten
-   -- rows match; applied a second time none do.
+   -- rows match. Re-running after it lands matches none — a derivation, not a
+   -- second measurement: the SET writes the value this comparison then finds
+   -- equal.
    and lower(regexp_replace(coalesce(v.reading_plain, ''), '[ ''’]', '', 'g'))
        is distinct from
        lower(regexp_replace(
