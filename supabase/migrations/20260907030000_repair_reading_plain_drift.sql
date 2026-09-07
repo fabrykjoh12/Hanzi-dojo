@@ -104,7 +104,9 @@
 -- integrity check, not a grading fix. A spec drives the mis-grading case
 -- through both graders and the ü case through checkTypedAnswer, which is the
 -- whole of the difference: writingMatch's normalizeChinesePinyin IS
--- lenientPinyin, so the two screens accept the same inputs by construction.
+-- lenientPinyin, so the two screens compare pinyin against the same key with
+-- the same function. (They differ elsewhere — each accepts the word itself
+-- through paths of its own — but none of those reads `reading_plain`.)
 --
 -- THE COLUMN HAS TWO CONVENTIONS, AND THAT IS WHY THE COMPARISON IS LOOSE.
 --
@@ -211,8 +213,8 @@ update public.vocabulary v
    -- Ignoring space, case and apostrophe on BOTH sides — the three that never
    -- change an answer key. This is what makes the migration idempotent AND what
    -- keeps it off the eleven hand-curated rows above — six of which keep a
-   -- space, four a capital and one an apostrophe. Applied today it
-   -- touches exactly ten rows; applied again it touches none.
+   -- space, four a capital and one an apostrophe. Measured 2026-09-07: ten
+   -- rows match; applied a second time none do.
    and lower(regexp_replace(coalesce(v.reading_plain, ''), '[ ''’]', '', 'g'))
        is distinct from
        lower(regexp_replace(
