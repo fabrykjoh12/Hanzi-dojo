@@ -353,9 +353,16 @@ describe('offline replay', () => {
     expect(sb.calls.update[0]).toMatchObject({ table: 'cards' })
     const activity = sb.calls.upsert.filter(c => c.table === 'daily_activity')
     expect(activity).toHaveLength(1)
-    // The user_id is the signed-in account, not one scavenged off the last op
-    // replayed. Those are the same value on any ordinary device and different
-    // on a shared one, which is the case the drop rule exists for.
+    // Pins the user_id, which nothing did before. It does NOT discriminate
+    // between the signed-in account and the old scavenged one — this op's
+    // userId is already 'u1', so both implementations produce this assertion.
+    // The spec above ("reconciles under the signed-in account") is the one that
+    // tells them apart, using an ownerless op; this is here so the field is
+    // pinned at all.
+    //
+    // And a foreign account's id can no longer reach reconcile by any route:
+    // flushOutbox skips an op that fails opIsReplayableBy, so everything left
+    // carries this account's id or none.
     expect(activity[0].vals).toMatchObject({
       user_id: 'u1', activity_date: '2026-07-22', studied_cards: 1, review_cards: 1,
     })
@@ -540,8 +547,10 @@ describe("a progress reset drops that track's queued writes, and only those", ()
 
   it('keeps an op that names no account at all', () => {
     // The opposite default to the language tag, deliberately: userId has been
-    // on every op since the queue existed, so its absence is not a one-version
-    // window to trade away, and the op may be another account's.
+    // on every LEARNER op since the queue existed — analytics carries none and
+    // never has (enqueueAnalytics stores the event, not an owner) — so for the
+    // three kinds this rule governs, its absence is not a one-version window to
+    // trade away, and the op may be another account's.
     expect(queuedOpBelongsToTrack(grade({ ...CN, userId: undefined }), CN, U)).toBe(false)
   })
 

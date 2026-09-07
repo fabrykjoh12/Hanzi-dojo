@@ -109,8 +109,10 @@ const RESET_DELETED_OP_KINDS = ['grade', 'storyRead', 'storyClaim']
  * corresponding deletion, which is worse than either failure the language rule
  * weighs. An op that does not name THIS user is therefore kept, missing userId
  * included: unlike the language tag, which this change introduced, userId has
- * been on every op since the queue existed, so its absence is not a version
- * window to trade away.
+ * been on every LEARNER op since the queue existed — analytics ops carry none
+ * and never have, which is why opIsReplayableBy lets an ownerless op through
+ * while this rule does not — so for the three kinds this governs, its absence
+ * is not a version window to trade away.
  */
 export function queuedOpBelongsToTrack(op, track, userId) {
   if (!op || !RESET_DELETED_OP_KINDS.includes(op.kind)) return false
