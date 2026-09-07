@@ -31,16 +31,36 @@
 -- already stopped it one step earlier. This closes the direct path that
 -- bypassed that step.
 --
--- Two readers deliberately keep full access:
---   * `admins can read all tts_audio` is a separate policy and is untouched,
---     so the admin audio tooling is unaffected.
+-- WHO KEEPS FULL ACCESS, and the correction that needed making. The first
+-- draft said "the admin audio tooling is unaffected" because `admins can read
+-- all tts_audio` is a separate, untouched policy. True of tts_audio — and only
+-- of tts_audio. story_utterances and story_questions had NO admin policy, so
+-- after the scoping above their only remaining policy would be published-only,
+-- and the admin review surface ROADMAP.md plans for generated audio could not
+-- read the utterance rows behind an unpublished story's clips: exactly the
+-- content it exists to review. Both now get the same admin escape the repo
+-- already uses for tts_audio (20260722140000).
+--
 --   * src/tts/** runs from root .mjs scripts under the SERVICE key, which
 --     bypasses RLS entirely — the generation pipeline still sees everything.
 --
--- vocabulary audio is untouched. Scoping is applied only to rows whose
--- source_type is 'story_utterance'; `source_type <> 'story_utterance'` passes
--- unchanged, so the anonymous public surface keeps the vocabulary pronunciation
--- it needs.
+-- VOCABULARY AUDIO IS UNTOUCHED, and the escape is a whitelist. `source_type =
+-- 'vocabulary'` passes unchanged, so the anonymous public surface keeps the
+-- pronunciation it needs. The first draft wrote `source_type <>
+-- 'story_utterance'`, which is exactly equivalent today — the column is NOT
+-- NULL with `check (source_type in ('vocabulary','story_utterance'))`
+-- (20260722140000) — and fails OPEN tomorrow: a third source_type would arrive
+-- anonymously readable by default. Naming what is allowed fails closed, which
+-- is the same argument this file makes for itself everywhere else.
+--
+-- ONE SIBLING IS DELIBERATELY LEFT ALONE. `tts_pronunciation_overrides` is also
+-- `authenticated ... using (true)` and its `source_text` holds "the context the
+-- correction came from" (20260722140000), which for a story-derived pin is
+-- unpublished story text. It is the same class of leak, it is outside the two
+-- findings this change closes, and scoping it needs a source_id join that table
+-- does not have — so it is recorded in docs/BACKLOG.md rather than half-fixed
+-- here. This migration's title is about the three tables named above, not about
+-- every table that touches a story.
 --
 -- Idempotent: drop policy if exists, then create.
 
@@ -68,6 +88,20 @@ create policy "authenticated users can read story questions"
     )
   );
 
+-- Admins see every row, published or not — the same shape as
+-- `admins can read all tts_audio`, so the review surfaces keep working.
+drop policy if exists "admins can read all story utterances" on public.story_utterances;
+create policy "admins can read all story utterances"
+  on public.story_utterances for select to authenticated using (
+    exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin)
+  );
+
+drop policy if exists "admins can read all story questions" on public.story_questions;
+create policy "admins can read all story questions"
+  on public.story_questions for select to authenticated using (
+    exists (select 1 from public.profiles p where p.id = auth.uid() and p.is_admin)
+  );
+
 -- ── tts_audio ───────────────────────────────────────────────────────────────
 -- Both client policies, because the authenticated one has the same hole; only
 -- the anonymous one is worse.
@@ -77,7 +111,7 @@ create policy "anon can read ready tts_audio"
   using (
     status = 'ready'
     and (
-      source_type <> 'story_utterance'
+      source_type = 'vocabulary'
       or exists (
         select 1
         from public.story_utterances u
@@ -94,7 +128,7 @@ create policy "authenticated can read ready tts_audio"
   using (
     status = 'ready'
     and (
-      source_type <> 'story_utterance'
+      source_type = 'vocabulary'
       or exists (
         select 1
         from public.story_utterances u
