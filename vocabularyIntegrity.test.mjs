@@ -448,6 +448,11 @@ describe('a check with nothing to read reports nothing, and never reports clean'
     // run for everybody; a skip shrinks a directional count and passes.
     const src = readFileSync('check-vocabulary-integrity.mjs', 'utf8')
     expect(src, 'the paged fetch is no longer ordered').toMatch(/\.order\('id',\s*\{\s*ascending:\s*true\s*\}\)/)
+    // The storage listing is paged too, and its ordering was left to the
+    // client's default until a review pointed out that the argument written
+    // down for one loop had not been applied to the other. Pinned here so
+    // dropping it again is not silent.
+    expect(src, 'the storage listing is no longer ordered').toMatch(/sortBy:\s*\{\s*column:\s*'name',\s*order:\s*'asc'\s*\}/)
   })
 
   it('the script refuses an empty corpus rather than reporting clean', () => {

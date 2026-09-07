@@ -151,7 +151,7 @@ if (empty.length) {
 const result = runChecks({ vocabulary, learnerAdded, vocabularyIds, cards, ttsAudio, audioObjects })
 
 console.log('CORPUS   ' + vocabulary.length + ' curriculum ' + LANGUAGE + '/' + SYSTEM + ' rows ('
-  + learnerAdded.length + ' more saved from the dictionary, measured separately) of '
+  + learnerAdded.length + ' more with no level, measured separately) of '
   + vocabularyIds.size + ' vocabulary rows in all · ' + cards.length + ' cards · ' + ttsAudio.length
   + ' vocabulary tts_audio rows · ' + audioObjects.size + ' stored clips\n')
 

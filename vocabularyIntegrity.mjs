@@ -132,7 +132,7 @@ export const HARD_CHECKS = [
   },
   {
     id: 'duplicate-across-corpus',
-    describe: 'no dictionary save shadows a curriculum row for the same word',
+    describe: 'no level-null row shadows a curriculum row for the same word',
     // duplicate-word reads the curriculum only, which is right — a learner
     // saving a word must never be able to fail this gate. But it leaves one
     // collision unmeasured: the SAME word present both as a curriculum row and
@@ -168,7 +168,7 @@ export const HARD_CHECKS = [
       for (const row of vocabulary) if (!curriculum.has(row.word)) curriculum.set(row.word, row.id)
       return learnerAdded
         .filter(row => curriculum.has(row.word))
-        .map(row => ({ id: row.id, detail: row.word + ' is a dictionary save shadowing curriculum row ' + curriculum.get(row.word) }))
+        .map(row => ({ id: row.id, detail: row.word + ' has a level-null row shadowing curriculum row ' + curriculum.get(row.word) }))
     },
   },
   {
@@ -301,7 +301,7 @@ export const HARD_CHECKS = [
     collect: ({ learnerAdded }) => (learnerAdded || [])
       .filter(row => row.sort_order !== 0)
       .map(row => ({ id: row.id, detail: row.word + ' has no level but sort_order ' + row.sort_order
-        + ' — a curriculum row that lost its level, not a dictionary save' })),
+        + ' — the shape of a curriculum row that lost its level, not of a dictionary save' })),
   },
   {
     id: 'ready-audio-has-path',
