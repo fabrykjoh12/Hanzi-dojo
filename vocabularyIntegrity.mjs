@@ -24,11 +24,23 @@ const TONE_MARKED = 'āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüĀÁǍÀ�
 const TONE_PLAIN = 'aaaaeeeeiiiioooouuuuuuuuuAAAAEEEEIIIIOOOOUUUUUUUUU'
 
 // The same fold src/testLogic.js's normalizePinyin performs, and the same one
-// 20260907030000 writes into SQL. Three copies of one rule is two too many, but
-// they live in three languages; a spec holds this one to the app's.
+// the pending reading_plain repair writes into SQL — that migration is on the
+// claude/fab-36-reading-plain-drift branch, not in this change, so do not go
+// looking for it under supabase/migrations/ here. Three copies of one rule is
+// two too many, but they live in three languages; a spec holds this one to the
+// app's.
+//
+// COMPOSED FIRST, which is not decoration. normalizePinyin decomposes to NFD
+// and drops every combining mark, so it folds a decomposed `ǎ` (a + U+030C) as
+// happily as a precomposed one; a table lookup does not. The app added that
+// handling because rows really were stored decomposed. normalize('NFC') is what
+// makes the table see the character the table knows, and it is the same thing
+// `normalize(v.reading, nfc)` does in the SQL. Production holds no non-NFC
+// reading today (measured), so this changes no count — it stops the claim above
+// from being false the day one appears.
 export function stripTones(reading) {
   let out = ''
-  for (const ch of String(reading || '')) {
+  for (const ch of String(reading == null ? '' : reading).normalize('NFC')) {
     const i = TONE_MARKED.indexOf(ch)
     out += i === -1 ? ch : TONE_PLAIN[i]
   }
@@ -157,6 +169,15 @@ export const HARD_CHECKS = [
     // called it one would be unfixable. Deactivated is not orphaned either:
     // CLAUDE.md §7.1 deactivates rather than deletes, precisely so the cards
     // that point at them keep working.
+    //
+    // WORTH KNOWING: `cards.vocab_id` carries a foreign key, so this check
+    // cannot fire while that constraint holds, and a green result here is
+    // evidence about the constraint rather than about the data. It stays
+    // because a floor that depends on a constraint should notice the
+    // constraint going away. The reference check with real teeth is
+    // `tts-orphan` below — `tts_audio.source_id` has no FK by design, because
+    // it points at either a vocabulary row or a story utterance, and 7,416 of
+    // them are dangling today.
     collect: ({ vocabularyIds, cards }) => {
       if (!vocabularyIds || !cards) return []
       return cards.filter(c => !vocabularyIds.has(c.vocab_id))
@@ -165,7 +186,11 @@ export const HARD_CHECKS = [
   },
   {
     id: 'ready-audio-has-path',
-    describe: 'a tts_audio row marked ready has a storage path',
+    describe: 'every vocabulary tts_audio row marked ready has a storage path',
+    // "vocabulary", because that is what the script fetches — story-utterance
+    // clips are never inspected here and this check says nothing about them.
+    // It also checks a PATH, not a file: whether an object exists at that path
+    // is the no-audio check's question, and only for vocabulary rows.
     collect: ({ ttsAudio }) => (ttsAudio || [])
       .filter(t => t.status === 'ready' && blank(t.storage_path))
       .map(t => ({ id: t.id, detail: 'tts_audio ' + t.id + ' ready with no storage_path' })),

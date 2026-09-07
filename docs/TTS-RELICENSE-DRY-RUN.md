@@ -75,6 +75,14 @@ an omission later:
 | Russian | 147 |
 | **Total** | **6,058** |
 
+> **Superseded in part, 2026-09-07.** This table counts rows with no AZURE clip
+> and calls the rest "legacy Google", which assumed the Google files were
+> reachable. They are not: only 504 of 4,998 active Chinese rows have a file at
+> their own `audio_path`, and the objects under `chinese/hsk_3/level_3…6` are
+> numbered for a superseded word list. See the `白` entry in `docs/BACKLOG.md`
+> for the measurement. The Azure count below is unaffected; what is wrong is the
+> implication that the other 4,473 have anything to play.
+
 So **4,473 active Chinese words have no Azure audio at all.** Voicing them is
 *new content generation*, not re-licensing, and it is a separate decision. For
 scale: it would be roughly 78,700 characters ≈ USD 1.26 ≈ NOK 12 — also trivial

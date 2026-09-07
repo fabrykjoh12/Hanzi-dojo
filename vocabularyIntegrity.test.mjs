@@ -26,6 +26,17 @@ const row = (over) => ({
 })
 
 describe('the tone fold agrees with the one the app grades against', () => {
+  it('folds a DECOMPOSED tone mark the way the app does', () => {
+    // normalizePinyin decomposes and drops combining marks, so it handles both
+    // spellings; a table lookup only handles the precomposed one. The app added
+    // that because rows really were stored decomposed.
+    const decomposed = 'ha' + String.fromCharCode(0x30c) + 'o'   // hǎo, a + caron
+    expect(decomposed.normalize('NFC')).not.toBe(decomposed)
+    expect(stripTones(decomposed).toLowerCase(), 'a decomposed tone mark survived the fold')
+      .toBe(normalizePinyin(decomposed))
+    expect(answerKeyForm(decomposed)).toBe('hao')
+  })
+
   it('folds every character src/testLogic.js folds', () => {
     // reading_plain is an answer key: typedAnswer.js and writingMatch.js both
     // accept it through normalizePinyin. A checker that disagreed about what
