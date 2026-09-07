@@ -190,10 +190,11 @@ describe('parity with the canonical validator', () => {
     // the committed ones.
     //
     // `seal-guard` is therefore a RESERVED prefix in .agent/tasks — a committed
-    // contract carrying it would be skipped here in silence. Recorded in
-    // docs/AUTOMATION-AUTHORITY.md next to the tier lists, and the floor below
-    // is what makes the exclusion cheap to hold: the count must not drop, so a
-    // real contract cannot vanish behind this filter without failing here.
+    // contract carrying it would be skipped here in silence, and the floor
+    // below does not change that: it catches a contract RENAMED or deleted, not
+    // a ninth one added under the reserved name. What protects that case is the
+    // rule itself, recorded in docs/AUTOMATION-AUTHORITY.md next to the tier
+    // lists, not this assertion.
     const names = readdirSync(dir).filter(n => n.endsWith('.json') && !n.startsWith('seal-guard'))
     expect(names.length, 'a committed contract disappeared from the parity spec').toBeGreaterThanOrEqual(8)
     for (const n of names) {
@@ -283,8 +284,11 @@ describe('parity with the canonical validator', () => {
   })
 
   it('derives the same effective scope as the validator, for contracts on disk', () => {
+    // Same `seal-guard` exclusion as the digest spec above, and for the same
+    // race: this loop JSON.parses every file it finds, so a probe caught
+    // half-written throws here rather than failing an assertion.
     const dir = '.agent/tasks'
-    for (const n of readdirSync(dir).filter(f => f.endsWith('.json'))) {
+    for (const n of readdirSync(dir).filter(f => f.endsWith('.json') && !f.startsWith('seal-guard'))) {
       const c = JSON.parse(readFileSync(dir + '/' + n, 'utf8'))
       expect(effectiveScope(c), n).toEqual(effectiveAllowedPaths(c))
     }
