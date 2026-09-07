@@ -26,16 +26,19 @@
 -- WHAT DRIFTED. 20260724120000_fix_hsk3_6_readings.sql (written 2026-07-24,
 -- applied 2026-08-03) corrected `reading` on 54 rows the bulk import had got
 -- wrong — four classes, of which a rare reading beating the everyday one is
--- only one; twelve are a proper-noun capital on an ordinary word, where the
--- pronunciation was never wrong at all. docs/BACKLOG.md records the apply:
--- "All 54 rows corrected in prod", with five spot-checked values. Worth noting
--- against that record rather than glossing it: 转 is one of the 54 and has no
--- row today, so a row that was corrected in August is gone in September, which
--- is the provenance question set out below and not this migration's to answer.
--- Nothing here depends on the number — the ten below were measured directly.
--- It did not touch
--- `reading_plain`, so ten rows still carry the tone-stripped form of the
--- reading that was REJECTED. Measured live 2026-09-07 against the predicate
+-- only one. Twenty-two are a proper-noun capital on an ordinary word, where the
+-- pronunciation was never wrong at all: twelve single characters differ by
+-- nothing but the capital, and ten more (成功, 和平, 美元, 网络, 资源, 大众, 通道,
+-- 时代, 现代, 将军) by a capital plus a joined spelling. docs/BACKLOG.md records
+-- the apply: "All 54 rows corrected in prod", with five spot-checked values.
+-- Worth noting against that record rather than glossing it: 转 is one of the 54
+-- and has no row today, so a row that was corrected in August is gone in
+-- September, which is the provenance question set out below and not this
+-- migration's to answer. Nothing here depends on the number — the ten below
+-- were measured directly.
+--
+-- THAT MIGRATION DID NOT TOUCH `reading_plain`, so ten rows still carry the
+-- tone-stripped form of the reading that was REJECTED. Measured live 2026-09-07 against the predicate
 -- below — these are the only ten in the whole chinese/hsk_3 corpus, and all ten
 -- are active:
 --
@@ -105,15 +108,16 @@
 -- a migration whose whole justification is that ten rows do not.
 --
 -- WHAT THE COMPARISON IGNORES, EXACTLY. Space, apostrophe and case — no more
--- than that. (Both apostrophe glyphs are stripped, though only on the stored
--- side in practice: a `reading` containing U+2019 would fail the ASCII guard
--- below and be skipped before the comparison ran.) lenientPinyin ignores a wider set (numeric tones
+-- than that. (Both apostrophe glyphs are stripped. The straight `'` matters on
+-- both sides — 女儿's reading folds to `nu'er` — while U+2019 matters only on the
+-- stored side, since a `reading` containing it would fail the ASCII guard below
+-- and be skipped before the comparison ran.) lenientPinyin ignores a wider set (numeric tones
 -- 1-5, `v`/`ü`, and `.,!?;:'"()-_·`), and the difference is deliberate rather
 -- than an oversight: folding `:` here would exclude 忽略 and 策略, which are
 -- exactly the two rows this migration repairs for hygiene rather than grading.
 -- So the predicate is: "differs by more than the three things that never change
 -- an answer key" — which is why it fires on eight genuine mis-gradings, two
--- ASCII-transliteration leftovers, and none of the eleven spaced rows above.
+-- ASCII-transliteration leftovers, and none of the eleven hand-curated rows above.
 -- The value written preserves the shape of `reading` itself — its spacing and
 -- case, tones removed. That is a statement about `reading`, not about the row's
 -- previous `reading_plain`: a repaired row takes the reading's convention. For
@@ -189,7 +193,8 @@ update public.vocabulary v
          'aaaaeeeeiiiioooouuuuuuuuuAAAAEEEEIIIIOOOOUUUUUUUUU') ~ '^[[:ascii:]]*$'
    -- Ignoring space, case and apostrophe on BOTH sides — the three that never
    -- change an answer key. This is what makes the migration idempotent AND what
-   -- keeps it off the eleven legitimately-spaced rows above. Applied today it
+   -- keeps it off the eleven hand-curated rows above — six of which keep a
+   -- space, four a capital and one an apostrophe. Applied today it
    -- touches exactly ten rows; applied again it touches none.
    and lower(regexp_replace(coalesce(v.reading_plain, ''), '[ ''’]', '', 'g'))
        is distinct from
