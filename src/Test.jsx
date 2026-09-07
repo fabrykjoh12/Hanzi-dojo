@@ -4,7 +4,7 @@ import { getTestStatus, getAttemptsToday, canStartTest } from './testLogic'
 import { fetchPagedResult } from './supabasePaging'
 import { getLevelLabel, getNextLevel, shuffle } from './utils'
 import { languageTheme, langAttr } from './languageTheme'
-import { testWrongAnswerWrite, testResultSummaryLine } from './testReschedule'
+import { testWrongAnswerWrite, testResultSummaryLine, TEST_CARD_COLUMNS } from './testReschedule'
 import { gradeCardWrite, newOpId } from './syncQueue'
 import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import { useIsMobile } from './useIsMobile'
@@ -317,6 +317,11 @@ export default function Test({ session, profile, track, onBack }) {
   }
 
   const finishTest = async (allAnswers, finalWrong) => {
+    // Clear last attempt's failure before this one can set it. Without this a
+    // retry that succeeds still prints "could not be returned to review" — the
+    // result line claiming a failure that did not happen, which is the same
+    // dishonesty as the bug this file exists to fix, inverted.
+    setRescheduleError(null)
     setSaving(true)
     const passed = finalWrong.length === 0
     const correctCount = allAnswers.filter(a => a.was_correct).length
@@ -354,7 +359,7 @@ export default function Test({ session, profile, track, onBack }) {
       const wrongVocabIds = finalWrong.map(w => w.id)
       const { data: wrongCards } = await supabase
         .from('cards')
-        .select('id, vocab_id, state, due_at, stability, difficulty, elapsed_days, scheduled_days, reps, lapses, learning_step, last_review')
+        .select(TEST_CARD_COLUMNS)
         .eq('user_id', session.user.id)
         .in('vocab_id', wrongVocabIds)
 
@@ -368,9 +373,15 @@ export default function Test({ session, profile, track, onBack }) {
       // learner got the word wrong and the card was neither rescheduled nor
       // un-claimed.
       let rescheduleFailed = null
+      let rescheduled = 0
+      let skipped = 0
       for (const w of finalWrong) {
-        const payload = testWrongAnswerWrite(cardByVocabId[w.id])
-        if (!payload) continue
+        // The learner's retention dial, as Study.jsx passes it. Without it a
+        // fresh device schedules at the default until Settings is opened once.
+        const payload = testWrongAnswerWrite(cardByVocabId[w.id], {
+          targetRetention: profile && profile.target_retention,
+        })
+        if (!payload) { skipped += 1; continue }
         const write = await gradeCardWrite(supabase, {
           userId: session.user.id,
           ...payload,
@@ -378,12 +389,21 @@ export default function Test({ session, profile, track, onBack }) {
         })
         // Not swallowed. One failure here means a word the learner demonstrably
         // does not know keeps counting as known, which is worth saying out loud.
-        if (!write.ok) {
+        if (write.ok) rescheduled += 1
+        else {
           rescheduleFailed = write.error
           console.error('[Test] wrong-answer reschedule failed', w.id, write.error)
         }
       }
-      if (rescheduleFailed) setRescheduleError(rescheduleFailed.message || 'Some words could not be rescheduled.')
+      // A word with no card row is not a failure — there is nothing to
+      // reschedule — but it must not be counted as one that came back either.
+      if (rescheduleFailed || skipped > 0) {
+        setRescheduleError({
+          message: rescheduleFailed ? (rescheduleFailed.message || 'Some words could not be rescheduled.') : null,
+          rescheduled,
+          total: finalWrong.length,
+        })
+      }
     }
 
     if (passed) {
@@ -762,7 +782,7 @@ export default function Test({ session, profile, track, onBack }) {
           {testResultSummaryLine({
             passed: lastResult.passed,
             wrongCount: lastResult.wrongCount,
-            rescheduleFailed: Boolean(rescheduleError),
+            rescheduled: rescheduleError ? rescheduleError.rescheduled : undefined,
           })}
         </p>
 
