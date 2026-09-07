@@ -121,6 +121,20 @@ describe('the fold the database applies is the one the app applies', () => {
     // for that row grades wrong.
     expect(code, 'the NULL-reading guard is gone').toMatch(/v\.reading\s+is\s+not\s+null/)
     expect(code, 'the letter guard is gone').toMatch(/~\s*'\[A-Za-z\]'/)
+    // Every guard above is joined by `and`, and every one of them is written as
+    // a conjunct rather than inside an OR. Asserted because the greps are
+    // presence tests: moving `v.reading is not null` into an `or` would keep
+    // them all green while the guard stopped guarding. `or` appears nowhere in
+    // the executable text today, which is the cheapest way to say that.
+    expect(code, 'a guard was moved into an OR').not.toMatch(/\bor\b/i)
+    // THE COMPARISON'S POLARITY, which neither the greps nor the row model can
+    // see: wouldUpdate hard-codes `!==`, so flipping the SQL to `is not
+    // distinct from` would keep all of this green while the statement selected
+    // the rows that already AGREE and skipped all ten that drifted. Inert
+    // rather than damaging — it would write each agreeing row its own value —
+    // but a spec that cannot tell a repair from a no-op is not pinning much.
+    expect(code, 'the comparison operator was inverted').toMatch(/\bis\s+distinct\s+from\b/)
+    expect(code, 'the comparison operator was inverted').not.toMatch(/\bis\s+not\s+distinct\s+from\b/)
     // And the older, narrower spelling must not come back: it tested emptiness
     // after stripping space and apostrophe only, so `·`, `-`, `.` and a bare
     // numeric tone all walked through it.

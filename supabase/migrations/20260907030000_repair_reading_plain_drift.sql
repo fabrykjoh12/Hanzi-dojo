@@ -23,6 +23,14 @@
 -- function that does — has no caller in the app at all today. The defect is
 -- real and it teaches wrong pronunciation; it does not unlock a level.
 --
+-- Nor does anyone hold these ten cards today. All ten come from the HSK 3-6
+-- pass, and the whole user base is at HSK 1-2, which is the clean band
+-- (measured 2026-09-07; docs/BACKLOG.md records the same of the 54). That is
+-- reach, not severity: `dict_add_to_deck` reuses the existing curriculum row by
+-- word, so an HSK 1 learner who looks 厂 up in the dictionary holds this exact
+-- row and is graded by this exact key. Repair it before someone does, rather
+-- than because someone has.
+--
 -- WHAT DRIFTED. 20260724120000_fix_hsk3_6_readings.sql (written 2026-07-24,
 -- applied 2026-08-03) corrected `reading` on 54 rows the bulk import had got
 -- wrong — four classes, of which a rare reading beating the everyday one is
@@ -38,9 +46,9 @@
 -- were measured directly.
 --
 -- THAT MIGRATION DID NOT TOUCH `reading_plain`, so ten rows still carry the
--- tone-stripped form of the reading that was REJECTED. Measured live 2026-09-07 against the predicate
--- below — these are the only ten in the whole chinese/hsk_3 corpus, and all ten
--- are active:
+-- tone-stripped form of the reading that was REJECTED. Measured live on
+-- 2026-09-07 against the predicate below — these are the only ten in the whole
+-- chinese/hsk_3 corpus, and all ten are active:
 --
 --     厂  chǎng  han  → chang      广  guǎng  yan   → guang
 --     追  zhuī   dui  → zhui       约  yuē    yao   → yue
@@ -80,8 +88,8 @@
 -- loss today. Reconciling those two accounts is provenance work and is out of
 -- scope here: this migration is predicate-scoped and references neither word.
 --
--- EIGHT OF THE TEN ARE THAT DEFECT. The last two are not, and saying so matters
--- more than the tidier claim: 忽略 and 策略 carry `hulu:e` / `celu:e`, the ASCII
+-- EIGHT OF THE TEN ARE THE MIS-GRADING DEFECT. The last two are not, and
+-- saying so matters more than the tidier claim: 忽略 and 策略 carry `hulu:e` / `celu:e`, the ASCII
 -- transliteration the 2026-07-24 migration names as a defect it removes — and
 -- it removed it from `reading` only. But lenientPinyin strips `:` along with
 -- the rest of its punctuation, so those two accept exactly the same inputs
@@ -109,10 +117,11 @@
 --
 -- WHAT THE COMPARISON IGNORES, EXACTLY. Space, apostrophe and case — no more
 -- than that. (Both apostrophe glyphs are stripped. The straight `'` matters on
--- both sides — 女儿's reading folds to `nu'er` — while U+2019 matters only on the
--- stored side, since a `reading` containing it would fail the ASCII guard below
--- and be skipped before the comparison ran.) lenientPinyin ignores a wider set (numeric tones
--- 1-5, `v`/`ü`, and `.,!?;:'"()-_·`), and the difference is deliberate rather
+-- both sides — 女儿's reading folds to `nu'er` — while U+2019 matters only on
+-- the stored side, since a `reading` containing it would fail the ASCII guard
+-- below and be skipped before the comparison ran.) lenientPinyin ignores a
+-- wider set (numeric tones 1-5, `v`/`ü`, and `.,!?;:'"()-_·`), and the
+-- difference is deliberate rather
 -- than an oversight: folding `:` here would exclude 忽略 and 策略, which are
 -- exactly the two rows this migration repairs for hygiene rather than grading.
 -- So the predicate is: "differs by more than the three things that never change
