@@ -56,9 +56,12 @@
 -- paragraph got it wrong in opposite directions, which is why the claim is now
 -- this narrow:
 --
---   * "the corpus was reseeded since" — false. docs/VOCAB-INGESTION.md opens
---     with "Nothing in this document has been implemented. No vocabulary row
---     has been added, changed or reseeded."
+--   * "the corpus was reseeded since" — unsupported. docs/VOCAB-INGESTION.md
+--     opens with "Nothing in this document has been implemented. No vocabulary
+--     row has been added, changed or reseeded, and no source_id has been
+--     backfilled." That rules out the reseed THAT DOCUMENT describes; it does
+--     not establish that nothing else changed, and the next bullet shows
+--     something did.
 --   * "neither word was ever in vocabulary" — also false, at least for 转.
 --     data/hsk3-vocab-snapshot.json carries ["转","zhuǎi"], and that file is a
 --     PRODUCTION dump (docs/PM-BOARD.md: "read from production", 2026-07-24;
@@ -68,8 +71,9 @@
 -- src/authoredStories.test.js records the shape of that change — the snapshot
 -- holds "457 words from an OLDER HSK 3 draft, of which only 50 survive in the
 -- current level" — and storyVocabAudit.test.mjs classifies 转 as an ingestion
--- loss today. Reconciling those two accounts is provenance work, which is
--- FAB-42's subject; the evidence is recorded there rather than guessed at here.
+-- loss today. Reconciling those two accounts is provenance work and is out of
+-- scope here — this migration touches neither word and depends on neither
+-- answer.
 -- Nothing in this migration depends on the answer: it is predicate-scoped, and
 -- neither word is referenced by it.
 --
@@ -154,26 +158,27 @@ update public.vocabulary v
    and v.system = 'hsk_3'
    -- A NULL `reading` derives NULL, and `is distinct from` would happily write
    -- that over a perfectly good answer key. The schema allows both columns to
-   -- be NULL — that is the live schema; docs/ARCHITECTURE.md lists the columns
-   -- without stating nullability — so the guard is not theoretical. An EMPTY
-   -- reading is the
-   -- same defect wearing a different value: it folds to '', which is ASCII and
-   -- distinct from any real key, so without this it would blank the answer key
-   -- and make every typed answer for that row wrong.
+   -- be NULL — supabase/schema.sql has `word text not null` and then `reading
+   -- text` / `reading_plain text` with no such clause — so the guard is not
+   -- theoretical. An EMPTY reading is the same defect wearing a different
+   -- value: it folds to '', which is ASCII and distinct from any real key, so
+   -- without a guard it would blank the answer key and make every typed answer
+   -- for that row wrong. The next guard covers both, and more.
    and v.reading is not null
-   and btrim(v.reading) <> ''
-   -- And a reading that survives btrim but folds away to nothing — a value of
-   -- only apostrophes and spaces. It passes the two guards above and the ASCII
-   -- one below, and the key written would be a string lenientPinyin reduces to
-   -- '', which both graders then drop with .filter(Boolean): the same blanking,
-   -- one shape further out. Contrived, but it is the class the two lines above
-   -- claim to close, so it is closed rather than described.
-   and lower(regexp_replace(
-         translate(
-           normalize(v.reading, nfc),
-           'āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüĀÁǍÀĒÉĚÈĪÍǏÌŌÓǑÒŪÚǓÙǕǗǙǛÜ',
-           'aaaaeeeeiiiioooouuuuuuuuuAAAAEEEEIIIIOOOOUUUUUUUUU'),
-         '[ ''’]', '', 'g')) <> ''
+   -- The written key must contain at least one LETTER. That covers the empty
+   -- reading, the whitespace-only one, and every value that folds away to
+   -- something a grader cannot match — apostrophes and spaces, but also `·`,
+   -- `-`, `.` and a bare numeric tone, all of which lenientPinyin strips too
+   -- (src/testLogic.js). A previous version of this guard tested emptiness
+   -- after removing space and apostrophe only, and called the class closed
+   -- while three other spellings walked through it. One letter surviving is the
+   -- property that actually matters: without it, both graders reduce the key to
+   -- '' and drop it with .filter(Boolean), and every typed answer for that row
+   -- is wrong.
+   and translate(
+         normalize(v.reading, nfc),
+         'āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüĀÁǍÀĒÉĚÈĪÍǏÌŌÓǑÒŪÚǓÙǕǗǙǛÜ',
+         'aaaaeeeeiiiioooouuuuuuuuuAAAAEEEEIIIIOOOOUUUUUUUUU') ~ '[A-Za-z]'
    -- Only write a value the map fully folded. See THE TONE FOLD above: a
    -- character outside the map survives into the result, and a half-folded
    -- answer key is worse than the drift being repaired.

@@ -14,13 +14,14 @@ import { isWritingMatch } from './src/writingMatch.js'
 //
 //   1. the tone fold in the SQL and the tone fold in src/testLogic.js have to
 //      agree, or the answer KEY and the answer CHECKER disagree about what
-//      "tone-stripped" means — and the SQL states that fold THREE times, so all
-//      three have to be the same fold;
+//      "tone-stripped" means — and the SQL states that fold four times, so all
+//      four have to be the same fold;
 //   2. the comparison has to ignore space, apostrophe and case on both sides
 //      and nothing else, or it rewrites rows that are not broken (the first
 //      draft did, to eleven of them);
-//   3. the two guards that keep it from writing a bad key — non-null `reading`,
-//      and a fold that came out fully ASCII — have to be present;
+//   3. the guards that keep it from writing a bad key have to be present: a
+//      non-null `reading`, a fold that came out fully ASCII, and a fold that
+//      still has a letter in it;
 //   4. the mis-grading it claims has to be real, in the functions the app
 //      actually calls.
 //
@@ -60,9 +61,9 @@ describe('the statement writes what it says it writes', () => {
 
 describe('the fold the database applies is the one the app applies', () => {
   it('states the same fold everywhere it appears', () => {
-    // Four occurrences, and each one is load-bearing: the SET clause, the ASCII
-    // guard, the folds-away-to-nothing guard, and the comparison. A fixed count
-    // is what catches a fifth appearing unaudited.
+    // Four occurrences, and each one is load-bearing: the SET clause, the
+    // letter guard, the ASCII guard, and the comparison. A fixed count is what
+    // catches a fifth appearing unaudited.
     expect(folds.length, 'expected the fold in the SET clause and all three WHERE clauses').toBe(4)
     expect((code.match(/translate\(/g) || []).length,
       'a translate() appears that is not the audited fold — it may not compose NFC first')
@@ -70,8 +71,8 @@ describe('the fold the database applies is the one the app applies', () => {
     for (const fold of folds) {
       expect(fold.from.length, 'the two translate() arguments are different lengths — Postgres would silently drop the tail')
         .toBe(fold.to.length)
-      expect(fold.from.join(''), 'the three folds are not identical').toBe(folds[0].from.join(''))
-      expect(fold.to.join(''), 'the three folds are not identical').toBe(folds[0].to.join(''))
+      expect(fold.from.join(''), 'the folds are not all identical').toBe(folds[0].from.join(''))
+      expect(fold.to.join(''), 'the folds are not all identical').toBe(folds[0].to.join(''))
     }
   })
 
@@ -109,7 +110,7 @@ describe('the fold the database applies is the one the app applies', () => {
       .toMatch(/~\s*'\^\[\[:ascii:\]\]\*\$'/)
   })
 
-  it('never derives a key from a NULL or empty reading', () => {
+  it('never writes a key with no letter in it', () => {
     // translate(NULL) is NULL, and `is distinct from` is true against any
     // stored value — so without this guard a row with a NULL reading and a good
     // reading_plain has its answer key overwritten with NULL. The schema allows
@@ -119,7 +120,11 @@ describe('the fold the database applies is the one the app applies', () => {
     // writingMatch.js both drop it with .filter(Boolean) and every typed answer
     // for that row grades wrong.
     expect(code, 'the NULL-reading guard is gone').toMatch(/v\.reading\s+is\s+not\s+null/)
-    expect(code, 'the empty-reading guard is gone').toMatch(/btrim\(v\.reading\)\s*<>\s*''/)
+    expect(code, 'the letter guard is gone').toMatch(/~\s*'\[A-Za-z\]'/)
+    // And the older, narrower spelling must not come back: it tested emptiness
+    // after stripping space and apostrophe only, so `·`, `-`, `.` and a bare
+    // numeric tone all walked through it.
+    expect(code, 'the narrow emptiness guard is back').not.toMatch(/btrim\(v\.reading\)/)
   })
 
   it('touches only the chinese hsk_3 corpus', () => {
@@ -139,9 +144,9 @@ describe('the comparison ignores space, apostrophe and case — on both sides', 
   const classes = [...code.matchAll(/,\s*'\[([^\]]+)\]',\s*'',\s*'g'\)/g)].map(m => m[1])
 
   it('strips the same three characters everywhere it strips anything', () => {
-    // Three: the folds-away guard strips before testing for emptiness, and both
-    // sides of the comparison strip before comparing.
-    expect(classes.length, 'the comparison no longer normalises before comparing').toBe(3)
+    // Two: both sides of the comparison strip before comparing, and nothing
+    // else in the statement strips at all.
+    expect(classes.length, 'the comparison no longer normalises before comparing').toBe(2)
     for (const chars of classes) {
       expect(chars, 'a strip class dropped a character the other side still strips').toContain(' ')
       expect(chars).toContain("'")
@@ -153,7 +158,7 @@ describe('the comparison ignores space, apostrophe and case — on both sides', 
     // back into scope — and a single toMatch passes with either half present.
     expect((code.match(/lower\(regexp_replace/g) || []).length,
       'the comparison lowercases only one side, so case differences count again')
-      .toBe(3)
+      .toBe(2)
   })
 
   it('does not fold `:`, because that is what keeps the two ü rows in scope', () => {
@@ -170,8 +175,9 @@ describe('the comparison ignores space, apostrophe and case — on both sides', 
   // sentence an earlier version of this comment used:
   //
   //   parsed   the translate() map, the strip class
-  //   modelled translate / lower / regexp_replace semantics, and the ASCII guard
-  //   restated the NULL and blank-reading guards, the language/system scope
+  //   modelled translate / lower / regexp_replace semantics, the ASCII guard,
+  //            and the letter guard
+  //   restated the NULL guard, the language/system scope
   //   absent   normalize(…, nfc) — every fixture below is already NFC
   //
   // So this cannot prove Postgres agrees. What it proves is which rows the rule
@@ -189,11 +195,14 @@ describe('the comparison ignores space, apostrophe and case — on both sides', 
     return String(value == null ? '' : value).replace(strip, '').toLowerCase()
   }
   const wouldUpdate = (reading, readingPlain) => {
-    if (reading == null || String(reading).trim() === '') return false
+    if (reading == null) return false
     const folded = sqlFold(reading)
     // The ASCII guard, modelled: a row the map did not fully flatten is skipped
     // rather than written back half-folded.
     if (/[^\x00-\x7F]/.test(folded)) return false
+    // The letter guard, modelled: a key with no letter in it is one no grader
+    // can ever match.
+    if (!/[A-Za-z]/.test(folded)) return false
     return sqlKey(readingPlain) !== sqlKey(folded)
   }
 
@@ -230,7 +239,12 @@ describe('the comparison ignores space, apostrophe and case — on both sides', 
     expect(wouldUpdate('ǹg', 'ng'), 'a half-folded value was written').toBe(false)
     // And the two shapes the guards exist for.
     expect(wouldUpdate(null, 'hao'), 'a NULL reading reached the predicate').toBe(false)
-    expect(wouldUpdate('  ', 'hao'), 'an empty reading reached the predicate').toBe(false)
+    // Every one of these folds to a value with no letter in it, so none may be
+    // written — the empty case, and the three spellings the older, narrower
+    // guard let through.
+    for (const empty of ['  ', "'", '·', '-', '.', '1', '’ ']) {
+      expect(wouldUpdate(empty, 'hao'), JSON.stringify(empty) + ' was written as an answer key').toBe(false)
+    }
     // A row whose key is missing entirely is filled in rather than skipped —
     // coalesce('') is distinct from any real fold. Worth pinning: it is the one
     // case where the migration writes a value that was never there.
