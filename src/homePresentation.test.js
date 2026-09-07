@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { HOME_MOTION, homeDailyStage, homeProgressPct, homeQueueSummary, storyReadStateForDate } from './homePresentation'
+import { HOME_MOTION, homeDailyStage, homeProgressPct, homeQueueSummary, storyReadStateForDate, waitingBadgeCount } from './homePresentation'
 
 describe('Home presentation data', () => {
   it('combines reviews and new cards into the hero count', () => {
@@ -31,7 +31,7 @@ describe('Home presentation data', () => {
   })
 
   it('is NOT clear while calibration checks are waiting and nothing else is', () => {
-    // The exact production shape: 0 due, 0 learning, 0 new, 270 claims ready.
+    // The exact production shape: 0 due, 0 learning, 0 new, and claims ready — 270 of them in production, which getHomeCounts caps to CALIBRATION_SESSION_CAP before it reaches here, hence 20.
     // Before this, `clear` went true here — which also flipped Home's primary
     // action from studying to "Read a story".
     const summary = homeQueueSummary({ dueCount: 0, learnCount: 0, newCount: 0, calibrationCount: 20 })
@@ -84,5 +84,28 @@ describe('Home presentation data', () => {
 
   it('locks the approved motion timings', () => {
     expect(HOME_MOTION).toEqual({ press: 160, nav: 260, page: 460, reduced: 130 })
+  })
+})
+
+describe('waitingBadgeCount', () => {
+  // The desktop rail's Cards badge. It exists as a function because the rail
+  // used to add its own three terms: calibration became a term in the hero and
+  // not in that sum, so with only claims ready the hero said "20 cards waiting"
+  // while the badge hid at zero — the same "all caught up" lie, one component
+  // over, on the same screen.
+  it('is the hero total, term for term', () => {
+    const counts = { dueCount: 3, learnCount: 2, newCount: 4, calibrationCount: 6 }
+    expect(waitingBadgeCount(counts)).toBe(homeQueueSummary(counts).totalReady)
+    expect(waitingBadgeCount(counts)).toBe(15)
+  })
+
+  it('sees a queue made of nothing but calibration checks', () => {
+    // The production shape, and the one the old sum reported as zero.
+    expect(waitingBadgeCount({ dueCount: 0, learnCount: 0, newCount: 0, calibrationCount: 20 })).toBe(20)
+  })
+
+  it('is zero only when the queue really is empty', () => {
+    expect(waitingBadgeCount({})).toBe(0)
+    expect(waitingBadgeCount({ dueCount: 0, learnCount: 0, newCount: 0, calibrationCount: 0 })).toBe(0)
   })
 })

@@ -14,6 +14,18 @@ export function homeQueueSummary(counts = {}) {
   return { totalReady, reviewCount, newCount, calibrationCount, clear: !failed && totalReady === 0, failed }
 }
 
+// The number the desktop rail shows on Cards. It is the hero's total, and this
+// exists so it cannot be re-derived and drift: the rail used to add its own
+// three terms, calibration was added to the hero and not to it, and with only
+// claims ready the hero said "20 cards waiting" while the badge hid at zero —
+// the same "all caught up" lie, one component over.
+//
+// Hidden at zero is the rail's own rule, not this function's: "0" is a nag, and
+// a cleared queue should look cleared.
+export function waitingBadgeCount(counts = {}) {
+  return homeQueueSummary(counts).totalReady
+}
+
 export function homeProgressPct(learned, totalWords) {
   return totalWords > 0 ? (learned / totalWords) * 100 : 0
 }

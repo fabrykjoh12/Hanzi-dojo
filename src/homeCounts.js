@@ -108,17 +108,26 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   // to "Read a story" on that same `clear` flag.
   //
   // Counted through the same predicate the session picks with, and capped by
-  // the same constant, so the promise and the delivery cannot drift here
-  // either. `pickCalibrationChecks` is not called directly because it needs
+  // the same constant, so calibration cannot drift between the two on its own
+  // account. `pickCalibrationChecks` is not called directly because it needs
   // each card joined to its vocabulary row, which Home does not fetch and does
   // not need: the pick is by readiness and the cap, and the join only orders
   // and renders. Readiness is therefore counted here and the cap applied.
   //
-  // One honest limit, shared with dueCount and learnCount rather than new: all
-  // three run over `deckCards` without checking that a card's vocabulary row
-  // could be fetched. A session drops a card whose vocabulary is unavailable
-  // (offline, mid-fetch), so in that state Home can promise one more item than
-  // the session serves — for every one of these counts, exactly as before.
+  // TWO limits on that promise, and the second one is larger than the first.
+  //
+  // The vocabulary join: all of dueCount, learnCount and calibrationCount run
+  // over `deckCards` without checking that a card's vocabulary row could be
+  // fetched, and a session drops a card whose vocabulary is unavailable
+  // (offline, mid-fetch). In that state Home can promise one more item than the
+  // session serves, for every one of these counts, exactly as before.
+  //
+  // The gentle-return cap, which is bigger and is not new here: sessionPrep
+  // caps dueReview through gentleReviewTarget for a learner coming back after
+  // a gap, while dueCount above counts the whole due set. So Home's total can
+  // exceed the session by a lot for that learner — a deliberate product choice
+  // about the session, not a counting error, but the reason this comment does
+  // not claim the two "cannot drift".
   const calibrationReadyCount = deckCards.filter(c => isCalibrationReady(c, now)).length
   const calibrationCount = Math.min(calibrationReadyCount, CALIBRATION_SESSION_CAP)
   const easyCount = levelCards.filter(c => c.is_easy).length
