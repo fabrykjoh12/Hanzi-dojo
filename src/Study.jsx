@@ -220,6 +220,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [done, setDone] = useState(false)
   const [showFurigana, setShowFurigana] = useState(profile.furigana_default !== false)
   const [saveError, setSaveError] = useState(null)
+  // A grade the server refused because a newer one for the same card is already
+  // there. Its own state, NOT saveError: that one is the fatal "progress is not
+  // being saved, run the migration SQL" banner, and this is neither fatal nor
+  // anything a learner can act on. Cleared at the start of the next grade.
+  const [staleNotice, setStaleNotice] = useState(null)
   const [typedValue, setTypedValue] = useState('')
   const [typedResult, setTypedResult] = useState(null)   // null | 'correct' | 'wrong'
   const [gradeColor, setGradeColor] = useState(null)     // feedback ring color
@@ -630,6 +635,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // the review log and the undo snapshot are all the ordinary grade path.
 
   const applyGrade = async (grade) => {
+    // Last grade's refusal is about last grade's card. Cleared here rather than
+    // on a timer, so it stays up while the learner is still looking at the card
+    // it belongs to and never outlives it.
+    setStaleNotice(null)
     const card = queue[0]
     // The learner's retention dial lives on the profile, so pass it explicitly:
     // that makes the account the source of truth and reduces srs.js's
@@ -692,6 +701,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     if (sessionWord) sessionVocabRef.current.push(sessionWord)
 
     // Tally this card for the session recap (before the queue mutates).
+    //
+    // This runs BEFORE the write, so a grade the server later refuses has
+    // already been counted. The stale branch below rolls it back — the recap
+    // feeds qualifiesForReward, and a refused answer must not earn a reward.
     const s = sessionRef.current
     s.graded += tally.graded
     s.newLearned += tally.newLearned
@@ -727,6 +740,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     const nextCounts = nextActivityCounts(activityRef.current, card.state)
 
     let cardId = card.id
+    // Set when the server refuses this grade as superseded — see below.
+    let staleGrade = false
     let outboxId = null
     if (online) {
       // One transaction: card row + review log + today's activity. Falls back
@@ -752,6 +767,21 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         setSaveError(write.error && write.error.message)
         return
       }
+      // The server refused this grade because a newer one for the same card is
+      // already there — another device, or a tab that was ahead of this one.
+      // Nothing went wrong and nothing should be retried, but everything below
+      // builds on `res.updates`, which the server has just declined to store.
+      // Carrying on would reinsert a card into the queue holding state that
+      // does not exist anywhere, and the NEXT grade would be computed from it.
+      //
+      // NOT setSaveError. That renders the fatal banner — "your progress is not
+      // being saved … run the migration SQL in your Supabase SQL Editor" —
+      // which is false here (progress IS saving; one superseded answer was
+      // not), never clears because nothing ever sets it back to null, and
+      // instructs a store-app learner to open a database console. Its own
+      // channel, cleared at the start of the next grade.
+      staleGrade = !!write.stale
+      if (staleGrade) setStaleNotice('Already reviewed on another device, so this answer wasn\u2019t saved.')
       cardId = write.cardId
       // Captured so undo can remove the log entry. On the fallback path the
       // insert is still non-blocking, so the id arrives a moment later.
@@ -784,14 +814,30 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     snapshot.cardId = cardId
     snapshot.outboxId = outboxId
     const willComplete = !res.stay && queue.length === 1
-    if (!willComplete) {
+    // Never after a refused grade. undoLast writes the pre-grade snapshot
+    // straight to `cards` with a bare UPDATE — it does not go through
+    // grade_card, so the stale guard cannot see it — and that snapshot is
+    // exactly the state the server just declined. Offering the button here
+    // would hand the learner a one-tap way to wipe the other device's newer
+    // review, at the moment they are most likely to press it.
+    if (!willComplete && !staleGrade) {
       undoRef.current = snapshot
       setUndoVisible(true)
     }
+    // The recap tally ran before the write, so a refused grade has already been
+    // counted. snapshot.session is the pre-grade copy — restoring it keeps a
+    // refused answer out of the recap, and out of qualifiesForReward, which
+    // reads recap.graded.
+    if (staleGrade) sessionRef.current = { ...snapshot.session }
     // The write landed (or was queued) — this card now counts toward today.
     // Offline these counts also ride along in the queued op and are folded into
     // the server row when the outbox flushes.
-    activityRef.current = nextCounts
+    //
+    // Not for a refused grade: Study sends absolute counts (`mode: 'set'`), so
+    // committing them here would put the refused card into the number the NEXT
+    // successful grade writes — undoing server-side, one statement later, the
+    // very thing `not v_stale` does in the migration.
+    if (!staleGrade) activityRef.current = nextCounts
 
     setFlipped(false)
     setTypedValue('')
@@ -800,7 +846,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
     setQueue(prev => {
       let rest = prev.slice(1)
-      if (res.stay) {
+      // A refused grade must not put a card back carrying refused state.
+      if (res.stay && !staleGrade) {
         // Reinsert an "Again"-graded card soon (SRS gap), but not as the very
         // next card unless the queue is too short to allow it.
         const item = { ...card, ...res.updates, id: cardId }
@@ -923,7 +970,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const layout = studyLayout({
     isMobile,
     viewportHeight,
-    banners: (saveError ? 1 : 0) + (firstMissionHint ? 1 : 0) + (isJapanese ? 1 : 0),
+    banners: (saveError || staleNotice ? 1 : 0) + (firstMissionHint ? 1 : 0) + (isJapanese ? 1 : 0),
   })
 
   // The recap and loading states are ordinary scrollable pages — only the card
@@ -1144,6 +1191,16 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   return (
     <div style={studyShell}>
+      {staleNotice && !saveError && (
+        <div role="status" style={{
+          width: '100%', maxWidth: '680px', margin: '0 auto', marginBottom: '18px', flexShrink: 0,
+          background: 'var(--surface-2)', border: '1px solid var(--border)', color: 'var(--text-muted)',
+          padding: '12px 16px', borderRadius: '14px', fontSize: '13px', lineHeight: 1.5,
+        }}>
+          {staleNotice}
+        </div>
+      )}
+
       {saveError && (
         <div style={{
           width: '100%', maxWidth: '680px', margin: '0 auto', marginBottom: '18px', flexShrink: 0,

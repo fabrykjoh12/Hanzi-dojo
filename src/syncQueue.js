@@ -98,13 +98,52 @@ export function nextActivityCounts(cur, cardState) {
 // the owner applies the migration, so it must fall back, not surface an error.
 export function isMissingRpc(error) {
   if (!error) return false
+  // A deliberate RAISE inside grade_card is SQLSTATE P0001, and it is never
+  // "the function is missing" — the function ran and said no.
+  //
+  // This is not hypothetical tidiness. grade_card raises 'Card not found' for
+  // an op naming a row that is gone, which happens exactly where this guard
+  // matters: an undo of a new card, or a language reset, leaves such an op in
+  // the outbox. The bare 'not found' match below classified it as an absent
+  // RPC, latched rpcUnavailable for the whole page load, and dropped every
+  // later grade to the legacy path — a bare UPDATE with no guard at all. One
+  // deleted card therefore disabled the stale-replay guard until reload.
+  if (error.code === 'P0001') return false
   if (error.code === 'PGRST202' || error.code === '404') return true
   const msg = String(error.message || '') + ' ' + String(error.details || '') + ' ' + String(error.hint || '')
   const m = msg.toLowerCase()
   return m.indexOf('could not find the function') !== -1 ||
-         m.indexOf('does not exist') !== -1 ||
          m.indexOf('schema cache') !== -1 ||
-         m.indexOf('not found') !== -1
+         // Narrower than a bare "does not exist" / "not found": both of those
+         // match plenty of errors the function itself raises or that Postgres
+         // raises about a column, and misclassifying one of those costs the
+         // guard for the rest of the session.
+         // Postgres' own 42883 text, which carries a SPACED argument list:
+         // "function public.grade_card(p_vocab_id => uuid, p_updates => jsonb,
+         // ...) does not exist". An earlier version wrote `[^ ]*` around the
+         // name, which cannot cross a space and so could never match the real
+         // message — it matched only the space-free form its own spec fed it.
+         (m.indexOf('grade_card') !== -1 && m.indexOf('does not exist') !== -1) ||
+         m.indexOf('could not find the public.grade_card') !== -1
+}
+
+// Is this the server saying "this op can never apply", as opposed to "not now"?
+//
+// It matters because of the narrowing above. grade_card raises 'Card not found'
+// when an op names a row that is gone — an undo of a new card, or a language
+// reset. Before P0001 was excluded from isMissingRpc, such an op classified as
+// a missing RPC, fell to the legacy path, and a bare `update(...).eq('id', …)`
+// matching zero rows returned no error, so the op reported ok and was deleted.
+// Narrowing isMissingRpc is right, but on its own it turns that op into a
+// permanent resident: flushOutbox leaves a failed op in place, so
+// pendingWrites() never reaches zero and OfflineBar shows "Syncing 1 saved
+// review…" on every mount, forever, with no drain short of clearing site data.
+//
+// So the drop is made deliberately here instead of happening by accident there.
+// The card is gone; no number of retries brings it back.
+export function isUnreplayable(error) {
+  if (!error || error.code !== 'P0001') return false
+  return String(error.message || '').toLowerCase().indexOf('card not found') !== -1
 }
 
 // Once the RPC is known to be absent, stop probing for it every single grade.
@@ -142,6 +181,11 @@ export async function gradeCardWrite(supabase, payload) {
         cardId: row.card_id,
         logId: row.log_id || null,
         alreadyApplied: !!row.already_applied,
+        // The guard refused this write: a newer grade for the same card is
+        // already on the server. `ok` stays true because nothing went WRONG —
+        // the op is settled and must not be retried — but the caller's local
+        // card is now behind the server's, so it must not carry on from it.
+        stale: !!row.stale,
         // Whether THIS call created the card row (false when another device had
         // already made it) — undo only removes a row its own grade created.
         inserted: !!row.inserted,
@@ -268,7 +312,8 @@ async function replayOp(supabase, op) {
       opId: op.opId || null,
     })
     // Without the RPC the day counts were not written — flush reconciles them.
-    return { ok: res.ok, reconcile: res.ok && !res.activityWritten }
+    // `error` rides along so flushOutbox can tell "not now" from "never".
+    return { ok: res.ok, reconcile: res.ok && !res.activityWritten, error: res.error || null }
   }
   return { ok: true, reconcile: false }
 }
@@ -294,7 +339,13 @@ export async function flushOutbox(supabase) {
     for (const row of rows) {
       const op = row.op
       const res = await replayOp(supabase, op)
-      if (!res.ok) continue
+      if (!res.ok) {
+        // Left in place for the next attempt — unless the server has said the
+        // row it names is gone, in which case retrying is not patience, it is
+        // a queue that never drains. See isUnreplayable.
+        if (isUnreplayable(res.error)) await outboxDelete(row.id)
+        continue
+      }
       await outboxDelete(row.id)
       flushed += 1
       if (res.reconcile) unreconciled.push(op)
