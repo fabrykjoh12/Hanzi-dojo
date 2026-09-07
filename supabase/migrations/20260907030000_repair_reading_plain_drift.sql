@@ -23,13 +23,14 @@
 -- function that does — has no caller in the app at all today. The defect is
 -- real and it teaches wrong pronunciation; it does not unlock a level.
 --
--- Nor does anyone hold these ten cards today. All ten come from the HSK 3-6
--- pass, and the whole user base is at HSK 1-2, which is the clean band
--- (measured 2026-09-07; docs/BACKLOG.md records the same of the 54). That is
--- reach, not severity: `dict_add_to_deck` reuses the existing curriculum row by
--- word, so an HSK 1 learner who looks 厂 up in the dictionary holds this exact
--- row and is graded by this exact key. Repair it before someone does, rather
--- than because someone has.
+-- Nor does anyone have a CARD on any of these ten rows. Counted directly on
+-- 2026-09-07 — `cards` joined to each of the ten `vocabulary` ids — and every
+-- one of them is zero. That is the claim worth making, because the band
+-- argument on its own does not reach it: all ten are HSK 3-6 and the user base
+-- is at HSK 1-2, but `dict_add_to_deck` reuses the existing curriculum row by
+-- word, so an HSK 1 learner who looks 厂 up in the dictionary would hold this
+-- exact row and be graded by this exact key without leaving the clean band.
+-- Repair it before someone does, rather than because someone has.
 --
 -- WHAT DRIFTED. 20260724120000_fix_hsk3_6_readings.sql (written 2026-07-24,
 -- applied 2026-08-03) corrected `reading` on 54 rows the bulk import had got
@@ -89,10 +90,11 @@
 -- scope here: this migration is predicate-scoped and references neither word.
 --
 -- EIGHT OF THE TEN ARE THE MIS-GRADING DEFECT. The last two are not, and
--- saying so matters more than the tidier claim: 忽略 and 策略 carry `hulu:e` / `celu:e`, the ASCII
--- transliteration the 2026-07-24 migration names as a defect it removes — and
--- it removed it from `reading` only. But lenientPinyin strips `:` along with
--- the rest of its punctuation, so those two accept exactly the same inputs
+-- saying so matters more than the tidier claim: 忽略 and 策略 carry `hulu:e` /
+-- `celu:e`, the ASCII transliteration the 2026-07-24 migration names as a
+-- defect it removes — and it removed it from `reading` only. But lenientPinyin
+-- strips `:` along with the rest of its punctuation, so those two accept
+-- exactly the same inputs
 -- before and after this migration. Repairing them is consistency and a clean
 -- integrity check, not a grading fix. A spec drives both cases through the two
 -- functions that actually grade, so the distinction cannot quietly become
@@ -121,8 +123,8 @@
 -- the stored side, since a `reading` containing it would fail the ASCII guard
 -- below and be skipped before the comparison ran.) lenientPinyin ignores a
 -- wider set (numeric tones 1-5, `v`/`ü`, and `.,!?;:'"()-_·`), and the
--- difference is deliberate rather
--- than an oversight: folding `:` here would exclude 忽略 and 策略, which are
+-- difference is deliberate rather than an oversight: folding `:` here would
+-- exclude 忽略 and 策略, which are
 -- exactly the two rows this migration repairs for hygiene rather than grading.
 -- So the predicate is: "differs by more than the three things that never change
 -- an answer key" — which is why it fires on eight genuine mis-gradings, two
@@ -140,8 +142,9 @@
 -- multi-codepoint sequences). Rather than pretend the map is complete, the
 -- statement REFUSES any row whose folded value still contains a non-ASCII
 -- character of any kind: a mark the map does not know leaves the row alone
--- instead of writing a half-folded value into an answer key. `normalize(v.reading, nfc)` composes
--- first so a decomposed tone mark — a documented past cause of mis-grading,
+-- instead of writing a half-folded value into an answer key.
+-- `normalize(v.reading, nfc)` composes first so a decomposed tone mark — a
+-- documented past cause of mis-grading,
 -- docs/CHANGELOG.md — reaches the map as the precomposed character it expects.
 --
 -- WHAT ELSE IS IN SCOPE, since the ten were measured rather than enumerated:
@@ -185,8 +188,8 @@ update public.vocabulary v
    -- (src/testLogic.js). A previous version of this guard tested emptiness
    -- after removing space and apostrophe only, and called the class closed
    -- while every one of those four spellings walked through it. One letter
-   -- surviving is the
-   -- property that actually matters: without it, both graders reduce the key to
+   -- surviving is the property that actually matters: without it, both
+   -- graders reduce the key to
    -- '' and drop it with .filter(Boolean), and every typed answer for that row
    -- is wrong.
    and translate(
