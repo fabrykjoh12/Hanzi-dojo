@@ -269,9 +269,19 @@ begin
     -- reps to 0, so excluded.reps can never be null and the fail-open limb
     -- would be dead here — a call whose p_updates carries no reps, against an
     -- existing row with reps > 0, would have been rejected in full: state,
-    -- due_at, stability, learned, verified_at, all of it. The UPDATE path above
-    -- reads the raw incoming value and fails open; these two must not disagree
-    -- about the same input.
+    -- due_at, stability, learned, verified_at, all of it. So the two paths now
+    -- agree about WHETHER to write.
+    --
+    -- They still differ about WHAT they write on that fail-open input, and this
+    -- comment used to claim otherwise. The UPDATE above leaves reps alone
+    -- (coalesce to c.reps); this one sets reps = excluded.reps, which the
+    -- VALUES list has already coalesced to 0 — so a write carrying no reps
+    -- would zero an existing row's. Identical to the behaviour before this
+    -- migration (that DO UPDATE had no WHERE at all), and unreachable from any
+    -- live caller, since srs.schedule() always emits reps and
+    -- calibrationUpdates spreads it. Recorded rather than fixed, because
+    -- changing what the conflict path writes is a different change from adding
+    -- a guard to when it writes.
     where v_incoming_reps is null or c.reps is null or v_incoming_reps > c.reps
     returning c.id, c.vocab_id into v_card_id, v_vocab_id;
 

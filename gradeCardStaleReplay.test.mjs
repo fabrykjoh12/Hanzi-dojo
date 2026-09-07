@@ -127,12 +127,29 @@ describe('grade_card rejects a stale replay', () => {
     // on from `res.updates` the server had just declined — so the NEXT grade in
     // the session was computed from state that exists nowhere.
     expect(read(NEW)).toMatch(/'stale', v_stale/)
-    const client = readFileSync(fileURLToPath(new URL('./src/syncQueue.js', import.meta.url)), 'utf8')
-    expect(client, 'gradeCardWrite never reads row.stale').toMatch(/stale: !!row\.stale/)
+    // The CLIENT half is proven behaviourally in src/syncQueue.test.js — a
+    // fake RPC returning stale:true, driven through the real gradeCardWrite and
+    // the real flushOutbox. An earlier version of this test grepped
+    // src/syncQueue.js for the string `stale: !!row.stale`, which is not a test
+    // of anything: it asserts that an implementation contains its own source.
+    //
+    // What is left here is the part only source text can carry — the four
+    // places in Study.jsx where a refused grade must NOT be treated as an
+    // applied one. Study renders, so a behavioural test would need jsdom and
+    // @testing-library, neither of which this repo has (vitest.config.js is
+    // environment: 'node'). Said plainly rather than implied.
     const study = readFileSync(fileURLToPath(new URL('./src/Study.jsx', import.meta.url)), 'utf8')
-    expect(study, 'Study ignores a refused grade').toMatch(/write\.stale/)
+    expect(study, 'Study ignores a refused grade').toMatch(/staleGrade = !!write\.stale/)
     expect(study, 'a refused grade still puts the card back carrying refused state')
       .toMatch(/res\.stay && !staleGrade/)
+    expect(study, 'undo is still offered after a refused grade — one tap restores the state the server refused')
+      .toMatch(/!willComplete && !staleGrade/)
+    expect(study, "a refused grade still counts toward today's activity")
+      .toMatch(/if \(!staleGrade\) activityRef\.current = nextCounts/)
+    expect(study, 'a refused grade still counts in the recap, and so toward a reward')
+      .toMatch(/if \(staleGrade\) sessionRef\.current = \{ \.\.\.snapshot\.session \}/)
+    expect(study, 'the refusal is reported through the fatal "run the migration SQL" banner')
+      .not.toMatch(/staleGrade\) setSaveError/)
   })
 
   it('changes NOTHING ELSE in a 263-line function', () => {

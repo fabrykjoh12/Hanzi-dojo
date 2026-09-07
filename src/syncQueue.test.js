@@ -10,7 +10,7 @@ vi.mock('./offline', () => ({
 }))
 
 import {
-  dayCountsOf, nextActivityCounts, isMissingRpc, newOpId,
+  dayCountsOf, nextActivityCounts, isMissingRpc, isUnreplayable, newOpId,
   gradeCardWrite, resetGradeRpcProbe, enqueueGrade, flushOutbox,
 } from './syncQueue'
 
@@ -324,5 +324,92 @@ describe('offline replay', () => {
     expect(out.flushed).toBe(0)
     expect(store.rows).toHaveLength(1)
     expect(sb.calls.upsert).toHaveLength(0)
+  })
+})
+
+
+// ── A grade the server refuses as superseded ────────────────────────────────
+// FAB-28 finding 3. 20260906120000 adds a guard keyed on `reps` inside
+// grade_card's own UPDATE, and reports a refused write as `stale`. These drive
+// that contract through the real gradeCardWrite and the real flushOutbox — the
+// previous version of this proof grepped src/syncQueue.js for the string
+// `stale: !!row.stale`, which is not a test of anything.
+
+describe('a refused (stale) grade', () => {
+  const staleRpc = () => ({ data: { card_id: 'card-1', log_id: null, already_applied: false, stale: true }, error: null })
+
+  it('is reported as settled, not as a failure', async () => {
+    // ok STAYS true and that is deliberate: nothing went wrong, and the op must
+    // not be retried — a newer grade is already on the server and retrying can
+    // only lose it again. What the caller needs is to stop trusting its own
+    // local card, which is what the flag is for.
+    const sb = fakeSupabase({ rpc: staleRpc })
+    const res = await gradeCardWrite(sb, { userId: 'u1', cardId: 'card-1', vocabId: 'v1', updates: UPDATES, log: LOG })
+    expect(res.ok).toBe(true)
+    expect(res.stale).toBe(true)
+    expect(res.viaRpc).toBe(true)
+  })
+
+  it('is false for an ordinary applied grade', async () => {
+    // The other half: a flag that is always true is not a signal either.
+    const sb = fakeSupabase({ rpc: () => ({ data: { card_id: 'c1' }, error: null }) })
+    expect((await gradeCardWrite(sb, { vocabId: 'v1', updates: UPDATES })).stale).toBe(false)
+  })
+
+  it('leaves the outbox rather than sitting there forever', async () => {
+    // A refused op is finished. Left in place it would be replayed on every
+    // flush, and pendingWrites() would never reach zero.
+    resetGradeRpcProbe()
+    await enqueueGrade({ userId: 'u1', vocabId: 'v1', cardId: 'card-1', updates: UPDATES })
+    const sb = fakeSupabase({ rpc: staleRpc })
+    const { flushed } = await flushOutbox(sb)
+    expect(flushed).toBe(1)
+    expect(store.rows).toHaveLength(0)
+  })
+})
+
+describe('an op naming a card that no longer exists', () => {
+  // grade_card raises this when the row is gone — an undo of a new card, or a
+  // language reset. It is a deliberate application error (SQLSTATE P0001), and
+  // reading it as "the RPC is missing" cost the whole page load: rpcUnavailable
+  // latched and every later grade dropped to a bare UPDATE with no guard.
+  const gone = { code: 'P0001', message: 'Card not found' }
+
+  it('is not mistaken for a missing RPC', () => {
+    expect(isMissingRpc(gone)).toBe(false)
+    expect(isMissingRpc({ message: 'Card not found' })).toBe(false)
+    // And the state it exists for is still recognised, in both forms Postgres
+    // and PostgREST report it.
+    expect(isMissingRpc(RPC_ABSENT)).toBe(true)
+    expect(isMissingRpc({ code: '42883', message: 'function public.grade_card(p_vocab_id => uuid, p_updates => jsonb) does not exist' })).toBe(true)
+  })
+
+  it('is recognised as unreplayable, and only it', () => {
+    expect(isUnreplayable(gone)).toBe(true)
+    expect(isUnreplayable({ code: 'P0001', message: 'not authenticated' })).toBe(false)
+    expect(isUnreplayable({ code: '40001', message: 'Card not found' })).toBe(false)
+    expect(isUnreplayable(null)).toBe(false)
+  })
+
+  it('does not keep the queue busy forever', async () => {
+    // The regression the narrowing would otherwise have introduced: before it,
+    // this op classified as a missing RPC, fell to the legacy path, matched
+    // zero rows without error and was deleted. Now it is dropped on purpose.
+    resetGradeRpcProbe()
+    await enqueueGrade({ userId: 'u1', vocabId: 'v1', cardId: 'deleted-card', updates: UPDATES })
+    const sb = fakeSupabase({ rpc: () => ({ data: null, error: gone }) })
+    const { flushed } = await flushOutbox(sb)
+    expect(flushed, 'a refused op is not a flushed one').toBe(0)
+    expect(store.rows, 'the op would be replayed on every flush, forever').toHaveLength(0)
+  })
+
+  it('leaves an op the server merely could not take right now', async () => {
+    // The opposite case, and the reason the drop is narrow: a network or RLS
+    // failure must NOT discard the learner's grade.
+    resetGradeRpcProbe()
+    await enqueueGrade({ userId: 'u1', vocabId: 'v1', cardId: 'card-1', updates: UPDATES })
+    const sb = fakeSupabase({ rpc: () => ({ data: null, error: { code: '40001', message: 'could not serialize access' } }) })
+    await flushOutbox(sb)
+    expect(store.rows, 'a transient failure discarded the grade').toHaveLength(1)
   })
 })
