@@ -302,6 +302,39 @@ describe('coverage is conservative and cannot be narrowed', () => {
     }
   })
 
+  it('covers every script the native verification actually runs, listed or not', () => {
+    // The list above is an allow-list, and an allow-list is exactly how a file
+    // goes uncovered: nobody adds it, nothing fails. This derives the
+    // requirement from verify:native itself instead — every `node <path>` stage
+    // it runs, plus the same for verify:pr, whose artifact this one also
+    // inspects. Add a verifier to either script and forget the detector, and
+    // this fails without anyone having to remember the list exists.
+    const scripts = [PKG.scripts['verify:native'], PKG.scripts['verify:pr']]
+    const paths = new Set()
+    for (const script of scripts) {
+      for (const stage of stagesOf(script)) {
+        const direct = stage.match(/^node (\S+)/)
+        if (direct) { paths.add(direct[1]); continue }
+        const named = stage.match(/^npm run ([\w:-]+)$/)
+        if (!named) continue
+        // One level of indirection: `npm run verify:public-bundle` is
+        // `node tools/verify-public-bundle.mjs`.
+        for (const inner of stagesOf(PKG.scripts[named[1]] || '')) {
+          const m = inner.match(/^node (\S+)/)
+          if (m) paths.add(m[1])
+        }
+      }
+    }
+    expect(paths.size, 'no verifier scripts found — this test stopped testing anything')
+      .toBeGreaterThan(2)
+    for (const path of paths) {
+      const pattern = '^' + path.replace(/\./g, '\\.') + '$'
+      expect(NATIVE_YAML, 'the native change detector does not cover ' + path
+        + ', so a PR touching only that verifier would skip native verification and still report green')
+        .toContain(pattern)
+    }
+  })
+
   it('every covered path still exists in the repository', () => {
     const real = p => p.replace(/^\^/, '').replace(/\$$/, '').replace(/\\/g, '')
     for (const p of [...REQUIRED_DIRECTORY_COVERAGE, ...REQUIRED_FILE_COVERAGE]) {

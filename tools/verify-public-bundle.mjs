@@ -128,7 +128,10 @@ export const RULES = [
     // identifier, and minification renames locals — so this cannot fire on a
     // value that arrived through the env. It fires on a name written in source
     // and carried into the bundle, which is how a hand-pasted credential
-    // usually looks. The prefix rules below are what cover the value-only case.
+    // usually looks. The prefix rule below covers the value-only case for the
+    // providers whose keys are self-identifying; a credential that is just a
+    // long opaque string — AZURE_SPEECH_KEY is this repo's own example — has no
+    // signature to match, so the name above is the only thing that catches it.
     //
     // The names include all three that src/tts/serverOnly.test.js guards at the
     // source level (SUPABASE_SERVICE_KEY, VAPID_PRIVATE_KEY, AZURE_SPEECH_KEY)
