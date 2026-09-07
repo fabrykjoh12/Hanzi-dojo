@@ -242,13 +242,25 @@ footing this document declines to accept for the ancestor case — so
 `hangsBelow` now asks it structurally, in `reachesTier` where a contract entry
 is judged and as its own branch in each floor loop where a concrete path is.
 What remains open: an entry naming an ANCESTOR of a tier root, `.agent` above
-`.agent/tasks/**`. An exact entry authorises only itself, so the whole of the
+`.agent/tasks/**`. (At the level of the predicate the residual is any exact
+entry that is a strict ancestor of any tier entry, which for today's two lists
+denotes the same two paths — `.agent` and `.claude` — because every exact tier
+entry sits under a directory that also carries a `dir/**` sibling. Adding an
+exact tier entry somewhere new would separate the two descriptions, and this
+sentence is where to revisit them.) An exact entry authorises only itself, so the whole of the
 authority it adds is one directory path and nothing beneath it — that half is a
 property of the pattern semantics and is checkable. The other half, that writing
 a directory fails for being a directory, is an observation about the tree rather
 than something the guard enforces, and this document calls that "luck rather
 than containment" two sections down. It is recorded here on that footing: bounded
-by the first argument, not closed by the second. These are the files that define what a task *is*
+by the first argument, not closed by the second. One naming rule falls out of the tests rather than the tiers: **`seal-guard` is
+a reserved filename prefix inside `.agent/tasks`**. The seal specs write a probe
+contract into the real directory and run the real CLI against it, so two spec
+files race over it; both exclude that prefix when they read the directory. A
+committed contract named `seal-guard-*.json` would be skipped in silence, which
+is why the parity spec also floors the file count.
+
+These are the files that define what a task *is*
 (`.agent/tasks/**`, including its own `README.md`), who may own one
 (`.agent/roles.json`), the machine-local permission overlay
 (`.claude/settings.local.json`), and history itself (`.git/**`).
@@ -580,8 +592,15 @@ producer path's resolved loop — its Tier 1 loop, and both scans in
 and in the four `decide()` loops, each as its own branch with its own sentence,
 because "below `.agent/roles.json`" and "the root of `.agent/tasks/**`" are two
 different facts about a path and one message cannot report both honestly. The
-review-protocol scans do not ask it: they judge paths git reports as changed,
-and no file can exist below a regular file for git to report. A parity spec drives
+review-protocol scans do not ask it, and the reason is not that the shape cannot
+appear there: a commit that replaces the blob `.agent/roles.json` with a tree
+makes `.agent/roles.json/sub` a perfectly ordinary added path in
+`git diff --name-only`. It is contained anyway, and for a reason worth stating
+rather than assuming — such a diff must also DELETE `.agent/roles.json`, and the
+exact-entry test (`p === floorPath`) catches that path. The Tier 1 shape
+(`.claude/settings.json/x`) is reported too, but as a plain `path-compliance`
+finding rather than `hidden-authority-expansion`, because none of the three
+questions that scan asks relates it to the tier. A parity spec drives
 the two copies of the predicate over the same pairs, so they cannot drift.
 
 **One more thing the exemption does not exempt, and it will be felt.** The

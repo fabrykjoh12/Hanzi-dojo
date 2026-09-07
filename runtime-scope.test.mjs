@@ -188,8 +188,14 @@ describe('parity with the canonical validator', () => {
     // observed as `seal-guard-probe.json seal: expected <digest> to be undefined`
     // when these two files happen to race. The contracts this spec is about are
     // the committed ones.
+    //
+    // `seal-guard` is therefore a RESERVED prefix in .agent/tasks — a committed
+    // contract carrying it would be skipped here in silence. Recorded in
+    // docs/AUTOMATION-AUTHORITY.md next to the tier lists, and the floor below
+    // is what makes the exclusion cheap to hold: the count must not drop, so a
+    // real contract cannot vanish behind this filter without failing here.
     const names = readdirSync(dir).filter(n => n.endsWith('.json') && !n.startsWith('seal-guard'))
-    expect(names.length).toBeGreaterThan(0)
+    expect(names.length, 'a committed contract disappeared from the parity spec').toBeGreaterThanOrEqual(8)
     for (const n of names) {
       const c = JSON.parse(readFileSync(dir + '/' + n, 'utf8'))
       expect(policyDigest(c), n).toBe(computeDigest(c))
@@ -1926,8 +1932,12 @@ describe('a contract may not name a path below an exact floor or tier file', () 
   it('refuses it on the producer path as well, from a contract that carries it', () => {
     // The producer's own resolved loop, reached only with a valid binding. The
     // contract cannot carry the entry (the suite above), so the mutation this
-    // pins is the floor loop itself: without the branch the scope test decides,
-    // and `src/**` covers the link's spelling.
+    // pins is the floor loop itself. Without the branch the write is still
+    // denied — the scope test runs on the RESOLVED path, and `src/**` does not
+    // cover `.agent/roles.json/sub` — but it is denied as "outside the scope of
+    // contract below-writer", which is the wrong reason for a floor path and
+    // fails the sentence assertion below. That assertion is what pins the
+    // branch; the deny alone would not.
     const link = path.join(ROOT, 'src/producer-to-roles')
     try { symlinkSync(path.join(ROOT, '.agent/roles.json'), link) } catch { /* already there */ }
     const c = writeContract(contract({ id: 'below-writer', allowed_paths: ['src/**'] }))
