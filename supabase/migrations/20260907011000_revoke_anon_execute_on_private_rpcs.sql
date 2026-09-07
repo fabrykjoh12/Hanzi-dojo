@@ -6,7 +6,8 @@
 -- unchanged by that correction — those two genuinely hold no grant — but the
 -- description of it was claiming more than the SQL does.
 --
--- 18 advisor warnings. THIRTEEN of the seventeen are harmless today: they
+-- The Supabase advisor flags this whole class. THIRTEEN of the seventeen below
+-- are harmless today: they
 -- derive identity from auth.uid(), directly or through assert_admin(), which is
 -- null for anon, so they raise 'Not authenticated' or return nothing. That is
 -- defence in depth resting on one line inside each function, and a future
@@ -62,11 +63,15 @@
 
 do $$
 declare
-  -- Every SECURITY DEFINER function in public that still holds an anon grant,
-  -- minus the two the signed-out app calls. Named one by one rather than "all
-  -- functions in schema public": that form would also strip the trigger and
-  -- trgm functions, and would sweep up a future public RPC without anyone
-  -- noticing.
+  -- The SECURITY DEFINER functions in public that hold an anon grant, minus the
+  -- two the signed-out app calls. Enumerated from pg_proc against the live
+  -- project on 2026-09-07 (proacl carrying an `anon=X/` entry), and
+  -- cross-checked against the migrations by clientGrantMigrations.test.mjs —
+  -- which can only see functions with a committed file, and says so.
+  --
+  -- Named one by one rather than "all functions in schema public": that form
+  -- would also strip the trigger and trgm functions, and would sweep up a
+  -- future public RPC without anyone noticing.
   r record;
   private_rpcs text[] := array[
     'admin_active_users', 'admin_client_errors', 'admin_funnel',

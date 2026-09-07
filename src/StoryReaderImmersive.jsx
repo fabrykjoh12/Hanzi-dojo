@@ -852,7 +852,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       // distinction between "the limit for today" and "that failed".
       toast(isDictAddLimit(e)
         ? { kind: 'info', title: 'That’s enough new words for today', body: 'Try again tomorrow — nothing was lost.', accent }
-        : { kind: 'info', title: 'Couldn’t save that word', accent })
+        : { kind: 'warn', title: 'Couldn’t save that word', accent })
     } finally {
       setDictSaving(false)
     }

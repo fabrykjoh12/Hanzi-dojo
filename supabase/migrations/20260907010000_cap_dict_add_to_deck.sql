@@ -189,10 +189,26 @@ begin
          from jsonb_array_elements_text(v_entry.definitions) as t(value)),
       v_entry.simplified);
 
-    -- ON CONFLICT against the partial index above: a concurrent caller adding
-    -- the same word wins the insert, and this one adopts their row instead of
-    -- creating a second. RETURNING yields nothing on conflict, hence the
-    -- re-select. ease_factor is deliberately absent (CLAUDE.md §10).
+    -- ON CONFLICT against the partial index above. Be exact about what this
+    -- closes and what it does not, because the first draft of this comment
+    -- claimed the whole race:
+    --
+    --   · Against a COMMITTED row, the conflict fires, RETURNING yields
+    --     nothing, and the re-select adopts that row. No duplicate is ever
+    --     created — which is the outcome the index exists for.
+    --   · Against an UNCOMMITTED concurrent insert, DO NOTHING does not wait
+    --     on the speculative-insertion lock; it skips. Under READ COMMITTED the
+    --     re-select cannot see the uncommitted row either, so v_vocab_id stays
+    --     null. That is a lost race, not a corruption, and it is raised as a
+    --     retryable error below rather than left to violate cards.vocab_id NOT
+    --     NULL with a message nobody can act on.
+    --
+    -- DO UPDATE would wait and return the row, closing that half too — at the
+    -- cost of touching a shared vocabulary row (and its updated_at trigger) on
+    -- every conflicting add, for a race that needs two learners adding the same
+    -- brand-new dictionary word in the same instant. Not worth it.
+    --
+    -- ease_factor is deliberately absent (CLAUDE.md §10).
     insert into public.vocabulary
       (language, system, level, sort_order, word, reading, reading_plain, meaning, is_active)
     values
@@ -205,6 +221,13 @@ begin
       from public.vocabulary
       where language = p_language and system = p_system
         and word = v_entry.simplified and level is null and is_active;
+    end if;
+
+    if v_vocab_id is null then
+      -- The lost-race branch described above. PT409 so PostgREST answers 409
+      -- and the client can tell "try that again" from a real failure.
+      raise exception 'That word is being added right now — try again'
+        using errcode = 'PT409';
     end if;
 
     v_source := 'dictionary';

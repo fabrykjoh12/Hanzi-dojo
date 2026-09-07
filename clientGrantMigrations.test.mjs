@@ -76,20 +76,32 @@ describe('capping dict_add_to_deck (finding 3)', () => {
     const code = codeOf(CAP)
     expect(code).toMatch(/create unique index if not exists vocabulary_dictionary_word_unique/)
     expect(code).toMatch(/where level is null and is_active;/)
+    // Spacing-insensitive: the earlier version needed exactly
+    // `on public.vocabulary (language, system, word);`, so dropping the space
+    // before the paren slipped past a check about whether an index can build.
     expect(code, 'a global unique index would fail to build').not.toMatch(
-      /create unique index[\s\S]*?on public\.vocabulary \(language, system, word\);/)
+      /create unique index[\s\S]*?on\s+public\.vocabulary\s*\(\s*language\s*,\s*system\s*,\s*word\s*\)\s*;/)
   })
 
-  it('adopts the winner of a concurrent insert instead of returning null', () => {
+  it('adopts a committed winner, and refuses an uncommitted one out loud', () => {
     // ON CONFLICT DO NOTHING returns no row, so RETURNING leaves v_vocab_id
-    // null. Without the re-select the loser of the race builds a card against
-    // a null vocab_id — a NOT NULL violation, i.e. the fix for the race would
-    // itself be the new bug.
+    // null and the re-select adopts the winner. That covers a COMMITTED row.
+    //
+    // It does not cover an uncommitted concurrent insert: DO NOTHING skips
+    // rather than waiting, and READ COMMITTED cannot see the other
+    // transaction's row either — so v_vocab_id is still null afterwards. An
+    // earlier version of this spec called the race closed and let that case
+    // fall through to a cards.vocab_id NOT NULL violation. It must raise
+    // something a caller can act on instead.
     const code = codeOf(CAP)
     const conflict = code.indexOf('on conflict (language, system, word) where level is null and is_active do nothing')
     const reselect = code.indexOf('if v_vocab_id is null then')
     expect(conflict).toBeGreaterThan(-1)
     expect(reselect).toBeGreaterThan(conflict)
+    expect(code, 'a lost race must not reach the card insert with a null vocab_id')
+      .toMatch(/raise exception 'That word is being added right now[\s\S]*?errcode = 'PT409'/)
+    // And the raise has to come before the card insert, or it is decoration.
+    expect(code.indexOf("errcode = 'PT409'")).toBeLessThan(code.indexOf('insert into public.cards'))
   })
 
   it('drops the older, unapplied index it supersedes', () => {
@@ -113,7 +125,12 @@ describe('capping dict_add_to_deck (finding 3)', () => {
     // forbids deleting those). A cap counted from state the adversary controls
     // is not a cap. The second limb counts `vocabulary` itself.
     const cap = codeOf(CAP)
-    expect(cap).toMatch(/c_global_daily_cap constant int := \d+/)
+    // A number, and a number that actually brakes. `:= 2147483647` would have
+    // satisfied the earlier \d+ while disabling the limb this spec is named for.
+    const global = /c_global_daily_cap constant int := (\d+)/.exec(cap)
+    expect(global, 'the global limb must exist').not.toBeNull()
+    expect(Number(global[1])).toBeGreaterThan(0)
+    expect(Number(global[1]), 'a cap this high is not a cap').toBeLessThanOrEqual(5000)
     expect(cap, 'the global limb must count vocabulary rows, not cards')
       .toMatch(/from public\.vocabulary\n\s*where level is null\n\s*and created_at > now\(\) - interval '24 hours'/)
     // And it must gate the branch that creates one, before the insert.
@@ -123,15 +140,17 @@ describe('capping dict_add_to_deck (finding 3)', () => {
     expect(brake).toBeLessThan(insert)
   })
 
-  it('gives the limit a code the client can recognise, in the PT class', () => {
+  it('declares the limit in the PT class, in both the migration and the client', () => {
     // Without a code the 201st add of the day is indistinguishable from a dead
     // connection: Dictionary.jsx swallowed the throw entirely and both readers
     // replaced it with "Couldn't save that word".
     //
-    // And the class is not decoration. PostgREST maps SQLSTATE to HTTP status
-    // by class and honours a caller-chosen status only for PTxxx, so PT429
-    // arrives as a real 429; an invented class still reaches the client (the
-    // code is in the JSON body) but logs every capped add as a 500.
+    // The class is not decoration: PostgREST maps SQLSTATE to HTTP status by
+    // class and honours a caller-chosen status only for PTxxx, so PT429 arrives
+    // as a real 429, while an invented class still reaches the client (the code
+    // is in the JSON body) but logs every capped add as a 500. This spec cannot
+    // observe an HTTP status — no PostgREST here — so it pins the declaration,
+    // which is the part that lives in this repo.
     const cap = codeOf(CAP)
     expect(cap.match(/using errcode = c_limit_errcode/g)).toHaveLength(2)
     expect(cap).toMatch(/c_limit_errcode constant text := 'PT429'/)
@@ -203,16 +222,24 @@ describe('revoking anon EXECUTE on the private RPCs (finding 7)', () => {
     // without a committed file is invisible (CLAUDE.md §8 permits that); the
     // drop and revoke sets are keyed by bare name, so a drop-and-recreate under
     // a new signature, or a revoke followed by a later re-grant to anon, would
-    // wrongly remove a function from `expected`. Neither shape exists in the
-    // tree today (the only drop is 20260825120000's), and both would be caught
-    // by deriving from the catalog instead — which no spec here can do.
+    // wrongly remove a function from `expected`. Nor is the definer test a
+    // parse: it looks for `security definer` within 1200 characters after the
+    // CREATE, so a non-definer function followed closely by a definer one is
+    // misclassified. None of these shapes exists in the tree today (the only
+    // drop is 20260825120000's), and all would be caught by deriving from the
+    // catalog instead — which no spec here can do.
     const files = readdirSync(DIR).filter(n => n.endsWith('.sql')).sort()
     const definer = new Set()
     const revokedFromAnon = new Set()
     const droppedFunctions = new Set()
 
     for (const f of files) {
-      const sql = read(DIR + '/' + f)
+      // codeOf, not read: this file argues at the top that a scan of raw text
+      // counts a migration's own explanation as SQL, and then the first version
+      // of this derivation did exactly that. A header quoting
+      // `create or replace function public.foo(` would have corrupted the
+      // expected set.
+      const sql = codeOf(DIR + '/' + f)
       let m
       const created = /create\s+(?:or\s+replace\s+)?function\s+public\.([a-z0-9_]+)\s*\(/gi
       while ((m = created.exec(sql)) !== null) {
