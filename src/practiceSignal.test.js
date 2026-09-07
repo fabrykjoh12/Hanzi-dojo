@@ -121,12 +121,49 @@ describe('the callers that decide before they tell the learner anything', () => 
     // and the server-side .or() filter made the UPDATE affect zero rows —
     // which PostgREST answers with success. The learner was told the word was
     // added and it was not.
+    // Anchored to the cards SELECT, not to the file: the spread appearing
+    // anywhere else in Writing.jsx would satisfy an unanchored match.
     const code = src('./Writing.jsx')
-    expect(code, 'Writing.jsx no longer selects the prior-knowledge columns')
-      .toMatch(/\.\.\.PRIOR_KNOWLEDGE_COLUMNS/)
+    const select = code.slice(code.indexOf(".from('cards')"))
+    expect(select.slice(0, 400), 'the cards SELECT no longer carries the prior-knowledge columns')
+      .toMatch(/\.select\(\[[^\]]*\.\.\.PRIOR_KNOWLEDGE_COLUMNS/)
+  })
+
+  it('PRIOR_KNOWLEDGE_COLUMNS is exactly what isPriorKnown needs — no more, no less', () => {
+    // An earlier version of this asserted that the list contains its own
+    // elements, which is a tautology dressed as a coverage check: deleting
+    // 'reps' from knowledgeState left the whole suite green while Writing's
+    // select silently stopped fetching it, at which point hasGenuineObservation
+    // reads undefined, and shouldNudge returns FALSE for a verified claim —
+    // refusing "Add to due list" for a word the learner has since studied.
+    //
+    // So it is asserted as the two properties that actually define the list.
+    // Same shape as src/migration/reviewLogContract.js's column assertion,
+    // which exists because that was the only way its missing-column bug could
+    // have been caught.
+    const rows = [unknown, claim, verifiedClaim, studied]
+
+    // SUFFICIENT: a row carrying ONLY these columns classifies the same way the
+    // whole row does. Drop a column from the list and this fails — picking just
+    // { prior_known_at } out of a verified claim reads as an unverified one.
+    for (const row of rows) {
+      const picked = {}
+      for (const col of PRIOR_KNOWLEDGE_COLUMNS) picked[col] = row[col]
+      expect(isPriorKnown(picked), 'the list is not enough to classify ' + JSON.stringify(row))
+        .toBe(isPriorKnown(row))
+    }
+
+    // NECESSARY: every column earns its place — removing it from a fetched row
+    // changes the answer for at least one shape. A column nobody reads would
+    // widen every caller's SELECT for nothing, and the next reader would not
+    // know which ones mattered.
     for (const col of PRIOR_KNOWLEDGE_COLUMNS) {
-      expect(isPriorKnown({ prior_known_at: 'x', reps: 0 }), 'sanity').toBe(true)
-      expect(PRIOR_KNOWLEDGE_COLUMNS, 'missing column: ' + col).toContain(col)
+      const changed = rows.some((row) => {
+        const without = { ...row }
+        delete without[col]
+        return isPriorKnown(without) !== isPriorKnown(row)
+      })
+      expect(changed, col + ' is in the list but no caller needs it').toBe(true)
     }
   })
 
