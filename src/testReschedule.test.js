@@ -1,6 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { testWrongAnswerWrite, testResultSummaryLine, TEST_WRONG_GRADE, TEST_CARD_COLUMNS } from './testReschedule'
+import { fileURLToPath } from 'node:url'
+
+// Resolved against this file, not the process cwd. Every other source-reading
+// spec in the repo does it this way; the cwd-relative form is the one guard
+// protecting the fix below and was the only one written fragile.
+const srcFile = (name) => readFileSync(fileURLToPath(new URL(name, import.meta.url)), 'utf8')
+import {
+  testWrongAnswerWrite, testResultSummaryLine, tallyTestReschedules, newTestCard,
+  TEST_WRONG_GRADE, TEST_CARD_COLUMNS,
+} from './testReschedule'
 import { isPriorKnown } from './knowledgeState'
 
 // Fixtures are built from the columns Test.jsx ACTUALLY fetches, not from a
@@ -163,12 +172,65 @@ describe('a wrong answer on the level test', () => {
     expect(testWrongAnswerWrite(studied()).log.grade).toBe(0)
   })
 
-  it('returns nothing for a card the caller does not have', () => {
-    // The test fetches cards by vocab_id; a word with no row yet has nothing to
-    // reschedule. One shape, so the caller needs no guard of its own.
+  it('returns nothing only for something that is not a word', () => {
     expect(testWrongAnswerWrite(null)).toBeNull()
     expect(testWrongAnswerWrite(undefined)).toBeNull()
-    expect(testWrongAnswerWrite({ vocab_id: 'v', id: null })).toBeNull()
+    expect(testWrongAnswerWrite({ id: 'c1' })).toBeNull()
+  })
+
+  it('writes a word the learner has no card for yet', () => {
+    // The level test unlocks at 90% coverage and draws from the whole level, so
+    // up to a tenth of its words have no row — and for a learner who got there
+    // by coverage, that unstudied tail is the likeliest source of wrong answers.
+    // These used to return null and be reported as "could not be returned to
+    // review just now — take the test again when you are back online", which
+    // was false in every clause.
+    const write = testWrongAnswerWrite(newTestCard('v-new'))
+    expect(write, 'a word with no card must still be written').not.toBeNull()
+    expect(write.cardId, 'gradeCardWrite takes cardId null for the insert branch').toBeNull()
+    expect(write.vocabId).toBe('v-new')
+    // A real first observation: state leaves 'new' and reps is 1, both from
+    // srs.schedule() rather than written here.
+    expect(write.updates.reps).toBe(1)
+    expect(write.updates.state).not.toBe('new')
+    expect(write.log.previous_state).toBe('new')
+  })
+
+  it('builds the same new-card shape sessionPrep hands Study', () => {
+    // Two modules describing one thing. If sessionPrep's newItems gains a field
+    // the scheduler reads, a card created from the level test would be graded
+    // from a different starting shape than the same word graded in Study.
+    const prep = srcFile('./sessionPrep.js')
+    const block = prep.slice(prep.indexOf('const newItems'), prep.indexOf('// Prior-knowledge checks'))
+    const keys = [...block.matchAll(/([a-z_]+):/g)].map(m => m[1])
+      .filter(k => !['map', 'filter', 'slice'].includes(k))
+    const mine = Object.keys(newTestCard('v'))
+    for (const k of keys) {
+      // ease_factor is the dead SM-2 column (CLAUDE.md §10) and is deliberately
+      // not carried here; claude/fab-28-no-ease-factor-writes removes it there.
+      if (k === 'ease_factor' || k === 'vocab') continue
+      expect(mine, 'sessionPrep starts a new card with ' + k + ' and this does not').toContain(k)
+    }
+  })
+})
+
+describe('the tally the result sentence rests on', () => {
+  it('counts what landed, not what was attempted', () => {
+    const err = { message: 'nope' }
+    expect(tallyTestReschedules([{ ok: true }, { ok: false, error: err }, { ok: true }]))
+      .toEqual({ rescheduled: 2, attempted: 3, failed: 1, firstError: err })
+  })
+
+  it('reports nothing attempted as nothing rescheduled', () => {
+    // The lookup-failed path: no writes were made, so no word came back.
+    expect(tallyTestReschedules([])).toEqual({ rescheduled: 0, attempted: 0, failed: 0, firstError: null })
+    expect(tallyTestReschedules(null).rescheduled).toBe(0)
+  })
+
+  it('keeps the first error rather than the last', () => {
+    const first = { message: 'first' }
+    expect(tallyTestReschedules([{ ok: false, error: first }, { ok: false, error: { message: 'second' } }]).firstError)
+      .toBe(first)
   })
 })
 
@@ -217,7 +279,7 @@ describe('the caller fetches what this module reads', () => {
     // and reps. The SELECT omitted prior_known_at, so the predicate was always
     // false, the claim branch was dead, and every fixture that set the column
     // was describing a row the app never builds.
-    const src = readFileSync('src/Test.jsx', 'utf8')
+    const src = srcFile('./Test.jsx')
     expect(src, 'Test.jsx no longer uses the shared column list')
       .toMatch(/\.select\(TEST_CARD_COLUMNS\)/)
     for (const col of ['prior_known_at', 'verified_at', 'reps', 'interval_days']) {
@@ -233,5 +295,45 @@ describe('the caller fetches what this module reads', () => {
     const row = claim()
     expect(isPriorKnown(row), 'a fetched claim row no longer reads as a claim').toBe(true)
     expect(testWrongAnswerWrite(row).updates.verified_at).toEqual(expect.any(String))
+  })
+})
+
+
+describe('the caller measures before it claims', () => {
+  const src = () => srcFile('./Test.jsx')
+
+  it('reads the lookup error instead of treating no rows as no cards', () => {
+    // With the error dropped, a failed SELECT looked like "none of these words
+    // has a card" — and now that a card-less word gets a NEW card, that would
+    // rebuild a mature row from scratch through grade_card's upsert. Nothing
+    // may be written when the lookup fails.
+    const code = src()
+    expect(code, 'the cards lookup no longer reads its error')
+      .toMatch(/error:\s*lookupError/)
+    expect(code, 'the write loop no longer skips a failed lookup')
+      .toMatch(/if \(lookupError\)/)
+  })
+
+  it('goes through the canonical grade write, not a bare UPDATE', () => {
+    // The mutation that reverts the entire fix, and which no spec could see
+    // before: swapping gradeCardWrite back for supabase.from('cards').update().
+    const code = src()
+    expect(code).toMatch(/gradeCardWrite\(supabase, \{/)
+    expect(code, "a bare cards UPDATE is back in Test.jsx")
+      .not.toMatch(/from\('cards'\)\s*\.update\(/)
+  })
+
+  it('gives a word with no card one, rather than counting it as a failure', () => {
+    expect(src()).toMatch(/cardByVocabId\[w\.id\] \|\| newTestCard\(w\.id\)/)
+  })
+
+  it('builds the result line from the tested tally', () => {
+    expect(src()).toMatch(/tallyTestReschedules\(results\)/)
+  })
+
+  it('grades each wrong word once', () => {
+    // Two review_logs rows for one wrong answer is the same history corruption
+    // this change exists to stop, and the End-quiz confirm could produce it.
+    expect(src()).toMatch(/seenWrong\.has\(w\.id\)/)
   })
 })

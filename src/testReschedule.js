@@ -84,15 +84,40 @@ export const TEST_CARD_COLUMNS = [
 // learning card, exactly as if it had been met for the first time.
 export const TEST_WRONG_GRADE = 0
 
+// The in-memory shape of a word the learner has no card for yet.
+//
+// THE LEVEL TEST CAN ASK ABOUT ONE. It unlocks at 90% coverage (testLogic.js),
+// and generateQuestions draws from the whole level irrespective of cards — so
+// up to a tenth of the words on the test have no row, and for a learner who
+// reached the test by coverage rather than by studying everything, that
+// unstudied tail is the LIKELIEST source of wrong answers.
+//
+// An earlier version of this module returned null for those and the screen
+// counted them as "could not be returned to review just now — take the test
+// again when you are back online". Nothing was offline, nothing had failed,
+// retaking the test would produce the same outcome, and it would spend one of
+// three daily attempts. That is the same defect this file exists to remove: a
+// sentence about what the app did, printed without checking.
+//
+// So the word gets a card, which is what a wrong answer means. It is the same
+// shape sessionPrep hands Study for a brand-new word, graded the same way
+// through the same RPC — and grade_card's insert branch takes `on conflict
+// (user_id, vocab_id) do update`, so a row appearing between the SELECT and
+// the write is an update rather than a duplicate-key error.
+export function newTestCard(vocabId) {
+  return { id: null, vocab_id: vocabId, state: 'new', interval_days: 0, learning_step: 0 }
+}
+
 // testWrongAnswerWrite(card, options?) → the payload for gradeCardWrite.
 //
 // Pure: it builds the write, it does not perform it. `options` is forwarded to
 // the scheduler — `{ targetRetention }`, which is the learner's retention dial.
 //
-// Returns null for a card the caller does not have, so the loop that calls this
-// has one shape rather than a guard at each site.
+// Returns null only for a card with no vocabulary id, which is not a word.
+// `card.id` may be null: that is the new-card case above, and gradeCardWrite
+// takes `cardId: null` for exactly it.
 export function testWrongAnswerWrite(card, options) {
-  if (!card || !card.id) return null
+  if (!card || !card.vocab_id) return null
 
   // A claim refuted is a calibration "didn't know": same grade, same scheduler,
   // plus the verified_at that lets the row legally hold scheduler state at all.
@@ -102,7 +127,7 @@ export function testWrongAnswerWrite(card, options) {
     : schedule(card, TEST_WRONG_GRADE, options)
 
   return {
-    cardId: card.id,
+    cardId: card.id || null,
     vocabId: card.vocab_id,
     updates: res.updates,
     // The log is what makes reps honest. Without it `reps` climbs with nothing
@@ -128,6 +153,11 @@ export function testWrongAnswerWrite(card, options) {
 //
 // Calm and observational, per the product's voice: it says what happened and
 // what to do, with no guilt and no alarm.
+// `rescheduled` short of `wrongCount` now means one thing only: a write, or the
+// lookup before it, actually failed. It used to also mean "the learner has no
+// card for that word", which made the retry sentence a lie — see newTestCard.
+// Every wrong word is written now, so "did not come back" and "something went
+// wrong" are the same statement again, and the copy can say so.
 export function testResultSummaryLine({ passed, wrongCount, rescheduled } = {}) {
   if (passed) return 'All correct. Your next level is now unlocking.'
 
@@ -146,4 +176,24 @@ export function testResultSummaryLine({ passed, wrongCount, rescheduled } = {}) 
   // "none returned" would be false for the ones that did.
   return done + ' of ' + total + ' wrong words have been returned to review. '
     + 'The rest stay as they were — take the test again when you are back online.' + tail
+}
+
+
+// The tally the result line is built from.
+//
+// Here rather than in Test.jsx because it is the MEASUREMENT, and a claim
+// printed without a measurement behind it is the whole defect this file exists
+// for. It was counted inside a 1,500-line component with no spec on it, and the
+// branch that was wrong was the untested one.
+//
+// `results` is one gradeCardWrite result per wrong word, in order.
+export function tallyTestReschedules(results) {
+  const rows = results || []
+  let rescheduled = 0
+  let firstError = null
+  for (const r of rows) {
+    if (r && r.ok) { rescheduled += 1; continue }
+    if (!firstError && r && r.error) firstError = r.error
+  }
+  return { rescheduled, attempted: rows.length, failed: rows.length - rescheduled, firstError }
 }

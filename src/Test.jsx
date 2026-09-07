@@ -4,7 +4,7 @@ import { getTestStatus, getAttemptsToday, canStartTest } from './testLogic'
 import { fetchPagedResult } from './supabasePaging'
 import { getLevelLabel, getNextLevel, shuffle } from './utils'
 import { languageTheme, langAttr } from './languageTheme'
-import { testWrongAnswerWrite, testResultSummaryLine, TEST_CARD_COLUMNS } from './testReschedule'
+import { testWrongAnswerWrite, testResultSummaryLine, tallyTestReschedules, newTestCard, TEST_CARD_COLUMNS } from './testReschedule'
 import { gradeCardWrite, newOpId } from './syncQueue'
 import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import { useIsMobile } from './useIsMobile'
@@ -316,7 +316,22 @@ export default function Test({ session, profile, track, onBack }) {
     finishTest(finalAnswers, finalWrong)
   }
 
-  const finishTest = async (allAnswers, finalWrong) => {
+  const finishTest = async (allAnswers, wrongList) => {
+    // Deduped by vocabulary id, at the one place every caller passes through.
+    // "End quiz" is disabled while an answer is selected, but the confirm's
+    // "End now" is not — so answering a question with the confirm open puts
+    // that word in BOTH `wrongVocab` and the unanswered tail. It was counted
+    // twice on the score card, and it would now be graded twice: two review_logs
+    // rows and two opIds for one wrong answer, which is the same history
+    // corruption this change exists to stop.
+    const finalWrong = []
+    const seenWrong = new Set()
+    for (const w of wrongList || []) {
+      if (!w || seenWrong.has(w.id)) continue
+      seenWrong.add(w.id)
+      finalWrong.push(w)
+    }
+
     // Clear last attempt's failure before this one can set it. Without this a
     // retry that succeeds still prints "could not be returned to review" — the
     // result line claiming a failure that did not happen, which is the same
@@ -356,53 +371,58 @@ export default function Test({ session, profile, track, onBack }) {
     }
 
     if (finalWrong.length > 0) {
-      const wrongVocabIds = finalWrong.map(w => w.id)
-      const { data: wrongCards } = await supabase
+      const { data: wrongCards, error: lookupError } = await supabase
         .from('cards')
         .select(TEST_CARD_COLUMNS)
         .eq('user_id', session.user.id)
-        .in('vocab_id', wrongVocabIds)
+        .in('vocab_id', finalWrong.map(w => w.id))
 
       const cardByVocabId = {}
       ;(wrongCards || []).forEach(c => { cardByVocabId[c.vocab_id] = c })
 
-      // Through the canonical grade write, not a bare UPDATE. See
-      // testReschedule.js: the direct write left `reps` without a review log,
-      // and on a prior-knowledge claim it was rejected outright by
-      // cards_unverified_claim_is_inert and the error was never read — so the
-      // learner got the word wrong and the card was neither rescheduled nor
-      // un-claimed.
-      let rescheduleFailed = null
-      let rescheduled = 0
-      let skipped = 0
-      for (const w of finalWrong) {
-        // The learner's retention dial, as Study.jsx passes it. Without it a
-        // fresh device schedules at the default until Settings is opened once.
-        const payload = testWrongAnswerWrite(cardByVocabId[w.id], {
-          targetRetention: profile && profile.target_retention,
-        })
-        if (!payload) { skipped += 1; continue }
-        const write = await gradeCardWrite(supabase, {
-          userId: session.user.id,
-          ...payload,
-          opId: newOpId(),
-        })
-        // Not swallowed. One failure here means a word the learner demonstrably
-        // does not know keeps counting as known, which is worth saying out loud.
-        if (write.ok) rescheduled += 1
-        else {
-          rescheduleFailed = write.error
-          console.error('[Test] wrong-answer reschedule failed', w.id, write.error)
+      // The lookup's own error, read. It used to be dropped, and dropping it is
+      // worse here than anywhere: with no rows every word looks like a word the
+      // learner has no card for, so the fallback below would build a FRESH card
+      // for a mature one and reset its history through the upsert. Nothing is
+      // written when the lookup fails.
+      let results = []
+      if (lookupError) {
+        console.error('[Test] could not load the wrong words\u2019 cards', lookupError)
+      } else {
+        // Through the canonical grade write, not a bare UPDATE. See
+        // testReschedule.js: the direct write left `reps` without a review log,
+        // and on a prior-knowledge claim it was rejected outright by
+        // cards_unverified_claim_is_inert and the error was never read — so the
+        // learner got the word wrong and the card was neither rescheduled nor
+        // un-claimed.
+        for (const w of finalWrong) {
+          // A word with no card yet still gets one: the learner was asked and
+          // answered wrong, which is exactly what a new card records.
+          const card = cardByVocabId[w.id] || newTestCard(w.id)
+          // The learner's retention dial, as Study.jsx passes it. Without it a
+          // fresh device schedules at the default until Settings is opened once.
+          const payload = testWrongAnswerWrite(card, {
+            targetRetention: profile && profile.target_retention,
+          })
+          if (!payload) continue
+          const write = await gradeCardWrite(supabase, {
+            userId: session.user.id,
+            ...payload,
+            opId: newOpId(),
+          })
+          // Not swallowed. One failure here means a word the learner demonstrably
+          // does not know keeps counting as known, which is worth saying out loud.
+          if (!write.ok) console.error('[Test] wrong-answer reschedule failed', w.id, write.error)
+          results.push(write)
         }
       }
-      // A word with no card row is not a failure — there is nothing to
-      // reschedule — but it must not be counted as one that came back either.
-      if (rescheduleFailed || skipped > 0) {
-        setRescheduleError({
-          message: rescheduleFailed ? (rescheduleFailed.message || 'Some words could not be rescheduled.') : null,
-          rescheduled,
-          total: finalWrong.length,
-        })
+
+      // The tally is a pure, tested function — it is the measurement the result
+      // sentence rests on, and an unmeasured sentence is the defect this whole
+      // change is about.
+      const tally = tallyTestReschedules(results)
+      if (tally.rescheduled < finalWrong.length) {
+        setRescheduleError({ rescheduled: tally.rescheduled })
       }
     }
 
@@ -778,7 +798,11 @@ export default function Test({ session, profile, track, onBack }) {
           <StatCard label="Total" value={questions.length} color="var(--text)" />
         </div>
 
-        <p style={bodyTextStyle}>
+        {/* role="status": on a failure this sentence is the ONLY place the
+            learner is told their words did not come back, and it renders in the
+            same muted body copy as the success sentence. A live region at least
+            announces it. */}
+        <p style={bodyTextStyle} role="status">
           {testResultSummaryLine({
             passed: lastResult.passed,
             wrongCount: lastResult.wrongCount,
