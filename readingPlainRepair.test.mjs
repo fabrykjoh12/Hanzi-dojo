@@ -40,9 +40,30 @@ const code = sql.split('\n').filter(l => !l.trim().startsWith('--')).join('\n')
 const folds = [...code.matchAll(/translate\(\s*normalize\(v\.reading,\s*nfc\),\s*'([^']+)',\s*'([^']+)'\)/g)]
   .map(m => ({ from: [...m[1]], to: [...m[2]] }))
 
+describe('the statement writes what it says it writes', () => {
+  it('updates public.vocabulary, and sets reading_plain and nothing else', () => {
+    // The one edit every other assertion in this file would survive. Change
+    // `set reading_plain =` to `set reading =` and the fold, the strip classes,
+    // the guards and the scope all still pass — while the migration overwrites
+    // the DISPLAY reading of every matching row. In a file that is entirely a
+    // text harness over one statement, the target of that statement is the
+    // thing most worth making unrepresentable.
+    expect(code, 'the update target moved').toMatch(/update\s+public\.vocabulary\b/)
+    expect(code, 'the column being written changed').toMatch(/set\s+reading_plain\s*=/)
+    expect(code, 'a second column is being written').not.toMatch(/,\s*reading\s*=/)
+    expect((code.match(/\bupdate\b/gi) || []).length, 'more than one statement').toBe(1)
+    for (const verb of [/\bdelete\b/i, /\btruncate\b/i, /\balter\b/i, /\bdrop\b/i, /\binsert\b/i]) {
+      expect(code, 'the migration grew a ' + verb.source + ' statement').not.toMatch(verb)
+    }
+  })
+})
+
 describe('the fold the database applies is the one the app applies', () => {
   it('states the same fold everywhere it appears', () => {
-    expect(folds.length, 'expected the fold in the SET clause and both WHERE clauses').toBe(3)
+    // Four occurrences, and each one is load-bearing: the SET clause, the ASCII
+    // guard, the folds-away-to-nothing guard, and the comparison. A fixed count
+    // is what catches a fifth appearing unaudited.
+    expect(folds.length, 'expected the fold in the SET clause and all three WHERE clauses').toBe(4)
     expect((code.match(/translate\(/g) || []).length,
       'a translate() appears that is not the audited fold — it may not compose NFC first')
       .toBe(folds.length)
@@ -118,7 +139,9 @@ describe('the comparison ignores space, apostrophe and case — on both sides', 
   const classes = [...code.matchAll(/,\s*'\[([^\]]+)\]',\s*'',\s*'g'\)/g)].map(m => m[1])
 
   it('strips the same three characters everywhere it strips anything', () => {
-    expect(classes.length, 'the comparison no longer normalises before comparing').toBe(2)
+    // Three: the folds-away guard strips before testing for emptiness, and both
+    // sides of the comparison strip before comparing.
+    expect(classes.length, 'the comparison no longer normalises before comparing').toBe(3)
     for (const chars of classes) {
       expect(chars, 'a strip class dropped a character the other side still strips').toContain(' ')
       expect(chars).toContain("'")
@@ -130,7 +153,7 @@ describe('the comparison ignores space, apostrophe and case — on both sides', 
     // back into scope — and a single toMatch passes with either half present.
     expect((code.match(/lower\(regexp_replace/g) || []).length,
       'the comparison lowercases only one side, so case differences count again')
-      .toBe(2)
+      .toBe(3)
   })
 
   it('does not fold `:`, because that is what keeps the two ü rows in scope', () => {
@@ -140,10 +163,19 @@ describe('the comparison ignores space, apostrophe and case — on both sides', 
     for (const chars of classes) expect(chars).not.toContain(':')
   })
 
-  // The migration's predicate, rebuilt FROM THE SQL'S OWN TEXT — the fold map
-  // and the strip class are both parsed above, not restated — so this drives
-  // the real rule rather than a paraphrase of it. What it cannot do is prove
-  // Postgres agrees; `translate`, `lower` and `regexp_replace` are modelled.
+  // A MODEL of the migration's predicate. Two of its parts are parsed from the
+  // SQL above and not restated — the fold map and the strip class, which are
+  // the parts a regression would most plausibly touch. The rest is a
+  // reimplementation, and saying which is which matters more than the tidier
+  // sentence an earlier version of this comment used:
+  //
+  //   parsed   the translate() map, the strip class
+  //   modelled translate / lower / regexp_replace semantics, and the ASCII guard
+  //   restated the NULL and blank-reading guards, the language/system scope
+  //   absent   normalize(…, nfc) — every fixture below is already NFC
+  //
+  // So this cannot prove Postgres agrees. What it proves is which rows the rule
+  // selects, which is the claim that had no test at all before.
   const sqlFold = (value) => {
     let out = ''
     for (const ch of String(value == null ? '' : value)) {
@@ -156,9 +188,14 @@ describe('the comparison ignores space, apostrophe and case — on both sides', 
     const strip = new RegExp('[' + classes[0].replace(/\\/g, '\\\\') + ']', 'g')
     return String(value == null ? '' : value).replace(strip, '').toLowerCase()
   }
-  const wouldUpdate = (reading, readingPlain) =>
-    reading != null && String(reading).trim() !== ''
-    && sqlKey(readingPlain) !== sqlKey(sqlFold(reading))
+  const wouldUpdate = (reading, readingPlain) => {
+    if (reading == null || String(reading).trim() === '') return false
+    const folded = sqlFold(reading)
+    // The ASCII guard, modelled: a row the map did not fully flatten is skipped
+    // rather than written back half-folded.
+    if (/[^\x00-\x7F]/.test(folded)) return false
+    return sqlKey(readingPlain) !== sqlKey(folded)
+  }
 
   it('fires on all ten drifted rows and on none of the eleven curated ones', () => {
     // The load-bearing claim of the whole migration, and until now the only one
@@ -187,6 +224,10 @@ describe('the comparison ignores space, apostrophe and case — on both sides', 
     // these start firing, which is the first draft's 21-row over-reach.
     expect(wouldUpdate('nǐ hǎo', 'nihao'), 'a squashed key was rewritten for spacing alone').toBe(false)
     expect(wouldUpdate('nǐhǎo', 'ni hao'), 'a spaced key was rewritten for spacing alone').toBe(false)
+    // The ASCII guard, driven rather than described: `ǹg` has no entry in the
+    // fold map, so the row is skipped instead of having `ǹg` written into an
+    // answer key.
+    expect(wouldUpdate('ǹg', 'ng'), 'a half-folded value was written').toBe(false)
     // And the two shapes the guards exist for.
     expect(wouldUpdate(null, 'hao'), 'a NULL reading reached the predicate').toBe(false)
     expect(wouldUpdate('  ', 'hao'), 'an empty reading reached the predicate').toBe(false)

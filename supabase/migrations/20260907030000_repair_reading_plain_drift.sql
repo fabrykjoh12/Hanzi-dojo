@@ -24,8 +24,13 @@
 -- real and it teaches wrong pronunciation; it does not unlock a level.
 --
 -- WHAT DRIFTED. 20260724120000_fix_hsk3_6_readings.sql (written 2026-07-24,
--- applied 2026-08-03) corrected `reading` on 54 rows where the bulk import had
--- selected a rare reading over the everyday one. It did not touch
+-- applied 2026-08-03) names 54 rows whose `reading` the bulk import had taken
+-- from a rare pronunciation rather than the everyday one. FIFTY-FOUR IS THE
+-- SIZE OF ITS LIST, not a count of rows it changed: its own header records a
+-- read-only verification made BEFORE it was applied, and at least one of the 54
+-- (转) has no row today, so how many still matched nine days later is not
+-- established anywhere. Nothing here depends on the number — the ten below were
+-- measured directly. It did not touch
 -- `reading_plain`, so ten rows still carry the tone-stripped form of the
 -- reading that was REJECTED. Measured live 2026-09-07 against the predicate
 -- below — these are the only ten in the whole chinese/hsk_3 corpus, and all ten
@@ -63,10 +68,10 @@
 -- src/authoredStories.test.js records the shape of that change — the snapshot
 -- holds "457 words from an OLDER HSK 3 draft, of which only 50 survive in the
 -- current level" — and storyVocabAudit.test.mjs classifies 转 as an ingestion
--- loss today. Reconciling those two accounts is FAB-42's job, and FAB-42 is
--- restricted to read-only provenance work for exactly this reason. Nothing in
--- this migration depends on the answer: it is predicate-scoped, and neither
--- word is referenced by it.
+-- loss today. Reconciling those two accounts is provenance work, which is
+-- FAB-42's subject; the evidence is recorded there rather than guessed at here.
+-- Nothing in this migration depends on the answer: it is predicate-scoped, and
+-- neither word is referenced by it.
 --
 -- EIGHT OF THE TEN ARE THAT DEFECT. The last two are not, and saying so matters
 -- more than the tidier claim: 忽略 and 策略 carry `hulu:e` / `celu:e`, the ASCII
@@ -105,8 +110,11 @@
 -- So the predicate is: "differs by more than the three things that never change
 -- an answer key" — which is why it fires on eight genuine mis-gradings, two
 -- ASCII-transliteration leftovers, and none of the eleven spaced rows above.
--- The value written preserves the shape of `reading` itself (its spacing and
--- case, tones removed), so a row keeps whichever convention it already had.
+-- The value written preserves the shape of `reading` itself — its spacing and
+-- case, tones removed. That is a statement about `reading`, not about the row's
+-- previous `reading_plain`: a repaired row takes the reading's convention. For
+-- the ten below that is the convention they already had, and for the eleven
+-- above the question never arises, because they are not touched.
 --
 -- THE TONE FOLD, AND WHAT IT REFUSES TO GUESS. The map covers the tone-marked
 -- vowels this corpus uses. src/testLogic.js's normalizePinyin is broader by
@@ -146,12 +154,26 @@ update public.vocabulary v
    and v.system = 'hsk_3'
    -- A NULL `reading` derives NULL, and `is distinct from` would happily write
    -- that over a perfectly good answer key. The schema allows both columns to
-   -- be NULL, so the guard is not theoretical — and an EMPTY reading is the
+   -- be NULL — that is the live schema; docs/ARCHITECTURE.md lists the columns
+   -- without stating nullability — so the guard is not theoretical. An EMPTY
+   -- reading is the
    -- same defect wearing a different value: it folds to '', which is ASCII and
    -- distinct from any real key, so without this it would blank the answer key
    -- and make every typed answer for that row wrong.
    and v.reading is not null
    and btrim(v.reading) <> ''
+   -- And a reading that survives btrim but folds away to nothing — a value of
+   -- only apostrophes and spaces. It passes the two guards above and the ASCII
+   -- one below, and the key written would be a string lenientPinyin reduces to
+   -- '', which both graders then drop with .filter(Boolean): the same blanking,
+   -- one shape further out. Contrived, but it is the class the two lines above
+   -- claim to close, so it is closed rather than described.
+   and lower(regexp_replace(
+         translate(
+           normalize(v.reading, nfc),
+           'āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüĀÁǍÀĒÉĚÈĪÍǏÌŌÓǑÒŪÚǓÙǕǗǙǛÜ',
+           'aaaaeeeeiiiioooouuuuuuuuuAAAAEEEEIIIIOOOOUUUUUUUUU'),
+         '[ ''’]', '', 'g')) <> ''
    -- Only write a value the map fully folded. See THE TONE FOLD above: a
    -- character outside the map survives into the result, and a half-folded
    -- answer key is worse than the drift being repaired.
