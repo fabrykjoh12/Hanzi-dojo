@@ -121,7 +121,12 @@ async function listAudioObjects(rows) {
   for (const prefix of prefixes) {
     for (let offset = 0; ; offset += 1000) {
       const { data, error } = await supabase.storage.from('audio')
-        .list(prefix, { limit: 1000, offset })
+        // sortBy is explicit for the same reason the PostgREST scan above is
+        // ordered: an unordered paged listing can skip or repeat, and both are
+        // silent. The client's default happens to be name-ascending; relying on
+        // a default the comment above refuses to rely on elsewhere is the kind
+        // of asymmetry that survives until it does not.
+        .list(prefix, { limit: 1000, offset, sortBy: { column: 'name', order: 'asc' } })
       if (error) { console.error('storage ' + prefix + ': ' + error.message); process.exit(2) }
       for (const obj of data || []) found.add(prefix + '/' + obj.name)
       if (!data || data.length < 1000) break

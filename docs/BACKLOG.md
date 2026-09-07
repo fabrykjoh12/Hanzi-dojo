@@ -23,6 +23,8 @@ Two of those ten cannot currently fire, and it is worth knowing which: `card-orp
 
 **Five DIRECTIONAL checks** — real debt, counted against the committed baseline. Shrinking is free, growing fails: stale `reading_plain` (`20260907030000` repairs them, and it is on the `claude/fab-36-reading-plain-drift` branch rather than in this one), words with no playable audio (the great majority of HSK 3-6 — a paid TTS run; see the 白 entry below for why that number contradicts two older statements and which one is right), `tts_audio` rows whose word is gone, glosses carrying a truncated cross-reference (needs a Chinese reader), and numeric tones in `reading`. The counts are whatever `data/vocabulary-integrity-baseline.json` holds; do not restate them here, because a restated number goes stale silently.
 
+**A planned reseed will turn `duplicate-across-corpus` red, and that is the check working.** `data/hsk-curriculum-bands.json` puts 白 at HSK 5, no built word list carries it, and production holds it only as a level-null row — so `docs/VOCAB-INGESTION.md`'s step 5 (reseed the missing rows, insert only) will insert a curriculum 白 alongside it, because `seed-vocab.mjs` dedupes with `.eq('level', level)` and cannot see a level-null row. Deactivate the level-null row (`is_active = false`, §7.1) as part of that reseed, not afterwards.
+
 Two scoping decisions worth not re-deriving: **card-orphan and tts-orphan read every vocabulary id**, not the chinese/hsk_3 slice — a learner's other-track card is not a broken reference, and §7.1 deactivates rather than deletes, so scoping them to the active corpus would make the sanctioned repair (`is_active = false`) grow the count and red the gate. And the **`u:`/`v` check reads `reading` only**: two rows still carry `u:` in `reading_plain`, which the directional drift check already counts. Both are asserted, not left to the comment.
 
 The **answer-key comparison is deliberately stricter than the app's grader**: it ignores space, apostrophe and case, where `lenientPinyin` also ignores digits, `v`/`ü` and punctuation including `:`. Being stricter can only over-report drift, never miss it. It over-reports at least the two `hulu:e` rows, and by two further mechanisms the module's own comment sets out: `normalizePinyin` drops every combining mark (so it folds `ǹ`→`n` where the table does not) and folds `v` as well as `ü`. Which rows make up that count is not settled by that — it is settled by the dry run — so "at least", not "exactly".
@@ -125,7 +127,7 @@ Check the content type, not the status.
   among them 白 itself, this entry's subject. Only one of those three lacks a
   clip (白; the other two have a ready `tts_audio` row), so on 2026-09-07 the
   gate's `no-audio` came out one lower than the 4,471 here — not three lower.
-  The live count is whatever `data/vocabulary-integrity-baseline.json` holds. HSK 1 and 2 are
+  The ACCEPTED count is whatever `data/vocabulary-integrity-baseline.json` holds; a compare-only run may measure fewer, which passes as `shrank` without anyone editing that file. HSK 1 and 2 are
   complete (300/300 and 197/197); above them almost nothing resolves. The 2,369
   objects that DO sit under `chinese/hsk_3/` are numbered for a superseded word
   list — level 3 holds 457 files against 453 rows and exactly **2** of them are

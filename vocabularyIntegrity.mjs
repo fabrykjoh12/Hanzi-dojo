@@ -283,12 +283,16 @@ export const HARD_CHECKS = [
   },
   {
     id: 'level-null-is-learner-added',
-    describe: 'every row without a level is a dictionary save, not a curriculum row that lost one',
+    describe: 'every row without a level has the shape of a dictionary save, not of a curriculum row that lost one',
     // The corpus this gate measures is the CURRICULUM — rows with a level. A
-    // row without one is a learner tapping "save to deck": dict_add_to_deck
-    // (20260719130000) inserts `level null, sort_order 0` and three shipped
-    // screens call it. Those rows are not curriculum debt and must not be
-    // measured as such; see the corpus note in check-vocabulary-integrity.mjs.
+    // row without one has the SHAPE a learner's "save to deck" produces:
+    // dict_add_to_deck (20260719130000) inserts `level null, sort_order 0` and
+    // three shipped screens call it. Shape is all this check can establish and
+    // all it claims — the three level-null rows in production today are NOT
+    // saves (docs/VOCAB-INGESTION.md calls them ingestion orphans, and two of
+    // them carry ready tts_audio rows the RPC never writes). Either way they
+    // are not curriculum debt and must not be measured as such; see the corpus
+    // note in check-vocabulary-integrity.mjs.
     //
     // What that would otherwise hide is a curriculum row that LOST its level,
     // which would silently drop out of every other check. Curriculum rows carry
