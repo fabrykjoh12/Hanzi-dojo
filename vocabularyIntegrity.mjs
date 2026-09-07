@@ -36,8 +36,16 @@ const TONE_PLAIN = 'aaaaeeeeiiiioooouuuuuuuuuAAAAEEEEIIIIOOOOUUUUUUUUU'
 // handling because rows really were stored decomposed. normalize('NFC') is what
 // makes the table see the character the table knows, and it is the same thing
 // `normalize(v.reading, nfc)` does in the SQL. Production holds no non-NFC
-// reading today (measured), so this changes no count — it stops the claim above
-// from being false the day one appears.
+// reading today (measured), so this changes no count.
+//
+// WHERE THE TWO STILL DIFFER, since "the same fold" would otherwise be too
+// strong a word: normalizePinyin drops EVERY combining mark, so it also folds
+// marks this table does not carry — `ǹ`→`n`, `ḿ`→`m`. This map covers the
+// tone-marked vowels and nothing else. The difference can only make
+// reading-plain-drift over-report (a correct row read `ǹg` with a plain form
+// `ng` is counted as drift), never under-report, and that check is directional
+// so an over-report cannot fail a run. It would keep the count from reaching
+// zero, which is worth knowing before anyone tries to drive it there.
 export function stripTones(reading) {
   let out = ''
   for (const ch of String(reading == null ? '' : reading).normalize('NFC')) {
@@ -192,7 +200,7 @@ export const HARD_CHECKS = [
     // It also checks a PATH, not a file: whether an object exists at that path
     // is the no-audio check's question, and only for vocabulary rows.
     collect: ({ ttsAudio }) => (ttsAudio || [])
-      .filter(t => t.status === 'ready' && blank(t.storage_path))
+      .filter(t => t.source_type === 'vocabulary' && t.status === 'ready' && blank(t.storage_path))
       .map(t => ({ id: t.id, detail: 'tts_audio ' + t.id + ' ready with no storage_path' })),
   },
 ]
@@ -260,6 +268,25 @@ export const DIRECTIONAL_CHECKS = [
 
 // ── Running them ────────────────────────────────────────────────────────────
 
+// Which of the checker's inputs came back empty.
+//
+// A pure function rather than a block inside the script, because it is one of
+// the two properties the contract cares about most — "must not report clean
+// without having inspected anything" — and a guard asserted only by grepping
+// the script's own source would pass on a guard that is present and
+// unreachable. Every count here is a non-zero production number, so an empty
+// one is a failed fetch, not a state the corpus can reach.
+export function emptyInputs({ vocabulary, vocabularyIds, cards, ttsAudio, audioObjects }) {
+  const size = (v) => (v && typeof v.size === 'number' ? v.size : (v || []).length)
+  return [
+    ['vocabulary', size(vocabulary)],
+    ['vocabulary ids', size(vocabularyIds)],
+    ['cards', size(cards)],
+    ['tts_audio', size(ttsAudio)],
+    ['stored clips', size(audioObjects)],
+  ].filter(([, n]) => n === 0).map(([name]) => name)
+}
+
 export function runChecks(data) {
   const count = (checks) => checks.map(c => ({
     id: c.id, describe: c.describe, violations: c.collect(data),
@@ -283,6 +310,13 @@ export function compareToBaseline(result, baseline) {
     throw new BaselineContractError('baseline is ' + (baseline && baseline.contract)
       + ', these checks are ' + result.contract)
   }
+  // A baseline carrying the right contract string and no counts is unusable in
+  // the same way and belongs on the same path — otherwise it fails as a
+  // TypeError from the row map below, which reaches the operator as a stack
+  // trace instead of "BASELINE UNUSABLE".
+  if (!baseline.counts || typeof baseline.counts !== 'object') {
+    throw new BaselineContractError('baseline ' + result.contract + ' carries no counts')
+  }
   const rows = result.directional.map((c) => {
     const was = baseline.counts[c.id]
     const now = c.violations.length
@@ -301,7 +335,7 @@ export function compareToBaseline(result, baseline) {
   // direction. Iterating the RESULT alone cannot see it, so the baseline's own
   // keys are walked too.
   const measured = new Set(result.directional.map(c => c.id))
-  const orphaned = Object.keys(baseline.counts || {}).filter(id => !measured.has(id))
+  const orphaned = Object.keys(baseline.counts).filter(id => !measured.has(id))
   const hardFailures = result.hard.filter(c => c.violations.length > 0)
   return {
     rows,

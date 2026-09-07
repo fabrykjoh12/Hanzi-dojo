@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { normalizePinyin } from './src/testLogic.js'
 import {
   HARD_CHECKS, DIRECTIONAL_CHECKS, CHECK_CONTRACT, stripTones, answerKeyForm, syllableCount,
-  runChecks, baselineFrom, compareToBaseline, formatComparison, BaselineContractError,
+  runChecks, emptyInputs, baselineFrom, compareToBaseline, formatComparison, BaselineContractError,
 } from './vocabularyIntegrity.mjs'
 
 // FAB-36 — the vocabulary integrity gate.
@@ -143,10 +143,18 @@ describe('each hard check fires on the defect and only on the defect', () => {
     expect(fires('card-orphan', { vocabularyIds: ids, cards: [{ id: 'c1', vocab_id: 'japanese-row' }] })).toBe(0)
   })
 
-  it('ready-audio-has-path catches a clip marked ready with nothing behind it', () => {
-    expect(fires('ready-audio-has-path', { ttsAudio: [{ id: 't1', status: 'ready', storage_path: null }] })).toBe(1)
-    expect(fires('ready-audio-has-path', { ttsAudio: [{ id: 't1', status: 'ready', storage_path: 'a/b.mp3' }] })).toBe(0)
-    expect(fires('ready-audio-has-path', { ttsAudio: [{ id: 't1', status: 'pending', storage_path: null }] })).toBe(0)
+  it('ready-audio-has-path catches a vocabulary clip marked ready with no path', () => {
+    const clip = (over) => [{ id: 't1', source_type: 'vocabulary', status: 'ready', storage_path: null, ...over }]
+    expect(fires('ready-audio-has-path', { ttsAudio: clip() })).toBe(1)
+    expect(fires('ready-audio-has-path', { ttsAudio: clip({ storage_path: 'a/b.mp3' }) })).toBe(0)
+    expect(fires('ready-audio-has-path', { ttsAudio: clip({ status: 'pending' }) })).toBe(0)
+    // The scope belongs in the predicate, not in the caller's query. The script
+    // fetches only source_type='vocabulary' today, so a story-utterance clip
+    // never reaches this check — but a later widening of that fetch would
+    // silently widen a HARD check onto debt nobody baselined, and the two
+    // sibling checks already filter for themselves.
+    expect(fires('ready-audio-has-path', { ttsAudio: clip({ source_type: 'story_utterance' }) }),
+      'a story clip reached a check scoped to vocabulary').toBe(0)
   })
 })
 
@@ -283,7 +291,27 @@ describe('the baseline comparison', () => {
     expect(() => compareToBaseline(result, { contract: 'something-else@9', counts: {} }))
       .toThrow(BaselineContractError)
     expect(() => compareToBaseline(result, null)).toThrow(BaselineContractError)
+    // A baseline with the right contract and no counts is unusable the same
+    // way, and belongs on the same path — otherwise it fails as a TypeError
+    // from the row map and reaches the operator as a stack trace.
+    expect(() => compareToBaseline(result, { contract: CHECK_CONTRACT }))
+      .toThrow(BaselineContractError)
+    expect(() => compareToBaseline(result, { contract: CHECK_CONTRACT, counts: null }))
+      .toThrow(BaselineContractError)
     expect(baselineFrom(result).contract).toBe(CHECK_CONTRACT)
+  })
+
+  it('the accept path refuses to write a baseline while a hard check is red', () => {
+    // The baseline's existence is meant to mean the hard tier was clean when it
+    // was generated. Exiting 0 with the failures merely printed would let the
+    // accept task go green and COMMIT over a red tier.
+    const src = readFileSync('check-vocabulary-integrity.mjs', 'utf8')
+    expect(src, 'the accept path no longer refuses on a hard failure')
+      .toMatch(/Refusing to write .* while a HARD check is failing/)
+    const acceptBlock = src.slice(src.indexOf('if (update) {'), src.indexOf('if (!existsSync(BASELINE))'))
+    expect(acceptBlock, 'the refusal does not exit non-zero').toMatch(/process\.exit\(1\)/)
+    expect(acceptBlock.indexOf('process.exit(1)'), 'the write happens before the refusal')
+      .toBeLessThan(acceptBlock.indexOf('writeFileSync'))
   })
 
   it('every directional check appears in a generated baseline', () => {
@@ -303,16 +331,26 @@ describe('a check with nothing to read reports nothing, and never reports clean'
     }
   })
 
-  it('the script refuses a partial fetch, not just an empty corpus', () => {
-    // Every check whose input is missing returns [] — right for the module,
-    // wrong for a run, because a fetch that came back empty for the wrong
-    // reason would report those checks clean. card-orphan is the contract's
-    // "broken references" check and reads `cards`; nothing guarded it.
-    const src = readFileSync('check-vocabulary-integrity.mjs', 'utf8')
-    expect(src, 'the partial-fetch guard is gone').toMatch(/Refusing to report on a partial fetch/)
-    for (const input of ['cards', 'tts_audio', 'vocabulary ids', 'stored clips']) {
-      expect(src, input + ' is no longer guarded').toContain("'" + input + "'")
+  it('names every input that came back empty, so a partial fetch cannot pass', () => {
+    // Driven, not grepped. Every check whose input is missing returns [] —
+    // right for the module, wrong for a run, because a fetch that came back
+    // empty for the wrong reason would report those checks clean. card-orphan
+    // is the contract's "broken references" check and reads `cards`.
+    const full = {
+      vocabulary: [row()], vocabularyIds: new Set(['v1']), cards: [{ id: 'c', vocab_id: 'v1' }],
+      ttsAudio: [{ id: 't', source_type: 'vocabulary', source_id: 'v1', status: 'ready', storage_path: 'a.mp3' }],
+      audioObjects: new Set([row().audio_path]),
     }
+    expect(emptyInputs(full), 'a complete fetch was called partial').toEqual([])
+    for (const key of Object.keys(full)) {
+      const partial = { ...full, [key]: key === 'vocabularyIds' || key === 'audioObjects' ? new Set() : [] }
+      expect(emptyInputs(partial).length, key + ' came back empty and nothing noticed').toBe(1)
+    }
+    // Absent entirely is the same failure as empty, not a pass.
+    expect(emptyInputs({}).length).toBe(5)
+    // And the script acts on it rather than logging it.
+    const src = readFileSync('check-vocabulary-integrity.mjs', 'utf8')
+    expect(src, 'the partial-fetch guard no longer stops the run').toMatch(/emptyInputs\([\s\S]{0,120}?\)[\s\S]{0,200}?process\.exit\(2\)/)
   })
 
   it('pages the fetch in a stable order, so rows cannot be dropped or doubled', () => {

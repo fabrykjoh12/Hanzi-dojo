@@ -27,7 +27,7 @@ Manifest: [`data/tts-relicense-manifest.json`](../data/tts-relicense-manifest.js
 | **Estimated cost** | **≈ USD 1.06 ≈ NOK 10** (NOK 12 with a 20% margin) |
 | **Credit available** | NOK 1,931 (≈ USD 204), expiring 2026-08-21 |
 | **Sufficient?** | **Yes — by roughly 190×.** Cost is ~0.5% of the credit |
-| Legacy Google clips | 6,058 vocabulary rows — **excluded, as instructed** |
+| Legacy Google clips | 6,058 vocabulary rows — **excluded, as instructed** (and see Finding 2: for Chinese, most of those files are not at the paths their rows name) |
 
 The bill is not the interesting part of this audit. Two other things are.
 

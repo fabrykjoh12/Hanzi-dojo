@@ -25,7 +25,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
-import { runChecks, baselineFrom, compareToBaseline, formatComparison, BaselineContractError } from './vocabularyIntegrity.mjs'
+import { runChecks, emptyInputs, baselineFrom, compareToBaseline, formatComparison, BaselineContractError } from './vocabularyIntegrity.mjs'
 
 const args = process.argv.slice(2)
 const update = args.includes('--update-baseline')
@@ -68,7 +68,8 @@ const vocabulary = await fetchAll('vocabulary', 'id, word, reading, reading_plai
 
 // A checker that fetched nothing would report every check clean. That is the
 // exact failure these checks exist to catch, so it is a hard stop rather than a
-// green run.
+// green run. Checked here as well as through emptyInputs below, because the
+// three fetches after this one are pointless without a corpus.
 if (vocabulary.length === 0) {
   console.error('No active ' + LANGUAGE + '/' + SYSTEM + ' vocabulary came back. Refusing to report on an empty corpus.')
   process.exit(2)
@@ -111,16 +112,13 @@ const audioObjects = await listAudioObjects(vocabulary)
 // Every check whose input is missing returns no violations rather than
 // pretending to have looked — which is right for the module and wrong for a
 // run, because a fetch that came back empty for the wrong reason would report
-// those checks clean. The corpus guard above covers `vocabulary`; these cover
-// the rest. Each number is one production row today, so an empty result is a
-// failure, not a state the corpus can reach.
-for (const [name, size] of [['cards', cards.length], ['tts_audio', ttsAudio.length],
-  ['vocabulary ids', vocabularyIds.size], ['stored clips', audioObjects.size]]) {
-  if (size === 0) {
-    console.error('No ' + name + ' came back. Refusing to report on a partial fetch —'
-      + ' the checks that read it would report clean without having looked.')
-    process.exit(2)
-  }
+// those checks clean. emptyInputs is a pure function so a spec can drive it
+// rather than grep this file for the words below.
+const empty = emptyInputs({ vocabulary, vocabularyIds, cards, ttsAudio, audioObjects })
+if (empty.length) {
+  console.error('No ' + empty.join(', no ') + ' came back. Refusing to report on a partial fetch —'
+    + ' the checks that read it would report clean without having looked.')
+  process.exit(2)
 }
 
 const result = runChecks({ vocabulary, vocabularyIds, cards, ttsAudio, audioObjects })
@@ -130,9 +128,20 @@ console.log('CORPUS   ' + vocabulary.length + ' active ' + LANGUAGE + '/' + SYST
   + ' vocabulary tts_audio rows · ' + audioObjects.size + ' stored clips\n')
 
 if (update) {
+  const hardFailures = result.hard.filter(c => c.violations.length > 0)
+  // A hard check is a violation of something that is meant to be at zero, and
+  // no baseline entry exists to accept it. Refusing to write here is what keeps
+  // the committed baseline meaningful: its existence says the hard tier was
+  // clean when it was generated. Exiting 0 with the failures merely printed
+  // would let the accept task go green — and commit — over a red tier.
+  if (hardFailures.length) {
+    console.error(formatComparison({ hardFailures, rows: [] }))
+    console.error('\nRefusing to write ' + BASELINE + ' while a HARD check is failing.')
+    console.error('The directional baseline accepts measured debt; it cannot accept a violation of something that is meant to be zero.')
+    process.exit(1)
+  }
   writeFileSync(BASELINE, JSON.stringify(baselineFrom(result), null, 1) + '\n')
-  console.log(formatComparison({ hardFailures: result.hard.filter(c => c.violations.length), rows: [] }))
-  console.log('\nwrote ' + BASELINE + ' — this ACCEPTS the counts above. Say why in the commit message.')
+  console.log('wrote ' + BASELINE + ' — this ACCEPTS the counts above. Say why in the commit message.')
   process.exit(0)
 }
 
