@@ -162,6 +162,8 @@ latest. Keep it current — move things to **Shipped** as they land.
 
 ## 🧱 Technical
 
+- [x] **The old scheduling column is no longer written anywhere in the app.** Hanzi Dojo moved from an older spaced-repetition algorithm to FSRS a while ago, and one column from the old one stayed in the database, unused. Eleven places in the app were still filling it in — harmlessly, since they were writing the value the database already used by default, which is why nobody noticed. They no longer do, and an automatic check on every change stops it creeping back. Nothing about your reviews changes; this is housekeeping so the next person reading the code learns the right lesson from it.
+
 ### Chinese TTS rebuild (Azure Speech) — phased
 Full design + operator runbook: **[`docs/TTS.md`](docs/TTS.md)**. Provider-independent
 domain layer, server-only synthesis, content-hash caching, guarded batch CLI. No
