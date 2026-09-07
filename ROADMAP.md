@@ -13,6 +13,18 @@ latest. Keep it current — move things to **Shipped** as they land.
 
 ## 🚧 Now — in progress
 
+- [ ] **Fixing how review intervals are timed across timezones.** Spaced repetition
+  scores a review by how many days have passed since the last one, and that count
+  was being made on the UTC calendar while the app itself serves reviews from your
+  own local midnight. For anyone west of UTC, an ordinary evening-then-next-morning
+  review counted as *no time passed at all*, so words grew stronger far more slowly
+  than they should have; east of UTC the opposite, a few hours counting as a full
+  day. Since level tests are gated on genuine strength, this affected progression
+  too. Every review from now on is counted on your own calendar. **Reviews you have
+  already done are not recalculated** — the strengths already stored were scored the
+  old way and stay as they are, so a card may be a little ahead of or behind where it
+  should be until its next few reviews settle it.
+
 - [ ] **Stories are becoming deliberate vocabulary practice.** Today the app knows which words you've learned and which stories you can read — but the stories themselves were never written to *reinforce* the words you just studied. That's changing. The measurement tool landed first: an audit of every published story against the full HSK vocabulary showing, for every word, how many stories a learner at that word's level could actually meet it in (honest baseline: HSK 1 healthy, HSK 3+ mostly uncovered). Now the machinery to fix it exists too: the audit picks the words that need reinforcement most, groups them into per-story writing briefs, and every generated candidate must pass a strict automatic checker — the required words really there (the right number of times), the story really at its level, no copied or padded text — using the exact same word-matching the reader uses, so "passes the check" means "every word is tappable". That word-matching has since been rebuilt to stop guessing: it used to accept a match whenever two English definitions happened to share a word, which quietly made stories look easier than they were, and it now has to show real evidence for every match. A story idea is also checked for difficulty *before* it is written, so an idea that could only be told with words far above your level is replaced rather than watered down. Nothing generated can reach the app directly: candidates live in a review pile, a separate tool moves approved ones into an unpublished holding state, and publishing stays a human decision. No stories have been mass-produced yet — a small supervised pilot comes first, measured against the audit so "more stories" provably means "more of *your* words, reinforced".
 
 - [ ] **The Stories library is becoming series-first.** Browsing is being redesigned around choosing a series the way you'd choose a show, then choosing a chapter inside it: a single Continue-reading card at the top that always knows your next step (read the open chapter, read today's unlocked one, or do today's flashcards to unlock it), vertical cover grids in place of sideways-scrolling rails, short reads and practice as clearly secondary sections, passed levels folded behind "See all", and the next level as a small locked preview. The real cover art — every published story has one — finally carries the page. The series page (pick your chapter) is the next step of the same redesign. Unlock rules, rewards and reading progress are unchanged.
