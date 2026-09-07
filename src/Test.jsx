@@ -1,10 +1,11 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getTestStatus, getAttemptsToday, canStartTest } from './testLogic'
 import { fetchPagedResult } from './supabasePaging'
 import { getLevelLabel, getNextLevel, shuffle } from './utils'
 import { languageTheme, langAttr } from './languageTheme'
-import { schedule } from './srs'
+import { testWrongAnswerWrite, testResultSummaryLine, tallyTestReschedules, newTestCard, TEST_CARD_COLUMNS } from './testReschedule'
+import { gradeCardWrite, newOpId } from './syncQueue'
 import { TEST_UNLOCK_MASTERY_PCT } from './mastery'
 import { useIsMobile } from './useIsMobile'
 import InfoTip from './InfoTip'
@@ -225,10 +226,15 @@ export default function Test({ session, profile, track, onBack }) {
   const [index, setIndex] = useState(0)
   const [wrongVocab, setWrongVocab] = useState([])
   const [selected, setSelected] = useState(null)
+  // The 1.5s answer-feedback pause, held so End-quiz can cancel it, and a latch
+  // so one attempt can only finish once. See handleAnswer / finishTest.
+  const feedbackTimer = useRef(null)
+  const finishing = useRef(false)
   const [saving, setSaving] = useState(false)
   const [lastResult, setLastResult] = useState(null)
   // Two-step in-UI confirm for ending the quiz early (no native dialogs).
   const [confirmingEnd, setConfirmingEnd] = useState(false)
+  const [rescheduleError, setRescheduleError] = useState(null)
 
   const { accentHex, fontFamily, languageName } = getLanguageDetails(profile, track)
   const levelLabel = getLevelLabel(profile.active_language, track.system, track.current_level)
@@ -268,7 +274,13 @@ export default function Test({ session, profile, track, onBack }) {
     return () => clearTimeout(timer)
   }, [])
 
+  // Cancel a pending feedback pause if the screen goes away mid-answer, so it
+  // cannot finish a test that is no longer on screen.
+  useEffect(() => () => { if (feedbackTimer.current) clearTimeout(feedbackTimer.current) }, [])
+
   const startTest = () => {
+    // A new attempt may finish again.
+    finishing.current = false
     // An empty pool would generate zero questions and crash on questions[0].
     if (!canStartTest(allVocab)) return
     const qs = generateQuestions(allVocab, allVocab, profile.active_language)
@@ -291,7 +303,17 @@ export default function Test({ session, profile, track, onBack }) {
     const newAnswers = [...answers, { vocab: q.vocab, user_answer: option, was_correct: correct }]
     setAnswers(newAnswers)
 
-    setTimeout(() => {
+    // Held so End-quiz can cancel it. Without that the feedback pause is a live
+    // second copy of the finish path: answer the LAST question, click "End now"
+    // inside 1.5s, and this timer still fires afterwards with
+    // `index + 1 === questions.length` — finishTest runs twice, writing a second
+    // test_attempts row (one of three daily attempts, gone) and grading every
+    // wrong word twice with two different opIds, which grade_card's
+    // client_op_id de-dupe cannot collapse. Two review_logs rows and reps + 2
+    // for one wrong answer: the exact history corruption this change exists to
+    // stop, arriving through the change itself.
+    feedbackTimer.current = setTimeout(() => {
+      feedbackTimer.current = null
       setSelected(null)
       if (index + 1 < questions.length) {
         setIndex(index + 1)
@@ -302,7 +324,18 @@ export default function Test({ session, profile, track, onBack }) {
   }
 
   const handleEndQuiz = () => {
-    const unansweredQuestions = questions.slice(index)
+    if (feedbackTimer.current) {
+      clearTimeout(feedbackTimer.current)
+      feedbackTimer.current = null
+    }
+    // `index` only advances inside that timer, so while an answer is on screen
+    // the CURRENT question has been answered and is already in `answers` and
+    // (if wrong) in `wrongVocab`. Slicing from `index` would count it a second
+    // time — and for a word answered CORRECTLY that means a fabricated wrong
+    // observation: with the new-card fallback it now creates a card and writes
+    // a grade-0 review log for a word the learner got right.
+    const answered = selected !== null
+    const unansweredQuestions = questions.slice(answered ? index + 1 : index)
     const unansweredAnswers = unansweredQuestions.map(q => ({
       vocab: q.vocab,
       user_answer: 'Skipped',
@@ -314,7 +347,32 @@ export default function Test({ session, profile, track, onBack }) {
     finishTest(finalAnswers, finalWrong)
   }
 
-  const finishTest = async (allAnswers, finalWrong) => {
+  const finishTest = async (allAnswers, wrongList) => {
+    // One finish per attempt. The timer above is cancelled by End-quiz, but a
+    // latch is what makes that a guarantee rather than a race won by luck —
+    // `saving` is state and does not settle before a second synchronous call.
+    if (finishing.current) return
+    finishing.current = true
+    // Deduped by vocabulary id, at the one place every caller passes through.
+    // "End quiz" is disabled while an answer is selected, but the confirm's
+    // "End now" is not — so answering a question with the confirm open puts
+    // that word in BOTH `wrongVocab` and the unanswered tail. It was counted
+    // twice on the score card, and it would now be graded twice: two review_logs
+    // rows and two opIds for one wrong answer, which is the same history
+    // corruption this change exists to stop.
+    const finalWrong = []
+    const seenWrong = new Set()
+    for (const w of wrongList || []) {
+      if (!w || seenWrong.has(w.id)) continue
+      seenWrong.add(w.id)
+      finalWrong.push(w)
+    }
+
+    // Clear last attempt's failure before this one can set it. Without this a
+    // retry that succeeds still prints "could not be returned to review" — the
+    // result line claiming a failure that did not happen, which is the same
+    // dishonesty as the bug this file exists to fix, inverted.
+    setRescheduleError(null)
     setSaving(true)
     const passed = finalWrong.length === 0
     const correctCount = allAnswers.filter(a => a.was_correct).length
@@ -349,22 +407,64 @@ export default function Test({ session, profile, track, onBack }) {
     }
 
     if (finalWrong.length > 0) {
-      const wrongVocabIds = finalWrong.map(w => w.id)
-      const { data: wrongCards } = await supabase
+      const { data: wrongCards, error: lookupError } = await supabase
         .from('cards')
-        .select('id, vocab_id, state, due_at, stability, difficulty, elapsed_days, scheduled_days, reps, lapses, learning_step, last_review')
+        .select(TEST_CARD_COLUMNS)
         .eq('user_id', session.user.id)
-        .in('vocab_id', wrongVocabIds)
+        .in('vocab_id', finalWrong.map(w => w.id))
 
       const cardByVocabId = {}
       ;(wrongCards || []).forEach(c => { cardByVocabId[c.vocab_id] = c })
 
-      for (const w of finalWrong) {
-        const card = cardByVocabId[w.id]
-        if (card) {
-          const { updates } = schedule(card, 0)
-          await supabase.from('cards').update(updates).eq('id', card.id).eq('user_id', session.user.id)
+      // The lookup's own error, read. It used to be dropped, and dropping it is
+      // worse here than anywhere: with no rows every word looks like a word the
+      // learner has no card for, so the fallback below would build a FRESH card
+      // for a mature one and reset its history through the upsert. Nothing is
+      // written when the lookup fails.
+      let results = []
+      if (lookupError) {
+        console.error('[Test] could not load the wrong words\u2019 cards', lookupError)
+      } else {
+        // Through the canonical grade write, not a bare UPDATE. See
+        // testReschedule.js: the direct write left `reps` without a review log,
+        // and on a prior-knowledge claim it was rejected outright by
+        // cards_unverified_claim_is_inert and the error was never read — so the
+        // learner got the word wrong and the card was neither rescheduled nor
+        // un-claimed.
+        for (const w of finalWrong) {
+          // A word with no card yet still gets one: the learner was asked and
+          // answered wrong, which is exactly what a new card records.
+          const card = cardByVocabId[w.id] || newTestCard(w.id)
+          // The learner's retention dial, as Study.jsx passes it. Without it a
+          // fresh device schedules at the default until Settings is opened once.
+          const payload = testWrongAnswerWrite(card, {
+            targetRetention: profile && profile.target_retention,
+          })
+          if (!payload) continue
+          const write = await gradeCardWrite(supabase, {
+            userId: session.user.id,
+            ...payload,
+            opId: newOpId(),
+          })
+          // Not swallowed. One failure here means a word the learner demonstrably
+          // does not know keeps counting as known, which is worth saying out loud.
+          if (!write.ok) console.error('[Test] wrong-answer reschedule failed', w.id, write.error)
+          results.push(write)
         }
+      }
+
+      // The tally is a pure, tested function — it is the measurement the result
+      // sentence rests on, and an unmeasured sentence is the defect this whole
+      // change is about.
+      const tally = tallyTestReschedules(results)
+      if (tally.rescheduled < finalWrong.length) {
+        setRescheduleError({ rescheduled: tally.rescheduled })
+        // One line naming what actually went wrong. The screen tells the
+        // learner their words did not come back; this is the only place that
+        // says why, and a failure with no trace anywhere is worse than a
+        // console line nobody reads until they need it.
+        console.error('[Test] ' + (finalWrong.length - tally.rescheduled) + ' of '
+          + finalWrong.length + ' wrong words were not rescheduled', tally.firstError)
       }
     }
 
@@ -740,10 +840,19 @@ export default function Test({ session, profile, track, onBack }) {
           <StatCard label="Total" value={questions.length} color="var(--text)" />
         </div>
 
-        <p style={bodyTextStyle}>
-          {lastResult.passed
-            ? 'All correct. Your next level is now unlocking.'
-            : lastResult.wrongCount + ' wrong words have been returned to review. You need 100% to pass.'}
+        {/* role="status": on a failure this sentence is the ONLY place the
+            learner is told their words did not come back, and it renders in the
+            same muted body copy as the success sentence. A live region at least
+            announces it. */}
+        <p style={bodyTextStyle} role="status">
+          {testResultSummaryLine({
+            passed: lastResult.passed,
+            wrongCount: lastResult.wrongCount,
+            rescheduled: rescheduleError ? rescheduleError.rescheduled : undefined,
+            // Only offer the retry the screen will actually give them: below,
+            // both the attempts line and the Try-again button disappear at 3.
+            canRetry: attempts.count < 3,
+          })}
         </p>
 
         {!lastResult.passed && attempts.count < 3 && (

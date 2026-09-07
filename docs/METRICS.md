@@ -46,6 +46,29 @@ Known instrumentation notes:
 - The manhua reader fires neither event today (its reads land in
   `story_reads` via its own progress flow); it is invisible to this metric.
 
+## Review accuracy (Profile)
+
+`src/Profile.jsx` shows a **retention rate** and a 30-day **reviews per day**
+bar, both computed from `review_logs` for the active track. Retention =
+`count(grade > 0) / count(*)`; the bar counts rows per `reviewed_at` day. A
+learner with no logs gets an honest empty state, never 0%.
+
+**It is not only study reviews.** A wrong answer on the level test writes a
+`review_logs` row too, because it is a real observation graded through the same
+`grade_card` RPC (`src/testReschedule.js`) — that is what stops the level test
+fabricating `reps` with no history behind it. A *correct* level-test answer
+writes nothing, because nothing is rescheduled.
+
+So the signal is asymmetric: level tests can only push retention **down** and
+push that day's review count **up**. On a 30-question test that is up to 30
+rows, all of them `grade = 0`. Judge a dip after a test attempt accordingly.
+
+Closing it properly means a source tag on `review_logs` (test vs study) so each
+number can say which it counts — a migration plus a metric split, recorded in
+`docs/BACKLOG.md`. The asymmetry is documented rather than hidden because the
+alternative — dropping the log — reintroduces `reps` climbing with no history,
+which is the §7.3b invariant the whole change protects.
+
 ## Learner-facing progress terms
 
 Defined by `src/mastery.js`, `docs/ARCHITECTURE.md` §mastery:
@@ -55,7 +78,7 @@ Defined by `src/mastery.js`, `docs/ARCHITECTURE.md` §mastery:
 | **Learned** | `cards.learned = true`, or FSRS state is `review`/`relearning`. Gates story tiers (the low bar, for early immersion). |
 | **Mastered** | FSRS `stability >= 21` days (`MASTERY_STABILITY_DAYS`). Gates the level test and the mastery display. `is_easy` gates nothing. |
 | **Due** | Day-based availability: everything scheduled for today is available from local midnight (Anki-style), not at the exact clock time last reviewed. **Scope: the deck** — every card started in the active track, every level, including words saved from a story or the dictionary that sit outside the current level window. Defined by `src/studyAvailability.js`, which is what both the Home counts and the Study queue are built from, so what Home promises is what the session delivers. |
-| **New** | Words at the current level window with no card yet, capped by the remaining daily allotment. **Scope: the current level window** — new words are only ever introduced from it. |
+| **New** | Words at the current level window with no card yet, capped by the remaining daily allotment. **The allotment is not only spent in Study:** a wrong level-test answer on a word with no card creates one (`src/testReschedule.js`), which raises `introducedToday` and so lowers this count — while writing no `daily_activity` row, so the day's *studied* counts do not move with it. A learner who fails several unstudied words therefore sees fewer new words offered that day than they have actually started. **Scope: the current level window** — new words are only ever introduced from it. |
 | **Level progress** | Learned words at the current level / active words at that level. Level labels always via `getLevelLabel()` — never hardcoded. |
 
 When adding a new number to any screen: name its scope (current level / all
