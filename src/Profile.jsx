@@ -301,6 +301,15 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     // they. The user id is not decoration: the outbox is one store per device,
     // shared by every account that has signed in on it, and the reset RPC
     // deletes only this account's rows.
+    //
+    // The dialog above says "your other languages keep their progress" and not
+    // "are untouched", which it used to. Progress is exactly right: the RPC
+    // deletes only this track's rows. Untouched was not, because of the
+    // untagged rule in queuedOpBelongsToTrack — an unsynced write queued by a
+    // build that did not stamp the language yet is dropped whichever track it
+    // came from. That is a deliberate trade (see the comment there), and the
+    // sentence sat directly above an irreversible button, so it had to stop
+    // promising the half that is not true.
     await dropQueuedWritesForTrack(targetTrack, session.user.id)
     clearPreparedSession()
 
@@ -684,7 +693,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
               </strong>{' '}
               and puts that track back to{' '}
               {getLevelLabel(targetTrack.language, targetTrack.system, 1)}. Your other
-              languages are untouched.
+              languages keep their progress.
             </div>
           </div>
           <SmallButton onClick={resetProgress} danger filled={confirmingReset} disabled={resetting} icon={RotateCcw}>

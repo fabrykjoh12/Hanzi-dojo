@@ -90,6 +90,15 @@ const RESET_DELETED_OP_KINDS = ['grade', 'storyRead', 'storyClaim']
  * persists indefinitely. An earlier version of this comment said the window
  * was one version and one offline session wide, full stop, which was wrong.
  *
+ * WHAT THE PAIR OF RULES DOES NOT COVER. An op naming NO user is kept here
+ * (undefined never equals a real id) and is replayable by anyone
+ * (opIsReplayableBy lets an ownerless op through, because analytics ops carry
+ * no owner and an unrecognised row must drain). For a grade or story op that
+ * combination would be the resurrection this whole module is about. It is
+ * unreachable today — every learner-op enqueue site stamps userId, and has
+ * since the queue existed — so it is a gap in the argument rather than in the
+ * behaviour, and it is written down instead of left to be discovered.
+ *
  * THE USER DIMENSION DEFAULTS THE OTHER WAY, and the asymmetry is deliberate.
  * The outbox is one IndexedDB store per origin, not per account, and an
  * ordinary sign-out never clears it (outboxClear() runs only on account
@@ -120,13 +129,20 @@ export function queuedOpBelongsToTrack(op, track, userId) {
  * is shared by every account that has signed in on the device, so a call that
  * cannot name the account has no business deleting from it.
  *
- * Returns how many ops were actually deleted. No caller reads it yet — it is
- * kept and asserted because it is the only thing this function makes
- * observable, and a count that lies is worse than no count. The counter lives
- * outside the try so a store that fails halfway reports the ops that really
- * went, rather than the 0 an earlier version returned while the queue had
- * already shrunk. Never throws: a browser with no IndexedDB has no outbox to
- * drain, and a reset must not fail because of it.
+ * Returns how many ops this function asked the store to delete, and be exact
+ * about what that is worth: offline.js's tx() resolves its fallback on every
+ * storage failure rather than rejecting ("Any failure resolves to `fallback` so
+ * callers never have to try/catch"), so a delete that did not land is
+ * indistinguishable here from one that did. The count is therefore an upper
+ * bound, not a measurement, and no caller reads it. An earlier version of this
+ * comment claimed the counter's placement outside the try made the number
+ * honest against a half-failing store; the placement is right, but the store it
+ * was defending against is not the one this app has.
+ *
+ * Kept anyway: it is the only thing this function makes observable, the
+ * arithmetic is worth a spec, and if offline.js ever surfaces failures the
+ * placement is already correct. Never throws — a browser with no IndexedDB has
+ * no outbox to drain, and a reset must not fail because of it.
  *
  * NOT a lock. flushOutbox can be mid-replay when this runs; see docs/BACKLOG.md
  * ("Reset races an in-flight outbox flush").

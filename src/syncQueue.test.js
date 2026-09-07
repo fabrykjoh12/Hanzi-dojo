@@ -1,8 +1,13 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // In-memory stand-in for the IndexedDB outbox so flushOutbox can be exercised.
-// `deletes` counts them and `failDeleteAfter` makes the store die mid-loop, so
-// a partial drop can be observed the way a real IndexedDB failure would be.
+// `deletes` counts them and `failDeleteAfter` makes the store throw mid-loop.
+// That is NOT how the real store fails — offline.js's tx() resolves a fallback
+// on every storage error rather than rejecting — so what the spec using it
+// proves is the loop's arithmetic (the counter is outside the try, so a throw
+// cannot discard what already went), not a production scenario. Said here
+// because an earlier version of this comment claimed it modelled "the way a
+// real IndexedDB failure would be", which it does not.
 const store = vi.hoisted(() => ({ rows: [], nextId: 1, deletes: 0, failDeleteAfter: null }))
 vi.mock('./offline', () => ({
   outboxAdd: async (op) => { const id = store.nextId++; store.rows.push({ id, op }); return id },
@@ -326,7 +331,12 @@ describe('offline replay', () => {
     expect(sb.calls.update[0]).toMatchObject({ table: 'cards' })
     const activity = sb.calls.upsert.filter(c => c.table === 'daily_activity')
     expect(activity).toHaveLength(1)
-    expect(activity[0].vals).toMatchObject({ activity_date: '2026-07-22', studied_cards: 1, review_cards: 1 })
+    // The user_id is the signed-in account, not one scavenged off the last op
+    // replayed. Those are the same value on any ordinary device and different
+    // on a shared one, which is the case the drop rule exists for.
+    expect(activity[0].vals).toMatchObject({
+      user_id: 'u1', activity_date: '2026-07-22', studied_cards: 1, review_cards: 1,
+    })
   })
 
   it('never replays another account\'s queued write as this account', async () => {
@@ -379,8 +389,12 @@ describe('offline replay', () => {
     expect(await pendingWrites()).toBe(2)
   })
 
-  it('replays under the signed-in account, not the last op it happened to see', () => {
-    // The reconcile pass used to scavenge a userId off the last replayed op.
+  it('decides replayability from the signed-in account', () => {
+    // Named for what it actually exercises. It used to be called "replays under
+    // the signed-in account, not the last op it happened to see" and to talk
+    // about the reconcile pass, which it never touched — that claim is asserted
+    // by the reconcile spec above, which now pins the user_id the upsert
+    // carries.
     expect(opIsReplayableBy({ kind: 'grade', userId: 'u1' }, 'u1')).toBe(true)
     expect(opIsReplayableBy({ kind: 'grade', userId: 'u2' }, 'u1')).toBe(false)
     expect(opIsReplayableBy({ kind: 'analytics', event: {} }, 'u1')).toBe(true)
