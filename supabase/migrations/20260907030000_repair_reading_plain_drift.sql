@@ -23,9 +23,10 @@
 -- function that does — has no caller in the app at all today. The defect is
 -- real and it teaches wrong pronunciation; it does not unlock a level.
 --
--- Nor does anyone have a CARD on any of these ten rows. Counted directly on
--- 2026-09-07 — `cards` joined to each of the ten `vocabulary` ids — and every
--- one of them is zero. That is the claim worth making, because the band
+-- Nor does anyone have a CARD on any of these ten rows. Counted on 2026-09-07:
+-- `cards` left-joined to every chinese/hsk_3 row whose word is one of the ten —
+-- by word rather than by id, which is the wider set, since a dictionary save
+-- can add a second level-null row for the same word — and every count is zero. That is the claim worth making, because the band
 -- argument on its own does not reach it: all ten are HSK 3-6 and the user base
 -- is at HSK 1-2, but `dict_add_to_deck` reuses the existing curriculum row by
 -- word, so an HSK 1 learner who looks 厂 up in the dictionary would hold this
@@ -48,8 +49,9 @@
 --
 -- THAT MIGRATION DID NOT TOUCH `reading_plain`, so ten rows still carry the
 -- tone-stripped form of the reading that was REJECTED. Measured live on
--- 2026-09-07 against the predicate below — these are the only ten in the whole
--- chinese/hsk_3 corpus, and all ten are active:
+-- 2026-09-07 against the predicate below, run as a SELECT rather than derived:
+-- it matches ten rows in the whole chinese/hsk_3 corpus and all ten are active,
+-- which is the count this statement will change when it is applied:
 --
 --     厂  chǎng  han  → chang      广  guǎng  yan   → guang
 --     追  zhuī   dui  → zhui       约  yuē    yao   → yue
@@ -94,8 +96,7 @@
 -- `celu:e`, the ASCII transliteration the 2026-07-24 migration names as a
 -- defect it removes — and it removed it from `reading` only. But lenientPinyin
 -- strips `:` along with the rest of its punctuation, so those two accept
--- exactly the same inputs
--- before and after this migration. Repairing them is consistency and a clean
+-- exactly the same inputs before and after this migration. Repairing them is consistency and a clean
 -- integrity check, not a grading fix. A spec drives both cases through the two
 -- functions that actually grade, so the distinction cannot quietly become
 -- untrue.
@@ -124,8 +125,8 @@
 -- below and be skipped before the comparison ran.) lenientPinyin ignores a
 -- wider set (numeric tones 1-5, `v`/`ü`, and `.,!?;:'"()-_·`), and the
 -- difference is deliberate rather than an oversight: folding `:` here would
--- exclude 忽略 and 策略, which are
--- exactly the two rows this migration repairs for hygiene rather than grading.
+-- exclude 忽略 and 策略, which are exactly the two rows this migration repairs
+-- for hygiene rather than grading.
 -- So the predicate is: "differs by more than the three things that never change
 -- an answer key" — which is why it fires on eight genuine mis-gradings, two
 -- ASCII-transliteration leftovers, and none of the eleven hand-curated rows above.
@@ -144,8 +145,8 @@
 -- character of any kind: a mark the map does not know leaves the row alone
 -- instead of writing a half-folded value into an answer key.
 -- `normalize(v.reading, nfc)` composes first so a decomposed tone mark — a
--- documented past cause of mis-grading,
--- docs/CHANGELOG.md — reaches the map as the precomposed character it expects.
+-- documented past cause of mis-grading, docs/CHANGELOG.md — reaches the map as
+-- the precomposed character it expects.
 --
 -- WHAT ELSE IS IN SCOPE, since the ten were measured rather than enumerated:
 -- `dict_add_to_deck` (20260719130000) inserts learner-created rows with
@@ -188,10 +189,9 @@ update public.vocabulary v
    -- (src/testLogic.js). A previous version of this guard tested emptiness
    -- after removing space and apostrophe only, and called the class closed
    -- while every one of those four spellings walked through it. One letter
-   -- surviving is the property that actually matters: without it, both
-   -- graders reduce the key to
-   -- '' and drop it with .filter(Boolean), and every typed answer for that row
-   -- is wrong.
+   -- surviving is the property that actually matters: without it, both graders
+   -- reduce the key to '' and drop it with .filter(Boolean), and every typed
+   -- answer for that row is wrong.
    and translate(
          normalize(v.reading, nfc),
          'āáǎàēéěèīíǐìōóǒòūúǔùǖǘǚǜüĀÁǍÀĒÉĚÈĪÍǏÌŌÓǑÒŪÚǓÙǕǗǙǛÜ',
