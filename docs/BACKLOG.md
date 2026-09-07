@@ -25,7 +25,7 @@ Two of those ten cannot currently fire, and it is worth knowing which: `card-orp
 
 Two scoping decisions worth not re-deriving: **card-orphan and tts-orphan read every vocabulary id**, not the chinese/hsk_3 slice — a learner's other-track card is not a broken reference, and §7.1 deactivates rather than deletes, so scoping them to the active corpus would make the sanctioned repair (`is_active = false`) grow the count and red the gate. And the **`u:`/`v` check reads `reading` only**: two rows still carry `u:` in `reading_plain`, which the directional drift check already counts. Both are asserted, not left to the comment.
 
-The **answer-key comparison is deliberately stricter than the app's grader**: it ignores space, apostrophe and case, where `lenientPinyin` also ignores digits, `v`/`ü` and punctuation including `:`. Being stricter can only over-report drift, never miss it. It over-reports at least the two `hulu:e` rows, and by two further mechanisms the module's own comment sets out: `normalizePinyin` drops every combining mark (so it folds `ǹ`→`n` where the table does not) and folds `v` as well as `ü`. Which rows make up the ten is not settled by that — it is settled by the dry run — so "at least", not "exactly".
+The **answer-key comparison is deliberately stricter than the app's grader**: it ignores space, apostrophe and case, where `lenientPinyin` also ignores digits, `v`/`ü` and punctuation including `:`. Being stricter can only over-report drift, never miss it. It over-reports at least the two `hulu:e` rows, and by two further mechanisms the module's own comment sets out: `normalizePinyin` drops every combining mark (so it folds `ǹ`→`n` where the table does not) and folds `v` as well as `ü`. Which rows make up that count is not settled by that — it is settled by the dry run — so "at least", not "exactly".
 
 The script refuses to run at all if the corpus comes back empty. A checker that fetched nothing reports every check clean, which in a log is indistinguishable from a pass.
 
@@ -121,9 +121,10 @@ Check the content type, not the status.
   Chinese rows have no playable clip: only 504 have a file at their own
   `audio_path`, and 23 more have a ready `tts_audio` row. That measurement is
   over ALL active Chinese rows, which is wider than the gate's own corpus — the
-  gate reads the 4,995 with a level and reports `no-audio` over those, so its
-  number is three lower and excludes 白 itself, this entry's subject, for having
-  no level. HSK 1 and 2 are
+  gate reads the 4,995 with a level, so it excludes the three level-null rows,
+  among them 白 itself, this entry's subject. Only one of those three lacks a
+  clip (白; the other two have a ready `tts_audio` row), so the gate's `no-audio`
+  is 4,470 against the 4,471 here: one lower, not three. HSK 1 and 2 are
   complete (300/300 and 197/197); above them almost nothing resolves. The 2,369
   objects that DO sit under `chinese/hsk_3/` are numbered for a superseded word
   list — level 3 holds 457 files against 453 rows and exactly **2** of them are

@@ -141,12 +141,24 @@ export const HARD_CHECKS = [
     //
     // A learner cannot: dict_add_to_deck (20260719130000) selects an existing
     // active row by word, `order by level nulls last`, and reuses it, so a
-    // curriculum row wins and no second row is written. A SEEDER can:
+    // curriculum row wins and no second row is written — and two learners
+    // cannot race, because `vocabulary_dict_word_uniq` (20260724170000) is a
+    // unique index on (language, system, word) where level is null. A SEEDER
+    // can:
     // seed-vocab.mjs scopes its dedupe to `.eq('level', level)`, so it cannot
     // see a level-null row and would happily insert alongside one. 白 is the
     // live shape — an HSK 5 word recorded as CURRICULUM_ROW_MISSING and present
     // only as a level-null row — so a reseed of HSK 5 is exactly the run this
     // would catch. HARD, because it fires on nothing a learner does.
+    //
+    // One path in between, worth writing down: the RPC's SELECT filters
+    // `is_active = true`, so while a curriculum row is RETIRED (§7.1's
+    // `is_active = false` rather than a delete) a learner's save does insert
+    // beside it. Nothing fires then — this gate reads active rows only — but
+    // reactivating that curriculum row later brings both into scope and turns
+    // this check red, with no seeder anywhere in the sequence. Reactivation is
+    // an operator action on a row someone deliberately retired, and the gate is
+    // dispatch-only, so the cost is one red run rather than a blocked merge.
     collect: ({ vocabulary = [], learnerAdded = [] }) => {
       const curriculum = new Map()
       for (const row of vocabulary) if (!curriculum.has(row.word)) curriculum.set(row.word, row.id)
@@ -212,13 +224,26 @@ export const HARD_CHECKS = [
       // there: a syllabic `ér` ends in `r` too, so 婴儿 stored as the bare last
       // syllable `ér` still folds to `er`, counts one syllable, and is exempted.
       // Truncation to a final character is a shape this corpus demonstrably has
-      // ("abbr. for 大" in truncated-cross-reference), so it is a real residual
-      // rather than a theoretical one. Excluding a trailing bare `er` would
-      // close it and would also make 女儿 `nǚ'ér` a violation, because the
-      // syllable counter reads `nuer` as one vowel run — a false positive on a
-      // correct row, traded for a false negative on a truncated one. The trade
-      // is refused deliberately; a HARD check does not get to be wrong about a
-      // row that is right.
+      // ("abbr. for 大" in truncated-cross-reference), so the residual is real
+      // rather than theoretical. It stays open, and the reason is 这儿.
+      //
+      // Closing it means telling a fused `r` from a syllabic `ér`, and the only
+      // thing available here is a vowel-run count. Measured over the 22 儿-final
+      // curriculum rows on 2026-09-07: ten reach this branch at all (the other
+      // twelve already count a full syllable per character and never test
+      // `erhua`), and of those ten exactly one — 这儿 `zhèr`, folding to `zher`
+      // — ends in the letters `er`. A rule that refuses a trailing `er` would
+      // call that correct HSK 1 row a violation. Distinguishing `zher` from
+      // `er` needs to know where the last syllable STARTS, which is syllable
+      // segmentation this module does not do and should not grow inside a
+      // predicate. So: a false negative on a row that is wrong, refused in
+      // exchange for a false positive on a row that is right.
+      //
+      // (An earlier version of this comment justified the same refusal with
+      // 女儿 `nǚ'ér`. That was wrong: syllableCount does not strip apostrophes,
+      // so `nu'er` is two vowel runs, the row passes at `syllables === chars`,
+      // and it never reaches this branch. Same for 婴儿 `yīng ér` and 少儿
+      // `shào ér` as stored. 这儿 is the row that actually carries the argument.)
       const fold = stripTones(row.reading || '').toLowerCase()
       const erhua = String(row.word || '').endsWith('儿') && /r\d?\s*$/.test(fold)
       if (syllables === chars || (erhua && syllables === chars - 1)) return []
