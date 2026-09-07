@@ -195,8 +195,8 @@ describe('each hard check fires on the defect and only on the defect', () => {
     expect(fires('card-orphan', { vocabularyIds: ids, cards: [{ id: 'c1', vocab_id: 'japanese-row' }] })).toBe(0)
   })
 
-  it('level-null-is-learner-added catches a curriculum row that lost its level', () => {
-    const fire = (learnerAdded) => byId(HARD_CHECKS, 'level-null-is-learner-added').collect({ learnerAdded })
+  it('level-null-row-shape catches a curriculum row that lost its level', () => {
+    const fire = (learnerAdded) => byId(HARD_CHECKS, 'level-null-row-shape').collect({ learnerAdded })
     // The dictionary-save shape: level null, sort_order 0. Not a defect.
     expect(fire([row({ level: null, sort_order: 0 })]).length).toBe(0)
     // A curriculum row that lost its level keeps its sort_order, and would

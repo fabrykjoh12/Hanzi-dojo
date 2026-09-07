@@ -282,7 +282,7 @@ export const HARD_CHECKS = [
     },
   },
   {
-    id: 'level-null-is-learner-added',
+    id: 'level-null-row-shape',
     describe: 'every row without a level has the shape of a dictionary save, not of a curriculum row that lost one',
     // The corpus this gate measures is the CURRICULUM — rows with a level. A
     // row without one has the SHAPE a learner's "save to deck" produces:
