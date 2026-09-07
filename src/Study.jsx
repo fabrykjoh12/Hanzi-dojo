@@ -727,6 +727,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     const nextCounts = nextActivityCounts(activityRef.current, card.state)
 
     let cardId = card.id
+    // Set when the server refuses this grade as superseded — see below.
+    let staleGrade = false
     let outboxId = null
     if (online) {
       // One transaction: card row + review log + today's activity. Falls back
@@ -752,6 +754,14 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         setSaveError(write.error && write.error.message)
         return
       }
+      // The server refused this grade because a newer one for the same card is
+      // already there — another device, or a tab that was ahead of this one.
+      // Nothing went wrong and nothing should be retried, but everything below
+      // builds on `res.updates`, which the server has just declined to store.
+      // Carrying on would reinsert a card into the queue holding state that
+      // does not exist anywhere, and the NEXT grade would be computed from it.
+      staleGrade = !!write.stale
+      if (staleGrade) setSaveError('Already reviewed on another device, so this answer was not saved.')
       cardId = write.cardId
       // Captured so undo can remove the log entry. On the fallback path the
       // insert is still non-blocking, so the id arrives a moment later.
@@ -800,7 +810,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
     setQueue(prev => {
       let rest = prev.slice(1)
-      if (res.stay) {
+      // A refused grade must not put a card back carrying refused state.
+      if (res.stay && !staleGrade) {
         // Reinsert an "Again"-graded card soon (SRS gap), but not as the very
         // next card unless the queue is too short to allow it.
         const item = { ...card, ...res.updates, id: cardId }

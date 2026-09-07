@@ -54,20 +54,37 @@
 -- statement on one row version. Both paths, because a stale op with cardId null
 -- reaches the second one.
 --
--- WHAT IS DELIBERATELY STILL WRITTEN. The review log and the daily activity.
--- The grade genuinely happened; it is the SCHEDULING that is superseded, not
--- the history.
+-- WHAT A REFUSED GRADE DOES NOT WRITE. Not the review log, not the day count.
+--
+-- An earlier draft wrote both, on the reasoning that "the grade genuinely
+-- happened; it is the SCHEDULING that is superseded". That reasoning is the one
+-- this very header uses to DISQUALIFY the last_review draft above — a guard
+-- that discards a write while still logging it makes the log count exceed reps,
+-- which is the disagreement this guard exists to prevent. The mechanism does
+-- not change when the ordering key is reps. Worse, `count(review_logs) > reps`
+-- is the query docs/BACKLOG.md uses to COUNT the victims of the original bug,
+-- so a logging guard would go on manufacturing its own damage signature and
+-- nothing in the data could tell the fix from the bug.
 --
 -- WHAT IS DELIBERATELY NOT GUARDED. A null on either side applies as before: a
 -- row with no reps has nothing to be stale against, and an op carrying none
 -- cannot be ordered. Failing open there keeps a legitimate write from being
 -- dropped on a technicality.
 --
--- WHAT THIS DOES NOT COVER, so the backlog entry does not over-claim: three
+-- WHAT THIS DOES NOT COVER, so the backlog entry does not over-claim: four
 -- client paths write cards scheduler columns WITHOUT going through grade_card —
--- src/Study.jsx's undo, src/Test.jsx, src/CreativeMode.jsx. Undo in particular
--- writes the client's pre-grade snapshot straight over whatever the server
--- holds. Pre-existing, out of scope here, and recorded in docs/BACKLOG.md.
+-- src/Study.jsx's undo, src/Study.jsx's resetCard, src/Test.jsx and
+-- src/CreativeMode.jsx. Undo in particular writes the client's pre-grade
+-- snapshot straight over whatever the server holds. Pre-existing, out of scope
+-- here, and recorded in docs/BACKLOG.md.
+--
+-- resetCard is the one that interacts with THIS guard rather than merely
+-- sitting beside it: it writes reps 0, so after a reset an outbox op carrying
+-- reps 5 satisfies `5 > 0` and is ADMITTED as newer, resurrecting the
+-- pre-reset scheduler state with the guard's blessing. The reset's own outbox
+-- drop (PR #241) is what actually closes that, by deleting those ops when the
+-- reset happens; the guard cannot, because reps is not monotonic across a
+-- reset and nothing in the row records that one occurred.
 --
 -- The result now carries `stale`, so a client can tell a rejected write from an
 -- applied one instead of both looking like success.
@@ -247,7 +264,15 @@ begin
                          else c.verified_at
                        end
     -- Same guard, same reason, on the path a stale op with no card id takes.
-    where excluded.reps is null or c.reps is null or excluded.reps > c.reps
+    --
+    -- v_incoming_reps, NOT excluded.reps. The insert's values list coalesces
+    -- reps to 0, so excluded.reps can never be null and the fail-open limb
+    -- would be dead here — a call whose p_updates carries no reps, against an
+    -- existing row with reps > 0, would have been rejected in full: state,
+    -- due_at, stability, learned, verified_at, all of it. The UPDATE path above
+    -- reads the raw incoming value and fails open; these two must not disagree
+    -- about the same input.
+    where v_incoming_reps is null or c.reps is null or v_incoming_reps > c.reps
     returning c.id, c.vocab_id into v_card_id, v_vocab_id;
 
     -- A filtered-out conflict updates no row, so RETURNING gives nothing. The
@@ -261,7 +286,19 @@ begin
   end if;
 
   -- ── Review log ───────────────────────────────────────────────────────────
-  if p_log is not null then
+  --
+  -- `not v_stale` is load-bearing, and it is the header's own argument applied
+  -- to itself. That header disqualifies the last_review draft partly because it
+  -- "DISCARDS a genuinely newer grade, while still writing its review_logs row
+  -- — so the log count now exceeds reps, the same disagreement this guard
+  -- exists to prevent". The mechanism is identical when the ordering key is
+  -- reps: a refused write that still logged would keep manufacturing the exact
+  -- damage signature docs/BACKLOG.md uses to COUNT the victims of the original
+  -- bug, so the fix and the bug would be indistinguishable in the data.
+  --
+  -- The same goes for daily_activity below: a refused grade did not happen, so
+  -- it does not belong in the day's count.
+  if p_log is not null and not v_stale then
     begin
       insert into public.review_logs (
         user_id, card_id, vocab_id, grade,
@@ -295,7 +332,7 @@ begin
   end if;
 
   -- ── Daily activity ───────────────────────────────────────────────────────
-  if p_activity is not null then
+  if p_activity is not null and not v_stale then
     v_mode := coalesce(p_activity->>'mode', 'set');
     v_day := coalesce((p_activity->>'date')::date, current_date);
     insert into public.daily_activity as da (
