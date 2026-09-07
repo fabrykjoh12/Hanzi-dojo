@@ -22,77 +22,101 @@ export function enqueueGrade(op) {
   //
   // Callers also pass `language` and `system`. That is what lets a progress
   // reset drop exactly this track's queued writes and leave another language's
-  // alone — see dropQueuedGradesForTrack below.
+  // alone — see dropQueuedWritesForTrack below.
   return outboxAdd({ kind: 'grade', ...op, opId: (op && op.opId) || newOpId() })
 }
 
-// ── Reset: a queued grade for a deleted card must not outlive the cards ─────
+// ── Reset: a queued write for deleted rows must not outlive them ────────────
 //
-// `reset_language_progress` DELETES this track's cards. Anything already in the
-// outbox for those cards is a write against rows that no longer exist, and
+// `reset_language_progress` DELETES this track's rows — cards and review_logs,
+// and also story_reads, story_unlocks and story_reward_claims
+// (20260809090000_story_chapter_rewards.sql). Anything already in the outbox
+// targeting those rows is a write against rows that no longer exist, and
 // replaying it does one of two bad things:
 //
-//   - An op with `cardId: null` — a card first graded offline, so no row was
-//     ever written — takes grade_card's INSERT branch and RECREATES the card at
-//     its pre-reset state, real reps and stability included. The reset is
-//     silently, partially undone, and the learner is not told.
-//   - An op with `cardId` set raises 'Card not found'. replayOp returns
-//     ok:false, flushOutbox leaves the row in place, and there is no attempt
-//     counter — so it is retried forever and pendingWrites() never returns to
-//     zero. A permanent poison pill in a queue the UI reports on.
+//   - RESURRECTION, the silent one. A grade op with `cardId: null` — a card
+//     first graded offline, so no row was ever written — takes grade_card's
+//     INSERT branch and RECREATES the card at its pre-reset state, real reps
+//     and stability included. A queued storyRead upserts the deleted read
+//     straight back. A queued storyClaim re-runs claim_story_reward, which
+//     writes a fresh claim row and a fresh chapter unlock. The reset is
+//     partially undone and the learner is never told.
+//   - A POISON PILL. A grade op with `cardId` set raises 'Card not found'.
+//     replayOp returns ok:false, flushOutbox leaves the row in place, and
+//     there is no attempt counter — so it is retried forever and
+//     pendingWrites() never returns to zero, in a queue the UI reports on.
 //
-// Neither is hypothetical: outboxClear() exists and is called from exactly one
-// place, account deletion. The reset paths never called anything.
+// An earlier version of this code dropped only `grade` ops, reasoning that the
+// other kinds "are not writes against cards, so the delete cannot strand
+// them". That is true of the poison pill and FALSE of the resurrection: the
+// reset deletes the story rows too, and storyRead/storyClaim put them back.
+// Only `analytics` is genuinely untouched — analytics_events is not in the
+// reset's delete list, and it is append-only telemetry rather than learner
+// state.
 //
-// Why not outboxClear() here: it wipes the WHOLE outbox, and a reset is
-// per-language. Discarding another language's unsynced grades to clean up this
+// Why not outboxClear(): it wipes the WHOLE outbox, and a reset is
+// per-language. Discarding another language's unsynced writes to clean up this
 // one trades a silent bug for a silent data loss.
+
+// The op kinds whose target rows the reset deletes. `analytics` is absent on
+// purpose — see above.
+const RESET_DELETED_OP_KINDS = ['grade', 'storyRead', 'storyClaim']
 
 /**
  * Does this queued op belong to the track being reset?
  *
  * Pure, and deliberately the only place the rule lives.
  *
- * Non-grade ops (analytics, story reads, story claims) are NOT dropped: they
- * are not writes against `cards`, so the delete cannot strand them.
+ * The rule is one sentence: an op of a kind the reset deletes is dropped
+ * UNLESS a tag it actually carries says it belongs to some other track.
  *
- * An untagged grade op — one enqueued before this stamp existed and not yet
- * flushed — IS dropped, and that is a judgement worth stating rather than
- * hiding. It cannot be attributed to a language, so the choice is between
- * possibly discarding another track's unsynced grade and possibly resurrecting
- * a card the learner explicitly asked to delete. A reset is an explicit,
- * destructive, confirmed action; silently undoing part of it is the worse
- * failure, and the window for an untagged op is one app version and one
+ * That matters for a partially-tagged op, which the two obvious spellings both
+ * get wrong. `!op.language && !op.system` treats {language:'chinese'} as tagged
+ * and then fails the equality test, so an op that plainly IS this track's
+ * survives the reset. `!op.language || !op.system` treats it as untagged and
+ * drops it, so {language:'japanese'} — plainly NOT this track's — is destroyed.
+ * Comparing only the tags present is right in both directions.
+ *
+ * An op carrying NO tags is dropped, and that is a judgement worth stating
+ * rather than hiding. It cannot be attributed to a language, so the choice is
+ * between possibly discarding another track's unsynced write and possibly
+ * resurrecting progress the learner explicitly asked to delete. A reset is an
+ * explicit, destructive, confirmed action; silently undoing part of it is the
+ * worse failure, and the window for an untagged op is one app version and one
  * offline session wide.
  */
-export function gradeOpBelongsToTrack(op, track) {
-  if (!op || op.kind !== 'grade') return false
+export function queuedOpBelongsToTrack(op, track) {
+  if (!op || !RESET_DELETED_OP_KINDS.includes(op.kind)) return false
   if (!track || !track.language || !track.system) return false
-  if (!op.language && !op.system) return true   // untagged: see above
-  return op.language === track.language && op.system === track.system
+  if (op.language && op.language !== track.language) return false
+  if (op.system && op.system !== track.system) return false
+  return true
 }
 
 /**
- * Drop this track's queued grades. Call it AFTER a reset RPC succeeds — before
+ * Drop this track's queued writes. Call it AFTER a reset RPC succeeds — before
  * would leave the queue emptied for a reset that then failed.
  *
- * Returns how many ops were dropped, so a caller can report it. Never throws:
- * a browser with no IndexedDB has no outbox to drain, and a reset must not fail
- * because of it.
+ * Returns how many ops were actually deleted. The counter lives outside the
+ * try so a store that fails halfway still reports the ops that really went,
+ * rather than the 0 an earlier version returned while the queue had already
+ * shrunk. Never throws: a browser with no IndexedDB has no outbox to drain,
+ * and a reset must not fail because of it.
+ *
+ * NOT a lock. flushOutbox can be mid-replay when this runs; see docs/BACKLOG.md
+ * ("Reset races an in-flight outbox flush").
  */
-export async function dropQueuedGradesForTrack(track) {
+export async function dropQueuedWritesForTrack(track) {
+  let dropped = 0
   try {
     const rows = (await outboxAll()) || []
-    let dropped = 0
     for (const row of rows) {
-      if (!gradeOpBelongsToTrack(row.op, track)) continue
+      if (!queuedOpBelongsToTrack(row.op, track)) continue
       await outboxDelete(row.id)
       dropped += 1
     }
-    return dropped
-  } catch {
-    return 0
-  }
+  } catch { /* no IndexedDB, or the store is gone: nothing queued to drop */ }
+  return dropped
 }
 
 // A client-generated uuid identifying one grade, so the same grade written
@@ -114,6 +138,9 @@ export function newOpId() {
   return out
 }
 
+// A story finished offline. Callers pass `language` and `system` for the same
+// reason grades do: the reset deletes story_reads, so a queued read has to be
+// droppable per-track or it upserts a deleted read straight back.
 export function enqueueStoryRead(op) {
   return outboxAdd({ kind: 'storyRead', ...op })
 }

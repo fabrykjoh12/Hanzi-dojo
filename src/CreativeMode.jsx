@@ -5,7 +5,7 @@ import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { chunk } from './devTools'
 import { toast } from './toast'
-import { dropQueuedGradesForTrack } from './syncQueue'
+import { dropQueuedWritesForTrack } from './syncQueue'
 import { clearPreparedSession } from './sessionPrep'
 import {
   PRESET_COUNTS, parseCount, levelOptions, missingUnlockLevels, unlockRows,
@@ -235,9 +235,10 @@ export default function CreativeMode({ session, profile, track }) {
       p_language: track.language, p_system: track.system, p_reset_streak: true,
     })
     if (error) throw new Error(error.message)
-    // The cards are gone; queued offline grades for them must not outlive
-    // them, or the next flush recreates a deleted card at its pre-reset state.
-    await dropQueuedGradesForTrack(track)
+    // The cards and story rows are gone; queued offline writes for them must
+    // not outlive them, or the next flush recreates a deleted card at its
+    // pre-reset state and re-marks deleted story reads.
+    await dropQueuedWritesForTrack(track)
     clearPreparedSession()
     setLevel(1)
     return getSystemLabel(track.system) + ' progress reset — go Home to reload'

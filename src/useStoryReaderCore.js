@@ -156,13 +156,19 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
         const { error } = await supabase.from('story_reads').upsert({ user_id: session.user.id, story_id: story.id })
         if (!error) { if (onMarkRead) onMarkRead(story.id) }
       } else {
-        await enqueueStoryRead({ userId: session.user.id, storyId: story.id })
+        // Tagged so a progress reset — which deletes story_reads — can drop
+        // exactly this track's queued reads without touching another's.
+        await enqueueStoryRead({
+          userId: session.user.id, storyId: story.id,
+          language: track.language, system: track.system,
+        })
         if (onMarkRead) onMarkRead(story.id)
       }
       trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: readability.knownPct, story_id: story.id })
       if (firstMission) trackOnce(EVENTS.FIRST_STORY_COMPLETED, { known_pct: readability.knownPct })
     }
-  }, [isRead, session, story.id, story.tier, onMarkRead, stopPlay, firstMission, readability.knownPct])
+  }, [isRead, session, story.id, story.tier, onMarkRead, stopPlay, firstMission,
+    readability.knownPct, track.language, track.system])
 
   const advance = useCallback(() => { if (cur >= total - 1) finish(); else go(cur + 1) }, [cur, total, finish, go])
 

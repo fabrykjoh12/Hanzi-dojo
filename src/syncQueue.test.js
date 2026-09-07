@@ -1,18 +1,27 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // In-memory stand-in for the IndexedDB outbox so flushOutbox can be exercised.
-const store = vi.hoisted(() => ({ rows: [], nextId: 1 }))
+// `deletes` counts them and `failDeleteAfter` makes the store die mid-loop, so
+// a partial drop can be observed the way a real IndexedDB failure would be.
+const store = vi.hoisted(() => ({ rows: [], nextId: 1, deletes: 0, failDeleteAfter: null }))
 vi.mock('./offline', () => ({
   outboxAdd: async (op) => { const id = store.nextId++; store.rows.push({ id, op }); return id },
   outboxAll: async () => store.rows.slice(),
-  outboxDelete: async (id) => { store.rows = store.rows.filter(r => r.id !== id) },
+  outboxDelete: async (id) => {
+    if (store.failDeleteAfter != null && store.deletes >= store.failDeleteAfter) {
+      throw new Error('outbox store is gone')
+    }
+    store.deletes += 1
+    store.rows = store.rows.filter(r => r.id !== id)
+  },
   outboxCount: async () => store.rows.length,
 }))
 
 import {
   dayCountsOf, nextActivityCounts, isMissingRpc, newOpId,
   gradeCardWrite, resetGradeRpcProbe, enqueueGrade, flushOutbox,
-  gradeOpBelongsToTrack,
+  enqueueStoryRead, enqueueStoryClaim, enqueueAnalytics,
+  queuedOpBelongsToTrack, dropQueuedWritesForTrack,
 } from './syncQueue'
 
 // ── A minimal chainable Supabase double ─────────────────────────────────────
@@ -67,6 +76,8 @@ const LOG = { grade: 2, previous_state: 'learning', next_state: 'review' }
 beforeEach(() => {
   store.rows = []
   store.nextId = 1
+  store.deletes = 0
+  store.failDeleteAfter = null
   resetGradeRpcProbe()
 })
 
@@ -329,14 +340,16 @@ describe('offline replay', () => {
 })
 
 // ---------------------------------------------------------------------------
-// FAB-28 finding 4: a reset must not leave queued writes for deleted cards.
+// FAB-28 finding 4: a reset must not leave queued writes for deleted rows.
 // ---------------------------------------------------------------------------
-// reset_language_progress DELETES this track's cards. outboxClear() existed and
-// was called from exactly one place — account deletion — so every reset path
-// left the outbox untouched. Replaying one of those ops either recreates a
-// deleted card at its pre-reset state (cardId: null takes grade_card's INSERT
-// branch) or wedges the queue forever on 'Card not found'.
-describe("a progress reset drops that track's queued grades, and only those", () => {
+// reset_language_progress DELETES this track's cards and review_logs, and also
+// its story_reads, story_unlocks and story_reward_claims. outboxClear() existed
+// and was called from exactly one place — account deletion — so every reset
+// path left the outbox untouched. Replaying one of those ops either recreates
+// what the reset deleted (a grade op with cardId: null takes grade_card's
+// INSERT branch; a storyRead upserts the read back; a storyClaim re-runs the
+// reward RPC) or wedges the queue forever on 'Card not found'.
+describe("a progress reset drops that track's queued writes, and only those", () => {
   const CN = { language: 'chinese', system: 'hsk_3' }
   const JA = { language: 'japanese', system: 'jlpt' }
 
@@ -345,44 +358,70 @@ describe("a progress reset drops that track's queued grades, and only those", ()
     updates: {}, opId: 'op-1', ...over,
   })
 
+  // ── The rule ──────────────────────────────────────────────────────────────
+
   it('drops a queued grade for the track being reset', () => {
-    expect(gradeOpBelongsToTrack(grade({ ...CN }), CN)).toBe(true)
+    expect(queuedOpBelongsToTrack(grade({ ...CN }), CN)).toBe(true)
   })
 
   it("keeps another language's queued grade", () => {
     // The reason this is a predicate and not outboxClear(): a reset is
     // per-language, and discarding another track's unsynced grades to tidy up
     // this one trades a silent bug for silent data loss.
-    expect(gradeOpBelongsToTrack(grade({ ...JA }), CN)).toBe(false)
+    expect(queuedOpBelongsToTrack(grade({ ...JA }), CN)).toBe(false)
   })
 
   it('keeps a grade for the same language on a different system', () => {
-    expect(gradeOpBelongsToTrack(grade({ language: 'chinese', system: 'other' }), CN)).toBe(false)
+    expect(queuedOpBelongsToTrack(grade({ language: 'chinese', system: 'other' }), CN)).toBe(false)
   })
 
-  it('never drops a non-grade op', () => {
-    // Analytics, story reads and story claims are not writes against `cards`,
-    // so deleting cards cannot strand them. Dropping them would lose a story
-    // read the learner earned.
-    for (const kind of ['analytics', 'storyRead', 'storyClaim']) {
-      expect(gradeOpBelongsToTrack({ kind, ...CN }, CN), kind).toBe(false)
-    }
+  it('drops a queued story read and story claim for this track', () => {
+    // The correction to the first version of this change, which dropped only
+    // `grade` ops because "the other kinds are not writes against cards, so the
+    // delete cannot strand them". The reset deletes story_reads, story_unlocks
+    // and story_reward_claims too, and both of these put them straight back.
+    expect(queuedOpBelongsToTrack({ kind: 'storyRead', storyId: 's1', ...CN }, CN)).toBe(true)
+    expect(queuedOpBelongsToTrack({ kind: 'storyClaim', claimDate: '2026-09-07', ...CN }, CN)).toBe(true)
   })
 
-  it('drops an UNTAGGED grade, deliberately', () => {
-    // An op enqueued before the language stamp existed and not yet flushed. It
-    // cannot be attributed, so the choice is between possibly discarding
-    // another track's unsynced grade and possibly resurrecting a card the
-    // learner explicitly asked to delete. A reset is explicit, confirmed and
-    // destructive; silently undoing part of it is the worse failure.
-    expect(gradeOpBelongsToTrack(grade(), CN)).toBe(true)
+  it("keeps another track's story read and story claim", () => {
+    expect(queuedOpBelongsToTrack({ kind: 'storyRead', storyId: 's1', ...JA }, CN)).toBe(false)
+    expect(queuedOpBelongsToTrack({ kind: 'storyClaim', claimDate: '2026-09-07', ...JA }, CN)).toBe(false)
+  })
+
+  it('never drops an analytics op', () => {
+    // analytics_events is not in the reset's delete list, and the queue treats
+    // analytics as lossy telemetry rather than learner state. Dropping it here
+    // would discard events that describe the reset itself.
+    expect(queuedOpBelongsToTrack({ kind: 'analytics', event: {}, ...CN }, CN)).toBe(false)
+  })
+
+  it('judges a partially-tagged op by the tag it actually carries', () => {
+    // Both obvious spellings get this wrong in one direction:
+    //   `!op.language && !op.system` calls the first case tagged, then fails
+    //   the equality test — so an op that plainly IS this track's survives.
+    expect(queuedOpBelongsToTrack(grade({ language: 'chinese' }), CN)).toBe(true)
+    expect(queuedOpBelongsToTrack(grade({ system: 'hsk_3' }), CN)).toBe(true)
+    //   `!op.language || !op.system` calls the next case untagged and drops it
+    //   — destroying an unsynced write that is plainly NOT this track's.
+    expect(queuedOpBelongsToTrack(grade({ language: 'japanese' }), CN)).toBe(false)
+    expect(queuedOpBelongsToTrack(grade({ system: 'jlpt' }), CN)).toBe(false)
+  })
+
+  it('drops an UNTAGGED op, deliberately', () => {
+    // One enqueued before the stamp existed and not yet flushed. It cannot be
+    // attributed, so the choice is between possibly discarding another track's
+    // unsynced write and possibly resurrecting progress the learner explicitly
+    // asked to delete. A reset is explicit, confirmed and destructive;
+    // silently undoing part of it is the worse failure.
+    expect(queuedOpBelongsToTrack(grade(), CN)).toBe(true)
   })
 
   it('drops nothing when the track is unknown', () => {
     // A caller with no track must not accidentally empty the queue.
-    expect(gradeOpBelongsToTrack(grade({ ...CN }), null)).toBe(false)
-    expect(gradeOpBelongsToTrack(grade({ ...CN }), {})).toBe(false)
-    expect(gradeOpBelongsToTrack(grade({ ...CN }), { language: 'chinese' })).toBe(false)
+    expect(queuedOpBelongsToTrack(grade({ ...CN }), null)).toBe(false)
+    expect(queuedOpBelongsToTrack(grade({ ...CN }), {})).toBe(false)
+    expect(queuedOpBelongsToTrack(grade({ ...CN }), { language: 'chinese' })).toBe(false)
   })
 
   it('covers the op that RESURRECTS a deleted card', () => {
@@ -390,12 +429,65 @@ describe("a progress reset drops that track's queued grades, and only those", ()
     // graded offline has no row, so cardId is null; grade_card's INSERT branch
     // recreates it with the pre-reset reps and stability.
     const resurrector = grade({ ...CN, cardId: null, updates: { state: 'review', reps: 6, stability: 30 } })
-    expect(gradeOpBelongsToTrack(resurrector, CN)).toBe(true)
+    expect(queuedOpBelongsToTrack(resurrector, CN)).toBe(true)
   })
 
   it('covers the op that WEDGES the queue', () => {
     // The other outcome: 'Card not found' -> ok:false -> left in place, with no
     // attempt counter, so pendingWrites() never returns to zero.
-    expect(gradeOpBelongsToTrack(grade({ ...CN, cardId: 'gone' }), CN)).toBe(true)
+    expect(queuedOpBelongsToTrack(grade({ ...CN, cardId: 'gone' }), CN)).toBe(true)
+  })
+
+  // ── The function that actually destroys queued writes ─────────────────────
+  //
+  // These go through the real enqueue helpers against the in-memory outbox, so
+  // they also prove the helpers carry the tags into the STORED op — each is a
+  // `...op` spread, and a predicate that is right about ops nothing produces
+  // would fix nothing. What they cannot reach is the JSX call sites that pass
+  // the track in (Study.jsx, useStoryReaderCore.js, StoryReaderImmersive.jsx,
+  // storyRewardData.js); an op arriving untagged from one of those is covered
+  // only by the untagged rule above.
+
+  it("deletes this track's queued writes from the outbox and leaves the rest", async () => {
+    await enqueueGrade({ userId: 'u1', vocabId: 'v1', cardId: 'c1', updates: {}, ...CN })
+    await enqueueGrade({ userId: 'u1', vocabId: 'v9', cardId: 'c9', updates: {}, ...JA })
+    await enqueueStoryRead({ userId: 'u1', storyId: 's9', ...JA })
+
+    const dropped = await dropQueuedWritesForTrack(CN)
+
+    expect(dropped).toBe(1)
+    expect(store.rows.map(r => [r.op.kind, r.op.language])).toEqual([
+      ['grade', 'japanese'], ['storyRead', 'japanese'],
+    ])
+  })
+
+  it('deletes every kind the reset deletes, and keeps analytics', async () => {
+    await enqueueGrade({ userId: 'u1', vocabId: 'v1', cardId: null, updates: {}, ...CN })
+    await enqueueStoryRead({ userId: 'u1', storyId: 's1', ...CN })
+    await enqueueStoryClaim({ userId: 'u1', storyId: 's1', claimDate: '2026-09-07', ...CN })
+    await enqueueAnalytics({ name: 'progress_reset', ...CN })
+    await enqueueGrade({ userId: 'u1', vocabId: 'v9', cardId: 'c9', updates: {}, ...JA })
+
+    const dropped = await dropQueuedWritesForTrack(CN)
+
+    expect(dropped).toBe(3)
+    expect(store.rows.map(r => r.op.kind)).toEqual(['analytics', 'grade'])
+  })
+
+  it('reports the writes it really deleted when the store fails halfway', async () => {
+    // An earlier version returned 0 from the catch while the queue had already
+    // shrunk, so a caller reporting the count would have reported a lie.
+    await enqueueGrade({ userId: 'u1', vocabId: 'v1', cardId: 'c1', updates: {}, ...CN })
+    await enqueueGrade({ userId: 'u1', vocabId: 'v2', cardId: 'c2', updates: {}, ...CN })
+    store.failDeleteAfter = 1
+
+    expect(await dropQueuedWritesForTrack(CN)).toBe(1)
+    expect(store.rows).toHaveLength(1)
+  })
+
+  it('touches nothing when the caller has no track', async () => {
+    await enqueueGrade({ userId: 'u1', vocabId: 'v1', cardId: 'c1', updates: {}, ...CN })
+    expect(await dropQueuedWritesForTrack(null)).toBe(0)
+    expect(store.rows).toHaveLength(1)
   })
 })
