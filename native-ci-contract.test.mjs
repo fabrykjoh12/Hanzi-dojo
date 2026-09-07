@@ -48,14 +48,18 @@ const REQUIRED_FILE_COVERAGE = [
   '^tools/verify-native-fonts\\.mjs$',
   '^tools/verify-native-shell\\.mjs$',
   '^tools/verify-app-icons\\.mjs$',
+  '^tools/verify-public-bundle\\.mjs$',
 ]
 
 const REQUIRED_NATIVE_STAGES = [
   'node tools/verify-native-shell.mjs',
   'npm run build:native',
   // The store bundle is the artifact that actually reaches learners, and until
-  // now nothing inspected it for credentials — verify:public-bundle ran only
-  // over the Sites build in verify:pr. Same guard, second artifact.
+  // now nothing inspected it. verify:pr already runs this same guard over the
+  // PUBLIC web build (package.json's verify:pr, pinned by
+  // verification-contract.test.mjs) — never over the Sites build, which emits
+  // hq.html and the cloud bridge and would trip the guard's own rules. So this
+  // is one guard over a second artifact, not a guard that had no artifact.
   'npm run verify:public-bundle',
   'npm run verify:native-fonts',
 ]

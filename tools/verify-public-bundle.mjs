@@ -107,15 +107,17 @@ export const RULES = [
     //     says so in its own comment), so the artifact this scans in CI contains
     //     no Supabase key and this rule iterates zero tokens.
     //   * The build that DOES carry the real key is Vercel's — vercel.json runs
-    //     `npm run build` and never invokes this guard.
+    //     `DOJO_PUBLIC_BUILD=1 npm run build` (the public build, not the Sites
+    //     one) and never invokes this guard.
     //
-    // What it genuinely catches is a privileged key that reaches the bundle FROM
-    // SOURCE: hardcoded, pasted into a constant, or supplied through a VITE_
-    // -named variable (CLAUDE.md §7.4's exact prohibition). That is the leak
-    // that has actually happened in this repo — see the devTools.js incident in
-    // the header — and it is caught with no env at all. Confirming the
-    // production artifact's key remains a console check, and docs/BACKLOG.md
-    // says so rather than letting this line imply otherwise.
+    // What it genuinely catches is a privileged key HARDCODED IN SOURCE —
+    // pasted into a constant or a fallback — which is the leak that has actually
+    // happened in this repo (see the devTools.js incident in the header) and the
+    // one case caught with no env at all. A key supplied through a VITE_-named
+    // variable (CLAUDE.md §7.4's other prohibition) is caught only in a build
+    // that had that variable set, which by the two bullets above is not the CI
+    // build. Confirming the production artifact's key remains a console check,
+    // and docs/BACKLOG.md says so rather than letting this line imply otherwise.
     test: ({ text }) => text != null && privilegedJwtIn(text),
     message: 'a JWT in the public bundle carries a role other than anon — only the publishable key may ship',
   },
@@ -128,9 +130,10 @@ export const RULES = [
     // and carried into the bundle, which is how a hand-pasted credential
     // usually looks. The prefix rules below are what cover the value-only case.
     //
-    // The name list matches src/tts/serverOnly.test.js's, which guards the same
-    // credentials at the source level — two lists naming different secrets
-    // would be worse than one incomplete list.
+    // The names include all three that src/tts/serverOnly.test.js guards at the
+    // source level (SUPABASE_SERVICE_KEY, VAPID_PRIVATE_KEY, AZURE_SPEECH_KEY)
+    // plus two more this artifact can carry — a superset, deliberately, because
+    // two lists naming DIFFERENT secrets would be worse than one long one.
     test: ({ text }) => text != null &&
       /\b(?:SUPABASE_SERVICE_KEY|SUPABASE_SERVICE_ROLE_KEY|GATE3_MANIFEST_PASSPHRASE|VAPID_PRIVATE_KEY|AZURE_SPEECH_KEY)\s*[:=]\s*["']?\S{8,}/.test(text),
     message: 'a privileged environment value is assigned in the public bundle',
@@ -211,6 +214,23 @@ async function main() {
     entries = await collect(root)
   } catch {
     console.error('verify-public-bundle: no build at ' + root + ' — run `npm run build:public` first.')
+    process.exit(1)
+  }
+
+  // A guard that scans nothing and prints "clean" is the worst result this file
+  // can produce: in a CI log it is indistinguishable from a pass. A real public
+  // build always emits an index.html and at least one JavaScript chunk, so
+  // require both before believing a clean verdict. That is what stops an
+  // emptied dist/, a half-written build, or a root repointed at dist/server
+  // from passing vacuously — none of which a missing-directory check catches.
+  const paths = entries.map(entry => entry.path)
+  const absent = []
+  if (!paths.includes('index.html')) absent.push('index.html')
+  if (!paths.some(path => path.endsWith('.js'))) absent.push('a JavaScript chunk')
+  if (absent.length) {
+    console.error('verify-public-bundle: ' + root + ' holds ' + entries.length
+      + ' file(s) but no ' + absent.join(' and no ') + ' — that is not a public build.')
+    console.error('  Refusing to report clean on an artifact this guard cannot have inspected.')
     process.exit(1)
   }
 

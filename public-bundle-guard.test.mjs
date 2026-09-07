@@ -195,8 +195,12 @@ describe('the CLI fails the build, and only when it should', () => {
   const cleanup = []
   afterAll(() => { for (const dir of cleanup) rmSync(dir, { recursive: true, force: true }) })
 
+  // Every fixture carries an index.html because a real public build does, and
+  // the CLI now refuses to call a directory without one a build at all.
+  const INDEX = '<!doctype html><html><body><div id="root"></div></body></html>'
+
   it('exits 0 on a bundle carrying only the publishable key', () => {
-    const dir = fixture({ 'assets/main.js': 'const k="' + jwt({ iss: 'supabase', role: 'anon' }) + '";export default k' })
+    const dir = fixture({ 'index.html': INDEX, 'assets/main.js': 'const k="' + jwt({ iss: 'supabase', role: 'anon' }) + '";export default k' })
     cleanup.push(dir)
     const res = run(dir)
     expect(res.stderr + res.stdout).toContain('clean')
@@ -204,7 +208,7 @@ describe('the CLI fails the build, and only when it should', () => {
   })
 
   it('exits 1 on a bundle carrying a service-role key', () => {
-    const dir = fixture({ 'assets/main.js': 'const k="' + jwt({ iss: 'supabase', role: 'service_role' }) + '";export default k' })
+    const dir = fixture({ 'index.html': INDEX, 'assets/main.js': 'const k="' + jwt({ iss: 'supabase', role: 'service_role' }) + '";export default k' })
     cleanup.push(dir)
     const res = run(dir)
     expect(res.status, 'a service-role key did not fail the build').toBe(1)
@@ -217,5 +221,28 @@ describe('the CLI fails the build, and only when it should', () => {
     const res = run(join(tmpdir(), 'bundle-guard-does-not-exist'))
     expect(res.status).toBe(1)
     expect(res.stderr).toMatch(/no build at/)
+  })
+
+  it('exits 1 on a directory that exists but holds no build', () => {
+    // The narrower version of the same failure, and the one a missing-directory
+    // check cannot see: dist/ emptied, a build that died before emitting, or the
+    // root repointed at a directory that is not the web artifact. All of them
+    // walk cleanly and would otherwise print "clean — 0 files" and exit 0.
+    const dir = fixture({})
+    cleanup.push(dir)
+    const res = run(dir)
+    expect(res.status, 'an empty directory passed the gate').toBe(1)
+    expect(res.stderr).toMatch(/not a public build/)
+  })
+
+  it('exits 1 on a directory of JavaScript with no index.html', () => {
+    // Concretely: the default root changed from dist/client to dist/server. The
+    // files are real and scan clean; they are simply not the artifact that
+    // reaches a learner.
+    const dir = fixture({ 'assets/worker.js': 'export default 1' })
+    cleanup.push(dir)
+    const res = run(dir)
+    expect(res.status, 'a non-web build passed as if it were the store bundle').toBe(1)
+    expect(res.stderr).toMatch(/index\.html/)
   })
 })
