@@ -153,7 +153,13 @@ export default function KnownWords({ session, profile, track, onBack }) {
       // open — the carded snapshot above is taken once, when it loads — and
       // saying "added N" for a word that was already there is the kind of small
       // lie that makes the rest of the numbers untrustworthy.
-      toast(claimSummaryLine({ inserted, skipped }))
+      // An object, not a string. toast() dispatches its argument verbatim and
+      // <Toasts /> spreads it — spreading a string yields {0:'A',1:'d',…}, so
+      // `title` is undefined and the learner gets an empty card. This line has
+      // passed a string since it was written, which means this screen's
+      // confirmation has never actually said anything; making the count honest
+      // and leaving that in place would have been the same defect one layer up.
+      toast({ title: claimSummaryLine({ inserted, skipped }), accent: accentHex })
       onBack()
     } catch (e) {
       setSaveError(e.message || 'Could not save. Please try again.')
@@ -239,12 +245,23 @@ export default function KnownWords({ session, profile, track, onBack }) {
               same; showing the text is what lets the learner tell which. */}
           {pasteResult && pasteResult.unmatchedLines > 0 && (
             <details style={{ marginTop: '4px' }}>
-              <summary style={{ fontSize: '13px', color: accentHex, cursor: 'pointer' }}>
+              <summary style={{
+                fontSize: '13px', color: ink(accentHex), cursor: 'pointer',
+                // §5: 44px touch target, and accent-as-text goes through ink()
+                // so it lifts toward white in dark mode.
+                padding: '12px 2px', minHeight: '44px', display: 'flex', alignItems: 'center',
+              }}>
                 See what we didn’t recognise
               </summary>
+              {/* padding AFTER the spread: flatPanel always returns a padding
+                  key, and called with no argument its value is undefined — put
+                  the literal first and it is discarded before React sees it,
+                  leaving Tailwind Preflight's `ul { padding: 0 }` and the disc
+                  markers drawn outside the panel. */}
               <ul style={{
+                ...flatPanel({}),
                 margin: '8px 0 0', padding: '10px 12px 10px 26px', listStyle: 'disc',
-                ...flatPanel({}), fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7,
+                fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7,
               }}>
                 {(pasteResult.unmatchedSamples || []).map((line, i) => (
                   <li key={i} style={{ wordBreak: 'break-word' }}>{line}</li>

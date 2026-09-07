@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync } from 'node:fs'
 import {
   KNOWLEDGE, MASTERY_STABILITY_DAYS, PRIOR_SOURCES, WRITTEN_PRIOR_SOURCES,
   hasGenuineObservation, hasPriorClaim,
@@ -251,10 +252,16 @@ describe('PRIOR_SOURCES', () => {
   // 'assumed_prerequisite' is written by nothing, and 'legacy_claim' is written
   // once, by a historical migration.
   it('matches the database constraint it documents', () => {
-    // cards_prior_source_check, verified against production 2026-09-07.
-    expect(PRIOR_SOURCES).toEqual([
-      'placement', 'assumed_prerequisite', 'paste', 'checklist', 'legacy_claim',
-    ])
+    // Read out of the migration rather than restated here. A hardcoded literal
+    // fails only when someone edits PRIOR_SOURCES, which is the direction that
+    // does not matter — the array exists to mirror the constraint, so the drift
+    // worth catching is the constraint's.
+    const sql = readFileSync('supabase/migrations/20260822160000_prior_knowledge_columns.sql', 'utf8')
+    const check = /cards_prior_source_check[\s\S]*?\)\s*\)/.exec(sql)
+    expect(check, 'the constraint must still be declared where this points').not.toBeNull()
+    const fromSql = [...check[0].matchAll(/'([a-z_]+)'/g)].map(m => m[1])
+    expect(fromSql.length, 'the parse must find something').toBeGreaterThan(1)
+    expect([...PRIOR_SOURCES].sort()).toEqual([...fromSql].sort())
   })
 
   it('separates what the constraint permits from what any code writes', () => {

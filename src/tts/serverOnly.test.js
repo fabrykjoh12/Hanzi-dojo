@@ -74,23 +74,30 @@ function read(file) {
 // src/migration/legacyClaimMigration.js as where the historical claim rows came
 // from turned that file into a "violation" of the migration-tooling guard.
 //
-// Stripping comments cannot weaken any of these guards — an import statement
-// inside a comment is not an import — and it stops a true sentence about the
-// codebase from failing a check about what the bundle contains.
+// It stops a true sentence about the codebase from failing a check about what
+// the bundle contains.
+//
+// ORDER MATTERS, and getting it backwards weakens the guard rather than
+// strengthening it. Stripping block comments first lets a `/*` inside a LINE
+// comment open a block that runs to the next `*/` anywhere below — in a string,
+// say — deleting real code in between, imports included. Line comments go
+// first for exactly that reason. This is still a lexer approximation and not a
+// parser: it does not know about template literals or regex literals, so treat
+// it as "good enough for the shapes this repo writes", not as a guarantee.
 function readCode(file) {
-  return read(file)
-    .replace(/\/\*[\s\S]*?\*\//g, '')
+  const withoutLineComments = read(file)
     .split('\n')
     .map(line => {
       const i = line.indexOf('//')
       if (i === -1) return line
-      // Only a comment if the // is not inside a string or a URL — the cheap
-      // test that covers this repo: an even number of quotes before it.
+      // Only a comment if the // is not inside a string — the cheap test that
+      // covers this repo: an even number of quotes before it.
       const before = line.slice(0, i)
       const quotes = (before.match(/['"`]/g) || []).length
       return quotes % 2 === 0 ? before : line
     })
     .join('\n')
+  return withoutLineComments.replace(/\/\*[\s\S]*?\*\//g, '')
 }
 
 // Which src/tts/* modules a file imports, by file name.

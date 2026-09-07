@@ -139,7 +139,11 @@ export function toggleLevelOpen(open, level) {
 //
 // Calm and observational, per the product's voice: it says what happened, and
 // the skipped case says why rather than just being a smaller number.
-export function claimSummaryLine({ inserted = 0, skipped = 0 } = {}) {
+export function claimSummaryLine(result) {
+  // Destructured from a local rather than in the signature: a default parameter
+  // covers `undefined` and not `null`, and a spec named "never throws" should be
+  // true of both.
+  const { inserted = 0, skipped = 0 } = result || {}
   const words = (n) => (n === 1 ? '1 word' : n + ' words')
 
   if (inserted === 0 && skipped === 0) return 'Nothing to add'

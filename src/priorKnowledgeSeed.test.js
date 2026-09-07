@@ -100,6 +100,22 @@ describe('seedClaim', () => {
     expect(out.skipped).toBe(0)
   })
 
+  it('carries what landed before a mid-claim failure', async () => {
+    // A claim larger than one batch, failing on the second: the first batch's
+    // rows are written and the throw used to discard the fact. A retry is safe
+    // (ignoreDuplicates) but honestly reports them as already in the deck,
+    // which reads as if nothing happened the first time.
+    const ids = Array.from({ length: SEED_BATCH_SIZE + 1 }, (_, i) => 'v' + i)
+    upsert.mockImplementationOnce((rows) => ({
+      select: () => Promise.resolve({ data: rows.map(r => ({ vocab_id: r.vocab_id })), error: null }),
+    }))
+    upsert.mockImplementationOnce(() => ({
+      select: () => Promise.resolve({ data: null, error: { message: 'nope' } }),
+    }))
+    await expect(seedClaim({ userId: 'u1', vocabIds: ids, perDay: 15, source: 'paste', now: NOW }))
+      .rejects.toMatchObject({ message: 'nope', insertedBeforeFailure: SEED_BATCH_SIZE })
+  })
+
   it('surfaces a write failure instead of silently succeeding', async () => {
     upsert.mockImplementationOnce(() => ({
       select: () => Promise.resolve({ data: null, error: { message: 'nope' } }),

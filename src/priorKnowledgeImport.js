@@ -59,10 +59,14 @@ export function matchPastedText(text, vocabMap = {}, language) {
     if (found) return
     unmatchedLines += 1
     if (unmatchedSamples.length < UNMATCHED_SAMPLE_LIMIT) {
-      const trimmed = line.trim()
-      unmatchedSamples.push(trimmed.length > SAMPLE_MAX_CHARS
-        ? trimmed.slice(0, SAMPLE_MAX_CHARS) + '…'
-        : trimmed)
+      // By code point, not by UTF-16 unit: a rare hanzi or an emoji at the cut
+      // is a surrogate pair, and slicing through one leaves a lone surrogate in
+      // text the screen then renders. The paste is a Chinese word list; this is
+      // the character class it is most likely to contain.
+      const chars = Array.from(line.trim())
+      unmatchedSamples.push(chars.length > SAMPLE_MAX_CHARS
+        ? chars.slice(0, SAMPLE_MAX_CHARS).join('') + '…'
+        : chars.join(''))
     }
   })
 

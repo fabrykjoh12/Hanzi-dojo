@@ -18,6 +18,7 @@ import { ThemeContext } from './ThemeContext'
 import Landing from './Landing'
 import PasswordReset from './PasswordReset'
 import Toasts from './Toasts'
+import { toast } from './toast'
 import OfflineBar from './OfflineBar'
 import { contentBottomInset, navVisibleFor } from './bottomBar'
 import { useNavFocused } from './navFocus'
@@ -138,6 +139,12 @@ export default function App() {
   // back out of storage afterward.
   const [justTastedWords, setJustTastedWords] = useState([])
   const [pendingStoryFirstMission, setPendingStoryFirstMission] = useState(false)
+  // Onboarding's claim of the words below the placed level is best-effort and
+  // can fail. It cannot say so itself: <Toasts /> is mounted in the app shell
+  // only, and during onboarding that shell does not exist yet — a toast fired
+  // there is dispatched into nothing. So the failure rides back on onComplete
+  // and is announced once the shell is up.
+  const [priorSeedFailed, setPriorSeedFailed] = useState(false)
   // True while the user arrived via a password-recovery email link and hasn't
   // set a new password yet (Supabase signs them in and fires PASSWORD_RECOVERY).
   const [recovery, setRecovery] = useState(false)
@@ -328,6 +335,19 @@ export default function App() {
     }
   }, [loading, session, publicStoryId, routerNavigate])
 
+  // Say it once, after the shell exists, then forget it — a retry would be a
+  // second toast for the same failure.
+  useEffect(() => {
+    if (!priorSeedFailed || justOnboarded || !profile || !track) return
+    toast({
+      kind: 'warn',
+      title: 'We couldn’t add your earlier words',
+      body: 'Add them any time from Practice → “Words you already know”.',
+    })
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPriorSeedFailed(false)
+  }, [priorSeedFailed, justOnboarded, profile, track])
+
   // Navigate between views (updates the URL). Profile/track/counts reload only
   // when landing on Home — the dashboard is the one view that renders them, and
   // study/practice screens patch the in-memory profile live via their
@@ -448,7 +468,7 @@ export default function App() {
     return (
       <>
         <Background language="chinese" />
-        <Onboarding session={session} onComplete={(tastedWords) => { loadProfile(session.user.id); setJustOnboarded(true); setJustTastedWords(tastedWords || []) }} />
+        <Onboarding session={session} onComplete={(tastedWords, meta) => { loadProfile(session.user.id); setJustOnboarded(true); setJustTastedWords(tastedWords || []); setPriorSeedFailed(Boolean(meta && meta.priorSeedFailed)) }} />
       </>
     )
   }

@@ -207,5 +207,6 @@ describe('claimSummaryLine', () => {
   it('has something to say for an empty claim, and never throws', () => {
     expect(claimSummaryLine({ inserted: 0, skipped: 0 })).toBe('Nothing to add')
     expect(claimSummaryLine()).toBe('Nothing to add')
+    expect(claimSummaryLine(null)).toBe('Nothing to add')
   })
 })

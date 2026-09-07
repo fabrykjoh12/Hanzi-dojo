@@ -47,6 +47,17 @@ describe('matchPastedText — Chinese', () => {
     expect(sample.endsWith('…')).toBe(true)
   })
 
+  it('cuts on a character, never through a surrogate pair', () => {
+    // 𠀋 is a supplementary-plane hanzi: one code point, two UTF-16 units. A
+    // slice by units at the boundary would leave a lone surrogate on screen.
+    const long = '𠀋'.repeat(100)
+    const [sample] = matchPastedText(long, ZH, 'chinese').unmatchedSamples
+    expect(Array.from(sample)).toHaveLength(61)
+    expect(sample.endsWith('…')).toBe(true)
+    // No unpaired surrogate survived the cut.
+    expect(/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/.test(sample)).toBe(false)
+  })
+
   it('keeps the sample bounded however large the paste is', () => {
     // A 50,000-line paste must not put 50,000 strings into React state.
     const many = Array.from({ length: 500 }, (_, i) => 'nope' + i).join('\n')

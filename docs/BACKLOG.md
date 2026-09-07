@@ -11,6 +11,19 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+### A word-list import that fails halfway reports as if nothing landed
+
+`seedClaim` writes in batches of 500 and throws on the first failure, so a claim
+larger than one batch can leave rows written and still show "Could not save.
+Please try again." (`src/KnownWords.jsx`). Retrying is safe — the upsert ignores
+duplicates — but it then honestly reports those rows as already in the deck,
+which reads as if the first attempt did nothing.
+
+The error now carries `insertedBeforeFailure` so a caller can say something
+truer; nothing consumes it yet, because the useful message ("N of M saved, try
+again for the rest") is a copy decision rather than a code one. Recorded so the
+next person does not have to rediscover which half of the claim landed.
+
 ### Every roadmap item is cut at its first em-dash before it reaches Discord
 
 `.github/scripts/roadmap-render.mjs` does `item.replace(/ — [\s\S]*$/, '')` and

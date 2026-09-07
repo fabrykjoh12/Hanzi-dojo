@@ -46,7 +46,18 @@ export async function seedClaim({ userId, vocabIds, perDay, source, now = Date.n
       .from('cards')
       .upsert(chunk, { onConflict: 'user_id,vocab_id', ignoreDuplicates: true })
       .select('vocab_id')
-    if (error) throw new Error(error.message)
+    if (error) {
+      // The rows from earlier batches ARE written and are not reported: the
+      // throw discards `inserted`, and KnownWords shows "Could not save. Please
+      // try again." A retry is safe — the upsert ignores duplicates — but it
+      // will honestly report those rows as already in the deck, which reads as
+      // if nothing happened the first time. Carried on the error rather than
+      // swallowed, so a caller that wants to say something better can, and
+      // recorded in docs/BACKLOG.md.
+      const err = new Error(error.message)
+      err.insertedBeforeFailure = inserted
+      throw err
+    }
     inserted += (data || []).length
     batches += 1
   }
