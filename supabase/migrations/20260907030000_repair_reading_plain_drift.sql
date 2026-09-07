@@ -25,12 +25,15 @@
 --
 -- Nor does anyone have a CARD on any of these ten rows. Counted on 2026-09-07:
 -- `cards` left-joined to every chinese/hsk_3 row whose word is one of the ten —
--- by word rather than by id, which is the wider set, since a dictionary save
--- can add a second level-null row for the same word — and every count is zero. That is the claim worth making, because the band
--- argument on its own does not reach it: all ten are HSK 3-6 and the user base
--- is at HSK 1-2, but `dict_add_to_deck` reuses the existing curriculum row by
--- word, so an HSK 1 learner who looks 厂 up in the dictionary would hold this
--- exact row and be graded by this exact key without leaving the clean band.
+-- by word rather than by id, which is the wider set: a dictionary save made
+-- while no active row for that word existed would have left a second,
+-- level-null row, and matching by word catches it. None exists — each of the
+-- ten came back once — and every count is zero. That is the claim worth
+-- making, because the band argument on its own does not reach it: all ten are
+-- HSK 3-6 and the user base is at HSK 1-2, but `dict_add_to_deck` reuses the
+-- existing curriculum row by word, so an HSK 1 learner who looks 厂 up in the
+-- dictionary would hold this exact row and be graded by this exact key without
+-- leaving the clean band.
 -- Repair it before someone does, rather than because someone has.
 --
 -- WHAT DRIFTED. 20260724120000_fix_hsk3_6_readings.sql (written 2026-07-24,
@@ -50,8 +53,9 @@
 -- THAT MIGRATION DID NOT TOUCH `reading_plain`, so ten rows still carry the
 -- tone-stripped form of the reading that was REJECTED. Measured live on
 -- 2026-09-07 against the predicate below, run as a SELECT rather than derived:
--- it matches ten rows in the whole chinese/hsk_3 corpus and all ten are active,
--- which is the count this statement will change when it is applied:
+-- it matched ten rows in the whole chinese/hsk_3 corpus, all ten active. That
+-- is a measurement, not a promise about apply time — the paragraph on new rows
+-- below says why the count can move and why moving is safe:
 --
 --     厂  chǎng  han  → chang      广  guǎng  yan   → guang
 --     追  zhuī   dui  → zhui       约  yuē    yao   → yue
@@ -97,9 +101,10 @@
 -- defect it removes — and it removed it from `reading` only. But lenientPinyin
 -- strips `:` along with the rest of its punctuation, so those two accept
 -- exactly the same inputs before and after this migration. Repairing them is consistency and a clean
--- integrity check, not a grading fix. A spec drives both cases through the two
--- functions that actually grade, so the distinction cannot quietly become
--- untrue.
+-- integrity check, not a grading fix. A spec drives the mis-grading case
+-- through both graders and the ü case through checkTypedAnswer, which is the
+-- whole of the difference: writingMatch's normalizeChinesePinyin IS
+-- lenientPinyin, so the two screens accept the same inputs by construction.
 --
 -- THE COLUMN HAS TWO CONVENTIONS, AND THAT IS WHY THE COMPARISON IS LOOSE.
 --
