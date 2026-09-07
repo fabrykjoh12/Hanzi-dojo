@@ -18,7 +18,7 @@ import { buildVocabIndex, searchVocabIndex } from './vocabIndex'
 import { dictSearchReducer, dictSearchView, initialDictSearch } from './dictSearchState'
 import { splitExplicit, hiddenLabel } from './dictExplicit'
 import { toast } from './toast'
-import { searchDict, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHeadwordLookup, isDictAddLimit } from './dictSearch'
+import { searchDict, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHeadwordLookup, dictAddToast } from './dictSearch'
 import DictEntryView from './DictEntryView'
 import { sheetOverlayStyle, sheetShellStyle, sheetHeaderStyle, sheetHandleStyle, sheetBodyStyle } from './sheetLayout'
 import { ArrowLeft, Search, Clock, X, WifiOff, AlertCircle } from 'lucide-react'
@@ -205,13 +205,11 @@ export default function Dictionary({ session, profile, track, onBack }) {
       const res = await addDictEntryToDeck(supabase, entry.id, track.language, track.system)
       if (res) setDictInDeck(prev => new Set(prev).add(entry.id))
     } catch (e) {
-      // Ordinary failures stay silent — the button simply does not flip to
-      // "in deck", which is the state the learner reads. The daily limit is
-      // different: it is not a failure they can retry into, and without a word
-      // it is indistinguishable from a dead connection.
-      if (isDictAddLimit(e)) {
-        toast({ kind: 'info', title: 'That’s enough new words for today', body: 'Try again tomorrow — nothing was lost.', accent: accentHex })
-      }
+      // Every failure says something now. The button not flipping to "in deck"
+      // was the only signal before, which reads as a dead button — and the
+      // three refusals dict_add_to_deck can raise are three different things to
+      // tell a learner (dictAddFeedback.js).
+      toast(dictAddToast(e, accentHex))
     }
   }
 

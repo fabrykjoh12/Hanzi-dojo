@@ -13,7 +13,7 @@ import { minDwellMs } from './readAlong'
 import { glossaryLookup } from './grammarGlossary'
 import { STATUS_COLOR, STATUS_LABEL, lookupKind, lookupChip, lookupLevel, lookupReadingState } from './wordLookup'
 import { unknownMarkStyle } from './tokenMark'
-import { getDictEntryByWord, addDictEntryToDeck, isDictAddLimit } from './dictSearch'
+import { getDictEntryByWord, addDictEntryToDeck, dictAddToast } from './dictSearch'
 import { prefsGet, prefsMerge } from './offline'
 import { READER_PREFS_KEY, DEFAULT_READING_FONT, normalizeReadingFont, readingFontFromPrefs, readingFontHint, readingFontOptions, readingFontPatch, readingFontStack } from './readingFonts'
 import { FIRST_MISSION_READER_HINT, firstMissionCompletion } from './firstMission'
@@ -848,11 +848,8 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       toast({ title: 'Saved to your deck', body: dictEntry.simplified, accent })
     } catch (e) {
       // The classic reader is an equal choice, not a fallback (StoryReader.jsx),
-      // so this path is as live as the immersive one and needs the same
-      // distinction between "the limit for today" and "that failed".
-      toast(isDictAddLimit(e)
-        ? { kind: 'info', title: 'That’s enough new words for today', body: 'Try again tomorrow — nothing was lost.', accent }
-        : { kind: 'warn', title: 'Couldn’t save that word', accent })
+      // so this path is as live as the immersive one and says the same things.
+      toast(dictAddToast(e, accent))
     } finally {
       setDictSaving(false)
     }

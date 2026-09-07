@@ -14,7 +14,7 @@ import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import { setFeedbackStory } from './feedbackContext'
-import { addDictEntryToDeck, isDictAddLimit } from './dictSearch'
+import { addDictEntryToDeck, dictAddToast } from './dictSearch'
 import { toast } from './toast'
 
 // READER_PREFS_KEY is the classic reader's prefs object, shared verbatim (from
@@ -436,16 +436,7 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
       setDictSaved(prev => new Set(prev).add(entry.id))
       toast({ title: 'Saved to your deck', body: entry.simplified || entry.word || null, accent: theme.accentHex })
     } catch (e) {
-      // A limit is information; a failure is a warning. They are different
-      // events and they should not wear the same icon.
-      toast(isDictAddLimit(e)
-        ? {
-          kind: 'info',
-          title: 'That’s enough new words for today',
-          body: 'Try again tomorrow — nothing was lost.',
-          accent: theme.accentHex,
-        }
-        : { kind: 'warn', title: 'Couldn’t save that word', accent: theme.accentHex })
+      toast(dictAddToast(e, theme.accentHex))
     } finally {
       dictSavingRef.current = false
       setDictSaving(false)

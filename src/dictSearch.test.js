@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { normalizeQuery, searchDict, getExamples, getWordsContaining, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHanChar, isHeadwordLookup, isDictAddLimit, DICT_ADD_LIMIT_CODE } from './dictSearch'
+import { normalizeQuery, searchDict, getExamples, getWordsContaining, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHanChar, isHeadwordLookup, isDictAddLimit, dictAddToast, DICT_ADD_LIMIT_CODE } from './dictSearch'
+import * as feedback from './dictAddFeedback'
 
 describe('isHanChar', () => {
   it('recognises CJK ideographs across the common blocks', () => {
@@ -119,31 +120,14 @@ describe('addDictEntryToDeck', () => {
   })
 })
 
-describe('isDictAddLimit', () => {
-  // dict_add_to_deck's rate limits raise with a custom SQLSTATE, which
-  // PostgREST passes through as error.code. Without it the 201st add of the day
-  // and a dead connection produce the same nothing, and the learner is told to
-  // retry into a wall.
-  it('recognises the limit by its SQLSTATE, not by its message', () => {
-    // The message is user-facing copy and will be reworded; the code will not.
-    expect(isDictAddLimit({ code: DICT_ADD_LIMIT_CODE, message: 'anything at all' })).toBe(true)
-    expect(isDictAddLimit({ message: 'Dictionary add limit reached — try again tomorrow' })).toBe(false)
-  })
-
-  it('uses a PTxxx code, so the request is a 429 and not a 500', () => {
-    // PostgREST maps SQLSTATE to HTTP status by class and honours a
-    // caller-chosen status only for the PTxxx form. Any other class reaches
-    // this predicate just as well — supabase-js reads the code out of the JSON
-    // body — but logs every capped add as a server error.
-    expect(DICT_ADD_LIMIT_CODE).toMatch(/^PT\d{3}$/)
-    expect(DICT_ADD_LIMIT_CODE).toBe('PT429')
-  })
-
-  it('is false for every other failure, including nothing at all', () => {
-    expect(isDictAddLimit({ code: 'PGRST202', message: 'missing rpc' })).toBe(false)
-    expect(isDictAddLimit({ code: '42501' })).toBe(false)
-    expect(isDictAddLimit(new Error('network'))).toBe(false)
-    expect(isDictAddLimit(null)).toBe(false)
-    expect(isDictAddLimit(undefined)).toBe(false)
+// isDictAddLimit and the rest of the failure copy live in dictAddFeedback.js
+// and are specified there (dictAddFeedback.test.js). This file keeps one
+// assertion: that the re-export is live, so a call site importing from either
+// module gets the same function.
+describe('the failure helpers are re-exported, not re-implemented', () => {
+  it('is the same function dictAddFeedback exports', () => {
+    expect(isDictAddLimit).toBe(feedback.isDictAddLimit)
+    expect(dictAddToast).toBe(feedback.dictAddToast)
+    expect(DICT_ADD_LIMIT_CODE).toBe(feedback.DICT_ADD_LIMIT_CODE)
   })
 })

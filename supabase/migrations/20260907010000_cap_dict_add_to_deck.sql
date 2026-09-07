@@ -101,15 +101,23 @@ declare
   -- everyone, in the last 24 hours. Rows are never deleted (§7.1), so this
   -- counter only moves forward.
   c_global_daily_cap constant int := 500;
-  -- A stable SQLSTATE so the client can tell "you are at the limit" from "the
-  -- network failed" — until this existed the 201st add of the day was
-  -- indistinguishable from an outage (src/dictSearch.js).
+  -- Stable SQLSTATEs so the client can tell these apart from each other and
+  -- from a network failure. Until they existed the 201st add of the day was
+  -- indistinguishable from an outage (src/dictAddFeedback.js).
+  --
+  -- Three, not one, because they are three different things to say:
+  --   PT429  your own daily limit — come back tomorrow.
+  --   PT503  the SHARED daily brake — nothing to do with what you added, and
+  --          telling a learner who has added nothing today that they have had
+  --          "enough new words" is a false statement about their own behaviour.
+  --   PT409  a lost insert race — retry now, it will work.
   --
   -- PT429 rather than an invented class: PostgREST maps SQLSTATE to HTTP status
   -- by class and honours a caller-chosen status only for the PTxxx form, so
   -- PT429 arrives as a real 429 while (say) HD429 falls through to 500 — which
   -- would log every capped add as a server error, the opposite of the point.
   c_limit_errcode constant text := 'PT429';
+  c_busy_errcode constant text := 'PT503';
 
   v_user_id uuid := auth.uid();
   v_entry public.dict_entries;
@@ -180,7 +188,7 @@ begin
 
     if v_recent_global >= c_global_daily_cap then
       raise exception 'The dictionary is not accepting new words right now — try again tomorrow'
-        using errcode = c_limit_errcode;
+        using errcode = c_busy_errcode;
     end if;
 
     -- New dictionary-sourced row (NULL level). meaning is required NOT NULL.
@@ -224,8 +232,10 @@ begin
     end if;
 
     if v_vocab_id is null then
-      -- The lost-race branch described above. PT409 so PostgREST answers 409
-      -- and the client can tell "try that again" from a real failure.
+      -- The lost-race branch described above. PT409 so PostgREST answers 409,
+      -- and src/dictAddFeedback.js turns it into "try again" rather than the
+      -- generic failure — an earlier version of this comment claimed the client
+      -- could already tell them apart when nothing in src/ knew the code.
       raise exception 'That word is being added right now — try again'
         using errcode = 'PT409';
     end if;
@@ -251,7 +261,8 @@ comment on function public.dict_add_to_deck(uuid, text, text) is
   'finding 3): 200 adds per caller per 24h, and 500 new level-NULL vocabulary '
   'rows per 24h across all callers — the second can refuse a caller who has '
   'added nothing today, and exists because the first counts the caller''s own '
-  'cards, which the caller may delete. Both raise SQLSTATE PT429. Never writes '
+  'cards, which the caller may delete. SQLSTATEs: PT429 the per-caller limit, '
+  'PT503 the shared brake, PT409 a lost insert race (retryable). Never writes '
   'ease_factor.';
 
 notify pgrst, 'reload schema';

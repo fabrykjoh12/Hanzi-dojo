@@ -36,36 +36,47 @@ const codeOf = (f) => read(f)
 const clientFiles = readdirSync(SRC)
   .filter(n => (n.endsWith('.js') || n.endsWith('.jsx')) && !n.includes('.test.'))
 
-describe('every screen that adds a dictionary word explains the daily limit', () => {
-  const callers = clientFiles.filter(f => codeOf(f).includes('addDictEntryToDeck('))
-    // dictSearch.js is where the function is defined and the predicate lives.
-    .filter(f => f !== 'dictSearch.js')
+describe('every screen that adds a dictionary word explains why it did not', () => {
+  // Detection is deliberately broader than one spelling, because the point is
+  // to catch a call site nobody remembered to update. It looks for the wrapper
+  // AND for the RPC underneath it, which is the house pattern used two
+  // functions away in Dictionary.jsx.
+  const callers = clientFiles.filter((f) => {
+    const code = codeOf(f)
+    return /addDictEntryToDeck\s*\(/.test(code) || /rpc\(\s*'dict_add_to_deck'/.test(code)
+  })
+    // Where the wrapper and the copy are defined, not screens that use them.
+    .filter(f => f !== 'dictSearch.js' && f !== 'dictAddFeedback.js')
 
-  it('finds the call sites at all', () => {
-    // If this ever drops to zero the rest of the file passes vacuously.
-    expect(callers.length).toBeGreaterThanOrEqual(3)
+  it('finds exactly the three screens that add a dictionary word', () => {
     expect(callers.sort()).toEqual(['Dictionary.jsx', 'StoryReaderImmersive.jsx', 'useStoryReaderCore.js'])
   })
 
-  it('every one of them consults isDictAddLimit', () => {
-    const missing = callers.filter(f => !codeOf(f).includes('isDictAddLimit('))
-    expect(missing, 'these add a dictionary word without handling the daily limit')
+  it('every one of them routes its failure through the shared copy', () => {
+    // Not "contains the limit message": that literal was the earlier
+    // assertion, and it would have failed the moment the copy moved into a
+    // module — which is the refactor CLAUDE.md §3 asks for and which this
+    // change made. What matters is that no screen invents its own wording or
+    // swallows the error, so the three refusals stay three refusals everywhere.
+    const missing = callers.filter(f => !/dictAddToast\s*\(/.test(codeOf(f)))
+    expect(missing, 'these add a dictionary word without saying why it failed')
       .toEqual([])
   })
 
-  it('every one of them imports it from the one place it is defined', () => {
-    // A local re-implementation would pass the check above and drift from the
-    // migration's SQLSTATE the first time either changes.
+  it('every one of them imports it rather than re-implementing it', () => {
     for (const f of callers) {
-      expect(codeOf(f), f + ' must import isDictAddLimit from ./dictSearch')
-        .toMatch(/import \{[^}]*isDictAddLimit[^}]*\} from '\.\/dictSearch'/)
+      expect(codeOf(f), f + ' must import dictAddToast')
+        .toMatch(/import \{[^}]*dictAddToast[^}]*\} from '\.\/dict(Search|AddFeedback)'/)
     }
   })
 
-  it('says something specific rather than reusing the generic failure', () => {
+  it('no screen hardcodes one of the three refusal messages', () => {
+    // The copy lives in one place. A literal here would drift from it silently,
+    // which is how the shared brake came to say "that's enough new words for
+    // today" to a learner who had added nothing.
     for (const f of callers) {
-      expect(codeOf(f), f + ' shows no limit-specific message')
-        .toContain('That’s enough new words for today')
+      expect(codeOf(f), f + ' hardcodes refusal copy')
+        .not.toMatch(/enough new words for today|dictionary is busy/i)
     }
   })
 })

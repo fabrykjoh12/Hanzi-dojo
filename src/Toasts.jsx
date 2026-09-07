@@ -13,6 +13,13 @@ import { Award, Info, TriangleAlert } from 'lucide-react'
 // caller. The success toasts still pass no kind and still render the medal,
 // which is at least the right shape for them. The ones that were wrong are the
 // ones now tagged — a limit is 'info', a failure is 'warn'.
+//
+// A SIDE EFFECT worth writing down rather than leaving to be noticed: six
+// callers already passed kind: 'info' (Dev.jsx x5, CreativeMode.jsx) and were
+// rendering the medal because nothing mapped it. They now render Info. That is
+// the intended icon for them — but one of those six tags a genuine FAILURE as
+// 'info' (Dev.jsx's "Failed" toast), which by the rule above should be 'warn'.
+// Left alone deliberately: it is an admin-only surface and not this task's.
 const ICONS = { seal: Award, info: Info, warn: TriangleAlert }
 const DISMISS_MS = 4600
 

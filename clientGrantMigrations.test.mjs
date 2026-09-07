@@ -95,9 +95,14 @@ describe('capping dict_add_to_deck (finding 3)', () => {
     // something a caller can act on instead.
     const code = codeOf(CAP)
     const conflict = code.indexOf('on conflict (language, system, word) where level is null and is_active do nothing')
-    const reselect = code.indexOf('if v_vocab_id is null then')
+    // The ADOPTION query, not the null guard: `if v_vocab_id is null then`
+    // matches both, so keying on it let the re-select be deleted while every
+    // assertion here stayed green — and every conflict against a COMMITTED row
+    // would then 409 instead of adopting, which is the behaviour the index
+    // exists for.
+    const reselect = code.indexOf('select id into v_vocab_id')
     expect(conflict).toBeGreaterThan(-1)
-    expect(reselect).toBeGreaterThan(conflict)
+    expect(reselect, 'the winner must be adopted, not refused').toBeGreaterThan(conflict)
     expect(code, 'a lost race must not reach the card insert with a null vocab_id')
       .toMatch(/raise exception 'That word is being added right now[\s\S]*?errcode = 'PT409'/)
     // And the raise has to come before the card insert, or it is decoration.
@@ -152,10 +157,20 @@ describe('capping dict_add_to_deck (finding 3)', () => {
     // observe an HTTP status — no PostgREST here — so it pins the declaration,
     // which is the part that lives in this repo.
     const cap = codeOf(CAP)
-    expect(cap.match(/using errcode = c_limit_errcode/g)).toHaveLength(2)
+    // One raise per limb, each with its own code — the two used to share
+    // c_limit_errcode, so the shared brake spoke the per-caller copy.
+    expect(cap.match(/using errcode = c_limit_errcode/g)).toHaveLength(1)
+    expect(cap.match(/using errcode = c_busy_errcode/g)).toHaveLength(1)
     expect(cap).toMatch(/c_limit_errcode constant text := 'PT429'/)
+    // Three refusals, three codes: the shared brake must not borrow the
+    // per-caller one, or a learner who added nothing is told they added enough.
+    expect(cap).toMatch(/c_busy_errcode constant text := 'PT503'/)
+    expect(cap).toContain("errcode = 'PT409'")
     // The migration and the client must not drift apart.
-    expect(read('src/dictSearch.js')).toContain("DICT_ADD_LIMIT_CODE = 'PT429'")
+    const client = read('src/dictAddFeedback.js')
+    expect(client).toContain("DICT_ADD_LIMIT_CODE = 'PT429'")
+    expect(client).toContain("DICT_ADD_BUSY_CODE = 'PT503'")
+    expect(client).toContain("DICT_ADD_RETRY_CODE = 'PT409'")
   })
 
   it('documents BOTH limits on the function, not just the per-caller one', () => {

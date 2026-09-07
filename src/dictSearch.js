@@ -72,21 +72,10 @@ export function isHeadwordLookup(value) {
   return chars.every(isHanChar)
 }
 
-// dict_add_to_deck raises with this SQLSTATE when either rate limit is hit
-// (20260907010000). PostgREST passes the SQLSTATE through as `error.code`, so
-// the caller can tell "you are at the limit today" from "the request failed" —
-// which is worth doing, because the two are otherwise indistinguishable and one
-// of them resolves by itself tomorrow.
-//
-// The PT prefix is load-bearing: PostgREST maps SQLSTATE to HTTP status by
-// class and honours a caller-chosen status only for PTxxx, so PT429 arrives as
-// a real 429. An invented class would still reach this code — supabase-js reads
-// it out of the JSON body — but every capped add would be logged as a 500.
-export const DICT_ADD_LIMIT_CODE = 'PT429'
-
-export function isDictAddLimit(error) {
-  return Boolean(error && error.code === DICT_ADD_LIMIT_CODE)
-}
+// The failure copy for this RPC lives in dictAddFeedback.js — it has three
+// distinct refusals and they are three different things to tell a learner.
+// Re-exported here so the call sites keep one import.
+export { isDictAddLimit, dictAddToast, DICT_ADD_LIMIT_CODE } from './dictAddFeedback'
 
 export async function addDictEntryToDeck(supabase, dictEntryId, language, system) {
   const { data, error } = await supabase.rpc('dict_add_to_deck', {
