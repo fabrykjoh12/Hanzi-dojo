@@ -409,10 +409,14 @@ export const CONTROL_PLANE_GRANTS = {
   'runtime-hook-maintenance': ['.claude/hooks/**'],
 }
 
-/** Is `p` inside the protected tier? */
+/** Is `p` inside the protected tier? Membership, deliberately: this is the
+ *  test a granted path must PASS, so a bare tier root is not "inside" and is
+ *  refused by it — see the protected_paths loop, which says so. */
 const inProtectedTier = (p) => PROTECTED_CONTROL_PLANE.some(t => covers(t, p))
-/** Is `p` inside the absolute floor? */
-const inAbsoluteFloor = (p) => ALWAYS_FORBIDDEN.some(f => covers(f, p))
+/** Does `p` reach the absolute floor at all — inside it, over it, or at the
+ *  root of one of its subtrees? Reach, not membership: this test refuses, so
+ *  it takes the wider question. */
+const inAbsoluteFloor = (p) => ALWAYS_FORBIDDEN.some(f => reachesTier(f, p))
 
 /**
  * THE PATH GRAMMAR. Exactly two accepted forms:
@@ -514,6 +518,48 @@ export function covers(outer, inner) {
 }
 
 /**
+ * Does `p` name the ROOT of a `dir/**` pattern, rather than something inside it?
+ *
+ * `covers('.git/**', '.git')` is false, and rightly so: the subtree test is a
+ * prefix match on `.git/`, and `.git` does not start with `.git/`. `covers`
+ * answers "is this path WITHIN the pattern", and `.git` is not within `.git/**`
+ * — it is the thing the pattern hangs off. So this is a second question rather
+ * than a change to `covers`, which is at parity with the runtime policy and has
+ * a parity spec that fails if it drifts.
+ *
+ * It matters because a directory is not always a directory. In a git WORKTREE
+ * `.git` is a regular FILE holding a gitdir pointer, and this repository's
+ * parallel-work flow uses worktrees; overwriting it detaches the worktree from
+ * its repository. `.claude/hooks` and `.agent/tasks` are the same shape of
+ * question even where the write would fail for being a directory — a floor that
+ * stops at the children of the thing it names is not a floor, and the paragraph
+ * above ALWAYS_FORBIDDEN asserts the floor is complete.
+ */
+export function isSubtreeRoot(pattern, p) {
+  const o = normalisePath(pattern)
+  return o.endsWith('/**') && normalisePath(p) === o.slice(0, -3)
+}
+
+/**
+ * Does a contract entry `entry` REACH the tier path `tierPath` — in any of the
+ * four ways an entry can touch a protected pattern?
+ *
+ *   covers(tierPath, entry)         entry is inside the tier
+ *   covers(entry, tierPath)         entry is a subtree that contains the tier
+ *   isSubtreeRoot(tierPath, entry)  entry IS the tier subtree's own root
+ *   isSubtreeRoot(entry, tierPath)  entry is a subtree hanging off the tier
+ *                                   path itself — `.claude/settings.json/**`
+ *
+ * The first two were the whole test until FAB-60; the last two are the gap it
+ * closes. Both directions are needed because a tier entry is either an exact
+ * path or a `/**` subtree, and an allowed_paths entry can be either as well.
+ */
+export function reachesTier(tierPath, entry) {
+  return covers(tierPath, entry) || covers(entry, tierPath)
+    || isSubtreeRoot(tierPath, entry) || isSubtreeRoot(entry, tierPath)
+}
+
+/**
  * Every rule, over an already-parsed contract. Returns violation strings —
  * empty means the contract is well-formed. `knownIds` lets dependency
  * resolution be checked across the whole set; `npmScripts` lets verification
@@ -603,7 +649,7 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   // that names one of these is a mistake to be corrected, not reconciled.
   for (const a of okAllowed) {
     for (const floor of ALWAYS_FORBIDDEN) {
-      if (covers(a, floor) || covers(floor, a)) {
+      if (reachesTier(floor, a)) {
         out.push(at + 'allowed_paths may never authorise ' + floor + ' (via "' + a +
           '") — a task cannot widen its own contract or the harness permissions')
       }
@@ -616,7 +662,7 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
   // task's ordinary working files.
   for (const a of okAllowed) {
     for (const protectedPath of PROTECTED_CONTROL_PLANE) {
-      if (covers(a, protectedPath) || covers(protectedPath, a)) {
+      if (reachesTier(protectedPath, a)) {
         out.push(at + 'allowed_paths may not authorise the protected control-plane path ' +
           protectedPath + ' (via "' + a + '") — declare it in control_plane.protected_paths ' +
           'under a matching grant instead')

@@ -216,16 +216,19 @@ independently of whatever the contract says. The two exact entries,
 `.agent/roles.json` and `.claude/settings.local.json`, are refused by name;
 verified against the validator rather than assumed.
 
-**One exception — the bare subtree root — and it is the first thing to know
-about this list.** A `dir/**` entry does not cover its own root: `.git/**` does
+**The bare subtree root used to be an exception, and closing it is worth
+knowing about.** A `dir/**` entry does not cover its own root: `.git/**` does
 not match `.git`, and neither does the reverse. So a contract naming that bare
-subtree root — `.git`, `.agent/tasks` — is refused by nothing, at validation or
-at runtime. In a git
-worktree `.git` is a regular file, so that is a real write rather than a
-curiosity. The residual is set out in full further down and tracked as FAB-60;
-it is named here because this paragraph is where a reader learns what the floor
-means, and the floor means slightly less than the sentence above would suggest
-on its own. These are the files that define what a task *is*
+subtree root — `.git`, `.agent/tasks` — was refused by nothing, at validation or
+at runtime, and in a git worktree `.git` is a regular file, so that was a real
+write rather than a curiosity. FAB-60 closed it in the canonical validator, in
+the runtime policy and in the review protocol at once, through one predicate
+(`reachesTier`) that asks the root question alongside the two containment ones.
+What remains open, and is bounded rather than tracked: an entry naming an
+ANCESTOR of a tier root, `.agent` above `.agent/tasks/**`. An exact entry
+authorises only itself, so the whole of the new authority is one directory path,
+and writing a directory fails for being a directory — the worktree case that
+made `.git` real does not arise there. These are the files that define what a task *is*
 (`.agent/tasks/**`, including its own `README.md`), who may own one
 (`.agent/roles.json`), the machine-local permission overlay
 (`.claude/settings.local.json`), and history itself (`.git/**`).
@@ -535,18 +538,18 @@ contract naming `.git` in ordinary `allowed_paths` is accepted by
 `npm run verify:tasks` and authorises the write. In a git worktree `.git` is a
 regular file, so this is not theoretical.
 
-**It is not only the floor.** `.claude/hooks` behaves the same way — a Tier 1
-subtree root in ordinary `allowed_paths` raises no violation and is matched
-exactly by the scope test, with no grant anywhere. `.claude/hooks` is a directory in
-every checkout anyone has run, so the write fails for that reason rather than
-because the guard stopped it — luck rather than containment, and an observation
-about the tree rather than a property the guard enforces. It is a property of the pattern semantics rather than of the
-exemption, it predates this change, and the canonical validator has the same
-shape — so fixing it means fixing both halves in one change. That is filed as its own
-task (FAB-60) with the reproduction attached, rather than half-done here; note
-that the residual is recorded here — this paragraph and the policy's own comment
-both set it out — but nothing in the repository *tracks* it as work, so the
-tracker is where the fix is scheduled.
+**It was not only the floor.** `.claude/hooks` behaved the same way — a Tier 1
+subtree root in ordinary `allowed_paths` raised no violation and was matched
+exactly by the scope test, with no grant anywhere. `.claude/hooks` is a
+directory in every checkout anyone has run, so the write failed for that reason
+rather than because the guard stopped it: luck rather than containment. It was a
+property of the pattern semantics rather than of the exemption, and the
+canonical validator had the same shape, so fixing it meant fixing both halves in
+one change. FAB-60 did that: `reachesTier` now backs the floor and Tier 1 tests
+in `tools/verify-task-contracts.mjs`, in `.claude/hooks/task-scope-policy.mjs`
+(both the contract check and the two `decide()` floor loops, lexical and
+resolved) and in `tools/review-protocol.mjs`'s diff scan. A parity spec drives
+the two copies of the predicate over the same pairs, so they cannot drift.
 
 **One more thing the exemption does not exempt, and it will be felt.** The
 resolution itself. A helper's target has to resolve inside the repository before

@@ -24,6 +24,8 @@ import {
   resolveWithin,
   contractSecurityViolations,
   decide,
+  isSubtreeRoot as policyIsSubtreeRoot,
+  reachesTier as policyReachesTier,
 } from './.claude/hooks/task-scope-policy.mjs'
 
 // The canonical validator. Imported HERE, in the test, and nowhere in the
@@ -36,9 +38,12 @@ import {
   canonicalise,
   computeDigest,
   covers,
+  isSubtreeRoot,
+  reachesTier,
   normalisePath,
   pathGrammarError,
   effectiveAllowedPaths,
+  findContractViolations,
 } from './tools/verify-task-contracts.mjs'
 
 // THE RUNTIME TASK-SCOPE GUARD.
@@ -216,6 +221,27 @@ describe('parity with the canonical validator', () => {
     for (const o of patterns) {
       for (const i of probes) {
         expect(policyCovers(o, i), 'covers(' + o + ', ' + i + ')').toBe(covers(o, i))
+      }
+    }
+  })
+
+  it('agrees on subtree roots and on tier reach, over the same pairs', () => {
+    // FAB-60. The floor tests in the two modules ask reachesTier now, so a
+    // divergence here is a contract the validator accepts and the runtime
+    // refuses, or the reverse — the exact split the parity work exists to stop.
+    const patterns = [
+      '.git/**', '.agent/tasks/**', '.agent/roles.json', '.claude/settings.json',
+      '.claude/hooks/**', 'src/**', 'a/b.js', '**', './src/**',
+    ]
+    const probes = [
+      '.git', '.git/config', '.gitignore', '.agent/tasks', '.agent', '.agent/roles.json',
+      '.agent/roles.json/**', '.claude/hooks', '.claude/settings.json/**', '.claude/settings.json',
+      'src', 'src/**', 'src/x.js', 'a/b.js',
+    ]
+    for (const o of patterns) {
+      for (const i of probes) {
+        expect(policyIsSubtreeRoot(o, i), 'isSubtreeRoot(' + o + ', ' + i + ')').toBe(isSubtreeRoot(o, i))
+        expect(policyReachesTier(o, i), 'reachesTier(' + o + ', ' + i + ')').toBe(reachesTier(o, i))
       }
     }
   })
@@ -1628,5 +1654,96 @@ describe('where a relative file_path is anchored', () => {
       expect(d.allow, String(cwd)).toBe(false)
       expect(d.reason, String(cwd)).toMatch(/cwd/)
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FAB-60 — the bare subtree root.
+//
+// `covers('.git/**', '.git')` is false in both directions, so until this change
+// a contract naming a floor or Tier 1 ROOT in ordinary allowed_paths was
+// refused by nothing: not the canonical validator, not contractSecurityViolations,
+// not the resolved floor loop, and the scope test then matched it exactly and
+// ALLOWED. Reproduced against the real modules before the fix:
+//
+//   contractSecurityViolations(['.git']) = []
+//   decide(producer, file_path: '.git')  = ALLOW  ".git (.git) — inside the bound contract scope"
+//
+// It is not theoretical: in a git WORKTREE `.git` is a regular file holding a
+// gitdir pointer, and this repository's parallel-work flow uses worktrees.
+// ---------------------------------------------------------------------------
+
+describe('a contract may not name a floor or tier root, in either module', () => {
+  const roots = ['.git', '.agent/tasks', '.claude/hooks']
+
+  it('the runtime refuses every one of them in allowed_paths', () => {
+    for (const r of roots) {
+      const out = contractSecurityViolations({ allowed_paths: [r], forbidden_paths: [] })
+      expect(out.join(' | '), r + ' authorised nothing to refuse it').toMatch(/Tier 0 floor|protected control plane/)
+    }
+  })
+
+  it('the canonical validator refuses the same ones, for the same reason', () => {
+    // The halves must move together: closing it only at runtime would leave
+    // `npm run verify:tasks` accepting a contract the guard then refuses.
+    for (const r of roots) {
+      const out = findContractViolations(contract({ allowed_paths: [r] }), { skipDigest: true })
+      expect(out.join(' | '), r + ' passed the validator').toMatch(/may never authorise|may not authorise/)
+    }
+  })
+
+  it('catches the subtree hanging off a protected FILE, too', () => {
+    // `.claude/settings.json/**` is the other direction: an entry whose own root
+    // is the protected path. Neither covers() direction relates them.
+    for (const spelling of ['.claude/settings.json/**', '.agent/roles.json/**']) {
+      expect(findContractViolations(contract({ allowed_paths: [spelling] }), { skipDigest: true }).join(' | '),
+        spelling + ' passed the validator').toMatch(/may never authorise|may not authorise/)
+      expect(contractSecurityViolations({ allowed_paths: [spelling], forbidden_paths: [] }).join(' | '),
+        spelling + ' passed the runtime').toMatch(/Tier 0 floor|protected control plane/)
+    }
+  })
+
+  it('leaves a sibling that merely shares a prefix alone', () => {
+    // The other half of a floor: it must not swallow the neighbours. Asserted,
+    // not assumed — `.gitignore` and `.agent/roles.json` are ordinary files that
+    // a contract may legitimately name.
+    for (const sibling of ['.gitignore', '.agent/roles.json.bak', '.claude/hooksmith.mjs']) {
+      expect(contractSecurityViolations({ allowed_paths: [sibling], forbidden_paths: [] }).join(' | '),
+        sibling + ' was swept up by a floor pattern').not.toMatch(/Tier 0 floor|protected control plane/)
+      expect(findContractViolations(contract({ allowed_paths: [sibling] }), { skipDigest: true }).join(' | '),
+        sibling + ' was swept up by the validator').not.toMatch(/may never authorise|may not authorise/)
+    }
+  })
+
+  it('refuses the write itself, even from a contract that somehow carries the root', () => {
+    // Defence in depth, and the branch that would have mattered: the tier tests
+    // in decide() run before the scope test, so a contract that got past
+    // validation — an older seal, a hand-edited file — still cannot reach it.
+    const c = writeContract(contract({ id: 'root-writer', allowed_paths: ['.git', 'src/**'] }))
+    const env = { [BINDING_ENV]: bindingFor(c) }
+    const d = run(call(path.join(ROOT, '.git')), env)
+    expect(d.allow, 'the bare floor root was written').toBe(false)
+    expect(d.reason).toMatch(/Tier 0/)
+    // Its ordinary allowance is dead too, and that is the designed behaviour
+    // rather than a side effect: a contract carrying a security violation
+    // authorises NOTHING (the suite above), so the floor entry poisons the
+    // whole contract instead of being quietly dropped from it.
+    expect(run(call(path.join(ROOT, 'src/existing.js')), env).allow,
+      'a contract with a floor entry still authorised its other paths').toBe(false)
+    // A contract without the floor entry is unaffected — this is a floor
+    // refusing one spelling, not the guard failing closed on everything.
+    const ok = writeContract(contract({ id: 'ordinary', allowed_paths: ['src/**'] }))
+    expect(run(call(path.join(ROOT, 'src/existing.js')), { [BINDING_ENV]: bindingFor(ok) }).allow).toBe(true)
+  })
+
+  it('refuses it through a symlink as well', () => {
+    // Step 2 is lexical and step 7 is on the resolved path; both now know about
+    // the root. A symlink launders the spelling, not the destination.
+    const link = path.join(ROOT, 'src/looks-innocent')
+    try { symlinkSync(path.join(ROOT, '.git'), link) } catch { /* already there */ }
+    const c = writeContract(contract({ id: 'symlink-root', allowed_paths: ['src/**'] }))
+    const d = run(call(link), { [BINDING_ENV]: bindingFor(c) })
+    expect(d.allow, 'a symlink reached the floor root').toBe(false)
+    expect(d.reason).toMatch(/Tier 0/)
   })
 })

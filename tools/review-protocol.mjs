@@ -49,6 +49,7 @@ import {
   grantedProtectedPaths,
   computeDigest,
   covers,
+  isSubtreeRoot,
   normalisePath,
   findContractViolations,
 } from './verify-task-contracts.mjs'
@@ -237,7 +238,14 @@ export function mechanicalFindings({ contract, changedPaths }) {
     }
 
     for (const floorPath of ALWAYS_FORBIDDEN) {
-      if (covers(floorPath, p) || p === floorPath) {
+      // `p === floorPath` catches an exact floor entry; isSubtreeRoot catches
+      // the bare root of a `dir/**` one, which is neither inside the pattern
+      // nor equal to it. Unreachable in practice — a changed path of `.git` or
+      // `.agent/tasks` cannot appear in a git diff, since they are directories
+      // and `.git` is excluded — but it is the same defect as FAB-60's, and a
+      // reader comparing the three floor tests should find them saying the
+      // same thing.
+      if (covers(floorPath, p) || p === floorPath || isSubtreeRoot(floorPath, p)) {
         out.push(finding('blocker', 'hidden-authority-expansion',
           'The diff touches an always-forbidden path',
           'changed path: ' + p + ' falls under ' + floorPath,
