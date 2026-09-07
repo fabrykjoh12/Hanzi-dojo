@@ -1,0 +1,98 @@
+{
+ "version": "fab10-batch@1",
+ "manifest": {
+  "schema": "fab9-story-target@1",
+  "id": "hsk3-01-被中如果",
+  "batch": "fab9-pilot-1",
+  "language": "chinese",
+  "system": "hsk_3",
+  "level": 3,
+  "levelName": "HSK 3",
+  "tier": 1,
+  "required": [
+   {
+    "word": "被",
+    "reading": "bèi",
+    "meaning": "quilt; to cover (with)",
+    "level": 3,
+    "cohort": "NEWLY_TAUGHT",
+    "why": "newly taught at HSK 3, 0 available stories",
+    "minOccurrences": 2
+   },
+   {
+    "word": "中",
+    "reading": "Zhōng",
+    "meaning": "China; Chinese",
+    "level": 3,
+    "cohort": "NEWLY_TAUGHT",
+    "why": "newly taught at HSK 3, 0 available stories",
+    "minOccurrences": 2
+   },
+   {
+    "word": "如果",
+    "reading": "rú guǒ",
+    "meaning": "if; in case",
+    "level": 3,
+    "cohort": "NEWLY_TAUGHT",
+    "why": "newly taught at HSK 3, 0 available stories",
+    "minOccurrences": 2
+   },
+   {
+    "word": "该",
+    "reading": "gāi",
+    "meaning": "should; ought to",
+    "level": 3,
+    "cohort": "NEWLY_TAUGHT",
+    "why": "newly taught at HSK 3, 0 available stories",
+    "minOccurrences": 2
+   },
+   {
+    "word": "需要",
+    "reading": "xū yào",
+    "meaning": "to need; to want; to demand; to require; needs",
+    "level": 3,
+    "cohort": "NEWLY_TAUGHT",
+    "why": "newly taught at HSK 3, 0 available stories",
+    "minOccurrences": 2
+   }
+  ],
+  "allowedVocabulary": {
+   "maxLevel": 3,
+   "size": 951,
+   "source": "reports/story-corpus-dump.json"
+  },
+  "limits": {
+   "lines": [
+    20,
+    28
+   ],
+   "maxLineChars": 34,
+   "minCoverage": 0.9,
+   "maxOutOfBandDistinct": 6,
+   "maxOutOfBandOccurrences": 6,
+   "maxOccurrencesPerTarget": 5,
+   "maxTargetShare": 0.25
+  },
+  "format": {
+   "speakers": [
+    "李明",
+    "小红",
+    "小明",
+    "妈妈"
+   ],
+   "colon": "：",
+   "titleChars": [
+    1,
+    12
+   ]
+  },
+  "premise": null,
+  "outputBudget": 2759
+ },
+ "candidate": null,
+ "accepted": false,
+ "outcome": "GIVE_UP",
+ "attempts": 0,
+ "validation": null,
+ "history": []
+}

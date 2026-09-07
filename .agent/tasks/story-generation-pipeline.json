@@ -1,0 +1,69 @@
+{
+  "id": "story-generation-pipeline",
+  "goal": "Build the repeatable targeted story-generation pipeline FAB-9 and FAB-10 name: an explicit machine-readable target manifest, a deterministic validator that reuses the merged Reader/content-integrity semantics, and a bounded generate/validate/repair batch runner that writes candidate FILES only.",
+  "owner_role": "story-content",
+  "risk": "r2",
+  "allowed_paths": [
+    "storyTargetManifest.mjs",
+    "storyTargetManifest.test.mjs",
+    "storyCandidateValidation.mjs",
+    "storyCandidateValidation.test.mjs",
+    "storyBatchState.mjs",
+    "storyBatchState.test.mjs",
+    "generate-targeted-stories.mjs",
+    "dump-story-corpus.mjs",
+    "storyPipelineContract.test.mjs",
+    "docs/STORY-GENERATION.md",
+    "docs/BACKLOG.md",
+    "ROADMAP.md"
+  ],
+  "forbidden_paths": [
+    "src/storyReading.js",
+    "storyVocabAudit.mjs",
+    "storyContentDebt.mjs",
+    "storyCurriculumAuthority.mjs",
+    "check-content-integrity.mjs",
+    "data/content-integrity-baseline.json",
+    "data/hsk-curriculum-bands.json",
+    "src/hskBuild.js",
+    "generate-serial-stories.mjs",
+    "publish-stories.mjs",
+    "authored-stories.mjs",
+    "supabase/migrations/**",
+    ".github/workflows/**"
+  ],
+  "non_goals": [
+    "Publishing, staging or inserting any generated story into the database",
+    "Rewriting, re-scoring or re-validating the 204 already-published stories",
+    "Fixing the forms[0] ingestion defect, reseeding vocabulary, or backfilling source_id",
+    "Choosing a production writer model, or running a broad writer bakeoff",
+    "Changing Reader segmentation, the content-integrity gate, or the accepted debt baseline",
+    "Editing the workflows that invoke this pipeline — their CLI contract is consumed, not changed"
+  ],
+  "acceptance_criteria": [
+    "A story's generation target is one versioned machine-readable manifest covering band, required words with their selection cohort and reason, the allowed-vocabulary boundary, encounter expectations and format constraints",
+    "Target cohorts cover newly-taught vocabulary, under-covered vocabulary, explicit coverage gaps and an explicitly requested word set",
+    "A required word counts as present only when the canonical Reader engine resolves it as its own token, never by substring",
+    "Validation is deterministic, returns machine-readable diagnostics naming each failure and its offending word or line, and never returns accepted for a failing candidate",
+    "Reader resolvability and publishability reuse src/storyReading.js and storyVocabAudit.publishable rather than a second definition of a known word",
+    "The repair/retry loop is bounded, classifies each diagnostic as repairable or requiring a fresh draft, and stops at the limit",
+    "An interrupted batch resumes without regenerating or duplicating an already-accepted candidate",
+    "generate-targeted-stories.mjs writes only files under data/story-candidates/<batch>/ and has no database write capability, asserted by a spec",
+    "npm run verify:pr passes"
+  ],
+  "verification": [
+    "npm run verify:pr",
+    "npm run verify:tasks",
+    "npx vitest run storyTargetManifest.test.mjs storyCandidateValidation.test.mjs storyBatchState.test.mjs storyPipelineContract.test.mjs"
+  ],
+  "production_effect": "read-only",
+  "dependencies": [],
+  "stop_conditions": [
+    "Any change would be needed to Reader segmentation, the content-integrity gate or the accepted baseline to make generated stories pass",
+    "Making a candidate pass would require adding or altering a production vocabulary row",
+    "The evidence would only support a writer-model decision, which is a separate workstream",
+    "A required word cannot be placed naturally and the only remaining option is keyword stuffing"
+  ],
+  "notes": "main already carries .github/workflows/story-pilot.yml and llm-bench.yml, which invoke generate-targeted-stories.mjs and dump-story-corpus.mjs with a fixed CLI and expect candidates under data/story-candidates/<batch>/. Those scripts are absent from main — the earlier FAB-9 code was never merged. This task implements that contract from current main rather than reviving the unmerged branch, so the merged workflows become functional instead of forked. Risk r2: story-matching and content semantics, no scheduler, migration, native or CI authority. production_effect read-only: the corpus dump reads live Supabase with the service key and nothing writes.",
+  "contract_digest": "8dd874c616d2f5059d982a5c1f6168dcb711a615c568cb6882352ee62821bd66"
+}
