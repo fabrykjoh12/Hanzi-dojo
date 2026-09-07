@@ -1,0 +1,58 @@
+{
+  "id": "runtime-hook-maintenance-grant",
+  "goal": "Add a second control-plane grant, runtime-hook-maintenance, reaching .claude/hooks/** only, so that a future runtime-enforcement task can be authorized to install a hook without widening the existing runtime-policy-maintenance grant and without any grant aliasing the whole of Tier 1. Rules only: this task grants nothing to anybody, installs no hook, and changes no runtime behaviour.",
+  "owner_role": "workflow-authority",
+  "risk": "r3",
+  "allowed_paths": [
+    "tools/verify-task-contracts.mjs",
+    "task-contract.test.mjs",
+    "review-protocol.test.mjs",
+    "docs/AUTOMATION-AUTHORITY.md"
+  ],
+  "forbidden_paths": [],
+  "non_goals": [
+    "Carrying a control_plane grant of its own — the task that introduces a grant must not be the first to exercise it",
+    "Creating, editing or deleting anything under .claude/hooks/**, which this grant makes authorizable but which no task may write under this contract",
+    "Modifying .claude/settings.json, .claude/agents/** or any other runtime-policy file",
+    "Installing any runtime enforcement: no hook, no permissions rule, no producer subagent, no sandbox",
+    "Changing PROTECTED_CONTROL_PLANE — Tier 1 keeps exactly the two paths it has",
+    "Changing ALWAYS_FORBIDDEN — Tier 0 is untouched",
+    "Changing the mapping of runtime-policy-maintenance, which keeps reaching .claude/settings.json and nothing else",
+    "Widening the decidable path grammar, the risk taxonomy, the production_effect taxonomy or the role model",
+    "Re-sealing any existing contract, or changing any existing contract's digest",
+    "Any story, product, database, Supabase or production-resource change",
+    "Merging anything, or resuming the runtime-enforcement task this grant is a prerequisite for"
+  ],
+  "acceptance_criteria": [
+    "CONTROL_PLANE_GRANTS gains exactly one new entry, runtime-hook-maintenance, mapping to ['.claude/hooks/**'] and to nothing else",
+    "runtime-policy-maintenance still maps to ['.claude/settings.json'] and to nothing else, proven by a spec that asserts its mapping rather than inferring it from the union",
+    "PROTECTED_CONTROL_PLANE is unchanged, and ALWAYS_FORBIDDEN is unchanged, both pinned by specs that assert their exact contents",
+    "No single grant reaches every entry of Tier 1, asserted by REACH rather than by array length: a spec proves that for every grant there is at least one tier entry its mapping does not cover, so a future grant naming a covering subtree cannot satisfy the property by cardinality alone",
+    "The two grants are disjoint in reach, so neither can authorize the other's paths, and a contract carrying one grant is rejected when it names a protected path belonging to the other",
+    "A contract carrying runtime-hook-maintenance may name .claude/hooks/** or any path inside it, and is rejected when it names .claude/settings.json",
+    "Because runtime-hook-maintenance maps to a subtree, the previously unreachable subtree case is now exercised: a spec proves a granted subtree puts a path inside it into mechanical review's effective scope, replacing the comment that recorded the case as unreachable",
+    "Every existing sealed contract remains byte-identical, proven by the spec that recomputes the digest of each contract in .agent/tasks",
+    "No absolute-floor path appears in the new mapping, and the new grant obeys the existing decidable path grammar",
+    "The specs that recorded .claude/hooks/** as reachable by no grant are updated to state what is now true rather than deleted, so the change in authority is visible in the diff",
+    "docs/AUTOMATION-AUTHORITY.md describes both grants and states that Tier 1 is now fully covered by grants collectively while no single grant covers it, and no longer claims a hook cannot be authorized",
+    "npm run verify:pr passes"
+  ],
+  "verification": [
+    "npm run verify:pr",
+    "npx vitest run task-contract.test.mjs",
+    "npx vitest run review-protocol.test.mjs",
+    "npm run verify:tasks"
+  ],
+  "production_effect": "none",
+  "dependencies": [
+    "control-plane-grant-model"
+  ],
+  "stop_conditions": [
+    "Adding the grant would change any existing contract's digest — stop rather than re-sealing, because .agent/tasks/** is Tier 0 and no contract may authorize that write",
+    "The change turns out to require editing .claude/settings.json, .claude/hooks/**, .claude/agents/** or .agent/roles.json — stop and report the governance conflict",
+    "Making the no-grant-aliases-the-tier property hold by reach turns out to require widening the path grammar or changing Tier 1 — report before doing either",
+    "The work turns out not to fit workflow-authority / r3 / none — report before implementing"
+  ],
+  "notes": "Governance-only prerequisite, extracted from the runtime path/tool enforcement work after recon showed that task cannot proceed without it. Empirical recon on Claude Code 2.1.257 established the shape of that later work: a settings-level PreToolUse hook fires for subagent tool calls, receives agent_id and agent_type, and blocks them, while a subagent's own permissionMode frontmatter is ignored in favour of the parent's — so a Bash-less producer cannot escalate. The guard script therefore belongs under .claude/hooks/**, which is Tier 1 and which the only existing grant, runtime-policy-maintenance, deliberately does not reach. Putting the guard in an ordinary Tier 2 file instead would let a task rewrite its own guard, so the correct move is a second narrow grant rather than a wider first one. Classification: workflow-authority because this is control-plane governance; r3 because tools/verify-task-contracts.mjs is CI/workflow authority and the risk model places control-plane authority at r3, with r4 reserved for direct production authority; production_effect none because no runtime behaviour changes, nothing is installed, and merging deploys nothing. This contract deliberately carries no control_plane grant of its own. Verification list corrected at the governance boundary before any implementation: the first seal named `npx vitest run <two paths>` and `node tools/verify-task-contracts.mjs`, neither of which the automated driver's closed VERIFICATION_FORMS grammar accepts — it takes `npm run <script>` and a single-path `npx <bin> run <path>` only, so both would have recorded executed:false and forced BLOCKED. Split into one command per spec file and routed the validator through the existing `verify:tasks` script, which runs exactly `node tools/verify-task-contracts.mjs`, so nothing is dropped. The general grammar mismatch between contracts and the driver is tracked separately as FAB-57 and is not addressed here.",
+  "contract_digest": "921bd0255fbcbf0e2810846a027197831f98e3586fc9392142c61c8d273603d0"
+}

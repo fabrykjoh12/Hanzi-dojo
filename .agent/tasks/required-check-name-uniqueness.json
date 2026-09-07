@@ -1,0 +1,47 @@
+{
+  "id": "required-check-name-uniqueness",
+  "goal": "Remove the duplicate GitHub Actions check-run name `check` before strict required-status-check mode is activated, by giving the workflow_dispatch-only iOS signing diagnostic its own job identity, and pin the resulting uniqueness structurally so the collision cannot return.",
+  "owner_role": "workflow-authority",
+  "risk": "r3",
+  "allowed_paths": [
+    ".github/workflows/ios-signing-check.yml",
+    "workflow-authority.test.mjs"
+  ],
+  "forbidden_paths": [],
+  "non_goals": [
+    "Renaming the canonical CI job `check`, or any job in ci.yml, e2e.yml or native.yml",
+    "Changing the three required contexts check, playwright and native-gate",
+    "Mutating ruleset 21654011, branch protection, or any repository setting",
+    "Activating the strict required-status-check policy",
+    "Changing integration-protocol semantics, the integration gate, or the reviewer protocol",
+    "Renaming other duplicated job ids that are not required contexts",
+    "Changing the iOS signing diagnostic's triggers, permissions, secrets, steps or behaviour",
+    "Any hook, runtime path or tool enforcement, or production_effect enforcement",
+    "Pinning GitHub Actions to commit SHAs, or any other opportunistic workflow cleanup"
+  ],
+  "acceptance_criteria": [
+    "The iOS signing diagnostic's job no longer produces a check run named `check`; its job identity is unique across every workflow in the repository",
+    "The canonical required job `check` remains defined in .github/workflows/ci.yml and is unchanged",
+    "The required contexts remain exactly check, playwright and native-gate, each defined by exactly one workflow job",
+    "The iOS signing diagnostic remains workflow_dispatch-only, and its steps, environment, secrets and the script it runs are unchanged apart from the job identity",
+    "A structural spec proves each required context is produced by exactly one job across all workflows, computing the effective check-run name as the job's name override where present and the job id otherwise, so a future job named `check` cannot reintroduce the collision by either route",
+    "The required-context list the spec checks is derived from the integration protocol's REQUIRED_CHECKS rather than restated, so the two cannot drift",
+    "npm run verify:pr passes"
+  ],
+  "verification": [
+    "npm run verify:pr",
+    "npx vitest run workflow-authority.test.mjs"
+  ],
+  "production_effect": "none",
+  "dependencies": [
+    "integration-identity-gate"
+  ],
+  "stop_conditions": [
+    "The rename turns out to be insufficient to remove the required-check ambiguity — report before changing integration-protocol semantics, which are outside allowed_paths",
+    "Something outside this workflow depends on the job id `check` in ios-signing-check.yml — report rather than widening the change",
+    "Removing the collision would require touching ci.yml, e2e.yml, native.yml or the ruleset — stop and report",
+    "The work turns out not to fit workflow-authority / r3 / none — report before implementing"
+  ],
+  "notes": "Follows the integration identity gate (PR #230). Its fourth fresh-context review found that .github/workflows/ios-signing-check.yml defines a job id `check`, colliding with the canonical required context from .github/workflows/ci.yml — and both are produced by the same GitHub Actions App (integration_id 15368), so App-identity validation cannot disambiguate them. GitHub identifies a required check by context name plus integration identity, not by the workflow file that produced it, so a manual dispatch of the diagnostic can create a second `check` run. The integration gate fails closed on that ambiguity, which is correct, but the collision should be removed before strict required-status-check mode is activated. Reconnaissance: build, run and sync are also duplicated job ids, but none of them is a required context, so they are deliberately left alone. Classification: workflow-authority because this is CI/control-plane identity; r3 because .github/workflows/** is CI/workflow authority; production_effect none because the workflow is dispatch-only, touches no learner-facing code, and merging deploys nothing.",
+  "contract_digest": "a8d18009d7fbecbd4a9b9137def16f4b460327ce9850f89037527322fb8dd0b7"
+}

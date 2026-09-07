@@ -12,7 +12,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  check:
+  # The job id is the check-run name GitHub reports, and required checks are
+  # matched by that name plus the producing integration — not by the workflow
+  # file. This job used to be called `check`, which collided with ci.yml's
+  # canonical required `check` from the same GitHub Actions App, so a manual
+  # dispatch could put a second `check` run on a commit and make required-check
+  # identity ambiguous. Keep this id distinct from every required context.
+  ios-signing-check:
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
