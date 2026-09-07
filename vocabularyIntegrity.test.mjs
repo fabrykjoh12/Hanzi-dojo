@@ -127,6 +127,18 @@ describe('each hard check fires on the defect and only on the defect', () => {
     expect(fires('syllable-count', { vocabulary: [row({ word: '儿子', reading: 'ér' })] }),
       'the erhua exemption covered a 儿-initial word').toBe(1)
     expect(fires('syllable-count', { vocabulary: [row({ word: '儿子', reading: 'érzi' })] })).toBe(0)
+    // 儿-FINAL BUT SYLLABIC. The corpus has 22 rows ending in 儿, and in three
+    // of them (女儿 nǚ'ér, 婴儿 yīng ér, 少儿 shào ér) the 儿 is a full syllable —
+    // so `endsWith('儿')` alone let a reading one syllable short pass a HARD
+    // check. The reading has to SHOW the fusion.
+    expect(fires('syllable-count', { vocabulary: [row({ word: '婴儿', reading: 'yīng' })] }),
+      'a 儿-final word with a syllabic 儿 was exempted').toBe(1)
+    expect(fires('syllable-count', { vocabulary: [row({ word: '婴儿', reading: 'yīng ér' })] })).toBe(0)
+    expect(fires('syllable-count', { vocabulary: [row({ word: '女儿', reading: "nǚ'ér" })] })).toBe(0)
+    // And the two rows stored with a numeric tone after the r, which a bare
+    // /r$/ would have called violations.
+    expect(fires('syllable-count', { vocabulary: [row({ word: '小偷儿', reading: 'xiǎotōur5' })] })).toBe(0)
+    expect(fires('syllable-count', { vocabulary: [row({ word: '没法儿', reading: 'méifǎr5' })] })).toBe(0)
     // As production stores it — spaced. Squashed, `yòuéryuán` folds to
     // `youeryuan`, whose o-u-e run spans a syllable boundary and counts 2, so
     // the check would fire on a correct row. It does not today (measured: zero
@@ -164,6 +176,17 @@ describe('each hard check fires on the defect and only on the defect', () => {
     // to chinese/hsk_3 would report every learner's other-track cards as broken
     // references, which is both false and unfixable.
     expect(fires('card-orphan', { vocabularyIds: ids, cards: [{ id: 'c1', vocab_id: 'japanese-row' }] })).toBe(0)
+  })
+
+  it('level-null-is-learner-added catches a curriculum row that lost its level', () => {
+    const fire = (learnerAdded) => byId(HARD_CHECKS, 'level-null-is-learner-added').collect({ learnerAdded })
+    // The dictionary-save shape: level null, sort_order 0. Not a defect.
+    expect(fire([row({ level: null, sort_order: 0 })]).length).toBe(0)
+    // A curriculum row that lost its level keeps its sort_order, and would
+    // otherwise drop out of every other check without anything noticing.
+    expect(fire([row({ level: null, sort_order: 412 })]).length,
+      'a curriculum row with no level passed as a dictionary save').toBe(1)
+    expect(fire([]).length).toBe(0)
   })
 
   it('ready-audio-has-path catches a vocabulary clip marked ready with no path', () => {
@@ -239,9 +262,13 @@ describe('each directional check fires on the defect and only on the defect', ()
     expect(fires('reading-has-digit', { vocabulary: [row()] })).toBe(0)
   })
 
-  it('level-null catches a row no level query can reach', () => {
-    expect(fires('level-null', { vocabulary: [row({ level: null })] })).toBe(1)
-    expect(fires('level-null', { vocabulary: [row({ level: 3 })] })).toBe(0)
+  it('is not asked to count level-null rows, because they are learner saves', () => {
+    // dict_add_to_deck inserts `level null, sort_order 0` for any dictionary
+    // word a learner taps to save, from three shipped screens. Counting those
+    // as curriculum debt would grow a directional count on ordinary use and red
+    // the gate — so the corpus is the curriculum and this check is gone.
+    expect(DIRECTIONAL_CHECKS.map(c => c.id), 'level-null is measured as debt again')
+      .not.toContain('level-null')
   })
 })
 
@@ -383,7 +410,15 @@ describe('a check with nothing to read reports nothing, and never reports clean'
     // input it fetched. A sixth fetch added without a matching key would be
     // unguarded and nothing else would notice.
     const src = readFileSync('check-vocabulary-integrity.mjs', 'utf8')
-    expect(src, 'the partial-fetch guard no longer stops the run').toMatch(/emptyInputs\([\s\S]{0,120}?\)[\s\S]{0,200}?process\.exit\(2\)/)
+    // Structure, not a character budget. The previous form allowed 200
+    // characters between the call and the exit and sat about one character
+    // under it, so adding a word to the error message would have broken a spec
+    // whose subject had not changed. What matters is that the result is bound,
+    // tested, and exits — in that order, before anything else runs.
+    const guard = src.slice(src.indexOf('const empty = emptyInputs('), src.indexOf('const result = runChecks('))
+    expect(guard, 'the guard no longer binds emptyInputs').toContain('emptyInputs({')
+    expect(guard, 'the guard no longer tests its result').toMatch(/if\s*\(empty\.length\)/)
+    expect(guard, 'the partial-fetch guard no longer stops the run').toContain('process.exit(2)')
     const call = src.slice(src.indexOf('emptyInputs({'), src.indexOf('})', src.indexOf('emptyInputs({')))
     for (const key of Object.keys(full)) {
       expect(call, key + ' is fetched but not handed to the guard').toContain(key)

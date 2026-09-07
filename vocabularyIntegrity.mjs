@@ -167,13 +167,23 @@ export const HARD_CHECKS = [
       // A reading with no vowel run at all (the interjection 嗯 as `ǹg`) cannot
       // be counted either. Skipped for the same reason.
       if (!syllables) return []
-      // 儿 in erhua fuses onto the previous syllable, so one fewer is expected —
-      // but ONLY as a suffix. `includes` let the exemption apply to every
-      // 儿-initial word (儿子, 儿童, 儿女, 儿科, 幼儿园 — five in the corpus today),
-      // where 儿 carries its own syllable, so a reading of `ér` for 儿子 passed a
-      // HARD check whose whole job is to catch a reading that cannot belong to
-      // its word. Measured after tightening: still zero violations.
-      const erhua = String(row.word || '').endsWith('儿')
+      // 儿 in erhua fuses onto the previous syllable, so one fewer is expected.
+      // Two things have to be true, and getting either wrong opens a hole in a
+      // HARD check:
+      //
+      //   * the 儿 is a SUFFIX. `includes` let the exemption cover 儿-initial
+      //     words (儿子, 儿童, 儿女, 儿科, 幼儿园), where 儿 carries its own
+      //     syllable, so a reading of `ér` for 儿子 passed.
+      //   * the reading actually SHOWS the fusion — it ends in `r`, optionally
+      //     followed by a tone digit. `endsWith('儿')` alone still covered the
+      //     22 儿-final rows where 儿 is a full syllable (女儿 nǚ'ér, 婴儿 yīng ér,
+      //     少儿 shào ér), so a reading of `yīng` for 婴儿 passed.
+      //
+      // The digit matters: 小偷儿 is stored `xiǎotōur5` and 没法儿 `méifǎr5`, so a
+      // bare /r$/ would call both of them violations. Measured over the
+      // curriculum with both conditions: zero.
+      const fold = stripTones(row.reading || '').toLowerCase()
+      const erhua = String(row.word || '').endsWith('儿') && /r\d?\s*$/.test(fold)
       if (syllables === chars || (erhua && syllables === chars - 1)) return []
       return [{ id: row.id, detail: row.word + ' (' + chars + ' chars) / ' + row.reading + ' (' + syllables + ' syllables)' }]
     }),
@@ -203,6 +213,24 @@ export const HARD_CHECKS = [
       return cards.filter(c => c.vocab_id != null && !vocabularyIds.has(c.vocab_id))
         .map(c => ({ id: c.id, detail: 'card ' + c.id + ' → missing vocab ' + c.vocab_id }))
     },
+  },
+  {
+    id: 'level-null-is-learner-added',
+    describe: 'every row without a level is a dictionary save, not a curriculum row that lost one',
+    // The corpus this gate measures is the CURRICULUM — rows with a level. A
+    // row without one is a learner tapping "save to deck": dict_add_to_deck
+    // (20260719130000) inserts `level null, sort_order 0` and three shipped
+    // screens call it. Those rows are not curriculum debt and must not be
+    // measured as such; see the corpus note in check-vocabulary-integrity.mjs.
+    //
+    // What that would otherwise hide is a curriculum row that LOST its level,
+    // which would silently drop out of every other check. Curriculum rows carry
+    // sort_order >= 1 (measured: the minimum is 1, and no level-null row has a
+    // non-zero one), so the shape is the discriminator.
+    collect: ({ learnerAdded }) => (learnerAdded || [])
+      .filter(row => row.sort_order !== 0)
+      .map(row => ({ id: row.id, detail: row.word + ' has no level but sort_order ' + row.sort_order
+        + ' — a curriculum row that lost its level, not a dictionary save' })),
   },
   {
     id: 'ready-audio-has-path',
@@ -268,13 +296,6 @@ export const DIRECTIONAL_CHECKS = [
     collect: ({ vocabulary = [] }) => vocabulary
       .filter(row => /\d/.test(row.reading || ''))
       .map(row => ({ id: row.id, detail: row.word + ': ' + row.reading })),
-  },
-  {
-    id: 'level-null',
-    describe: 'every active row has a level, so a learner can reach it',
-    collect: ({ vocabulary = [] }) => vocabulary
-      .filter(row => row.level == null)
-      .map(row => ({ id: row.id, detail: row.word + ' has no level and no query loads it' })),
   },
 ]
 

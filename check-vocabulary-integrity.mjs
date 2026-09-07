@@ -63,15 +63,37 @@ async function fetchAll(table, select, apply) {
   return out
 }
 
-const vocabulary = await fetchAll('vocabulary', 'id, word, reading, reading_plain, meaning, level, audio_path',
+// THE CORPUS IS THE CURRICULUM, and the split below is the reason.
+//
+// `vocabulary` is not a curated table. dict_add_to_deck (20260719130000)
+// inserts a row for any dictionary word a learner saves — `level null,
+// sort_order 0`, no audio_path, a meaning that falls back to the headword when
+// CC-CEDICT has no definition — and three shipped screens call it (Dictionary,
+// the story reader, the reader core). Measured 2026-09-07: all three level-null
+// rows in this corpus are that shape.
+//
+// Measuring those rows as curriculum debt would make the gate wrong in both
+// tiers. A learner saving one word would GROW `no-audio` and red the run, with
+// the documented remedy being to accept a new baseline — a gate that goes red
+// on ordinary use is a gate that gets switched off. And a CC-CEDICT entry with
+// no definition would fire the HARD `placeholder-meaning` check with no defect
+// anywhere for anyone to fix.
+//
+// So every content check measures rows WITH a level, and the level-null rows
+// get one check of their own: that they are the shape a dictionary save has.
+// That is what keeps a curriculum row which lost its level from silently
+// dropping out of the corpus instead of being reported.
+const allActive = await fetchAll('vocabulary', 'id, word, reading, reading_plain, meaning, level, sort_order, audio_path',
   q => q.eq('language', LANGUAGE).eq('system', SYSTEM).eq('is_active', true))
+const vocabulary = allActive.filter(row => row.level != null)
+const learnerAdded = allActive.filter(row => row.level == null)
 
 // A checker that fetched nothing would report every check clean. That is the
 // exact failure these checks exist to catch, so it is a hard stop rather than a
 // green run. Checked here as well as through emptyInputs below, because the
 // three fetches after this one are pointless without a corpus.
 if (vocabulary.length === 0) {
-  console.error('No active ' + LANGUAGE + '/' + SYSTEM + ' vocabulary came back. Refusing to report on an empty corpus.')
+  console.error('No ' + LANGUAGE + '/' + SYSTEM + ' curriculum vocabulary came back. Refusing to report on an empty corpus.')
   process.exit(2)
 }
 
@@ -121,10 +143,11 @@ if (empty.length) {
   process.exit(2)
 }
 
-const result = runChecks({ vocabulary, vocabularyIds, cards, ttsAudio, audioObjects })
+const result = runChecks({ vocabulary, learnerAdded, vocabularyIds, cards, ttsAudio, audioObjects })
 
-console.log('CORPUS   ' + vocabulary.length + ' active ' + LANGUAGE + '/' + SYSTEM + ' rows of '
-  + vocabularyIds.size + ' total · ' + cards.length + ' cards · ' + ttsAudio.length
+console.log('CORPUS   ' + vocabulary.length + ' curriculum ' + LANGUAGE + '/' + SYSTEM + ' rows ('
+  + learnerAdded.length + ' more saved from the dictionary, measured separately) of '
+  + vocabularyIds.size + ' vocabulary rows in all · ' + cards.length + ' cards · ' + ttsAudio.length
   + ' vocabulary tts_audio rows · ' + audioObjects.size + ' stored clips\n')
 
 if (update) {
