@@ -43,9 +43,22 @@
 -- (抢 qiāng/qiǎng, 作 zuō/zuò, 匹 pī/pǐ — tone-only changes, and the sandhi and
 -- capitalisation cases), so its `reading_plain` was already right. Two of the
 -- 54 look like they should qualify — 转 zhuǎi→zhuǎn and 战略 `zhàn lu:è`→zhànlüè
--- — and do not, because neither word exists in `vocabulary` any more: the
--- corpus was reseeded after that migration (docs/VOCAB-INGESTION.md). Checked
--- by word, not inferred.
+-- — and do not, because neither word was ever in `vocabulary` to begin with;
+-- those two UPDATE statements matched zero rows in 2026-08 as well.
+--
+--   转    is in data/hsk3-vocab-snapshot.json and in no data/hsk[3-6].json, and
+--         storyVocabAudit.test.mjs names it "the one true ingestion loss in the
+--         whole published corpus" — a word the forms[0] import dropped.
+--   战略  is in data/hsk-curriculum-bands.json and in no seed file either: one
+--         of the curriculum rows that was never seeded.
+--
+-- NOT a reseed. An earlier draft of this header said the corpus had been
+-- reseeded since, which is false in the opposite direction of the rule that
+-- matters: docs/VOCAB-INGESTION.md opens with "Nothing in this document has
+-- been implemented. No vocabulary row has been added, changed or reseeded",
+-- and CLAUDE.md §7.1 forbids deleting vocabulary rows at all. Nothing was
+-- removed; these two never arrived. Checked by word against the DB and against
+-- the seed files, not inferred.
 --
 -- EIGHT OF THE TEN ARE THAT DEFECT. The last two are not, and saying so matters
 -- more than the tidier claim: 忽略 and 策略 carry `hulu:e` / `celu:e`, the ASCII
@@ -74,8 +87,10 @@
 -- normalising them would have changed eleven rows that work, to no benefit, in
 -- a migration whose whole justification is that ten rows do not.
 --
--- WHAT THE COMPARISON IGNORES, EXACTLY. Space, apostrophe (both glyphs) and
--- case — no more than that. lenientPinyin ignores a wider set (numeric tones
+-- WHAT THE COMPARISON IGNORES, EXACTLY. Space, apostrophe and case — no more
+-- than that. (Both apostrophe glyphs are stripped, though only on the stored
+-- side in practice: a `reading` containing U+2019 would fail the ASCII guard
+-- below and be skipped before the comparison ran.) lenientPinyin ignores a wider set (numeric tones
 -- 1-5, `v`/`ü`, and `.,!?;:'"()-_·`), and the difference is deliberate rather
 -- than an oversight: folding `:` here would exclude 忽略 and 策略, which are
 -- exactly the two rows this migration repairs for hygiene rather than grading.
@@ -110,8 +125,12 @@ update public.vocabulary v
    and v.system = 'hsk_3'
    -- A NULL `reading` derives NULL, and `is distinct from` would happily write
    -- that over a perfectly good answer key. The schema allows both columns to
-   -- be NULL, so the guard is not theoretical.
+   -- be NULL, so the guard is not theoretical — and an EMPTY reading is the
+   -- same defect wearing a different value: it folds to '', which is ASCII and
+   -- distinct from any real key, so without this it would blank the answer key
+   -- and make every typed answer for that row wrong.
    and v.reading is not null
+   and btrim(v.reading) <> ''
    -- Only write a value the map fully folded. See THE TONE FOLD above: a
    -- character outside the map survives into the result, and a half-folded
    -- answer key is worse than the drift being repaired.

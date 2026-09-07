@@ -88,12 +88,26 @@ describe('the fold the database applies is the one the app applies', () => {
       .toMatch(/~\s*'\^\[\[:ascii:\]\]\*\$'/)
   })
 
-  it('never derives a key from a NULL reading', () => {
+  it('never derives a key from a NULL or empty reading', () => {
     // translate(NULL) is NULL, and `is distinct from` is true against any
     // stored value — so without this guard a row with a NULL reading and a good
     // reading_plain has its answer key overwritten with NULL. The schema allows
-    // both columns to be NULL, so this is not theoretical.
+    // both columns to be NULL, so this is not theoretical. An EMPTY reading is
+    // the same defect with a different value: '' folds to '', passes the ASCII
+    // guard, and would blank the answer key — after which typedAnswer.js and
+    // writingMatch.js both drop it with .filter(Boolean) and every typed answer
+    // for that row grades wrong.
     expect(code, 'the NULL-reading guard is gone').toMatch(/v\.reading\s+is\s+not\s+null/)
+    expect(code, 'the empty-reading guard is gone').toMatch(/btrim\(v\.reading\)\s*<>\s*''/)
+  })
+
+  it('touches only the chinese hsk_3 corpus', () => {
+    // The freeze (CLAUDE.md §1) is the reason this is pinned rather than left
+    // to the reader: Russian readings are a LATIN transliteration, so they pass
+    // the ASCII guard cleanly, and a widened scope would rewrite a frozen
+    // track's answer keys with every other assertion in this file still green.
+    expect(code, 'the language scope is gone').toMatch(/v\.language\s*=\s*'chinese'/)
+    expect(code, 'the system scope is gone').toMatch(/v\.system\s*=\s*'hsk_3'/)
   })
 })
 
