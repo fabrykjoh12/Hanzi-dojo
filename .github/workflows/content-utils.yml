@@ -37,7 +37,7 @@ on:
         type: boolean
         default: false
 
-# Two tasks commit back to the branch they were dispatched on; the rest are
+# Three tasks commit back to the branch they were dispatched on; the rest are
 # read-only against the repo and write only to Supabase.
 #
 #   manhua-art-fetch          commits the art it fetches (see fetch-manhua-art.mjs

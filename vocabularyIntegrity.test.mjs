@@ -92,6 +92,23 @@ describe('each hard check fires on the defect and only on the defect', () => {
     expect(fires('duplicate-word', { vocabulary: [row({ id: 'a' }), row({ id: 'b', word: '你' })] })).toBe(0)
   })
 
+  it('duplicate-across-corpus catches a dictionary save shadowing a curriculum row', () => {
+    const curriculum = [row({ id: 'a', word: '白', level: 5 })]
+    const save = [row({ id: 'b', word: '白', level: null, sort_order: 0 })]
+    expect(fires('duplicate-across-corpus', { vocabulary: curriculum, learnerAdded: save })).toBe(1)
+    // A save of a word the curriculum does not carry is the ordinary case and
+    // must never fire — the whole point of splitting the corpus is that a
+    // learner cannot turn this gate red.
+    expect(fires('duplicate-across-corpus', {
+      vocabulary: curriculum, learnerAdded: [row({ id: 'b', word: '黑', level: null, sort_order: 0 })],
+    })).toBe(0)
+    // Two saves of the same word are not this check's business either: they are
+    // learner-reachable, and duplicate-word deliberately does not see them.
+    expect(fires('duplicate-across-corpus', {
+      vocabulary: [], learnerAdded: [row({ id: 'b', word: '黑', level: null }), row({ id: 'c', word: '黑', level: null })],
+    })).toBe(0)
+  })
+
   it('level-range catches a level outside HSK 1-9 but not a null one', () => {
     expect(fires('level-range', { vocabulary: [row({ level: 0 })] })).toBe(1)
     expect(fires('level-range', { vocabulary: [row({ level: 10 })] })).toBe(1)

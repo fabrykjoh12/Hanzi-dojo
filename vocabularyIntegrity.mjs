@@ -94,7 +94,7 @@ const blank = (v) => v == null || String(v).trim() === ''
 export const HARD_CHECKS = [
   {
     id: 'blank-field',
-    describe: 'every active row has a non-blank, trimmed word, reading, reading_plain and meaning',
+    describe: 'every curriculum row has a non-blank, trimmed word, reading, reading_plain and meaning',
     collect: ({ vocabulary = [] }) => vocabulary.flatMap((row) => {
       const bad = ['word', 'reading', 'reading_plain', 'meaning']
         .filter(f => blank(row[f]) || String(row[f]) !== String(row[f]).trim())
@@ -118,7 +118,7 @@ export const HARD_CHECKS = [
   },
   {
     id: 'duplicate-word',
-    describe: 'no two active rows share a word',
+    describe: 'no two curriculum rows share a word',
     collect: ({ vocabulary = [] }) => {
       const seen = new Map()
       const out = []
@@ -128,6 +128,31 @@ export const HARD_CHECKS = [
         else seen.set(row.word, row.id)
       }
       return out
+    },
+  },
+  {
+    id: 'duplicate-across-corpus',
+    describe: 'no dictionary save shadows a curriculum row for the same word',
+    // duplicate-word reads the curriculum only, which is right — a learner
+    // saving a word must never be able to fail this gate. But it leaves one
+    // collision unmeasured: the SAME word present both as a curriculum row and
+    // as a level-null dictionary save. Two rows for one word is the same defect
+    // wherever it sits; the learner just cannot be the one who causes it.
+    //
+    // A learner cannot: dict_add_to_deck (20260719130000) selects an existing
+    // active row by word, `order by level nulls last`, and reuses it, so a
+    // curriculum row wins and no second row is written. A SEEDER can:
+    // seed-vocab.mjs scopes its dedupe to `.eq('level', level)`, so it cannot
+    // see a level-null row and would happily insert alongside one. 白 is the
+    // live shape — an HSK 5 word recorded as CURRICULUM_ROW_MISSING and present
+    // only as a level-null row — so a reseed of HSK 5 is exactly the run this
+    // would catch. HARD, because it fires on nothing a learner does.
+    collect: ({ vocabulary = [], learnerAdded = [] }) => {
+      const curriculum = new Map()
+      for (const row of vocabulary) if (!curriculum.has(row.word)) curriculum.set(row.word, row.id)
+      return learnerAdded
+        .filter(row => curriculum.has(row.word))
+        .map(row => ({ id: row.id, detail: row.word + ' is a dictionary save shadowing curriculum row ' + curriculum.get(row.word) }))
     },
   },
   {
@@ -174,14 +199,26 @@ export const HARD_CHECKS = [
       //   * the 儿 is a SUFFIX. `includes` let the exemption cover 儿-initial
       //     words (儿子, 儿童, 儿女, 儿科, 幼儿园), where 儿 carries its own
       //     syllable, so a reading of `ér` for 儿子 passed.
-      //   * the reading actually SHOWS the fusion — it ends in `r`, optionally
-      //     followed by a tone digit. `endsWith('儿')` alone still covered the
-      //     22 儿-final rows where 儿 is a full syllable (女儿 nǚ'ér, 婴儿 yīng ér,
-      //     少儿 shào ér), so a reading of `yīng` for 婴儿 passed.
+      //   * the reading ends in `r`, optionally followed by a tone digit.
+      //     `endsWith('儿')` alone still covered the 22 儿-final rows where 儿 is
+      //     a full syllable (女儿 nǚ'ér, 婴儿 yīng ér, 少儿 shào ér), so a reading
+      //     of `yīng` for 婴儿 passed.
       //
       // The digit matters: 小偷儿 is stored `xiǎotōur5` and 没法儿 `méifǎr5`, so a
       // bare /r$/ would call both of them violations. Measured over the
       // curriculum with both conditions: zero.
+      //
+      // What the second condition does NOT establish is that the fusion is
+      // there: a syllabic `ér` ends in `r` too, so 婴儿 stored as the bare last
+      // syllable `ér` still folds to `er`, counts one syllable, and is exempted.
+      // Truncation to a final character is a shape this corpus demonstrably has
+      // ("abbr. for 大" in truncated-cross-reference), so it is a real residual
+      // rather than a theoretical one. Excluding a trailing bare `er` would
+      // close it and would also make 女儿 `nǚ'ér` a violation, because the
+      // syllable counter reads `nuer` as one vowel run — a false positive on a
+      // correct row, traded for a false negative on a truncated one. The trade
+      // is refused deliberately; a HARD check does not get to be wrong about a
+      // row that is right.
       const fold = stripTones(row.reading || '').toLowerCase()
       const erhua = String(row.word || '').endsWith('儿') && /r\d?\s*$/.test(fold)
       if (syllables === chars || (erhua && syllables === chars - 1)) return []
@@ -257,7 +294,7 @@ export const DIRECTIONAL_CHECKS = [
   },
   {
     id: 'no-audio',
-    describe: 'every active row has a playable clip — a stored file or a ready tts_audio row',
+    describe: 'every curriculum row has a playable clip — a stored file or a ready tts_audio row',
     collect: ({ vocabulary, ttsAudio, audioObjects }) => {
       if (!vocabulary || !ttsAudio || !audioObjects) return []
       const ready = new Set(ttsAudio.filter(t => t.status === 'ready' && t.source_type === 'vocabulary').map(t => t.source_id))
