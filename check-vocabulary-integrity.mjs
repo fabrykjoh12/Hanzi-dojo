@@ -45,10 +45,15 @@ if (!url || !key) {
 }
 const supabase = createClient(url, key, { auth: { persistSession: false } })
 
+// Ordered, deliberately. PostgREST gives no stable ordering for an unordered
+// .range() scan, so pages can overlap or skip — and both failure modes are
+// silent here: an overlap feeds duplicate rows into the duplicate-word HARD
+// check and fails the run for everybody, a skip shrinks a directional count and
+// passes. `id` is the primary key, so the order is total.
 async function fetchAll(table, select, apply) {
   const out = []
   for (let from = 0; ; from += 1000) {
-    let q = supabase.from(table).select(select).range(from, from + 999)
+    let q = supabase.from(table).select(select).order('id', { ascending: true }).range(from, from + 999)
     if (apply) q = apply(q)
     const { data, error } = await q
     if (error) { console.error(table + ': ' + error.message); process.exit(2) }
@@ -102,6 +107,21 @@ async function listAudioObjects(rows) {
   return found
 }
 const audioObjects = await listAudioObjects(vocabulary)
+
+// Every check whose input is missing returns no violations rather than
+// pretending to have looked — which is right for the module and wrong for a
+// run, because a fetch that came back empty for the wrong reason would report
+// those checks clean. The corpus guard above covers `vocabulary`; these cover
+// the rest. Each number is one production row today, so an empty result is a
+// failure, not a state the corpus can reach.
+for (const [name, size] of [['cards', cards.length], ['tts_audio', ttsAudio.length],
+  ['vocabulary ids', vocabularyIds.size], ['stored clips', audioObjects.size]]) {
+  if (size === 0) {
+    console.error('No ' + name + ' came back. Refusing to report on a partial fetch —'
+      + ' the checks that read it would report clean without having looked.')
+    process.exit(2)
+  }
+}
 
 const result = runChecks({ vocabulary, vocabularyIds, cards, ttsAudio, audioObjects })
 

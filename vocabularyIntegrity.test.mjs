@@ -65,10 +65,14 @@ describe('each hard check fires on the defect and only on the defect', () => {
   it('placeholder-meaning catches a stub gloss and a gloss that just repeats the word', () => {
     expect(fires('placeholder-meaning', { vocabulary: [row({ meaning: 'TODO' })] })).toBe(1)
     expect(fires('placeholder-meaning', { vocabulary: [row({ meaning: '好' })] })).toBe(1)
-    expect(fires('placeholder-meaning', { vocabulary: [row({ meaning: 'hǎo' })] })).toBe(1)
     expect(fires('placeholder-meaning', { vocabulary: [row()] })).toBe(0)
     // A real gloss that happens to contain the word is fine.
     expect(fires('placeholder-meaning', { vocabulary: [row({ meaning: 'good, well' })] })).toBe(0)
+    // A PROPER NOUN's gloss legitimately is its reading, and this is a hard
+    // check — firing here would fail the run for everybody over a correct row.
+    expect(fires('placeholder-meaning', {
+      vocabulary: [row({ word: '上海', reading: 'Shànghǎi', reading_plain: 'Shanghai', meaning: 'Shanghai' })],
+    }), 'a proper noun gloss was called a placeholder').toBe(0)
   })
 
   it('duplicate-word catches a second row for the same word, once', () => {
@@ -90,6 +94,13 @@ describe('each hard check fires on the defect and only on the defect', () => {
     expect(fires('reading-ascii-umlaut', { vocabulary: [row({ reading: 'hūlu:è' })] })).toBe(1)
     expect(fires('reading-ascii-umlaut', { vocabulary: [row({ reading: 'lve' })] })).toBe(1)
     expect(fires('reading-ascii-umlaut', { vocabulary: [row({ reading: 'hūlüè' })] })).toBe(0)
+    // reading ONLY. Two production rows still carry `u:` in reading_plain, and
+    // reading-plain-drift counts them; widening this HARD check to that column
+    // would fail the run on debt already measured somewhere else. Asserted,
+    // because the scoping is a decision and not an oversight.
+    expect(fires('reading-ascii-umlaut', {
+      vocabulary: [row({ word: '忽略', reading: 'hūlüè', reading_plain: 'hulu:e' })],
+    }), 'the hard check reached reading_plain, which is directional debt').toBe(0)
   })
 
   it('syllable-count catches a reading that cannot belong to the word', () => {
@@ -100,6 +111,14 @@ describe('each hard check fires on the defect and only on the defect', () => {
     // A row with no Han character (a Latin-script track) is not this check's
     // business and must not be counted as a violation.
     expect(fires('syllable-count', { vocabulary: [row({ word: 'privet', reading: 'privet' })] })).toBe(0)
+    // Nor is a MIXED-script headword: the Latin letters carry vowels of their
+    // own, so the count is meaningless rather than wrong — and a meaningless
+    // count in a hard check fails the run for everybody.
+    for (const [word, reading] of [['T恤', 'T xù'], ['X光', 'X guāng'], ['AA制', 'AA zhì']]) {
+      expect(fires('syllable-count', { vocabulary: [row({ word, reading })] }), word).toBe(0)
+    }
+    // And a reading with no vowel run at all cannot be counted either.
+    expect(fires('syllable-count', { vocabulary: [row({ word: '嗯', reading: 'ǹg' })] })).toBe(0)
   })
 
   it('card-orphan catches a card pointing at no vocabulary row at all', () => {
@@ -154,10 +173,16 @@ describe('each directional check fires on the defect and only on the defect', ()
   })
 
   it('tts-orphan counts a clip whose word is gone, and ignores story clips', () => {
-    const vocabulary = [row({ id: 'live' })]
-    expect(fires('tts-orphan', { vocabulary, ttsAudio: [{ id: 't', source_type: 'vocabulary', source_id: 'gone' }] })).toBe(1)
-    expect(fires('tts-orphan', { vocabulary, ttsAudio: [{ id: 't', source_type: 'vocabulary', source_id: 'live' }] })).toBe(0)
-    expect(fires('tts-orphan', { vocabulary, ttsAudio: [{ id: 't', source_type: 'story_utterance', source_id: 'gone' }] })).toBe(0)
+    const vocabularyIds = new Set(['live', 'retired'])
+    const clip = (source_id, source_type = 'vocabulary') => [{ id: 't', source_type, source_id }]
+    expect(fires('tts-orphan', { vocabularyIds, ttsAudio: clip('gone') })).toBe(1)
+    expect(fires('tts-orphan', { vocabularyIds, ttsAudio: clip('live') })).toBe(0)
+    expect(fires('tts-orphan', { vocabularyIds, ttsAudio: clip('gone', 'story_utterance') })).toBe(0)
+    // A clip on a DEACTIVATED row is not an orphan — §7.1 deactivates rather
+    // than deletes, and scoping this to the active corpus would make that
+    // sanctioned repair grow the count and red the gate.
+    expect(fires('tts-orphan', { vocabularyIds, ttsAudio: clip('retired') }),
+      'deactivating a word turned its clip into an orphan').toBe(0)
   })
 
   it('truncated-cross-reference catches a gloss carrying a lone Han character', () => {
@@ -229,6 +254,19 @@ describe('the baseline comparison', () => {
     expect(cmp.rows.find(r => r.id === 'reading-plain-drift').verdict).toBe('unbaselined')
   })
 
+  it('fails when the baseline counts a check that no longer exists', () => {
+    // The mirror of the unbaselined case: delete a directional check and its
+    // debt is measured by nobody and reported by nothing. Iterating the result
+    // alone cannot see it, so the baseline's own keys are walked too.
+    const result = runChecks(drifted)
+    const base = baselineFrom(result)
+    base.counts['a-check-that-was-deleted'] = 5
+    const cmp = compareToBaseline(result, base)
+    expect(cmp.ok, 'an orphaned baseline entry passed silently').toBe(false)
+    expect(cmp.orphaned).toContain('a-check-that-was-deleted')
+    expect(formatComparison(cmp)).toContain('GONE')
+  })
+
   it('refuses to compare across contracts instead of guessing', () => {
     const result = runChecks(clean)
     expect(() => compareToBaseline(result, { contract: 'something-else@9', counts: {} }))
@@ -252,6 +290,26 @@ describe('a check with nothing to read reports nothing, and never reports clean'
     for (const check of [...HARD_CHECKS, ...DIRECTIONAL_CHECKS]) {
       expect(check.collect({}), check.id + ' invented a violation from no data').toEqual([])
     }
+  })
+
+  it('the script refuses a partial fetch, not just an empty corpus', () => {
+    // Every check whose input is missing returns [] — right for the module,
+    // wrong for a run, because a fetch that came back empty for the wrong
+    // reason would report those checks clean. card-orphan is the contract's
+    // "broken references" check and reads `cards`; nothing guarded it.
+    const src = readFileSync('check-vocabulary-integrity.mjs', 'utf8')
+    expect(src, 'the partial-fetch guard is gone').toMatch(/Refusing to report on a partial fetch/)
+    for (const input of ['cards', 'tts_audio', 'vocabulary ids', 'stored clips']) {
+      expect(src, input + ' is no longer guarded').toContain("'" + input + "'")
+    }
+  })
+
+  it('pages the fetch in a stable order, so rows cannot be dropped or doubled', () => {
+    // An unordered .range() scan has no stable ordering in PostgREST. An
+    // overlap feeds duplicates into the duplicate-word HARD check and fails the
+    // run for everybody; a skip shrinks a directional count and passes.
+    const src = readFileSync('check-vocabulary-integrity.mjs', 'utf8')
+    expect(src, 'the paged fetch is no longer ordered').toMatch(/\.order\('id',\s*\{\s*ascending:\s*true\s*\}\)/)
   })
 
   it('the script refuses an empty corpus rather than reporting clean', () => {

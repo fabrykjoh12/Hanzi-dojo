@@ -35,8 +35,15 @@ export function stripTones(reading) {
   return out
 }
 
-// What checkAnswer ignores when it compares: space, apostrophe, case. Two
-// values that differ only in those are the same answer key.
+// The three differences that are NEVER drift: space, apostrophe, case.
+//
+// Deliberately NARROWER than the app's own comparison. lenientPinyin
+// (src/testLogic.js) also ignores digits 1-5, `v`/`ü` and a punctuation set
+// that includes `:` — so `hulu:e` and `hulüe` are the same answer to the app,
+// and folding `:` here would hide the two rows still carrying the ASCII
+// transliteration a 2026-07 migration removed from `reading`. Being stricter
+// than the grader can only over-report drift, never miss it, and what it
+// over-reports is exactly what an integrity check should see.
 export function answerKeyForm(value) {
   return stripTones(value).toLowerCase().replace(/[ '’]/g, '')
 }
@@ -72,13 +79,16 @@ export const HARD_CHECKS = [
   },
   {
     id: 'placeholder-meaning',
-    describe: 'no meaning is a placeholder, or a bare repeat of the word or its reading',
+    describe: 'no meaning is a placeholder or a bare repeat of the word itself',
+    // The reading is NOT compared, on purpose. A proper noun's gloss legitimately
+    // is its reading — 上海 "Shanghai", and the band contains such rows — so an
+    // echo test against `reading` or `reading_plain` would hard-fail the run on a
+    // correct gloss. The word itself is different: a Chinese headword repeated as
+    // its own English meaning is never a gloss.
     collect: ({ vocabulary = [] }) => vocabulary.flatMap((row) => {
       const m = String(row.meaning || '').trim().toLowerCase()
       const placeholder = ['todo', 'tbd', 'n/a', 'na', '???', 'fixme', '-'].includes(m)
-      const echo = m && (m === String(row.word || '').toLowerCase()
-        || m === String(row.reading || '').toLowerCase()
-        || m === String(row.reading_plain || '').toLowerCase())
+      const echo = m && m === String(row.word || '').toLowerCase()
       return placeholder || echo ? [{ id: row.id, detail: row.word + ': ' + row.meaning }] : []
     }),
   },
@@ -122,9 +132,17 @@ export const HARD_CHECKS = [
     id: 'syllable-count',
     describe: 'the reading has one syllable per character, allowing erhua',
     collect: ({ vocabulary = [] }) => vocabulary.flatMap((row) => {
-      const chars = [...String(row.word || '')].filter(c => CJK.test(c)).length
-      if (!chars) return []
+      const letters = [...String(row.word || '')]
+      const chars = letters.filter(c => CJK.test(c)).length
+      // Only an all-CJK headword can be counted this way. A mixed-script entry
+      // (T恤, X光, AA制) has Latin letters that carry vowels of their own, so the
+      // count is meaningless rather than wrong — and this is a HARD check, which
+      // means a meaningless count would fail the run for everybody.
+      if (!chars || chars !== letters.length) return []
       const syllables = syllableCount(row.reading)
+      // A reading with no vowel run at all (the interjection 嗯 as `ǹg`) cannot
+      // be counted either. Skipped for the same reason.
+      if (!syllables) return []
       // 儿 in erhua fuses onto the previous syllable, so one fewer is expected.
       const erhua = String(row.word || '').includes('儿')
       if (syllables === chars || (erhua && syllables === chars - 1)) return []
@@ -179,10 +197,15 @@ export const DIRECTIONAL_CHECKS = [
   {
     id: 'tts-orphan',
     describe: 'every vocabulary tts_audio row points at a vocabulary row that exists',
-    collect: ({ vocabulary, ttsAudio }) => {
-      if (!vocabulary || !ttsAudio) return []
-      const live = new Set(vocabulary.map(v => v.id))
-      return ttsAudio.filter(t => t.source_type === 'vocabulary' && !live.has(t.source_id))
+    // Against EVERY vocabulary id, for the same reason card-orphan is: §7.1
+    // deactivates rather than deletes, so a clip on a retired row is not a
+    // broken reference — and scoping this to the active chinese/hsk_3 slice
+    // would make the sanctioned repair (is_active = false) GROW the count and
+    // red the gate. Measured both ways against production on 2026-09-07: 7,416
+    // either way, so this is a correctness fix with no baseline churn.
+    collect: ({ vocabularyIds, ttsAudio }) => {
+      if (!vocabularyIds || !ttsAudio) return []
+      return ttsAudio.filter(t => t.source_type === 'vocabulary' && !vocabularyIds.has(t.source_id))
         .map(t => ({ id: t.id, detail: 'tts_audio ' + t.id + ' → missing vocab ' + t.source_id }))
     },
   },
@@ -247,16 +270,28 @@ export function compareToBaseline(result, baseline) {
       verdict: was == null ? 'unbaselined' : now > was ? 'grew' : now < was ? 'shrank' : 'held',
     }
   })
+  // A baseline entry no check answers to any more. Deleting a directional check
+  // would otherwise leave its debt counted by nobody and reported by nothing —
+  // the same silence an unbaselined check would produce, in the other
+  // direction. Iterating the RESULT alone cannot see it, so the baseline's own
+  // keys are walked too.
+  const measured = new Set(result.directional.map(c => c.id))
+  const orphaned = Object.keys(baseline.counts || {}).filter(id => !measured.has(id))
   const hardFailures = result.hard.filter(c => c.violations.length > 0)
   return {
     rows,
+    orphaned,
     hardFailures,
-    ok: hardFailures.length === 0 && rows.every(r => r.verdict !== 'grew' && r.verdict !== 'unbaselined'),
+    ok: hardFailures.length === 0 && orphaned.length === 0
+      && rows.every(r => r.verdict !== 'grew' && r.verdict !== 'unbaselined'),
   }
 }
 
 export function formatComparison(cmp) {
   const lines = []
+  for (const id of cmp.orphaned || []) {
+    lines.push('GONE  ' + id.padEnd(26) + '     ?  the baseline counts a check that no longer exists')
+  }
   for (const c of cmp.hardFailures) {
     lines.push('FAIL  ' + c.id.padEnd(26) + String(c.violations.length).padStart(6) + '  ' + c.describe)
     for (const v of c.violations.slice(0, 5)) lines.push('        ' + v.detail)

@@ -17,9 +17,11 @@ long-lived engineering backlog; the board holds short-lived execution state.
 
 **Eight HARD checks** — all clean in production as of 2026-09-07, verified row by row before the tier was assigned. Any violation fails the run: blank or untrimmed `word`/`reading`/`reading_plain`/`meaning`; a placeholder gloss or one that just repeats the word; two active rows sharing a `word`; a `level` outside 1-9; `u:` or `v` in `reading` (the ASCII transliteration `20260724120000` removed); a syllable count that does not match the character count, allowing erhua; a card pointing at no vocabulary row at all; a `tts_audio` row marked `ready` with no `storage_path`.
 
-**Six DIRECTIONAL checks** — real debt, counted against the committed baseline. Shrinking is free, growing fails: stale `reading_plain` (10, the pending `20260907030000` repairs them), words with no playable audio (~4,471, HSK 3-6 — a paid TTS run), `tts_audio` rows whose word is gone (~7,416), glosses carrying a truncated cross-reference (~36, needs a Chinese reader), numeric tones in `reading` (2), rows with no `level` (3).
+**Six DIRECTIONAL checks** — real debt, counted against the committed baseline. Shrinking is free, growing fails: stale `reading_plain` (10 — `20260907030000` repairs them, and it is on the `claude/fab-36-reading-plain-drift` branch rather than in this one), words with no playable audio (4,471, HSK 3-6 — a paid TTS run; see the 白 entry below for why that number contradicts two older statements and which one is right), `tts_audio` rows whose word is gone (7,416), glosses carrying a truncated cross-reference (36, needs a Chinese reader), numeric tones in `reading` (2), rows with no `level` (3).
 
-Two scoping decisions worth not re-deriving: **card-orphan reads every vocabulary id**, not the chinese/hsk_3 slice — a learner's other-track card is not a broken reference, and §7.1 deactivates rather than deletes so a card on a deactivated row still works. And the **`u:`/`v` check reads `reading` only**: two rows still carry `u:` in `reading_plain`, which the directional drift check already counts.
+Two scoping decisions worth not re-deriving: **card-orphan and tts-orphan read every vocabulary id**, not the chinese/hsk_3 slice — a learner's other-track card is not a broken reference, and §7.1 deactivates rather than deletes, so scoping them to the active corpus would make the sanctioned repair (`is_active = false`) grow the count and red the gate. And the **`u:`/`v` check reads `reading` only**: two rows still carry `u:` in `reading_plain`, which the directional drift check already counts. Both are asserted, not left to the comment.
+
+The **answer-key comparison is deliberately stricter than the app's grader**: it ignores space, apostrophe and case, where `lenientPinyin` also ignores digits, `v`/`ü` and punctuation including `:`. Being stricter can only over-report drift, never miss it — and what it over-reports is exactly the two `hulu:e` rows.
 
 The script refuses to run at all if the corpus comes back empty. A checker that fetched nothing reports every check clean, which in a log is indistinguishable from a pass.
 
@@ -109,8 +111,21 @@ Check the content type, not the status.
 - [ ] 🟡 **Data defect: the vocabulary row `白` (bái) has `level = null`.**
   `id 77d6738b-e7f8-4608-aad0-f16404bfb291`, language `chinese`, system `hsk_3`,
   `is_active = true` — with **no `audio_path`, no Azure `tts_audio` row, and no
-  `example_sentence`.** It is the only Chinese vocabulary row in the database
-  with no playable audio of any kind.
+  `example_sentence`.** ~~It is the only Chinese vocabulary row in the database
+  with no playable audio of any kind.~~ **That last sentence was wrong, and the
+  vocabulary integrity gate is what caught it.** 4,471 of the 4,998 active
+  Chinese rows have no playable clip: only 504 have a file at their own
+  `audio_path`, and 23 more have a ready `tts_audio` row. HSK 1 and 2 are
+  complete (300/300 and 197/197); above them almost nothing resolves. The 2,369
+  objects that DO sit under `chinese/hsk_3/` are numbered for a superseded word
+  list — level 3 holds 457 files against 453 rows and exactly **2** of them are
+  at a path a current row points to. Spot-checked: `001_ba.mp3` and
+  `002_bei.mp3` exist, `003_wei.mp3` does not. What is special about 白 is that
+  it has no `audio_path` at all, which is a different defect from the 4,471.
+
+  This also settles `docs/TTS-RELICENSE-DRY-RUN.md`'s "4,473 rows whose ONLY
+  audio is legacy Google": that measured rows with no AZURE clip, and the legacy
+  Google files it assumed were behind them are not at the paths those rows name.
   Surfaced 2026-08-15 while scoping the Azure S0 re-licensing migration, and
   **deliberately kept out of it** — that migration re-renders existing audio
   under a paid tier; this row has none to re-render, so voicing it would be new
