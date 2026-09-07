@@ -1,0 +1,55 @@
+{
+  "id": "verification-grammar-alignment",
+  "goal": "Give contract validation and the automated driver ONE canonical verification-command grammar, owned by the canonical contract module, so a contract whose sealed verification plan the driver cannot execute is refused at seal/validation time instead of sealing cleanly and failing closed later during review.",
+  "owner_role": "workflow-authority",
+  "risk": "r3",
+  "allowed_paths": [
+    "tools/verify-task-contracts.mjs",
+    "tools/review-protocol.mjs",
+    "task-contract.test.mjs",
+    "review-protocol.test.mjs",
+    "docs/REVIEWER-PROTOCOL.md"
+  ],
+  "forbidden_paths": [],
+  "non_goals": [
+    "Widening the executable grammar to new forms — no `node <script>`, no multi-path `npx <bin> run <a> <b>`, no shell, no chaining. This task makes validation agree with the driver; it does not give the driver more reach",
+    "Changing what the driver EXECUTES: the spawn path, `shell: false`, the node_modules copy, the environment allowlist and the tracked-at-head path checks in tools/review-task.mjs are untouched",
+    "Changing the refusal semantics at execution time — an unsupported command must still be refused by the executor, because a contract sealed before this change can still contain one",
+    "Re-sealing, migrating or editing any existing contract in .agent/tasks/**",
+    "Changing the contract schema: no new field, no removed field, no change to BINDING_FIELDS or the digest computation",
+    "Changing tier definitions, ALWAYS_FORBIDDEN, PROTECTED_CONTROL_PLANE, CONTROL_PLANE_GRANTS, covers() or the path grammar",
+    "Touching .claude/hooks/**, .claude/settings.json or runtime-scope.test.mjs — the runtime policy is a separate authority boundary and is under active change on another branch",
+    "Touching docs/AUTOMATION-AUTHORITY.md — it is being edited by the FAB-58 branch and must not be edited concurrently",
+    "Closing the bare-subtree-root gap in covers() (FAB-60) or any other opportunistic validator fix",
+    "Any product, database, Supabase, src/ or workflow change"
+  ],
+  "acceptance_criteria": [
+    "The verification grammar is defined in exactly one place. tools/review-protocol.mjs no longer defines it and instead re-exports it, so tools/review-task.mjs and review-protocol.test.mjs keep working through their existing import paths with no change to those import sites",
+    "The definition lives in tools/verify-task-contracts.mjs, which review-protocol.mjs already imports from, so no import cycle is created — verified by a spec that the dependency runs in one direction only",
+    "findContractViolations refuses any verification entry that parseVerificationCommand cannot turn into an execution plan, and the violation message carries the parser's own refusal reason rather than a restatement of it",
+    "The npm-script-existence check derives the script name from the parsed plan rather than from a second regex, so the two cannot drift. A spec pins the specific drift that exists today: a script name the old validator regex accepted but the driver grammar refuses",
+    "Every contract currently sealed in .agent/tasks/** still validates — asserted by a spec that parses each one's verification entries, not by running the CLI once by hand",
+    "Agreement is proven in BOTH directions by specs: every command the validator accepts yields a non-null driver plan, and every command the driver refuses produces a validator violation",
+    "The refusal is enforced at seal time too: sealing a contract carrying an unsupported verification command fails rather than writing a digest over it",
+    "docs/REVIEWER-PROTOCOL.md no longer states that the contract validator does not constrain verification commands, and says where the single grammar now lives and what still happens at execution time",
+    "npm run verify:pr passes",
+    "npm run verify:tasks reports every contract valid"
+  ],
+  "verification": [
+    "npm run verify:pr",
+    "npx vitest run task-contract.test.mjs",
+    "npx vitest run review-protocol.test.mjs",
+    "npm run verify:tasks"
+  ],
+  "production_effect": "none",
+  "dependencies": [],
+  "stop_conditions": [
+    "Moving the grammar turns out to require changing tools/review-task.mjs or any import site outside allowed_paths — report rather than widening",
+    "An existing sealed contract in .agent/tasks/** turns out to carry a verification command the driver cannot execute, so tightening the validator would invalidate it — STOP and report, because re-sealing an existing contract is a non-goal and the migration is a root-governance decision",
+    "Removing the definition from tools/review-protocol.mjs breaks a consumer that a re-export cannot satisfy — report before changing that consumer",
+    "The work turns out to need a control_plane grant — report; tools/** is Tier 2 and this contract declares none",
+    "The work turns out not to fit workflow-authority / r3 / none — report before implementing"
+  ],
+  "notes": "FAB-57, filed from the fresh review of PR #234 (FAB-56). FAB-56 sealed a contract containing `npx vitest run task-contract.test.mjs review-protocol.test.mjs` and `node tools/verify-task-contracts.mjs`; the validator accepted both, while the driver's VERIFICATION_FORMS grammar refuses both — the two-path npx form and the `node <script>` form are outside it. The contract sealed cleanly and would have failed closed at review time instead. Reconnaissance for this contract: all 8 currently sealed contracts were run through parseVerificationCommand and every command parses, so tightening the validator invalidates nothing and no migration is needed. A second, narrower instance of the same drift was found while reading: the validator's own npm-script-existence check uses /^npm run ([\\w:-]+)$/ while the driver uses /^npm run ([A-Za-z0-9][A-Za-z0-9:_-]*)$/, so a script named `_internal` satisfies the validator's check and is refused by the driver — the same class of mismatch one level down, which is why the fix derives the name from the parsed plan instead of matching twice. Direction of the move matters: review-protocol.mjs already imports from verify-task-contracts.mjs, so importing the grammar the other way would create a cycle; the grammar moves down into the canonical contract module and is re-exported upward. Classification: workflow-authority because this is harness/control-plane machinery; r3 by the convention every other tools/ harness contract in this repository uses; production_effect none because nothing here is bundled, shipped or run against production — verify-task-contracts.mjs and review-protocol.mjs are developer/CI tooling.",
+  "contract_digest": "56cae6fae769024833509aa305419b6fe9ea3fbcd2ec10969e945fb9aa5fcb7e"
+}
