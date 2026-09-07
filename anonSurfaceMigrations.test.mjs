@@ -34,8 +34,21 @@ const read = (p) => readFileSync(p, 'utf8')
 // file used raw text for the positive assertions "because they cannot false-
 // pass today", which is a property of the current header, not of the rule.
 const codeOf = (p) => read(p)
+  .replace(/\/\*[\s\S]*?\*\//g, '')
   .split('\n')
-  .filter(l => !l.trim().startsWith('--'))
+  .map((l) => {
+    // Whole-line and TRAILING `--` comments both. An earlier version dropped
+    // only whole-line ones, so a trailing comment counted as code in every
+    // positive assertion — not exploited by this migration, which has none,
+    // but the rule should not depend on that.
+    const i = l.indexOf('--')
+    if (i === -1) return l
+    // Not a comment if the -- is inside a quoted string: cheap test that covers
+    // this file, an even number of single quotes before it.
+    const before = l.slice(0, i)
+    return (before.split("'").length - 1) % 2 === 0 ? before : l
+  })
+  .filter(l => l.trim() !== '')
   .join('\n')
 
 describe('scoping story children to published stories', () => {
@@ -94,6 +107,30 @@ describe('scoping story children to published stories', () => {
       .toHaveLength(2)
   })
 
+  it('pins every policy to a role and a table', () => {
+    // Without this, stripping `to authenticated` from the two admin escapes
+    // passed every other assertion in this file — and a CREATE POLICY with no
+    // TO clause defaults to PUBLIC, which includes anon. For a spec file whose
+    // stated job is catching an escape that fails open, that was the gap.
+    const sql = codeOf(SCOPE)
+    const expected = {
+      'authenticated can read story utterances': ['public.story_utterances', 'authenticated'],
+      'admins can read all story utterances': ['public.story_utterances', 'authenticated'],
+      'authenticated users can read story questions': ['public.story_questions', 'authenticated'],
+      'admins can read all story questions': ['public.story_questions', 'authenticated'],
+      'anon can read ready tts_audio': ['public.tts_audio', 'anon'],
+      'authenticated can read ready tts_audio': ['public.tts_audio', 'authenticated'],
+    }
+    const created = [...sql.matchAll(
+      /create policy "([^"]+)"\s+on (public\.\w+) for select to (\w+)/g,
+    )].map(m => [m[1], m[2], m[3]])
+
+    expect(created.map(c => c[0]).sort()).toEqual(Object.keys(expected).sort())
+    for (const [name, table, role] of created) {
+      expect([table, role], name + ' is on the wrong table or role').toEqual(expected[name])
+    }
+  })
+
   it('joins back to stories rather than trusting a column', () => {
     const sql = codeOf(SCOPE)
     // Four scoped policies, each reaching `stories` and each testing
@@ -132,12 +169,24 @@ describe('scoping story children to published stories', () => {
     expect(codeOf(SCOPE)).toMatch(/notify pgrst, 'reload schema'/)
   })
 
-  it('does not ship a pg_net migration', () => {
-    // A guard, not a discriminator, and it is here because the deleted one
-    // would have been indistinguishable from a fix. If someone re-adds a
-    // migration that revokes pg_net from client roles, this fails and sends
-    // them to the BACKLOG entry explaining why it cannot work as `postgres`.
-    const names = readdirSync(DIR).filter(n => n.endsWith('.sql'))
-    expect(names.filter(n => /pg_net|revoke_net/.test(n))).toEqual([])
+  it('does not ship a migration that tries to revoke pg_net', () => {
+    // A guard, not a discriminator, and it is here because the deleted
+    // migration would have been indistinguishable from a fix: `net`'s objects
+    // are owned by supabase_admin, and a REVOKE by a non-grantor warns and
+    // returns success.
+    //
+    // It reads every migration's CONTENT. An earlier version matched file names
+    // only, so `20260910_lock_outbound_http.sql` containing
+    // `revoke usage on schema net from anon;` would have sailed through — while
+    // its own comment claimed it caught exactly that. The one spec in this file
+    // the mutation record did not cover was the one that did not hold.
+    const offenders = []
+    for (const name of readdirSync(DIR).filter(n => n.endsWith('.sql'))) {
+      const sql = codeOf(DIR + '/' + name)
+      const touchesNet = /\bschema net\b/.test(sql) || /\bnet\.http/.test(sql)
+      if (touchesNet && /\brevoke\b/i.test(sql)) offenders.push(name)
+    }
+    expect(offenders, 'see docs/BACKLOG.md: a revoke here cannot work as `postgres`')
+      .toEqual([])
   })
 })

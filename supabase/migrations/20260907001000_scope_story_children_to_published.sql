@@ -105,6 +105,24 @@ create policy "admins can read all story questions"
 -- ── tts_audio ───────────────────────────────────────────────────────────────
 -- Both client policies, because the authenticated one has the same hole; only
 -- the anonymous one is worse.
+--
+-- READ THE ANON POLICY'S SECOND BRANCH FOR WHAT IT IS. Its EXISTS reaches
+-- public.story_utterances and public.stories, and `anon` holds no SELECT POLICY
+-- on either — so under RLS that subquery is always false for anon and the
+-- policy reduces to `status = 'ready' and source_type = 'vocabulary'`. It is
+-- written out anyway because it is the correct predicate and because the
+-- reduction is a fact about today's policies, not about this one; if anon is
+-- ever given published-story read access the branch becomes live and correct
+-- with no edit here.
+--
+-- It does create a planning-time dependency worth knowing at merge: `anon`
+-- must keep TABLE-LEVEL SELECT on story_utterances and stories, which it has
+-- today (relacl checked live). Table grants are checked when the statement is
+-- planned, so losing one does not merely make the branch false — the whole anon
+-- tts_audio read errors, src/ttsAudio.js swallows it, and FlashcardIntro drops
+-- silently to the legacy bucket clip. The sibling branch
+-- claude/fab-26-narrow-client-grants narrows FUNCTION grants, not table grants,
+-- so it does not touch this; a future table-grant narrowing would.
 drop policy if exists "anon can read ready tts_audio" on public.tts_audio;
 create policy "anon can read ready tts_audio"
   on public.tts_audio for select to anon
