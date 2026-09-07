@@ -15,7 +15,7 @@ long-lived engineering backlog; the board holds short-lived execution state.
 
 `check-vocabulary-integrity.mjs` + `vocabularyIntegrity.mjs` + `data/vocabulary-integrity-baseline.json`, dispatched as **Actions → Content utilities → `vocab-integrity`** (compare-only) and **`vocab-integrity-accept`** (writes the baseline, refuses to run on `main`). Read-only against the database; it repairs nothing.
 
-**THE CORPUS IS THE CURRICULUM.** `vocabulary` is not a curated table: `dict_add_to_deck` (`20260719130000`) inserts a row for any dictionary word a learner saves — `level null, sort_order 0`, no `audio_path`, and a meaning that falls back to the headword when CC-CEDICT has no definition — and Dictionary, the story reader and the reader core all call it. Measuring those as curriculum debt would red the gate on ordinary use (one save grows `no-audio`) and could red the HARD tier on CC-CEDICT content nobody here can fix. So every content check reads rows **with a level**, and the level-null rows get one check of their own. All three level-null rows in production today are dictionary saves.
+**THE CORPUS IS THE CURRICULUM.** `vocabulary` is not a curated table: `dict_add_to_deck` (`20260719130000`) inserts a row for any dictionary word a learner saves — `level null, sort_order 0`, no `audio_path`, and a meaning that falls back to the headword when CC-CEDICT has no definition — and Dictionary, the story reader and the reader core all call it. Measuring those as curriculum debt would red the gate on ordinary use (one save grows `no-audio`) and could red the HARD tier on CC-CEDICT content nobody here can fix. So every content check reads rows **with a level**, and the level-null rows get one check of their own. All three level-null rows in production today have the SHAPE of a dictionary save (`sort_order 0`), which is what the check tests and all it can establish. It is not their provenance: `docs/VOCAB-INGESTION.md` calls the same three ingestion orphans, and two of them carry ready `tts_audio` rows that `dict_add_to_deck` never writes.
 
 **Ten HARD checks** — all clean in production as of 2026-09-07, measured before the tier was assigned. Any violation fails the run: blank or untrimmed `word`/`reading`/`reading_plain`/`meaning`; a placeholder gloss or one that just repeats the word; two curriculum rows sharing a `word`; a dictionary save shadowing a curriculum row for the same word (a learner cannot cause it — `dict_add_to_deck` reuses an existing active row, `order by level nulls last` — but `seed-vocab.mjs` dedupes with `.eq('level', level)` and cannot see a level-null row, so a reseed can); a `level` outside 1-9; a level-null row that is **not** a dictionary save (`sort_order <> 0`), which is how a curriculum row that lost its level is caught rather than silently dropping out of the corpus; `u:` or `v` in `reading` (the ASCII transliteration `20260724120000` removed); a syllable count that does not match the character count, allowing erhua; a card pointing at no vocabulary row at all; a `tts_audio` row marked `ready` with no `storage_path`.
 
@@ -123,8 +123,9 @@ Check the content type, not the status.
   over ALL active Chinese rows, which is wider than the gate's own corpus — the
   gate reads the 4,995 with a level, so it excludes the three level-null rows,
   among them 白 itself, this entry's subject. Only one of those three lacks a
-  clip (白; the other two have a ready `tts_audio` row), so the gate's `no-audio`
-  is 4,470 against the 4,471 here: one lower, not three. HSK 1 and 2 are
+  clip (白; the other two have a ready `tts_audio` row), so on 2026-09-07 the
+  gate's `no-audio` came out one lower than the 4,471 here — not three lower.
+  The live count is whatever `data/vocabulary-integrity-baseline.json` holds. HSK 1 and 2 are
   complete (300/300 and 197/197); above them almost nothing resolves. The 2,369
   objects that DO sit under `chinese/hsk_3/` are numbered for a superseded word
   list — level 3 holds 457 files against 453 rows and exactly **2** of them are

@@ -141,10 +141,14 @@ export const HARD_CHECKS = [
     //
     // A learner cannot: dict_add_to_deck (20260719130000) selects an existing
     // active row by word, `order by level nulls last`, and reuses it, so a
-    // curriculum row wins and no second row is written — and two learners
-    // cannot race, because `vocabulary_dict_word_uniq` (20260724170000) is a
-    // unique index on (language, system, word) where level is null. A SEEDER
-    // can:
+    // curriculum row wins and no second row is written. Two learners saving the
+    // same NEW word concurrently can double it — `vocabulary_dict_word_uniq`
+    // (20260724170000) would close that, but it is declared and NOT applied
+    // (docs/VOCAB-INGESTION.md; confirmed against pg_indexes on 2026-09-07).
+    // That race is beside this check either way: it produces two level-null
+    // rows, and neither this check (which pairs a save against the curriculum)
+    // nor duplicate-word (which reads the curriculum alone) measures those. A
+    // SEEDER can:
     // seed-vocab.mjs scopes its dedupe to `.eq('level', level)`, so it cannot
     // see a level-null row and would happily insert alongside one. 白 is the
     // live shape — an HSK 5 word recorded as CURRICULUM_ROW_MISSING and present
@@ -212,9 +216,9 @@ export const HARD_CHECKS = [
       //     words (儿子, 儿童, 儿女, 儿科, 幼儿园), where 儿 carries its own
       //     syllable, so a reading of `ér` for 儿子 passed.
       //   * the reading ends in `r`, optionally followed by a tone digit.
-      //     `endsWith('儿')` alone still covered the 22 儿-final rows where 儿 is
-      //     a full syllable (女儿 nǚ'ér, 婴儿 yīng ér, 少儿 shào ér), so a reading
-      //     of `yīng` for 婴儿 passed.
+      //     `endsWith('儿')` alone still covered the three of the 22 儿-final rows
+      //     whose 儿 is a full syllable (女儿 nǚ'ér, 婴儿 yīng ér, 少儿 shào ér), so
+      //     a reading of `yīng` for 婴儿 passed.
       //
       // The digit matters: 小偷儿 is stored `xiǎotōur5` and 没法儿 `méifǎr5`, so a
       // bare /r$/ would call both of them violations. Measured over the
@@ -229,11 +233,12 @@ export const HARD_CHECKS = [
       //
       // Closing it means telling a fused `r` from a syllabic `ér`, and the only
       // thing available here is a vowel-run count. Measured over the 22 儿-final
-      // curriculum rows on 2026-09-07: ten reach this branch at all (the other
-      // twelve already count a full syllable per character and never test
-      // `erhua`), and of those ten exactly one — 这儿 `zhèr`, folding to `zher`
-      // — ends in the letters `er`. A rule that refuses a trailing `er` would
-      // call that correct HSK 1 row a violation. Distinguishing `zher` from
+      // curriculum rows on 2026-09-07: nineteen reach this branch at all — the
+      // other three (女儿, 婴儿, 少儿) already count a full syllable per character
+      // and short-circuit before `erhua` is tested — and of those nineteen
+      // exactly one, 这儿 `zhèr` folding to `zher`, ends in the letters `er`. A
+      // rule that refuses a trailing `er` would call that correct HSK 1 row a
+      // violation. Distinguishing `zher` from
       // `er` needs to know where the last syllable STARTS, which is syllable
       // segmentation this module does not do and should not grow inside a
       // predicate. So: a false negative on a row that is wrong, refused in
