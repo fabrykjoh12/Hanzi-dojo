@@ -162,6 +162,8 @@ latest. Keep it current — move things to **Shipped** as they land.
 
 ## 🧱 Technical
 
+- [x] **The word list now has an automatic health check.** Every word Hanzi Dojo teaches is checked for the things that quietly break learning: a blank or placeholder definition, the same word entered twice, a pronunciation that cannot belong to its characters, a card or an audio clip pointing at a word that no longer exists, and a "plain pinyin" answer key that no longer matches the pronunciation shown. Those eight checks are clean today and the check fails if any of them stops being clean. Six more count the debt that is real and still open — words with no audio yet, glosses that got cut off mid-cross-reference — against a recorded number, so it can go down freely and cannot quietly go up.
+
 ### Chinese TTS rebuild (Azure Speech) — phased
 Full design + operator runbook: **[`docs/TTS.md`](docs/TTS.md)**. Provider-independent
 domain layer, server-only synthesis, content-hash caching, guarded batch CLI. No

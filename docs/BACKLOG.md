@@ -11,6 +11,18 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+### The vocabulary integrity gate (FAB-36)
+
+`check-vocabulary-integrity.mjs` + `vocabularyIntegrity.mjs` + `data/vocabulary-integrity-baseline.json`, dispatched as **Actions → Content utilities → `vocab-integrity`** (compare-only) and **`vocab-integrity-accept`** (writes the baseline, refuses to run on `main`). Read-only against the database; it repairs nothing.
+
+**Eight HARD checks** — all clean in production as of 2026-09-07, verified row by row before the tier was assigned. Any violation fails the run: blank or untrimmed `word`/`reading`/`reading_plain`/`meaning`; a placeholder gloss or one that just repeats the word; two active rows sharing a `word`; a `level` outside 1-9; `u:` or `v` in `reading` (the ASCII transliteration `20260724120000` removed); a syllable count that does not match the character count, allowing erhua; a card pointing at no vocabulary row at all; a `tts_audio` row marked `ready` with no `storage_path`.
+
+**Six DIRECTIONAL checks** — real debt, counted against the committed baseline. Shrinking is free, growing fails: stale `reading_plain` (10, the pending `20260907030000` repairs them), words with no playable audio (~4,471, HSK 3-6 — a paid TTS run), `tts_audio` rows whose word is gone (~7,416), glosses carrying a truncated cross-reference (~36, needs a Chinese reader), numeric tones in `reading` (2), rows with no `level` (3).
+
+Two scoping decisions worth not re-deriving: **card-orphan reads every vocabulary id**, not the chinese/hsk_3 slice — a learner's other-track card is not a broken reference, and §7.1 deactivates rather than deletes so a card on a deactivated row still works. And the **`u:`/`v` check reads `reading` only**: two rows still carry `u:` in `reading_plain`, which the directional drift check already counts.
+
+The script refuses to run at all if the corpus comes back empty. A checker that fetched nothing reports every check clean, which in a log is indistinguishable from a pass.
+
 ### Reading a red check: CI is authoritative, a sandbox is not
 
 Three kinds of red look identical in a terminal and mean completely different
