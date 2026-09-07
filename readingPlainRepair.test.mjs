@@ -177,7 +177,8 @@ describe('the comparison ignores space, apostrophe and case — on both sides', 
   //   parsed   the translate() map, the strip class
   //   modelled translate / lower / regexp_replace semantics, the ASCII guard,
   //            and the letter guard
-  //   restated the NULL guard, the language/system scope
+  //   restated the NULL guard, and coalesce(reading_plain, '')
+  //   asserted  the language/system scope — by text, not by the model
   //   absent   normalize(…, nfc) — every fixture below is already NFC
   //
   // So this cannot prove Postgres agrees. What it proves is which rows the rule

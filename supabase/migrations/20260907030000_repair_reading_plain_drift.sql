@@ -24,13 +24,16 @@
 -- real and it teaches wrong pronunciation; it does not unlock a level.
 --
 -- WHAT DRIFTED. 20260724120000_fix_hsk3_6_readings.sql (written 2026-07-24,
--- applied 2026-08-03) names 54 rows whose `reading` the bulk import had taken
--- from a rare pronunciation rather than the everyday one. FIFTY-FOUR IS THE
--- SIZE OF ITS LIST, not a count of rows it changed: its own header records a
--- read-only verification made BEFORE it was applied, and at least one of the 54
--- (转) has no row today, so how many still matched nine days later is not
--- established anywhere. Nothing here depends on the number — the ten below were
--- measured directly. It did not touch
+-- applied 2026-08-03) corrected `reading` on 54 rows the bulk import had got
+-- wrong — four classes, of which a rare reading beating the everyday one is
+-- only one; twelve are a proper-noun capital on an ordinary word, where the
+-- pronunciation was never wrong at all. docs/BACKLOG.md records the apply:
+-- "All 54 rows corrected in prod", with five spot-checked values. Worth noting
+-- against that record rather than glossing it: 转 is one of the 54 and has no
+-- row today, so a row that was corrected in August is gone in September, which
+-- is the provenance question set out below and not this migration's to answer.
+-- Nothing here depends on the number — the ten below were measured directly.
+-- It did not touch
 -- `reading_plain`, so ten rows still carry the tone-stripped form of the
 -- reading that was REJECTED. Measured live 2026-09-07 against the predicate
 -- below — these are the only ten in the whole chinese/hsk_3 corpus, and all ten
@@ -72,10 +75,7 @@
 -- holds "457 words from an OLDER HSK 3 draft, of which only 50 survive in the
 -- current level" — and storyVocabAudit.test.mjs classifies 转 as an ingestion
 -- loss today. Reconciling those two accounts is provenance work and is out of
--- scope here — this migration touches neither word and depends on neither
--- answer.
--- Nothing in this migration depends on the answer: it is predicate-scoped, and
--- neither word is referenced by it.
+-- scope here: this migration is predicate-scoped and references neither word.
 --
 -- EIGHT OF THE TEN ARE THAT DEFECT. The last two are not, and saying so matters
 -- more than the tidier claim: 忽略 and 策略 carry `hulu:e` / `celu:e`, the ASCII
@@ -126,8 +126,8 @@
 -- also handles ê̄/ế/ê̌/ề and ń/ň/ǹ/ḿ, which `translate()` cannot (several are
 -- multi-codepoint sequences). Rather than pretend the map is complete, the
 -- statement REFUSES any row whose folded value still contains a non-ASCII
--- letter: a mark the map does not know leaves the row alone instead of writing
--- a half-folded value into an answer key. `normalize(v.reading, nfc)` composes
+-- character of any kind: a mark the map does not know leaves the row alone
+-- instead of writing a half-folded value into an answer key. `normalize(v.reading, nfc)` composes
 -- first so a decomposed tone mark — a documented past cause of mis-grading,
 -- docs/CHANGELOG.md — reaches the map as the precomposed character it expects.
 --
@@ -171,7 +171,8 @@ update public.vocabulary v
    -- `-`, `.` and a bare numeric tone, all of which lenientPinyin strips too
    -- (src/testLogic.js). A previous version of this guard tested emptiness
    -- after removing space and apostrophe only, and called the class closed
-   -- while three other spellings walked through it. One letter surviving is the
+   -- while every one of those four spellings walked through it. One letter
+   -- surviving is the
    -- property that actually matters: without it, both graders reduce the key to
    -- '' and drop it with .filter(Boolean), and every typed answer for that row
    -- is wrong.
