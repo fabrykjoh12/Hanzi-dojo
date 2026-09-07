@@ -50,6 +50,24 @@ export const KNOWLEDGE = {
 // The provenance values a claim may carry, mirroring the DB CHECK constraint.
 export const PRIOR_SOURCES = ['placement', 'assumed_prerequisite', 'paste', 'checklist', 'legacy_claim']
 
+// The negation of isPriorKnown, as a PostgREST `.or()` filter.
+//
+// Here rather than beside a caller because knowledgeState is the single answer
+// to "does the learner know this word?" (see the header), and a filter string
+// that means the same thing as a predicate in this file belongs where the
+// predicate does — a pair like that in two modules is exactly what drifts.
+//
+// Reads as: never claimed, OR observed at least once. A spec holds it to
+// isPriorKnown over the shapes a live row can take.
+export const NOT_AN_UNVERIFIED_CLAIM = 'prior_known_at.is.null,reps.gte.1'
+
+// The columns a client query must SELECT for isPriorKnown to give a true
+// answer. Owned here, where they are read, because the alternative has already
+// gone wrong twice in this repo: a caller's SELECT omitted prior_known_at, the
+// predicate read undefined, it was always false, and the branch it guarded was
+// dead code that looked present.
+export const PRIOR_KNOWLEDGE_COLUMNS = ['prior_known_at', 'reps']
+
 // ── The structural facts ────────────────────────────────────────────────────
 
 // Has this word ever actually been graded? The one thing a claim cannot fake.
