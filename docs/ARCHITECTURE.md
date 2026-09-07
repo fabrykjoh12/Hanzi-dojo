@@ -541,6 +541,28 @@ Uses **ts-fsrs v5**. Configuration: `request_retention: 0.9`, `enable_fuzz: true
 
 **State values:** `'new'` / `'learning'` / `'review'` / `'relearning'` (text strings in DB)
 
+**Elapsed days are counted on the LOCAL calendar, not the UTC one.**
+ts-fsrs scores a review by how many calendar days have passed, and computes
+those with `Date.UTC(...)` — a UTC midnight boundary. This app serves reviews
+from **local** midnight (`endOfLocalDay`), so the two grids did not line up:
+west of UTC an ordinary evening→morning review scored as *zero* elapsed days
+(stability growth suppressed roughly fourfold), and east of UTC a few hours on
+one local day scored as a whole day (inflated). Since `isMastered` is
+`stability >= 21`, both landed on the level-test gate.
+
+`srs.js` therefore shifts `now` and `last_review` onto a **local day grid**
+before calling `repeat()`, by each instant's own UTC offset (which is what keeps
+it right across a DST boundary), and shifts the result back. No interval formula
+is affected: ts-fsrs never reads `card.due` to decide the next state, and
+computes the next due as exact millisecond addition from the review time. The
+one thing that does move is the *fuzz draw*, which is seeded from the review
+time — same bounds, different pick inside them.
+
+The shifted `last_review` is clamped so it can never sit after `now`: ts-fsrs
+throws rather than degrading on a negative elapsed count, and a device clock
+moving backwards (a manual change, or an NTP correction after a forward drift)
+can otherwise leave a card carrying a `last_review` in the future.
+
 **Scheduling behavior:**
 - Learning/relearning cards: `due_at = now()` (always appears immediately on next load); re-inserted into session queue at position `gap` (2–20 minutes expressed as queue position)
 - Review cards: `due_at` = real FSRS computed future date

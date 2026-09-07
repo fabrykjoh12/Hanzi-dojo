@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { fsrs, generatorParameters, Rating, State } from 'ts-fsrs'
 import {
   schedule, previewLabels, isCardDue, endOfLocalDay,
+  localGridShiftMs, toLocalGrid, fromLocalGrid,
   normalizeTargetRetention, presetForRetention, getTargetRetention,
   setTargetRetention, resetTargetRetention,
   DEFAULT_TARGET_RETENTION, RETENTION_PRESETS,
@@ -282,9 +283,11 @@ describe('elapsed days follow the LOCAL day grid', () => {
 
   it('is unchanged where the offset is zero', () => {
     // UTC and Europe/London-in-winter shift by nothing, so this change must be
-    // a no-op there. If a future edit starts shifting unconditionally, this is
-    // what catches it.
+    // a no-op there. The elapsed_days assertion alone did NOT prove that — it
+    // holds on the unfixed code and under a -7h shift too — so the shift itself
+    // is asserted to be zero, which is the actual claim.
     vi.stubEnv('TZ', 'UTC')
+    expect(localGridShiftMs(new Date('2026-09-08T09:00:00Z'))).toBe(0)
     const res = schedule(
       settled('2026-09-07T20:00:00Z'), 2,
       { now: '2026-09-08T09:00:00Z', targetRetention: 0.9 },
@@ -292,17 +295,81 @@ describe('elapsed days follow the LOCAL day grid', () => {
     expect(res.updates.elapsed_days).toBe(1)
   })
 
+  it('the grid helpers round-trip exactly, in both hemispheres', () => {
+    // They are exported and were asserted only indirectly. The inverse being
+    // exact is what keeps a shifted instant from reaching the database.
+    for (const tz of ['America/Los_Angeles', 'Pacific/Auckland', 'UTC', 'Asia/Kolkata']) {
+      vi.stubEnv('TZ', tz)
+      for (const iso of ['2026-09-07T10:00:00Z', '2026-01-15T23:59:00Z', '2026-11-01T08:30:00Z']) {
+        const d = new Date(iso)
+        const shift = localGridShiftMs(d)
+        expect(fromLocalGrid(toLocalGrid(d), shift).toISOString(), tz + ' ' + iso)
+          .toBe(d.toISOString())
+      }
+    }
+  })
+
+  it('refuses an unusable now rather than scheduling NaN', () => {
+    // The seam is unvalidated input on a production function. An unparsable
+    // value would otherwise make every downstream number NaN and write NaN
+    // stability onto the card — found much later, and much harder.
+    expect(() => schedule(settled('2026-09-07T20:00:00Z'), 2, { now: 'not a date' }))
+      .toThrow(/not a valid date/)
+    // The epoch is a legitimate instant, and a truthiness check would have
+    // silently swapped the real clock in for it.
+    expect(() => schedule(settled('1969-12-31T00:00:00Z'), 2, { now: 0 })).not.toThrow()
+  })
+
   it('counts local days across a DST boundary, where the two offsets differ', () => {
-    // US DST ended 2026-11-01. Last review Oct 31 20:00 PDT (UTC-7), graded
-    // Nov 1 09:00 PST (UTC-8) — one local day apart, and the two timestamps sit
-    // at DIFFERENT offsets. Shifting both by a single offset would be wrong
-    // here; each is shifted by its own.
+    // US DST ended 2026-11-01. Each timestamp must be shifted by ITS OWN
+    // offset, not by one offset for both.
+    //
+    // The instants are chosen to DISCRIMINATE that. An earlier version of this
+    // spec used Oct 31 20:00 PDT -> Nov 1 09:00 PST, which gives 1 either way,
+    // so it passed for a single-offset implementation too and proved nothing.
+    // Here last_review sits 30 minutes past local midnight on Nov 1, inside the
+    // one-hour offset delta:
+    //
+    //   own offsets   -> Nov 1 00:30 and Nov 1 09:00  -> 0 days   (correct)
+    //   now's offset  -> Oct 31 23:30 and Nov 1 09:00 -> 1 day    (wrong)
     vi.stubEnv('TZ', 'America/Los_Angeles')
     const res = schedule(
-      settled('2026-10-31T20:00:00-07:00'), 2,
+      settled('2026-11-01T00:30:00-07:00'), 2,
       { now: '2026-11-01T09:00:00-08:00', targetRetention: 0.9 },
     )
-    expect(res.updates.elapsed_days).toBe(1)
+    expect(res.updates.elapsed_days).toBe(0)
+  })
+
+  it('survives a last_review in the future instead of throwing', () => {
+    // ts-fsrs throws on negative elapsed days rather than degrading, and
+    // schedule() is unguarded at its call site, so a negative would fail the
+    // whole due queue. last_review is written from the device clock, so a
+    // backwards clock change — manual, or an NTP correction after a forward
+    // drift — leaves a card carrying a last_review ahead of now.
+    //
+    // Note what this is NOT: it is not about travel. getTimezoneOffset() is
+    // evaluated under the CURRENT zone for both instants, so a device that
+    // moves shifts both by the same offset. A sweep of ten zones across 2026 at
+    // 15-minute resolution found no timezone or DST combination that produces a
+    // negative, which is why this spec uses a future last_review instead.
+    vi.stubEnv('TZ', 'America/Los_Angeles')
+    const res = schedule(
+      settled('2026-09-09T12:00:00-07:00'), 2,
+      { now: '2026-09-07T09:00:00-07:00', targetRetention: 0.9 },
+    )
+    expect(res.updates.elapsed_days).toBe(0)
+  })
+
+  it('the same future last_review throws WITHOUT the clamp', () => {
+    // Proof the clamp is load-bearing rather than decoration: the raw library
+    // call, on the same instants, is the failure the clamp prevents.
+    const raw = fsrs(generatorParameters({ request_retention: 0.9, enable_fuzz: false }))
+    const future = new Date('2026-09-09T12:00:00Z')
+    const now = new Date('2026-09-07T09:00:00Z')
+    expect(() => raw.repeat({
+      due: future, stability: 1, difficulty: 5, elapsed_days: 0, scheduled_days: 1,
+      reps: 3, lapses: 0, learning_steps: 0, state: State.Review, last_review: future,
+    }, now)).toThrow(/delta_t/)
   })
 
   it('leaks no grid timestamp into the row it writes', () => {
@@ -318,10 +385,14 @@ describe('elapsed days follow the LOCAL day grid', () => {
   it('preserves the interval exactly: due_at is now plus scheduled_days', () => {
     // The safety property that makes the shift legitimate. ts-fsrs computes the
     // next due as exact millisecond addition from the review time, so moving
-    // the grid must move nothing else. Fuzz is disabled via a fixed retention
-    // and an exact comparison would fight it, so this asserts the round trip:
-    // whatever interval was chosen, due_at is that many days after the REAL
-    // now — not the shifted one, which would be off by seven hours here.
+    // the grid must move nothing else.
+    //
+    // Fuzz is ON (schedulerFor sets enable_fuzz: true unconditionally — an
+    // earlier version of this comment claimed a fixed retention disabled it,
+    // which was simply wrong), so the interval is not predictable and an exact
+    // comparison would fight it. What IS exact, and what this asserts, is the
+    // round trip: whatever interval was chosen, due_at lands that many days
+    // after the REAL now — not the shifted one, which would be seven hours off.
     vi.stubEnv('TZ', 'America/Los_Angeles')
     const now = new Date('2026-09-08T09:00:00-07:00')
     const res = schedule(settled('2026-09-07T20:00:00-07:00'), 2, { now: now.toISOString() })

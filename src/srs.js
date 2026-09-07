@@ -129,6 +129,23 @@ function resolveRetention(options) {
   return getTargetRetention()
 }
 
+// Resolve the clock for one scheduling call. `now` is a test seam (see
+// schedule() below); absent, it is the real clock.
+//
+// `!= null` rather than a truthiness check, because `now: 0` is the epoch — a
+// legitimate instant — and truthiness would silently substitute the real clock
+// for it. An unparsable value THROWS rather than degrading: it would otherwise
+// make every downstream number NaN and write NaN stability onto the card, which
+// is far worse than a loud failure and would be found much later.
+function resolveNow(options) {
+  if (!options || options.now == null) return new Date()
+  const d = new Date(options.now)
+  if (Number.isNaN(d.getTime())) {
+    throw new TypeError('srs: options.now is not a valid date: ' + String(options.now))
+  }
+  return d
+}
+
 // App grade (0-3) → FSRS Rating enum
 const GRADE_TO_RATING = {
   0: Rating.Again,
@@ -214,8 +231,17 @@ export function isCardDue(card, now = new Date()) {
 // `dateDiffInDays`); `card.due` is never consulted — every branch computes the
 // next due as `date_scheduler(review_time, interval)`, which is exact
 // millisecond addition with no truncation. So shifting `now` and shifting the
-// result back by the same amount leaves every interval bit-identical. Only
-// which calendar day an instant falls on changes, which is the entire point.
+// result back by the same amount changes no interval FORMULA. Only which
+// calendar day an instant falls on changes, which is the entire point.
+//
+// One honest exception, because "bit-identical" would be too strong a claim.
+// `enable_fuzz` is on (see schedulerFor), and ts-fsrs seeds its fuzz PRNG from
+// `review_time.getTime()`. A shifted review time therefore draws a DIFFERENT
+// value out of the same [min_ivl, max_ivl] band. The interval bounds, and every
+// formula that produces them, are untouched; the pick inside the band moves.
+// That is a reseed, not a scheduling change — but it is not nothing, and a
+// comment that said otherwise would be the kind of claim this file should not
+// make.
 //
 // Each timestamp is shifted by ITS OWN offset rather than one offset for both.
 // That is what keeps the day count right across a DST boundary, where
@@ -226,7 +252,10 @@ export function isCardDue(card, now = new Date()) {
 
 /** Milliseconds to add to a Date so that UTC calendar arithmetic reads it as local. */
 export function localGridShiftMs(date) {
-  return -date.getTimezoneOffset() * 60000
+  // `+ 0` normalises -0 (which `-0 * 60000` produces at offset 0) to 0. Only a
+  // tidiness point, but a shift that is not Object.is-equal to zero makes "this
+  // is a no-op in UTC" awkward to assert.
+  return -date.getTimezoneOffset() * 60000 + 0
 }
 
 /** Move an instant onto the local day grid: its UTC date becomes its local date. */
@@ -251,6 +280,12 @@ function buildFsrsCard(card, gridNow) {
     return createEmptyCard(gridNow)
   }
   return {
+    // NOT on the grid, and it does not need to be: ts-fsrs overwrites `due` on
+    // every output path and never reads it to decide the next state (checked in
+    // 5.4.1 — see the block above). Left unshifted so the value handed back on
+    // an unexpected path is a real instant rather than a grid one. If a future
+    // version starts READING card.due, this field has to move onto the grid
+    // with the others or two grids get compared.
     due: new Date(card.due_at || gridNow),
     stability: card.stability || 0,
     difficulty: card.difficulty || 0,
@@ -260,8 +295,47 @@ function buildFsrsCard(card, gridNow) {
     lapses: card.lapses || 0,
     learning_steps: card.learning_step || 0,
     state: TEXT_TO_STATE[card.state] ?? State.New,
-    last_review: card.last_review ? toLocalGrid(new Date(card.last_review)) : null,
+    last_review: card.last_review ? clampToGridNow(toLocalGrid(new Date(card.last_review)), gridNow) : null,
   }
+}
+
+// The shifted last_review must never sit AFTER gridNow.
+//
+// ts-fsrs throws rather than degrading if elapsed days come out negative —
+// `FSRSValidationError: Invalid delta_t` on the first line of `next_state` —
+// and schedule() is called unguarded from Study.jsx, so a negative would fail
+// the whole due queue, not one card. Cheap insurance against that is worth
+// having whatever the cause.
+//
+// BE PRECISE ABOUT WHAT THIS DOES AND DOES NOT COVER, because the obvious story
+// is wrong. It is tempting to say a learner flying west makes the grid run
+// backwards: the two instants are shifted by their own offsets, so
+//
+//   grid(now) - grid(last_review) = real elapsed + (shift_now - shift_last)
+//
+// and a westward move looks like it should make that negative. It does not.
+// `getTimezoneOffset()` is evaluated under the process's CURRENT zone for BOTH
+// instants, so after the device moves, both are shifted by the new zone's
+// offset and the delta is zero. Only a DST transition makes the two offsets
+// genuinely differ, and that delta is an hour or two.
+//
+// That was checked rather than reasoned about: a sweep of ten zones — including
+// half-hour (Lord Howe, Chatham) and midnight-transition (Santiago, Havana,
+// Tehran) ones — across all of 2026 at 15-minute resolution, with gaps from
+// five minutes to thirty hours, produced no negative. So travel and DST are NOT
+// why this exists.
+//
+// What IS reachable is the clock itself moving backwards: a manual change, or
+// an NTP correction on a device whose clock had drifted forward. `last_review`
+// is written from that same device clock (see schedule below), so a card can
+// legitimately carry a last_review in the future. That predates this change —
+// the UTC grid had it too — and the clamp closes it for both.
+//
+// Clamping to gridNow reads as "no time has passed since the last review",
+// which is the honest answer while the clock catches up, and is the same answer
+// the UTC grid gave for a same-day review.
+function clampToGridNow(shiftedLastReview, gridNow) {
+  return shiftedLastReview > gridNow ? gridNow : shiftedLastReview
 }
 
 // Format a scheduled result card as a human-readable interval label.
@@ -293,7 +367,7 @@ function formatLabel(resultCard, now) {
 //          module-level clock so it cannot leak between tests.
 export function schedule(card, grade, options) {
   const rating = GRADE_TO_RATING[grade]
-  const now = options && options.now ? new Date(options.now) : new Date()
+  const now = resolveNow(options)
 
   // Score the review on the LOCAL day grid, then bring the answer back to real
   // time. See the block above buildFsrsCard for what this fixes and why it
@@ -354,7 +428,7 @@ export function schedule(card, grade, options) {
 // Uses the same retention as schedule(), so the buttons never promise an
 // interval the scheduler won't honour.
 export function previewLabels(card, options) {
-  const now = options && options.now ? new Date(options.now) : new Date()
+  const now = resolveNow(options)
 
   // The SAME local day grid schedule() uses. This is not tidiness: the buttons
   // must not promise an interval the scheduler will not honour, and scoring the
