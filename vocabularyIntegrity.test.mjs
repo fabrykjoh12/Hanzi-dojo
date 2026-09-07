@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs'
 import { normalizePinyin } from './src/testLogic.js'
 import {
   HARD_CHECKS, DIRECTIONAL_CHECKS, CHECK_CONTRACT, stripTones, answerKeyForm, syllableCount,
-  runChecks, emptyInputs, baselineFrom, compareToBaseline, formatComparison, BaselineContractError,
+  runChecks, emptyInputs, baselineWriteRefusal, baselineFrom, compareToBaseline, formatComparison, BaselineContractError,
 } from './vocabularyIntegrity.mjs'
 
 // FAB-36 — the vocabulary integrity gate.
@@ -119,6 +119,20 @@ describe('each hard check fires on the defect and only on the defect', () => {
     expect(fires('syllable-count', { vocabulary: [row({ word: '朋友', reading: 'péngyǒu' })] })).toBe(0)
     // Erhua fuses onto the previous syllable, so one fewer is correct.
     expect(fires('syllable-count', { vocabulary: [row({ word: '花儿', reading: 'huār' })] })).toBe(0)
+    // But only as a SUFFIX. 儿 at the front carries its own syllable — 儿子,
+    // 儿童, 儿女, 儿科, 幼儿园 are all in the corpus — and an `includes` test let
+    // the exemption cover them, so a reading of `ér` for 儿子 passed a hard
+    // check whose whole job is to catch a reading that cannot belong to its
+    // word.
+    expect(fires('syllable-count', { vocabulary: [row({ word: '儿子', reading: 'ér' })] }),
+      'the erhua exemption covered a 儿-initial word').toBe(1)
+    expect(fires('syllable-count', { vocabulary: [row({ word: '儿子', reading: 'érzi' })] })).toBe(0)
+    // As production stores it — spaced. Squashed, `yòuéryuán` folds to
+    // `youeryuan`, whose o-u-e run spans a syllable boundary and counts 2, so
+    // the check would fire on a correct row. It does not today (measured: zero
+    // violations over the whole corpus), because a reading whose syllables meet
+    // vowel-to-vowel is stored with the separator that makes it readable.
+    expect(fires('syllable-count', { vocabulary: [row({ word: '幼儿园', reading: 'yòu ér yuán' })] })).toBe(0)
     // A row with no Han character (a Latin-script track) is not this check's
     // business and must not be counted as a violation.
     expect(fires('syllable-count', { vocabulary: [row({ word: 'privet', reading: 'privet' })] })).toBe(0)
@@ -130,6 +144,15 @@ describe('each hard check fires on the defect and only on the defect', () => {
     }
     // And a reading with no vowel run at all cannot be counted either.
     expect(fires('syllable-count', { vocabulary: [row({ word: '嗯', reading: 'ǹg' })] })).toBe(0)
+  })
+
+  it('does not call a card with no vocab_id an orphan', () => {
+    // A NULL vocab_id is a row with no reference, not a reference to a missing
+    // row. Counting it here would fail a HARD check and print "missing vocab
+    // null", which names neither the defect nor its fix.
+    expect(byId(HARD_CHECKS, 'card-orphan').collect({
+      vocabularyIds: new Set(['live']), cards: [{ id: 'c1', vocab_id: null }],
+    }).length, 'a NULL vocab_id was reported as a broken reference').toBe(0)
   })
 
   it('card-orphan catches a card pointing at no vocabulary row at all', () => {
@@ -302,14 +325,22 @@ describe('the baseline comparison', () => {
   })
 
   it('the accept path refuses to write a baseline while a hard check is red', () => {
-    // The baseline's existence is meant to mean the hard tier was clean when it
-    // was generated. Exiting 0 with the failures merely printed would let the
-    // accept task go green and COMMIT over a red tier.
+    // Driven through the decision itself, not the script's text. The source
+    // assertion this replaces would have passed unchanged if the failures were
+    // computed from result.directional instead of result.hard — the exact
+    // regression the refusal exists to prevent.
+    const broken = { ...clean, vocabulary: [row({ meaning: '' })] }
+    const refusal = baselineWriteRefusal(runChecks(broken))
+    expect(refusal, 'a red hard tier was accepted').not.toBeNull()
+    expect(refusal.hardFailures.map(c => c.id)).toContain('blank-field')
+    expect(refusal.reason).toMatch(/blank-field/)
+    // Directional debt is exactly what the baseline is FOR, so it must not
+    // refuse: a run with drift and a clean hard tier writes.
+    expect(baselineWriteRefusal(runChecks(drifted)), 'directional debt blocked the accept path').toBeNull()
+    // And the script acts on it rather than printing it.
     const src = readFileSync('check-vocabulary-integrity.mjs', 'utf8')
-    expect(src, 'the accept path no longer refuses on a hard failure')
-      .toMatch(/Refusing to write .* while a HARD check is failing/)
     const acceptBlock = src.slice(src.indexOf('if (update) {'), src.indexOf('if (!existsSync(BASELINE))'))
-    expect(acceptBlock, 'the refusal does not exit non-zero').toMatch(/process\.exit\(1\)/)
+    expect(acceptBlock, 'the accept path no longer consults the refusal').toContain('baselineWriteRefusal(result)')
     expect(acceptBlock.indexOf('process.exit(1)'), 'the write happens before the refusal')
       .toBeLessThan(acceptBlock.indexOf('writeFileSync'))
   })
@@ -348,9 +379,15 @@ describe('a check with nothing to read reports nothing, and never reports clean'
     }
     // Absent entirely is the same failure as empty, not a pass.
     expect(emptyInputs({}).length).toBe(5)
-    // And the script acts on it rather than logging it.
+    // And the script acts on it rather than logging it — and hands it every
+    // input it fetched. A sixth fetch added without a matching key would be
+    // unguarded and nothing else would notice.
     const src = readFileSync('check-vocabulary-integrity.mjs', 'utf8')
     expect(src, 'the partial-fetch guard no longer stops the run').toMatch(/emptyInputs\([\s\S]{0,120}?\)[\s\S]{0,200}?process\.exit\(2\)/)
+    const call = src.slice(src.indexOf('emptyInputs({'), src.indexOf('})', src.indexOf('emptyInputs({')))
+    for (const key of Object.keys(full)) {
+      expect(call, key + ' is fetched but not handed to the guard').toContain(key)
+    }
   })
 
   it('pages the fetch in a stable order, so rows cannot be dropped or doubled', () => {

@@ -25,7 +25,7 @@
 
 import { createClient } from '@supabase/supabase-js'
 import { readFileSync, writeFileSync, existsSync } from 'node:fs'
-import { runChecks, emptyInputs, baselineFrom, compareToBaseline, formatComparison, BaselineContractError } from './vocabularyIntegrity.mjs'
+import { runChecks, emptyInputs, baselineWriteRefusal, baselineFrom, compareToBaseline, formatComparison, BaselineContractError } from './vocabularyIntegrity.mjs'
 
 const args = process.argv.slice(2)
 const update = args.includes('--update-baseline')
@@ -128,16 +128,13 @@ console.log('CORPUS   ' + vocabulary.length + ' active ' + LANGUAGE + '/' + SYST
   + ' vocabulary tts_audio rows · ' + audioObjects.size + ' stored clips\n')
 
 if (update) {
-  const hardFailures = result.hard.filter(c => c.violations.length > 0)
-  // A hard check is a violation of something that is meant to be at zero, and
-  // no baseline entry exists to accept it. Refusing to write here is what keeps
-  // the committed baseline meaningful: its existence says the hard tier was
-  // clean when it was generated. Exiting 0 with the failures merely printed
-  // would let the accept task go green — and commit — over a red tier.
-  if (hardFailures.length) {
-    console.error(formatComparison({ hardFailures, rows: [] }))
-    console.error('\nRefusing to write ' + BASELINE + ' while a HARD check is failing.')
-    console.error('The directional baseline accepts measured debt; it cannot accept a violation of something that is meant to be zero.')
+  // The decision is baselineWriteRefusal's, so a spec can drive it rather than
+  // grep this file. Refusing keeps the committed baseline meaningful: its
+  // existence says the hard tier was clean when it was generated.
+  const refusal = baselineWriteRefusal(result)
+  if (refusal) {
+    console.error(formatComparison({ hardFailures: refusal.hardFailures, rows: [] }))
+    console.error('\nRefusing to write ' + BASELINE + ' — ' + refusal.reason)
     process.exit(1)
   }
   writeFileSync(BASELINE, JSON.stringify(baselineFrom(result), null, 1) + '\n')

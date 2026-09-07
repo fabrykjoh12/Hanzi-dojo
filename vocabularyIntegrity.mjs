@@ -69,8 +69,12 @@ export function answerKeyForm(value) {
 }
 
 const CJK = /[\u4e00-\u9fff]/
-// A vowel run is one syllable. Crude, and it says so: it cannot tell whether a
-// syllable is the RIGHT one, only how many there are.
+// A vowel run is one syllable. Crude, and it says so twice over: it cannot tell
+// whether a syllable is the RIGHT one, only how many there are — and where two
+// syllables meet vowel-to-vowel with no separator (`youeryuan` for 幼儿园) it
+// counts them as one. The corpus stores those spaced or apostrophed, which is
+// why the hard check is at zero; a future squashed row of that shape would be a
+// false positive, and the erhua exemption below is the only allowance made.
 export function syllableCount(reading) {
   const plain = stripTones(reading).toLowerCase()
   return (plain.match(/[aeiou]+/g) || []).length
@@ -163,8 +167,13 @@ export const HARD_CHECKS = [
       // A reading with no vowel run at all (the interjection 嗯 as `ǹg`) cannot
       // be counted either. Skipped for the same reason.
       if (!syllables) return []
-      // 儿 in erhua fuses onto the previous syllable, so one fewer is expected.
-      const erhua = String(row.word || '').includes('儿')
+      // 儿 in erhua fuses onto the previous syllable, so one fewer is expected —
+      // but ONLY as a suffix. `includes` let the exemption apply to every
+      // 儿-initial word (儿子, 儿童, 儿女, 儿科, 幼儿园 — five in the corpus today),
+      // where 儿 carries its own syllable, so a reading of `ér` for 儿子 passed a
+      // HARD check whose whole job is to catch a reading that cannot belong to
+      // its word. Measured after tightening: still zero violations.
+      const erhua = String(row.word || '').endsWith('儿')
       if (syllables === chars || (erhua && syllables === chars - 1)) return []
       return [{ id: row.id, detail: row.word + ' (' + chars + ' chars) / ' + row.reading + ' (' + syllables + ' syllables)' }]
     }),
@@ -188,7 +197,10 @@ export const HARD_CHECKS = [
     // them are dangling today.
     collect: ({ vocabularyIds, cards }) => {
       if (!vocabularyIds || !cards) return []
-      return cards.filter(c => !vocabularyIds.has(c.vocab_id))
+      // A NULL vocab_id is not a reference to a missing row — it is a row with
+      // no reference, which is a different defect and not this check's. Without
+      // this it would fail a HARD check and print "missing vocab null".
+      return cards.filter(c => c.vocab_id != null && !vocabularyIds.has(c.vocab_id))
         .map(c => ({ id: c.id, detail: 'card ' + c.id + ' → missing vocab ' + c.vocab_id }))
     },
   },
@@ -285,6 +297,25 @@ export function emptyInputs({ vocabulary, vocabularyIds, cards, ttsAudio, audioO
     ['tts_audio', size(ttsAudio)],
     ['stored clips', size(audioObjects)],
   ].filter(([, n]) => n === 0).map(([name]) => name)
+}
+
+// Whether --update-baseline may write, and why not when it may not.
+//
+// A pure decision rather than a branch inside the script, so a spec can drive
+// it: the source-text assertion it replaces would have passed unchanged if the
+// failures had been computed from result.directional instead of result.hard,
+// which is the exact regression the refusal exists to prevent. The baseline's
+// existence is what says the hard tier was clean when it was generated; that
+// only means something if this cannot be bypassed.
+export function baselineWriteRefusal(result) {
+  const hardFailures = (result.hard || []).filter(c => c.violations.length > 0)
+  if (!hardFailures.length) return null
+  return {
+    hardFailures,
+    reason: 'a HARD check is failing (' + hardFailures.map(c => c.id).join(', ')
+      + '). The directional baseline accepts measured debt; it cannot accept a violation'
+      + ' of something that is meant to be zero.',
+  }
 }
 
 export function runChecks(data) {

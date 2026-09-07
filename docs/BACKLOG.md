@@ -21,7 +21,7 @@ long-lived engineering backlog; the board holds short-lived execution state.
 
 Two scoping decisions worth not re-deriving: **card-orphan and tts-orphan read every vocabulary id**, not the chinese/hsk_3 slice — a learner's other-track card is not a broken reference, and §7.1 deactivates rather than deletes, so scoping them to the active corpus would make the sanctioned repair (`is_active = false`) grow the count and red the gate. And the **`u:`/`v` check reads `reading` only**: two rows still carry `u:` in `reading_plain`, which the directional drift check already counts. Both are asserted, not left to the comment.
 
-The **answer-key comparison is deliberately stricter than the app's grader**: it ignores space, apostrophe and case, where `lenientPinyin` also ignores digits, `v`/`ü` and punctuation including `:`. Being stricter can only over-report drift, never miss it — and what it over-reports is exactly the two `hulu:e` rows.
+The **answer-key comparison is deliberately stricter than the app's grader**: it ignores space, apostrophe and case, where `lenientPinyin` also ignores digits, `v`/`ü` and punctuation including `:`. Being stricter can only over-report drift, never miss it. It over-reports at least the two `hulu:e` rows, and by two further mechanisms the module's own comment sets out: `normalizePinyin` drops every combining mark (so it folds `ǹ`→`n` where the table does not) and folds `v` as well as `ü`. Which rows make up the ten is not settled by that — it is settled by the dry run — so "at least", not "exactly".
 
 The script refuses to run at all if the corpus comes back empty. A checker that fetched nothing reports every check clean, which in a log is indistinguishable from a pass.
 
