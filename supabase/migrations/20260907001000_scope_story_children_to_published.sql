@@ -54,9 +54,11 @@
 -- is the same argument this file makes for itself everywhere else.
 --
 -- ONE SIBLING IS DELIBERATELY LEFT ALONE. `tts_pronunciation_overrides` is also
--- `authenticated ... using (true)` and its `source_text` holds "the context the
--- correction came from" (20260722140000), which for a story-derived pin is
--- unpublished story text. It is the same class of leak, it is outside the two
+-- `authenticated ... using (true)` and its `source_text` is documented as "the
+-- context the correction came from" (20260722140000). Whether that ever holds
+-- unpublished story text is UNVERIFIED: every override this repo writes is
+-- word-level, so the leak follows from the column's stated purpose rather than
+-- from anything observed. It is the same class of leak, it is outside the two
 -- findings this change closes, and scoping it needs a source_id join that table
 -- does not have — so it is recorded in docs/BACKLOG.md rather than half-fixed
 -- here. This migration's title is about the three tables named above, not about
@@ -105,40 +107,24 @@ create policy "admins can read all story questions"
 -- ── tts_audio ───────────────────────────────────────────────────────────────
 -- Both client policies, because the authenticated one has the same hole; only
 -- the anonymous one is worse.
+
+-- The anon policy is vocabulary-only, full stop, and that is a change of mind
+-- worth recording. It first carried the same published-story branch as the
+-- authenticated one below — which is DEAD BY CONSTRUCTION: `anon` holds no
+-- SELECT policy on story_utterances or stories, so that EXISTS can never be
+-- true for it. Keeping it bought nothing and cost something: table grants are
+-- checked when the statement is planned, so if `anon` ever lost table-level
+-- SELECT on either table the whole anon tts_audio read would ERROR rather than
+-- return fewer rows, src/ttsAudio.js would swallow it, and FlashcardIntro would
+-- drop silently to the legacy bucket clip on the landing page.
 --
--- READ THE ANON POLICY'S SECOND BRANCH FOR WHAT IT IS. Its EXISTS reaches
--- public.story_utterances and public.stories, and `anon` holds no SELECT POLICY
--- on either — so under RLS that subquery is always false for anon and the
--- policy reduces to `status = 'ready' and source_type = 'vocabulary'`. It is
--- written out anyway because it is the correct predicate and because the
--- reduction is a fact about today's policies, not about this one; if anon is
--- ever given published-story read access the branch becomes live and correct
--- with no edit here.
---
--- It does create a planning-time dependency worth knowing at merge: `anon`
--- must keep TABLE-LEVEL SELECT on story_utterances and stories, which it has
--- today (relacl checked live). Table grants are checked when the statement is
--- planned, so losing one does not merely make the branch false — the whole anon
--- tts_audio read errors, src/ttsAudio.js swallows it, and FlashcardIntro drops
--- silently to the legacy bucket clip. The sibling branch
--- claude/fab-26-narrow-client-grants narrows FUNCTION grants, not table grants,
--- so it does not touch this; a future table-grant narrowing would.
+-- Without the branch the predicate is exactly equivalent today and fails CLOSED
+-- tomorrow: if anon is ever given published-story access, story audio stays
+-- hidden until someone revisits this policy deliberately.
 drop policy if exists "anon can read ready tts_audio" on public.tts_audio;
 create policy "anon can read ready tts_audio"
   on public.tts_audio for select to anon
-  using (
-    status = 'ready'
-    and (
-      source_type = 'vocabulary'
-      or exists (
-        select 1
-        from public.story_utterances u
-        join public.stories s on s.id = u.story_id
-        where u.id = tts_audio.source_id
-          and s.is_published
-      )
-    )
-  );
+  using (status = 'ready' and source_type = 'vocabulary');
 
 drop policy if exists "authenticated can read ready tts_audio" on public.tts_audio;
 create policy "authenticated can read ready tts_audio"

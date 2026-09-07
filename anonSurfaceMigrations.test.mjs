@@ -107,40 +107,78 @@ describe('scoping story children to published stories', () => {
       .toHaveLength(2)
   })
 
-  it('pins every policy to a role and a table', () => {
-    // Without this, stripping `to authenticated` from the two admin escapes
-    // passed every other assertion in this file — and a CREATE POLICY with no
-    // TO clause defaults to PUBLIC, which includes anon. For a spec file whose
-    // stated job is catching an escape that fails open, that was the gap.
+  it('pins every policy to a table and its COMPLETE role list', () => {
+    // Three ways this has to bite, because each of them widens anonymous access
+    // while leaving every other assertion in this file green:
+    //
+    //   1. No TO clause at all. A CREATE POLICY without one defaults to PUBLIC,
+    //      which includes anon.
+    //   2. An ADDED role: `to authenticated, anon`. An earlier version captured
+    //      the first role with `to (\w+)` and compared that, so the extra role
+    //      was invisible.
+    //   3. A policy this parser cannot classify — `as permissive for select`,
+    //      or `for all` — which simply did not appear in the list at all, so a
+    //      wide-open anon policy could be appended and nothing noticed.
+    //
+    // (3) is why every `create policy` is counted first and the parse is
+    // required to explain all of them: an unparsed policy FAILS rather than
+    // being skipped.
     const sql = codeOf(SCOPE)
     const expected = {
-      'authenticated can read story utterances': ['public.story_utterances', 'authenticated'],
-      'admins can read all story utterances': ['public.story_utterances', 'authenticated'],
-      'authenticated users can read story questions': ['public.story_questions', 'authenticated'],
-      'admins can read all story questions': ['public.story_questions', 'authenticated'],
-      'anon can read ready tts_audio': ['public.tts_audio', 'anon'],
-      'authenticated can read ready tts_audio': ['public.tts_audio', 'authenticated'],
+      'authenticated can read story utterances': ['public.story_utterances', ['authenticated']],
+      'admins can read all story utterances': ['public.story_utterances', ['authenticated']],
+      'authenticated users can read story questions': ['public.story_questions', ['authenticated']],
+      'admins can read all story questions': ['public.story_questions', ['authenticated']],
+      'anon can read ready tts_audio': ['public.tts_audio', ['anon']],
+      'authenticated can read ready tts_audio': ['public.tts_audio', ['authenticated']],
     }
-    const created = [...sql.matchAll(
-      /create policy "([^"]+)"\s+on (public\.\w+) for select to (\w+)/g,
-    )].map(m => [m[1], m[2], m[3]])
 
-    expect(created.map(c => c[0]).sort()).toEqual(Object.keys(expected).sort())
-    for (const [name, table, role] of created) {
-      expect([table, role], name + ' is on the wrong table or role').toEqual(expected[name])
+    const allCreates = [...sql.matchAll(/create policy "([^"]+)"/g)].map(m => m[1])
+    // Everything up to the USING clause, so a `for all`, an `as permissive` or
+    // an extra role lands inside the captured span rather than escaping it.
+    const parsed = new Map()
+    for (const m of sql.matchAll(/create policy "([^"]+)"([\s\S]*?)\busing\b/g)) {
+      const head = m[2]
+      const on = /\bon\s+(public\.\w+)\b/.exec(head)
+      const to = /\bto\s+([a-z_ ,]+?)\s*(?:using|$)/i.exec(head + ' ')
+      const forSelect = /\bfor\s+select\b/.test(head)
+      const permissiveOnly = !/\bas\s+restrictive\b/i.test(head)
+      if (!on || !to || !forSelect || !permissiveOnly) continue   // unclassified
+      parsed.set(m[1], [on[1], to[1].split(',').map(r => r.trim()).filter(Boolean)])
+    }
+
+    expect([...parsed.keys()].sort(), 'a create policy this parse could not classify')
+      .toEqual(allCreates.sort())
+    expect([...parsed.keys()].sort()).toEqual(Object.keys(expected).sort())
+    for (const [name, [table, roles]] of parsed) {
+      expect([table, roles], name + ' is on the wrong table, or names extra roles')
+        .toEqual(expected[name])
     }
   })
 
   it('joins back to stories rather than trusting a column', () => {
     const sql = codeOf(SCOPE)
-    // Four scoped policies, each reaching `stories` and each testing
-    // is_published. The two on the child tables read it directly; the two on
-    // tts_audio arrive through story_utterances, so both spellings count.
+    // THREE of the four scoped policies reach `stories`, and each tests
+    // is_published: the two on the child tables read it directly, and the
+    // AUTHENTICATED tts_audio policy arrives through story_utterances.
+    //
+    // The fourth — the anon tts_audio policy — deliberately has no join at all.
+    // Its story branch was dead by construction (anon holds no SELECT policy on
+    // story_utterances or stories) and bought a plan-time table-grant
+    // dependency with a silent failure mode, so it is vocabulary-only and fails
+    // closed. That absence is asserted below rather than left implicit.
     const direct = sql.match(/from public\.stories s/g) || []
     const viaUtterance = sql.match(/join public\.stories s on s\.id = u\.story_id/g) || []
     expect(direct).toHaveLength(2)
-    expect(viaUtterance).toHaveLength(2)
-    expect(sql.match(/s\.is_published/g)).toHaveLength(4)
+    expect(viaUtterance).toHaveLength(1)
+    expect(sql.match(/s\.is_published/g)).toHaveLength(3)
+
+    // The anon policy, in full: nothing but ready vocabulary audio.
+    const anon = /create policy "anon can read ready tts_audio"[\s\S]*?;/.exec(sql)
+    expect(anon, 'the anon policy must still be rewritten').not.toBeNull()
+    expect(anon[0]).toContain("using (status = 'ready' and source_type = 'vocabulary')")
+    expect(anon[0], 'the anon policy must not depend on another table')
+      .not.toMatch(/story_utterances|public\.stories/)
   })
 
   it('orders after every migration whose policies it replaces', () => {
@@ -183,9 +221,19 @@ describe('scoping story children to published stories', () => {
     const offenders = []
     for (const name of readdirSync(DIR).filter(n => n.endsWith('.sql'))) {
       const sql = codeOf(DIR + '/' + name)
-      const touchesNet = /\bschema net\b/.test(sql) || /\bnet\.http/.test(sql)
+      // Case-insensitive on BOTH halves, and tolerant of the spellings ordinary
+      // SQL uses: uppercase, a quoted identifier, extra whitespace, a newline
+      // between `schema` and `net`. The first version carried /i on the revoke
+      // half only, so `REVOKE USAGE ON SCHEMA NET FROM anon;` walked through a
+      // guard whose comment said it caught exactly that.
+      const touchesNet = /\bschema\s+"?net"?\b/i.test(sql) || /\bnet\s*\.\s*http/i.test(sql)
       if (touchesNet && /\brevoke\b/i.test(sql)) offenders.push(name)
     }
+    // Known and accepted: this is FILE-scoped, not statement-scoped, so a future
+    // migration that legitimately mentions net.http and also revokes something
+    // unrelated is flagged. That is a false alarm someone reads, not a silent
+    // pass, and it is the right way round for a guard about a hole that cannot
+    // be closed from here.
     expect(offenders, 'see docs/BACKLOG.md: a revoke here cannot work as `postgres`')
       .toEqual([])
   })
