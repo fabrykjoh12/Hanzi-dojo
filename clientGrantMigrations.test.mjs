@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 
 // FAB-26 findings 3 and 7 — the two write-surface findings that need DDL.
 //
@@ -121,16 +121,100 @@ describe('revoking anon EXECUTE on the private RPCs (finding 7)', () => {
     expect(codeOf(REVOKE)).not.toMatch(/on all functions in schema public/)
   })
 
-  it('covers every definer RPC the audit named', () => {
-    const list = /private_rpcs text\[\] := array\[([\s\S]*?)\];/.exec(codeOf(REVOKE))[1]
-    for (const fn of [
-      'admin_active_users', 'admin_client_errors', 'admin_funnel', 'admin_overview',
-      'admin_retention', 'admin_story_stats', 'assert_admin', 'claim_story_reward',
-      'dict_add_to_deck', 'dict_entry', 'dict_examples_for', 'dict_search',
-      'dict_words_containing', 'dojo_hq_members', 'grade_card',
-      'reset_current_language_progress', 'reset_language_progress',
-    ]) {
-      expect(list, fn + ' is missing from the revoke list').toContain("'" + fn + "'")
+  it('covers exactly the definer RPCs that still hold an anon grant', () => {
+    // The first version of this spec hard-coded the same seventeen names as the
+    // migration and asserted them back at it: it could only fail if someone
+    // edited one and forgot the other, and it would have passed on a migration
+    // that revoked nothing. This derives the expected set from the rest of the
+    // repository instead, so adding a definer RPC in a later migration and
+    // forgetting it here fails HERE.
+    //
+    // The rule, which matches the live catalog: Supabase's default privileges
+    // grant EXECUTE on a new function in `public` to anon, so a definer
+    // function holds an anon grant unless some migration explicitly revoked it
+    // FROM ANON. `revoke ... from public` is not the same thing and does not
+    // remove the explicit grant — conflating the two is what made an earlier
+    // draft of this derivation report two functions instead of seventeen.
+    const files = readdirSync(DIR).filter(n => n.endsWith('.sql')).sort()
+    const definer = new Set()
+    const revokedFromAnon = new Set()
+    const droppedFunctions = new Set()
+
+    for (const f of files) {
+      const sql = read(DIR + '/' + f)
+      let m
+      const created = /create\s+(?:or\s+replace\s+)?function\s+public\.([a-z0-9_]+)\s*\(/gi
+      while ((m = created.exec(sql)) !== null) {
+        if (/security\s+definer/i.test(sql.slice(m.index, m.index + 1200))) definer.add(m[1])
+      }
+      const droppedRe = /drop\s+function\s+if\s+exists\s+public\.([a-z0-9_]+)/gi
+      while ((m = droppedRe.exec(sql)) !== null) droppedFunctions.add(m[1])
+      const revokedRe = /revoke[\s\S]{0,120}?on\s+function\s+public\.([a-z0-9_]+)\s*\([^)]*\)\s*from\s+([a-z_, ]+)/gi
+      while ((m = revokedRe.exec(sql)) !== null) {
+        if (/\banon\b/.test(m[2])) revokedFromAnon.add(m[1])
+      }
     }
+
+    // The two the signed-out app calls keep their grant (asserted separately
+    // above); a dropped function has nothing to revoke.
+    const KEEP = ['public_story', 'public_assessment_vocab']
+    const expected = [...definer]
+      .filter(n => !revokedFromAnon.has(n))
+      .filter(n => !droppedFunctions.has(n))
+      .filter(n => !KEEP.includes(n))
+      .sort()
+
+    const list = /private_rpcs text\[\] := array\[([\s\S]*?)\];/.exec(codeOf(REVOKE))[1]
+    const actual = [...list.matchAll(/'([a-z0-9_]+)'/g)].map(m => m[1]).sort()
+
+    expect(expected.length, 'the derivation itself must find something').toBeGreaterThan(10)
+    expect(actual).toEqual(expected)
+  })
+
+  it('drops the older, unapplied index it supersedes', () => {
+    // 20260724170000 declares vocabulary_dict_word_uniq on the same key without
+    // the is_active limb. It is unapplied in production, but any environment
+    // applied in filename order gets both — and then a word deactivated by §7.1
+    // cleanup cannot be re-added at all: the older index is also a valid
+    // ON CONFLICT arbiter, DO NOTHING fires, the is_active-filtered re-select
+    // finds nothing, and the card insert violates vocab_id NOT NULL.
+    const cap = codeOf(CAP)
+    const dropAt = cap.indexOf('drop index if exists public.vocabulary_dict_word_uniq')
+    const createAt = cap.indexOf('create unique index if not exists vocabulary_dictionary_word_unique')
+    expect(dropAt, 'the superseded index must be dropped').toBeGreaterThan(-1)
+    expect(dropAt, 'and dropped before the replacement is built').toBeLessThan(createAt)
+  })
+
+  it('brakes on something the caller cannot delete', () => {
+    // The per-caller limb counts the caller's own `cards`, and `cards` carries
+    // a delete policy the app itself uses — so 200 adds, one DELETE, repeat,
+    // and the counter is zero while the global vocabulary rows remain (§7.1
+    // forbids deleting those). A cap counted from state the adversary controls
+    // is not a cap. The second limb counts `vocabulary` itself.
+    const cap = codeOf(CAP)
+    expect(cap).toMatch(/c_global_daily_cap constant int := \d+/)
+    expect(cap, 'the global limb must count vocabulary rows, not cards')
+      .toMatch(/from public\.vocabulary\n\s*where level is null\n\s*and created_at > now\(\) - interval '24 hours'/)
+    // And it must gate the branch that creates one, before the insert.
+    const brake = cap.indexOf('v_recent_global >= c_global_daily_cap')
+    const insert = cap.indexOf('insert into public.vocabulary')
+    expect(brake).toBeGreaterThan(-1)
+    expect(brake).toBeLessThan(insert)
+  })
+
+  it('gives the limit a code the client can recognise', () => {
+    // Without it the 201st add of the day is indistinguishable from a dead
+    // connection: Dictionary.jsx swallowed the throw entirely and the reader
+    // replaced it with "Couldn't save that word".
+    const cap = codeOf(CAP)
+    expect(cap.match(/using errcode = c_limit_errcode/g)).toHaveLength(2)
+    expect(cap).toMatch(/c_limit_errcode constant text := 'HD429'/)
+    expect(read('src/dictSearch.js')).toContain("DICT_ADD_LIMIT_CODE = 'HD429'")
+  })
+
+  it('reloads the PostgREST schema cache from both migrations', () => {
+    // Grants and function bodies are exactly what PostgREST caches, and 35
+    // migrations in this directory already do it.
+    for (const f of [CAP, REVOKE]) expect(codeOf(f)).toMatch(/notify pgrst, 'reload schema'/)
   })
 })

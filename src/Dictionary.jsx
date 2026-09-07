@@ -17,7 +17,8 @@ import {
 import { buildVocabIndex, searchVocabIndex } from './vocabIndex'
 import { dictSearchReducer, dictSearchView, initialDictSearch } from './dictSearchState'
 import { splitExplicit, hiddenLabel } from './dictExplicit'
-import { searchDict, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHeadwordLookup } from './dictSearch'
+import { toast } from './toast'
+import { searchDict, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHeadwordLookup, isDictAddLimit } from './dictSearch'
 import DictEntryView from './DictEntryView'
 import { sheetOverlayStyle, sheetShellStyle, sheetHeaderStyle, sheetHandleStyle, sheetBodyStyle } from './sheetLayout'
 import { ArrowLeft, Search, Clock, X, WifiOff, AlertCircle } from 'lucide-react'
@@ -203,7 +204,15 @@ export default function Dictionary({ session, profile, track, onBack }) {
     try {
       const res = await addDictEntryToDeck(supabase, entry.id, track.language, track.system)
       if (res) setDictInDeck(prev => new Set(prev).add(entry.id))
-    } catch { /* surfaced by the disabled→enabled state; no crash */ }
+    } catch (e) {
+      // Ordinary failures stay silent — the button simply does not flip to
+      // "in deck", which is the state the learner reads. The daily limit is
+      // different: it is not a failure they can retry into, and without a word
+      // it is indistinguishable from a dead connection.
+      if (isDictAddLimit(e)) {
+        toast({ title: 'That’s enough new words for today', body: 'Try again tomorrow — nothing was lost.' })
+      }
+    }
   }
 
   const systemLabel = getSystemLabel(track.system)

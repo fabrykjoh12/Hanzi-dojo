@@ -72,6 +72,17 @@ export function isHeadwordLookup(value) {
   return chars.every(isHanChar)
 }
 
+// dict_add_to_deck raises with this SQLSTATE when either rate limit is hit
+// (20260907010000). PostgREST passes the SQLSTATE through as `error.code`, so
+// the caller can tell "you are at the limit today" from "the request failed" —
+// which is worth doing, because the two are otherwise indistinguishable and one
+// of them resolves by itself tomorrow.
+export const DICT_ADD_LIMIT_CODE = 'HD429'
+
+export function isDictAddLimit(error) {
+  return Boolean(error && error.code === DICT_ADD_LIMIT_CODE)
+}
+
 export async function addDictEntryToDeck(supabase, dictEntryId, language, system) {
   const { data, error } = await supabase.rpc('dict_add_to_deck', {
     p_dict_entry_id: dictEntryId, p_language: language, p_system: system,

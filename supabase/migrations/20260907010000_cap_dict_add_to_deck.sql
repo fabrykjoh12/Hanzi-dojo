@@ -16,14 +16,38 @@
 --
 -- THREE CHANGES, and what each is worth:
 --
---   1. A per-caller rate limit. Counted from the caller's OWN cards on
---      level-NULL vocabulary in the last 24 hours — attributable without
---      adding a created_by column to vocabulary, which would publish "user X
---      added word Y" to every reader of a world-readable table. It is a rate
---      limit, not a wall: 200 a day is far above any real learner's dictionary
---      use and far below 122,981, and a determined account still accumulates
---      over time. The real fix for CLEANUP is provenance the cap cannot give —
---      recorded in docs/BACKLOG.md rather than smuggled in here.
+--   1. TWO rate limits, and it needs both.
+--
+--      A per-caller one — 200 in 24 hours, counted from the caller's OWN cards
+--      on level-NULL vocabulary. Attributable without adding a created_by
+--      column to vocabulary, which would publish "user X added word Y" to
+--      every reader of a world-readable table.
+--
+--      That limb ALONE IS RESETTABLE BY THE CALLER, and the first draft of
+--      this migration claimed a bound it therefore did not have. `cards` has a
+--      `for delete using (auth.uid() = user_id)` policy and the app itself
+--      uses it, so the sequence is: 200 calls, one
+--      `DELETE /rest/v1/cards?user_id=eq.me`, repeat — the 200 new GLOBAL
+--      vocabulary rows stay, because §7.1 forbids deleting them, and the
+--      counter is back to zero. reset_language_progress gives the same reset
+--      through a supported RPC. A control counted from state the adversary
+--      controls is not a control.
+--
+--      So the second limb counts what the caller CANNOT delete: rows in
+--      `vocabulary` itself, level-NULL, created in the last 24 hours, across
+--      everyone. 500 a day. Deactivating a row does not remove it, so this
+--      counter only ever moves forward.
+--
+--      The tradeoff, stated: one abusive account can burn the global budget
+--      and lock legitimate dictionary adds out for a day. That is accepted
+--      deliberately — a burned day is recoverable and visible; permanently
+--      polluted vocabulary is neither. With 3 level-NULL rows in existence
+--      today, no real learner comes near 500.
+--
+--      It is still a brake and not a wall: 500 a day is bounded pollution, not
+--      no pollution. The durable fix is provenance plus moderation, which the
+--      cap cannot give — recorded in docs/BACKLOG.md rather than smuggled in
+--      here.
 --
 --   2. A partial unique index on the dictionary-sourced rows, so two callers
 --      adding the same new word at once cannot both insert it. The existing
@@ -41,6 +65,12 @@
 -- Idempotent. Not applied by this change.
 
 -- 2. Close the duplicate race first, so the function below can rely on it.
+--
+-- The superseded index goes first: same key, no is_active limb, unapplied in
+-- production but present in any environment applied in filename order. Leaving
+-- it would break the deactivate-then-re-add path outright (see the header).
+drop index if exists public.vocabulary_dict_word_uniq;
+
 create unique index if not exists vocabulary_dictionary_word_unique
   on public.vocabulary (language, system, word)
   where level is null and is_active;
@@ -67,6 +97,14 @@ declare
   -- Far above a real learner's dictionary use, far below the size of
   -- dict_entries. See the header: a rate limit, not a wall.
   c_daily_cap constant int := 200;
+  -- The limb the caller cannot reset: new level-NULL vocabulary rows, from
+  -- everyone, in the last 24 hours. Rows are never deleted (§7.1), so this
+  -- counter only moves forward.
+  c_global_daily_cap constant int := 500;
+  -- A stable SQLSTATE so the client can tell "you are at the limit" from "the
+  -- network failed" — until this existed the 201st add of the day was
+  -- indistinguishable from an outage (src/dictSearch.js).
+  c_limit_errcode constant text := 'HD429';
 
   v_user_id uuid := auth.uid();
   v_entry public.dict_entries;
@@ -77,6 +115,7 @@ declare
   v_already boolean := false;
   v_has_track boolean;
   v_recent_adds int;
+  v_recent_global int;
 begin
   if v_user_id is null then
     raise exception 'Not authenticated';
@@ -103,7 +142,8 @@ begin
     and c.created_at > now() - interval '24 hours';
 
   if v_recent_adds >= c_daily_cap then
-    raise exception 'Dictionary add limit reached — try again tomorrow';
+    raise exception 'Dictionary add limit reached — try again tomorrow'
+      using errcode = c_limit_errcode;
   end if;
 
   select * into v_entry from public.dict_entries where id = p_dict_entry_id;
@@ -126,6 +166,18 @@ begin
   if v_vocab_id is not null then
     v_source := case when v_match_level is null then 'dictionary' else 'curriculum' end;
   else
+    -- The global brake, checked only here: adopting a row that already exists
+    -- costs the shared table nothing, and only this branch creates one.
+    select count(*) into v_recent_global
+    from public.vocabulary
+    where level is null
+      and created_at > now() - interval '24 hours';
+
+    if v_recent_global >= c_global_daily_cap then
+      raise exception 'The dictionary is not accepting new words right now — try again tomorrow'
+        using errcode = c_limit_errcode;
+    end if;
+
     -- New dictionary-sourced row (NULL level). meaning is required NOT NULL.
     v_meaning := coalesce(
       (select string_agg(value::text, '; ')
@@ -170,3 +222,5 @@ comment on function public.dict_add_to_deck(uuid, text, text) is
   'vocabulary row when no curriculum word matches. Rate-limited to 200 '
   'dictionary adds per caller per 24h (FAB-26 finding 3). Never writes '
   'ease_factor.';
+
+notify pgrst, 'reload schema';

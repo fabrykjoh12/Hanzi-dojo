@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { normalizeQuery, searchDict, getExamples, getWordsContaining, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHanChar, isHeadwordLookup } from './dictSearch'
+import { normalizeQuery, searchDict, getExamples, getWordsContaining, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHanChar, isHeadwordLookup, isDictAddLimit, DICT_ADD_LIMIT_CODE } from './dictSearch'
 
 describe('isHanChar', () => {
   it('recognises CJK ideographs across the common blocks', () => {
@@ -116,5 +116,25 @@ describe('addDictEntryToDeck', () => {
   it('throws on RPC error', async () => {
     const rpc = vi.fn().mockResolvedValue({ data: null, error: new Error('nope') })
     await expect(addDictEntryToDeck({ rpc }, 'd1', 'chinese', 'hsk_3')).rejects.toThrow('nope')
+  })
+})
+
+describe('isDictAddLimit', () => {
+  // dict_add_to_deck's rate limits raise with a custom SQLSTATE, which
+  // PostgREST passes through as error.code. Without it the 201st add of the day
+  // and a dead connection produce the same nothing, and the learner is told to
+  // retry into a wall.
+  it('recognises the limit by its SQLSTATE, not by its message', () => {
+    // The message is user-facing copy and will be reworded; the code will not.
+    expect(isDictAddLimit({ code: DICT_ADD_LIMIT_CODE, message: 'anything at all' })).toBe(true)
+    expect(isDictAddLimit({ message: 'Dictionary add limit reached — try again tomorrow' })).toBe(false)
+  })
+
+  it('is false for every other failure, including nothing at all', () => {
+    expect(isDictAddLimit({ code: 'PGRST202', message: 'missing rpc' })).toBe(false)
+    expect(isDictAddLimit({ code: '42501' })).toBe(false)
+    expect(isDictAddLimit(new Error('network'))).toBe(false)
+    expect(isDictAddLimit(null)).toBe(false)
+    expect(isDictAddLimit(undefined)).toBe(false)
   })
 })

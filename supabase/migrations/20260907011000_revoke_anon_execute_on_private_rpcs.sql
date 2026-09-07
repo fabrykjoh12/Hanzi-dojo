@@ -1,4 +1,10 @@
--- FAB-26 finding 7: anon holds EXECUTE on every SECURITY DEFINER RPC.
+-- FAB-26 finding 7: anon holds EXECUTE on nearly every SECURITY DEFINER RPC.
+--
+-- "Every" was the first draft's word and it is wrong: delete_my_account
+-- (20260807130000) and tts_claim_jobs (20260722140000) are both definer and
+-- both already revoke from anon in their creating migrations. The list below is
+-- unchanged by that correction — those two genuinely hold no grant — but the
+-- description of it was claiming more than the SQL does.
 --
 -- 18 advisor warnings, and harmless TODAY: each of these functions derives
 -- identity from auth.uid(), which is null for anon, so they raise
@@ -37,10 +43,11 @@
 
 do $$
 declare
-  -- Every SECURITY DEFINER function in public EXCEPT the two the signed-out
-  -- app calls. Named one by one rather than "all functions in schema public":
-  -- that form would also strip the trigger and trgm functions, and would sweep
-  -- up a future public RPC without anyone noticing.
+  -- Every SECURITY DEFINER function in public that still holds an anon grant,
+  -- minus the two the signed-out app calls. Named one by one rather than "all
+  -- functions in schema public": that form would also strip the trigger and
+  -- trgm functions, and would sweep up a future public RPC without anyone
+  -- noticing.
   r record;
   private_rpcs text[] := array[
     'admin_active_users', 'admin_client_errors', 'admin_funnel',
@@ -79,3 +86,6 @@ $$;
 -- them, and so re-running it after a wider revoke restores the public surface.
 grant execute on function public.public_story(uuid) to anon;
 grant execute on function public.public_assessment_vocab(text) to anon;
+
+-- Grants are exactly what PostgREST caches, so this is not optional here.
+notify pgrst, 'reload schema';
