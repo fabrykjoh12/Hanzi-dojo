@@ -193,9 +193,10 @@ describe('parity with the canonical validator', () => {
     // contract carrying it would drop out of this sweep and the one below in
     // silence, and the floor does not change that: it catches a contract
     // RENAMED or deleted, not a ninth one added under the reserved name. It
-    // would still be validated, here by task-contract.test.mjs and in CI by the
-    // canonical CLI, both of which read every .json; what is lost is the parity
-    // check on that one contract. What keeps the name free is the rule, recorded
+    // would still be validated: task-contract.test.mjs reads every .json, and it
+    // is also what runs the canonical CLI in CI — nothing in .github invokes
+    // verify:tasks, so that coverage exists BECAUSE of this suite rather than
+    // beside it. What is lost is the parity check on that one contract. What keeps the name free is the rule, recorded
     // in docs/AUTOMATION-AUTHORITY.md next to the tier lists, not this assertion.
     const names = readdirSync(dir).filter(n => n.endsWith('.json') && !n.startsWith('seal-guard'))
     expect(names.length, 'a committed contract disappeared from the parity spec').toBeGreaterThanOrEqual(8)
