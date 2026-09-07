@@ -210,9 +210,12 @@ So paths fall into **three tiers**.
 ```
 
 No contract may name these, or anything inside them, or the bare root of one of
-the two subtrees, under any role, at any risk level, through any mechanism — the
-one shape it may still name is an *ancestor* of a tier root, `.agent`, and the
-paragraph below says exactly what that costs. There is no grant and no override
+the two subtrees, under any role, at any risk level, through any mechanism. Two
+shapes it may still name, and neither reaches anything: an *ancestor of a tier
+root* (`.agent`, `.claude`), which authorises that one directory path and
+nothing beneath it — the paragraph below says exactly what that costs — and a
+subtree hanging BELOW an exact floor file (`.agent/roles.json/sub/**`), which
+`resolveWithin` refuses at write time because the parent is a regular file. There is no grant and no override
 — the validator rejects the contract, and mechanical review reports the diff
 independently of whatever the contract says. The two exact entries,
 `.agent/roles.json` and `.claude/settings.local.json`, are refused by name;
@@ -546,8 +549,9 @@ roots. The exemption compensated for that in its own branch; the *governed* path
 did not, so a contract naming `.git` in ordinary `allowed_paths` was accepted by
 `npm run verify:tasks` and authorised the write. In a git worktree `.git` is a
 regular file, so it was not theoretical. FAB-60 closed it at every refusal site
-in both modules and in the review protocol's diff scan; what remains open is the
-ancestor case set out at the top of this document.
+in both modules and in the review protocol's diff scan; what remains nameable is
+the ancestor case and the below-a-file case, both set out at the top of this
+document.
 
 **It was not only the floor.** `.claude/hooks` behaved the same way — a Tier 1
 subtree root in ordinary `allowed_paths` raised no violation and was matched
@@ -560,9 +564,10 @@ one change. FAB-60 did that. Two spellings, because two different questions are 
 asked: `reachesTier` backs the CONTRACT tests — what an `allowed_paths` or
 `protected_paths` entry may name — in `tools/verify-task-contracts.mjs` and in
 `.claude/hooks/task-scope-policy.mjs`; and `isSubtreeRoot` is asked directly
-where a concrete path is being judged rather than a pattern, which is both
-`decide()` floor loops (lexical and resolved) and `tools/review-protocol.mjs`'s
-diff scan. A parity spec drives
+where a concrete path is being judged rather than a pattern: all three floor
+loops in `decide()` — lexical, the exempt branch's resolved loop, and the
+producer path's resolved loop — its Tier 1 loop, and both scans in
+`tools/review-protocol.mjs`. A parity spec drives
 the two copies of the predicate over the same pairs, so they cannot drift.
 
 **One more thing the exemption does not exempt, and it will be felt.** The

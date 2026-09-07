@@ -1074,6 +1074,15 @@ describe('who the policy governs', () => {
     expect(run(call(path.join(ROOT, '.agent')), env).allow, 'the ancestor entry stopped authorising itself').toBe(true)
     // And nothing beneath it: an exact entry covers only itself, which is the
     // whole of the bound the residual rests on.
+    // A NON-floor descendant, deliberately. `.agent/tasks/anything.json` is
+    // refused by the Tier 0 lexical loop before the contract is even read, so
+    // asserting on it would pass whether or not an exact entry covers its
+    // descendants — the property this test exists to pin. `.agent/notes.txt` is
+    // on no tier, so the only thing that can refuse it is the scope test.
+    const outside = run(call(path.join(ROOT, '.agent/notes.txt')), env)
+    expect(outside.allow, 'an exact entry authorised a path beneath it').toBe(false)
+    expect(outside.reason).toMatch(/outside|not in|scope/i)
+    // And the floor still refuses what is inside the tier, for its own reason.
     const inside = run(call(path.join(ROOT, '.agent/tasks/anything.json')), env)
     expect(inside.allow, 'an ancestor entry reached inside the tier').toBe(false)
     expect(inside.reason).toMatch(/Tier 0/)
@@ -1278,7 +1287,15 @@ describe('what this change does NOT claim', () => {
     // was written for. The live residual is the ANCESTOR of a tier root, so
     // that is what must now be within reach of an absolute claim. When that one
     // closes too, this line moves again.
-    const QUALIFIER = /ancestor of a tier root|ANCESTOR of a tier root|\bancestor\b/i
+    // The PHRASE, not the word. `\bancestor\b` under /i subsumed the two phrase
+    // alternatives, so the rule reduced to "the word ancestor appears within
+    // eight lines" — and commit-ancestry prose is ordinary vocabulary in these
+    // documents ("an ancestor of the reviewed head"), so an unrelated sentence
+    // would have licensed an absolute claim. It still cannot check polarity: a
+    // future sentence saying an ancestor of a tier root IS refused satisfies it
+    // while being false. Same blind spot, one residual later, recorded rather
+    // than papered over.
+    const QUALIFIER = /ancestor of a tier root/i
     // Scanned on a WHITESPACE-NORMALISED join, not line by line. A prose file
     // wraps, so a line-by-line scan misses any phrasing that straddles a
     // newline — and one already did: re-wrapping the floor's opening sentence
@@ -1302,7 +1319,14 @@ describe('what this change does NOT claim', () => {
       const out = []
       for (const m of joined.matchAll(new RegExp(ABSOLUTE.source, 'g'))) {
         const i = lineAt(m.index)
+        // Normalised the same way the ABSOLUTE side is, and for the same
+        // reason: the qualifier is a PHRASE, and a phrase straddles a line
+        // break, a `//` comment marker or a pair of markdown asterisks. A raw
+        // join reads "ANCESTOR of a // tier root" and finds nothing — a guard a
+        // re-flow can switch off, which is exactly the failure this file
+        // already fixed once on the other side of the same test.
         const near = lines.slice(Math.max(0, i - 8), i + 9).join(' ')
+          .replace(/(^|\s)(\/\/|--|#)(\s|$)/g, ' ').replace(/[*_`]/g, '').replace(/\s+/g, ' ')
         if (!QUALIFIER.test(near)) out.push(file + ':' + (i + 1) + ' — ' + m[0])
       }
       return out

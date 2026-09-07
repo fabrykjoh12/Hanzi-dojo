@@ -17,7 +17,7 @@ A `dir/**` entry does not cover its own root — `covers('.git/**', '.git')` is 
 
 Closed in one change across the three modules that refuse a tier — `tools/verify-task-contracts.mjs`, `.claude/hooks/task-scope-policy.mjs` and `tools/review-protocol.mjs` — through `isSubtreeRoot`, asked directly where a concrete path is judged and folded into `reachesTier` where a contract entry is. `covers()` itself is unchanged: its semantics are right, it is at parity between the two modules, and widening it would grant more rather than less.
 
-**Still open, deliberately:** an entry naming an *ancestor* of a tier root (`.agent`, above `.agent/tasks/**`). An exact entry authorises only itself, so it buys one directory path and nothing beneath it — asserted by a spec rather than argued. Whether writing that directory then fails is an observation about the tree, not something the guard enforces, and `docs/AUTOMATION-AUTHORITY.md` records it on that footing.
+**Still nameable, deliberately, and neither reaches anything:** an entry naming an *ancestor* of a tier root (`.agent`, above `.agent/tasks/**`), and a subtree hanging below an exact floor file (`.agent/roles.json/sub/**`). The first buys one directory path and nothing beneath it — pinned by a spec that drives a non-floor descendant, since a floor one would be refused by the tier before the scope test is reached and would prove nothing. Whether writing that directory then fails is an observation about the tree, not something the guard enforces, and `docs/AUTOMATION-AUTHORITY.md` records it on that footing. The second is refused at write time by `resolveWithin`, because the parent is a regular file.
 
 ### Reading a red check: CI is authoritative, a sandbox is not
 

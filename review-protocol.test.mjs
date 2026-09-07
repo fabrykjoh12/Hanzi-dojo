@@ -464,7 +464,9 @@ describe('FIXTURE 7: a diff that edits the contract it is reviewed against', () 
     // disagree: a changed path of exactly `.claude/hooks` was reported as a
     // generic path-compliance miss rather than as touching the protected
     // control plane without a grant. Still a blocker either way, so this is
-    // about the dimension and the sentence the operator reads.
+    // about the dimension — which is what the finding is filed under and what a
+    // reader scans for. The sentence itself is not asserted; saying so beats
+    // implying a check that is not here.
     for (const tier of PROTECTED_CONTROL_PLANE.filter(t => t.endsWith('/**'))) {
       const root = tier.slice(0, -3)
       const found = mechanicalFindings({ contract: contract({ allowed_paths: ['src/**'] }), changedPaths: [root] })

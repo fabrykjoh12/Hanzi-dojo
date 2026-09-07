@@ -556,6 +556,11 @@ export function effectiveScope(contract, { grants = GRANTS, root = '.', readFile
     : []
   for (const p of cp.protected_paths) {
     if (pathGrammarError(p)) return declared
+    // Redundant today for the same reason the copy in contractSecurityViolations
+    // is, and noted here too so a later change that narrows the tier cannot
+    // promote it from redundant to load-bearing without a reader noticing:
+    // FLOOR and PROTECTED_TIER are disjoint, so the tier test on the next line
+    // refuses every floor path anyway.
     if (FLOOR.some(f => reachesTier(f, p))) return declared
     if (!PROTECTED_TIER.some(t => covers(t, p))) return declared
     if (!mapped.some(m => covers(m, p))) return declared
