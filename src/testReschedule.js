@@ -158,7 +158,13 @@ export function testWrongAnswerWrite(card, options) {
 // card for that word", which made the retry sentence a lie — see newTestCard.
 // Every wrong word is written now, so "did not come back" and "something went
 // wrong" are the same statement again, and the copy can say so.
-export function testResultSummaryLine({ passed, wrongCount, rescheduled } = {}) {
+// `canRetry` is whether the screen will actually OFFER another attempt. Without
+// it the failure sentence said "take the test again when you are back online"
+// to a learner on their third attempt of the day — while the same screen hides
+// both the attempts line and the Try-again button. Telling somebody to do a
+// thing the app refuses to let them do is the same defect this module exists to
+// remove, one sentence over.
+export function testResultSummaryLine({ passed, wrongCount, rescheduled, canRetry = true } = {}) {
   if (passed) return 'All correct. Your next level is now unlocking.'
 
   const total = wrongCount || 0
@@ -168,14 +174,19 @@ export function testResultSummaryLine({ passed, wrongCount, rescheduled } = {}) 
   const tail = ' You need 100% to pass.'
 
   if (done >= total) return words(total) + ' have been returned to review.' + tail
+  // The advice, only where it is actionable. "Back online" is also the most
+  // likely cause and not the only one — a refusal from the database reads the
+  // same from here — so it says what the app knows (they stay as they were)
+  // and offers the retry rather than diagnosing.
+  const retry = canRetry ? ' Take the test again when you are back online.' : ''
   if (done === 0) {
     return words(total) + ' could not be returned to review just now. They stay as '
-      + 'they were — take the test again when you are back online.' + tail
+      + 'they were.' + retry + tail
   }
   // Partial. Saying "N returned" here would be false for the rest, and saying
   // "none returned" would be false for the ones that did.
   return done + ' of ' + total + ' wrong words have been returned to review. '
-    + 'The rest stay as they were — take the test again when you are back online.' + tail
+    + 'The rest stay as they were.' + retry + tail
 }
 
 
@@ -195,5 +206,9 @@ export function tallyTestReschedules(results) {
     if (r && r.ok) { rescheduled += 1; continue }
     if (!firstError && r && r.error) firstError = r.error
   }
+  // firstError, not lastError: with several failures the first is the one that
+  // explains the rest. The caller logs it to the device console — it is
+  // deliberately not shown to the learner, since a Postgres message is not
+  // something they can act on, but a failure with no trace anywhere is worse.
   return { rescheduled, attempted: rows.length, failed: rows.length - rescheduled, firstError }
 }

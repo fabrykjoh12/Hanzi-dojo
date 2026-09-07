@@ -13,7 +13,7 @@ latest. Keep it current — move things to **Shipped** as they land.
 
 ## 🚧 Now — in progress
 
-- **Fixing what happens when you get a word wrong on a level test.** The word was
+- [ ] **Fixing what happens when you get a word wrong on a level test.** The word was
   supposed to go back into your review queue, and often it silently did not —
   for words you had told us you already knew it was refused outright, and for
   words you had never studied there was nothing to put it in. Either way the app

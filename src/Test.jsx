@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { getTestStatus, getAttemptsToday, canStartTest } from './testLogic'
 import { fetchPagedResult } from './supabasePaging'
@@ -226,6 +226,10 @@ export default function Test({ session, profile, track, onBack }) {
   const [index, setIndex] = useState(0)
   const [wrongVocab, setWrongVocab] = useState([])
   const [selected, setSelected] = useState(null)
+  // The 1.5s answer-feedback pause, held so End-quiz can cancel it, and a latch
+  // so one attempt can only finish once. See handleAnswer / finishTest.
+  const feedbackTimer = useRef(null)
+  const finishing = useRef(false)
   const [saving, setSaving] = useState(false)
   const [lastResult, setLastResult] = useState(null)
   // Two-step in-UI confirm for ending the quiz early (no native dialogs).
@@ -270,7 +274,13 @@ export default function Test({ session, profile, track, onBack }) {
     return () => clearTimeout(timer)
   }, [])
 
+  // Cancel a pending feedback pause if the screen goes away mid-answer, so it
+  // cannot finish a test that is no longer on screen.
+  useEffect(() => () => { if (feedbackTimer.current) clearTimeout(feedbackTimer.current) }, [])
+
   const startTest = () => {
+    // A new attempt may finish again.
+    finishing.current = false
     // An empty pool would generate zero questions and crash on questions[0].
     if (!canStartTest(allVocab)) return
     const qs = generateQuestions(allVocab, allVocab, profile.active_language)
@@ -293,7 +303,17 @@ export default function Test({ session, profile, track, onBack }) {
     const newAnswers = [...answers, { vocab: q.vocab, user_answer: option, was_correct: correct }]
     setAnswers(newAnswers)
 
-    setTimeout(() => {
+    // Held so End-quiz can cancel it. Without that the feedback pause is a live
+    // second copy of the finish path: answer the LAST question, click "End now"
+    // inside 1.5s, and this timer still fires afterwards with
+    // `index + 1 === questions.length` — finishTest runs twice, writing a second
+    // test_attempts row (one of three daily attempts, gone) and grading every
+    // wrong word twice with two different opIds, which grade_card's
+    // client_op_id de-dupe cannot collapse. Two review_logs rows and reps + 2
+    // for one wrong answer: the exact history corruption this change exists to
+    // stop, arriving through the change itself.
+    feedbackTimer.current = setTimeout(() => {
+      feedbackTimer.current = null
       setSelected(null)
       if (index + 1 < questions.length) {
         setIndex(index + 1)
@@ -304,7 +324,18 @@ export default function Test({ session, profile, track, onBack }) {
   }
 
   const handleEndQuiz = () => {
-    const unansweredQuestions = questions.slice(index)
+    if (feedbackTimer.current) {
+      clearTimeout(feedbackTimer.current)
+      feedbackTimer.current = null
+    }
+    // `index` only advances inside that timer, so while an answer is on screen
+    // the CURRENT question has been answered and is already in `answers` and
+    // (if wrong) in `wrongVocab`. Slicing from `index` would count it a second
+    // time — and for a word answered CORRECTLY that means a fabricated wrong
+    // observation: with the new-card fallback it now creates a card and writes
+    // a grade-0 review log for a word the learner got right.
+    const answered = selected !== null
+    const unansweredQuestions = questions.slice(answered ? index + 1 : index)
     const unansweredAnswers = unansweredQuestions.map(q => ({
       vocab: q.vocab,
       user_answer: 'Skipped',
@@ -317,6 +348,11 @@ export default function Test({ session, profile, track, onBack }) {
   }
 
   const finishTest = async (allAnswers, wrongList) => {
+    // One finish per attempt. The timer above is cancelled by End-quiz, but a
+    // latch is what makes that a guarantee rather than a race won by luck —
+    // `saving` is state and does not settle before a second synchronous call.
+    if (finishing.current) return
+    finishing.current = true
     // Deduped by vocabulary id, at the one place every caller passes through.
     // "End quiz" is disabled while an answer is selected, but the confirm's
     // "End now" is not — so answering a question with the confirm open puts
@@ -423,6 +459,12 @@ export default function Test({ session, profile, track, onBack }) {
       const tally = tallyTestReschedules(results)
       if (tally.rescheduled < finalWrong.length) {
         setRescheduleError({ rescheduled: tally.rescheduled })
+        // One line naming what actually went wrong. The screen tells the
+        // learner their words did not come back; this is the only place that
+        // says why, and a failure with no trace anywhere is worse than a
+        // console line nobody reads until they need it.
+        console.error('[Test] ' + (finalWrong.length - tally.rescheduled) + ' of '
+          + finalWrong.length + ' wrong words were not rescheduled', tally.firstError)
       }
     }
 
@@ -807,6 +849,9 @@ export default function Test({ session, profile, track, onBack }) {
             passed: lastResult.passed,
             wrongCount: lastResult.wrongCount,
             rescheduled: rescheduleError ? rescheduleError.rescheduled : undefined,
+            // Only offer the retry the screen will actually give them: below,
+            // both the attempts line and the Try-again button disappear at 3.
+            canRetry: attempts.count < 3,
           })}
         </p>
 

@@ -202,14 +202,26 @@ describe('a wrong answer on the level test', () => {
     // from a different starting shape than the same word graded in Study.
     const prep = srcFile('./sessionPrep.js')
     const block = prep.slice(prep.indexOf('const newItems'), prep.indexOf('// Prior-knowledge checks'))
-    const keys = [...block.matchAll(/([a-z_]+):/g)].map(m => m[1])
-      .filter(k => !['map', 'filter', 'slice'].includes(k))
-    const mine = Object.keys(newTestCard('v'))
-    for (const k of keys) {
+    // Names AND values. Comparing key names alone said only that the two
+    // objects have the same shape — sessionPrep could change learning_step to 1
+    // and a card created by the level test would still start from 0, which the
+    // scheduler reads.
+    const pairs = [...block.matchAll(/([a-z_]+):\s*('[^']*'|-?\d+|null|true|false)/g)]
+    expect(pairs.length, 'could not parse sessionPrep newItems').toBeGreaterThan(3)
+    const mine = newTestCard('v')
+    for (const [, key, raw] of pairs) {
       // ease_factor is the dead SM-2 column (CLAUDE.md §10) and is deliberately
       // not carried here; claude/fab-28-no-ease-factor-writes removes it there.
-      if (k === 'ease_factor' || k === 'vocab') continue
-      expect(mine, 'sessionPrep starts a new card with ' + k + ' and this does not').toContain(k)
+      // vocab_id and id are per-call, not part of the starting shape.
+      if (['ease_factor', 'vocab', 'vocab_id', 'id'].includes(key)) continue
+      expect(Object.keys(mine), 'sessionPrep starts a new card with ' + key + ' and this does not')
+        .toContain(key)
+      const expected = raw === 'null' ? null
+        : raw === 'true' ? true
+          : raw === 'false' ? false
+            : raw.startsWith("'") ? raw.slice(1, -1) : Number(raw)
+      expect(mine[key], 'sessionPrep starts ' + key + ' at ' + raw + ' and this does not')
+        .toBe(expected)
     }
   })
 })
@@ -299,6 +311,26 @@ describe('the caller fetches what this module reads', () => {
 })
 
 
+  it('does not tell a learner to retake a test the screen will not offer', () => {
+    // At three attempts the screen hides both the attempts line and the Try
+    // again button, and the failure sentence was still saying "take the test
+    // again when you are back online" — advice for a thing the app refuses.
+    const failed = { passed: false, wrongCount: 3, rescheduled: 0 }
+    expect(testResultSummaryLine({ ...failed, canRetry: true })).toMatch(/Take the test again/)
+    expect(testResultSummaryLine({ ...failed, canRetry: false })).not.toMatch(/Take the test again/)
+    // The part that is true either way still gets said.
+    expect(testResultSummaryLine({ ...failed, canRetry: false })).toMatch(/They stay as they were/)
+    // Same on the partial branch.
+    const partial = { passed: false, wrongCount: 3, rescheduled: 1 }
+    expect(testResultSummaryLine({ ...partial, canRetry: false })).not.toMatch(/Take the test again/)
+    expect(testResultSummaryLine({ ...partial, canRetry: false })).toMatch(/^1 of 3 /)
+  })
+
+  it('the caller passes the retry state it actually renders', () => {
+    expect(readFileSync(fileURLToPath(new URL('./Test.jsx', import.meta.url)), 'utf8'))
+      .toMatch(/canRetry: attempts\.count < 3/)
+  })
+
 describe('the caller measures before it claims', () => {
   const src = () => srcFile('./Test.jsx')
 
@@ -312,6 +344,22 @@ describe('the caller measures before it claims', () => {
       .toMatch(/error:\s*lookupError/)
     expect(code, 'the write loop no longer skips a failed lookup')
       .toMatch(/if \(lookupError\)/)
+    // POSITIONAL, because the two regexes above both still match if the `else`
+    // is deleted — and then the loop runs on a failed lookup, every mature card
+    // looks card-less, and the upsert rebuilds it from an empty card. The
+    // property is "the write loop is INSIDE the else", so that is what is
+    // asserted.
+    const guard = code.indexOf('if (lookupError)')
+    const loop = code.indexOf('for (const w of finalWrong)')
+    expect(guard, 'the failed-lookup guard is gone').toBeGreaterThan(-1)
+    expect(loop, 'the write loop is gone').toBeGreaterThan(guard)
+    // The else must be the guard's OWN, not some later one in the file: only
+    // the text between the guard and the loop counts. Deleting `} else {` there
+    // — which leaves both regexes above matching and the loop running on a
+    // failed lookup — leaves this window without one.
+    const between = code.slice(guard, loop)
+    expect(between, 'the write loop is no longer inside the failed-lookup else')
+      .toMatch(/\}\s*else\s*\{/)
   })
 
   it('goes through the canonical grade write, not a bare UPDATE', () => {
@@ -334,6 +382,45 @@ describe('the caller measures before it claims', () => {
   it('grades each wrong word once', () => {
     // Two review_logs rows for one wrong answer is the same history corruption
     // this change exists to stop, and the End-quiz confirm could produce it.
-    expect(src()).toMatch(/seenWrong\.has\(w\.id\)/)
+    //
+    // BOTH halves. `has` alone still matched with the `add` deleted, which
+    // makes the set permanently empty and the dedupe a no-op — green, and
+    // exactly as broken as no dedupe at all.
+    const code = src()
+    expect(code).toMatch(/seenWrong\.has\(w\.id\)/)
+    expect(code, 'the dedupe set is never added to, so it never dedupes')
+      .toMatch(/seenWrong\.add\(w\.id\)/)
+  })
+
+  it('cannot finish the same attempt twice', () => {
+    // The 1.5s answer-feedback pause is a live second copy of the finish path:
+    // answer the LAST question, click "End now" inside it, and the timer still
+    // fires with index + 1 === questions.length. finishTest ran twice — a
+    // second test_attempts row (one of three daily attempts, silently gone) and
+    // every wrong word graded twice with two different opIds, which
+    // grade_card's client_op_id de-dupe cannot collapse.
+    const code = src()
+    expect(code, 'the feedback timer is not held, so End-quiz cannot cancel it')
+      .toMatch(/feedbackTimer\.current = setTimeout/)
+    // Scoped to handleEndQuiz. The unmount cleanup clears the same timer, so an
+    // unscoped match stays green with the End-quiz cancel deleted — which is
+    // the whole double-finish path.
+    const endQuiz = code.slice(code.indexOf('const handleEndQuiz'), code.indexOf('const finishTest'))
+    expect(endQuiz, 'End-quiz does not cancel the pending feedback pause')
+      .toMatch(/clearTimeout\(feedbackTimer\.current\)/)
+    expect(code, 'finishTest has no once-per-attempt latch')
+      .toMatch(/if \(finishing\.current\) return/)
+    expect(code, 'the latch is never released, so a retake cannot finish')
+      .toMatch(/finishing\.current = false/)
+  })
+
+  it('does not re-count the question the learner just answered', () => {
+    // `index` only advances inside the feedback timer, so while an answer is on
+    // screen the current question is already in `answers` and, if wrong, in
+    // `wrongVocab`. Slicing from `index` counted it twice — and for a word
+    // answered CORRECTLY that is a fabricated wrong observation: with the
+    // new-card fallback it creates a card and writes a grade-0 review log for a
+    // word the learner got right.
+    expect(src()).toMatch(/questions\.slice\(answered \? index \+ 1 : index\)/)
   })
 })
