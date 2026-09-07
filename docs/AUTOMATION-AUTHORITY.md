@@ -209,9 +209,11 @@ So paths fall into **three tiers**.
 .agent/tasks/**   .agent/roles.json   .claude/settings.local.json   .git/**
 ```
 
-No contract may name these, or anything inside them, under any role, at any
-risk level, through any mechanism. There is no grant and no override — the
-validator rejects the contract, and mechanical review reports the diff
+No contract may name these, or anything inside them, or the bare root of one of
+the two subtrees, under any role, at any risk level, through any mechanism — the
+one shape it may still name is an *ancestor* of a tier root, `.agent`, and the
+paragraph below says exactly what that costs. There is no grant and no override
+— the validator rejects the contract, and mechanical review reports the diff
 independently of whatever the contract says. The two exact entries,
 `.agent/roles.json` and `.claude/settings.local.json`, are refused by name;
 verified against the validator rather than assumed.
@@ -224,11 +226,14 @@ at runtime, and in a git worktree `.git` is a regular file, so that was a real
 write rather than a curiosity. FAB-60 closed it in the canonical validator, in
 the runtime policy and in the review protocol at once, through one predicate
 (`reachesTier`) that asks the root question alongside the two containment ones.
-What remains open, and is bounded rather than tracked: an entry naming an
-ANCESTOR of a tier root, `.agent` above `.agent/tasks/**`. An exact entry
-authorises only itself, so the whole of the new authority is one directory path,
-and writing a directory fails for being a directory — the worktree case that
-made `.git` real does not arise there. These are the files that define what a task *is*
+What remains open: an entry naming an ANCESTOR of a tier root, `.agent` above
+`.agent/tasks/**`. An exact entry authorises only itself, so the whole of the
+authority it adds is one directory path and nothing beneath it — that half is a
+property of the pattern semantics and is checkable. The other half, that writing
+a directory fails for being a directory, is an observation about the tree rather
+than something the guard enforces, and this document calls that "luck rather
+than containment" two sections down. It is recorded here on that footing: bounded
+by the first argument, not closed by the second. These are the files that define what a task *is*
 (`.agent/tasks/**`, including its own `README.md`), who may own one
 (`.agent/roles.json`), the machine-local permission overlay
 (`.claude/settings.local.json`), and history itself (`.git/**`).
@@ -260,8 +265,9 @@ That distinction is the design, and it is what separates Tier 1 from Tier 0:
 every Tier 1 path is now authorizable by exactly one grant, so "protected" here
 means *governed*, not *unreachable* — while no single grant is a synonym for the
 tier, so a grant still has to name what it needs. Tier 0 remains the tier
-nothing can reach — with the bare-subtree-root exception recorded below, which
-applies to both tiers. When a third protected path arrives, it arrives with its own
+nothing can reach, including the bare roots of its own `dir/**` patterns since
+FAB-60 — the one shape still open is an *ancestor* of a tier root, `.agent`,
+recorded near the top of this document. When a third protected path arrives, it arrives with its own
 narrow grant; widening an existing grant to cover it would collapse that
 distinction and leave the grant/path check unable to fire.
 
@@ -273,8 +279,9 @@ These *do* sometimes need to change — a runtime path guard has to be installed
 by somebody. But not by an ordinary task, and never by adding a line to
 `allowed_paths`. A Tier 1 path is unreachable through `allowed_paths` (the
 validator rejects it, including via a covering subtree like `.claude/**`) —
-*except the bare subtree root itself, `.claude/hooks`, which neither direction
-of the pattern test relates to `.claude/hooks/**`; see the residual below* — and
+including the bare root `.claude/hooks`, which `reachesTier` covers since
+FAB-60 even though neither direction of `covers` relates it to
+`.claude/hooks/**`, and excepting only an *ancestor* of a tier root — and
 reachable only through a dedicated, digest-covered `control_plane` declaration:
 
 ```json
@@ -530,13 +537,15 @@ containment of one class of mistake: a helper reaching a protected path through
 the ordinary file tools, which is how it would happen by accident. A helper
 that means to get past them can.
 
-**A residual in the tier patterns, found while writing the above.** `.git/**`
-does not cover `.git` itself — the subtree test is a prefix match on `.git/` —
-and neither tier carries an exact entry for its own subtree roots. The exemption
-compensates for that in its own branch, but the *governed* path does not: a
-contract naming `.git` in ordinary `allowed_paths` is accepted by
-`npm run verify:tasks` and authorises the write. In a git worktree `.git` is a
-regular file, so this is not theoretical.
+**A residual in the tier patterns, found while writing the above — since
+closed.** `.git/**` does not cover `.git` itself — the subtree test is a prefix
+match on `.git/` — and neither tier carries an exact entry for its own subtree
+roots. The exemption compensated for that in its own branch; the *governed* path
+did not, so a contract naming `.git` in ordinary `allowed_paths` was accepted by
+`npm run verify:tasks` and authorised the write. In a git worktree `.git` is a
+regular file, so it was not theoretical. FAB-60 closed it at every refusal site
+in both modules and in the review protocol's diff scan; what remains open is the
+ancestor case set out at the top of this document.
 
 **It was not only the floor.** `.claude/hooks` behaved the same way — a Tier 1
 subtree root in ordinary `allowed_paths` raised no violation and was matched
@@ -636,9 +645,9 @@ Proven by unit and adversarial specs against a real temporary repository:
   would otherwise hand a producer the control plane with no grant whatsoever.
   What the guard checks, before any scope is consulted: path shapes and grammar
   for `allowed_paths` and `forbidden_paths`, no Tier 0 and no Tier 1 reachable
-  through `allowed_paths` — *except a bare subtree root, which neither direction
-  of the pattern test relates to its own `dir/**` pattern; see the residual
-  above* — and for a grant its closed key set, owning role, risk
+  through `allowed_paths` — including a bare subtree root, which `reachesTier`
+  relates to its own `dir/**` pattern although `covers` does not — and for a
+  grant its closed key set, owning role, risk
   floor, mapping and tier containment, and no overlap with `forbidden_paths`.
   Any one of those denies the whole decision. "Invalid grant" is measured
   against the canonical rules rather than a subset: the owning role and the `r3`
@@ -661,9 +670,8 @@ Proven by unit and adversarial specs against a real temporary repository:
   What makes the gap safe is not the list but the shape of it: none of those
   rules is a widening vector. Every route by which a contract could reach beyond
   its own ordinary paths — Tier 0 or Tier 1 in `allowed_paths`, a bad path
-  spelling, any malformed or unauthorised grant — is checked above, *save the
-  bare subtree root, which is checked by neither the guard nor the validator and
-  is the residual recorded earlier* — and the granted set is at exact parity with
+  spelling, any malformed or unauthorised grant — is checked above, the bare
+  subtree root included since FAB-60 — and the granted set is at exact parity with
   the validator. A contract failing only a
   validator-only rule is refused by `npm run verify:tasks` and by CI, and would
   still authorise its own ordinary paths at runtime. That asymmetry is why the
@@ -738,10 +746,11 @@ So, precisely:
 - A task contract **can no longer authorise the control plane by accident,
   with one exception.** Tier 0 is unauthorisable, Tier 1 needs an explicit
   digest-covered grant that a reviewer can see, and a malformed grant widens
-  nothing — but a *bare subtree root* (`.git`, `.agent/tasks`, `.claude/hooks`)
-  slips through both, because neither direction of the pattern test relates a
-  root to its own `dir/**`. That is the residual recorded above, and it is the
-  one thing to look for by eye when reading a contract's `allowed_paths`. This is a rule
+  nothing. A *bare subtree root* (`.git`, `.agent/tasks`, `.claude/hooks`) used
+  to slip through both, because neither direction of the pattern test relates a
+  root to its own `dir/**`; FAB-60 closed that. What is still worth an eye when
+  reading a contract's `allowed_paths` is an *ancestor* of a tier root — `.agent`
+  — which authorises that one directory path and nothing under it. This is a rule
   checked at validation and review time — it is not a runtime restraint.
 - An untrusted producer **is not yet constrained at runtime**, because the
   guard that would constrain it is deliberately not registered. What exists is

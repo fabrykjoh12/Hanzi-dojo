@@ -72,7 +72,9 @@ import path from 'node:path'
 // that is not an object, an agent_type that is not a usable name) and two about
 // the path (no path at all, a path that is not a string). Each denies on its own
 // reason, so the outcome is the same and only the message differs. Checked here
-// because no grant can authorize any of it and no contract is meant to.
+// because no grant can authorize any of it and no contract is meant to — with
+// the one exception this module still carries, an ANCESTOR of a tier root (see
+// isSubtreeRoot), which reaches one directory path and nothing beneath it.
 //
 // "No contract" used to be the half that was not quite true. A `dir/**` entry
 // does not cover its own root — `covers('.git/**', '.git')` is false in both
@@ -325,10 +327,10 @@ export function contractSecurityViolations(contract, { grants = GRANTS, root = '
     }
   }
 
-  // Ordinary allowed_paths may reach neither tier. The floor is meant to be
-  // unauthorisable outright and Tier 1 reachable only through a grant, since
-  // naming either in allowed_paths is the exact escalation the tiers exist to
-  // prevent.
+  // Ordinary allowed_paths may reach neither tier, excepting an ANCESTOR of a
+  // tier root (see isSubtreeRoot). The floor is meant to be unauthorisable
+  // outright and Tier 1 reachable only through a grant, since naming either in
+  // allowed_paths is the exact escalation the tiers exist to prevent.
   //
   // This asks reachesTier rather than covers() in both directions, which is
   // what FAB-60 changed. covers() alone missed a BARE SUBTREE ROOT — neither

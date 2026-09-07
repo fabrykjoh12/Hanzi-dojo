@@ -1079,9 +1079,18 @@ describe('who the policy governs', () => {
     // The two Tier 0 sentences must differ for the same reason the Tier 1 pair
     // does: the bare root is not ON the floor pattern, so saying it is asserts a
     // membership the module denies. Pinned so the split cannot be collapsed.
-    const floorRoot = run(asAgent('general-purpose', '.git'), {})
-    expect(floorRoot.reason).toMatch(/the root of the absolute floor/)
-    expect(floorRoot.reason, 'the bare root claims to be inside the pattern').not.toMatch(/, on the absolute floor/)
+    // Through a SYMLINK, deliberately. Since FAB-60 the lexical floor loop in
+    // step 2 refuses a bare root before the exemption is ever reached, so a
+    // plain '.git' here would be denied by that branch and this assertion would
+    // pass with the exempt branch deleted. A link whose own spelling is
+    // innocent gets past step 2 and can only be caught where this test means to
+    // catch it: on the RESOLVED path, inside the exemption.
+    const exemptLink = path.join(ROOT, 'src/exempt-to-git')
+    try { symlinkSync(path.join(ROOT, '.git'), exemptLink) } catch { /* already there */ }
+    const floorRoot = run(asAgent('general-purpose', exemptLink), {})
+    expect(floorRoot.allow, 'the exemption reached the floor root through a symlink').toBe(false)
+    expect(floorRoot.reason).toMatch(/resolves to .*, the root of the absolute floor/)
+    expect(floorRoot.reason, 'the bare root claims to be inside the pattern').not.toMatch(/, on the absolute floor \(/)
     const inside = run(asAgent('general-purpose', '.git/config'), {})
     expect(inside.reason).toMatch(/on the absolute floor/)
 
@@ -1242,7 +1251,15 @@ describe('what this change does NOT claim', () => {
       // could never fire against the line it was written for.
       'can(?:not| never)? authorize any of it',
     ].join('|'))
-    const QUALIFIER = /bare[- ]subtree[- ]root|BARE SUBTREE ROOT|subtree root/i
+    // FAB-60 CHANGED WHAT COUNTS AS THE QUALIFIER, and that is the point of
+    // updating this line rather than deleting the spec. The bare subtree root
+    // is closed now, so a sentence still hedged with "except a bare subtree
+    // root" is not qualified — it is wrong, and the review that found six such
+    // sentences standing found them because this spec accepted the phrasing it
+    // was written for. The live residual is the ANCESTOR of a tier root, so
+    // that is what must now be within reach of an absolute claim. When that one
+    // closes too, this line moves again.
+    const QUALIFIER = /ancestor of a tier root|ANCESTOR of a tier root|\bancestor\b/i
     // Scanned on a WHITESPACE-NORMALISED join, not line by line. A prose file
     // wraps, so a line-by-line scan misses any phrasing that straddles a
     // newline — and one already did: re-wrapping the floor's opening sentence
@@ -1734,6 +1751,23 @@ describe('a contract may not name a floor or tier root, in either module', () =>
     // refusing one spelling, not the guard failing closed on everything.
     const ok = writeContract(contract({ id: 'ordinary', allowed_paths: ['src/**'] }))
     expect(run(call(path.join(ROOT, 'src/existing.js')), { [BINDING_ENV]: bindingFor(ok) }).allow).toBe(true)
+  })
+
+  it('refuses the bare root before a binding is even read, in its own words', () => {
+    // Step 2 is lexical and runs before the binding, the contract and the
+    // filesystem. Asserting it needs a call that NOTHING ELSE would deny for
+    // the same reason: with no binding at all, deleting this branch does not
+    // make the write succeed — it makes the denial come from step 4 with a
+    // different sentence. That is what makes the branch mutation-verified
+    // rather than merely covered.
+    const d = run(call(path.join(ROOT, '.git')), {})
+    expect(d.allow).toBe(false)
+    expect(d.reason, 'the lexical root branch is gone — this denial came from somewhere else')
+      .toMatch(/is the root of the absolute floor/)
+    expect(d.reason, 'a bare root was reported as being inside the pattern').not.toMatch(/is on the absolute floor/)
+    // And the path INSIDE the pattern still gets the membership sentence, so
+    // the two cannot be collapsed into one message.
+    expect(run(call(path.join(ROOT, '.git/config')), {}).reason).toMatch(/is on the absolute floor/)
   })
 
   it('refuses it through a symlink as well', () => {

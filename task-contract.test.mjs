@@ -377,15 +377,19 @@ describe('contradictory path permissions are rejected', () => {
       expect(pathGrammarError(floor), 'floor entry is not itself valid grammar: ' + floor).toBeNull()
 
       // Every expression that could reach this floor entry: the entry itself,
-      // and each ANCESTOR DIRECTORY as a subtree. For a file entry the
-      // directories are its parents only — ".claude/settings.json/**" is a
-      // subtree under a regular file and can never match anything, so it is not
-      // a route to the floor and not something the floor must catch.
+      // each ANCESTOR DIRECTORY as a subtree, and — since FAB-60 — the two
+      // shapes `covers()` alone cannot see. For a subtree entry that is its
+      // BARE ROOT (`.git`, which `.git/**` does not cover); for a file entry it
+      // is that file as a subtree (`.agent/roles.json/**`), which an earlier
+      // version of this comment dismissed as "not a route to the floor" on the
+      // grounds that it can never match a real path. It does not have to match
+      // one: it is an expression a contract can carry, and the question the
+      // floor answers is what a contract may NAME.
       const isSubtree = floor.endsWith('/**')
       const body = isSubtree ? floor.slice(0, -3) : floor
       const segs = body.split('/')
       const dirDepth = isSubtree ? segs.length : segs.length - 1
-      const routes = [floor]
+      const routes = [floor, isSubtree ? body : floor + '/**']
       for (let i = 1; i <= dirDepth; i++) routes.push(segs.slice(0, i).join('/') + '/**')
 
       for (const p of routes) {
@@ -1043,6 +1047,19 @@ describe('a grant fails closed on every malformation', () => {
     for (const f of ALWAYS_FORBIDDEN) {
       const found = bad({ ...ok, protected_paths: [f] })
       expect(found, f).toMatch(/absolute floor|not inside the protected control plane/)
+    }
+  })
+
+  it('rejects the bare ROOT of a tier subtree in protected_paths too', () => {
+    // A grant names what it needs, and a root is not inside its own `dir/**`,
+    // so `.claude/hooks` is refused for not being INSIDE the tier while
+    // `.agent/tasks` is refused for reaching the floor. Both are refusals; the
+    // point of asserting them is that neither is an accidental pass, and the
+    // floor half moved to reachTier in this change.
+    for (const tier of [...ALWAYS_FORBIDDEN, ...PROTECTED_CONTROL_PLANE].filter(t => t.endsWith('/**'))) {
+      const root = tier.slice(0, -3)
+      expect(bad({ ...ok, protected_paths: [root] }), root)
+        .toMatch(/absolute floor|not inside the protected control plane/)
     }
   })
 

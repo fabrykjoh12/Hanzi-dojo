@@ -30,7 +30,7 @@ import {
   VERIFICATION_FORMS,
   VERIFICATION_ENV_KEYS,
 } from './tools/review-protocol.mjs'
-import { ALWAYS_FORBIDDEN, TASKS_DIR, computeDigest } from './tools/verify-task-contracts.mjs'
+import { ALWAYS_FORBIDDEN, PROTECTED_CONTROL_PLANE, TASKS_DIR, computeDigest } from './tools/verify-task-contracts.mjs'
 
 // THE REVIEW PROTOCOL.
 //
@@ -455,6 +455,19 @@ describe('FIXTURE 7: a diff that edits the contract it is reviewed against', () 
     // And a sibling that merely shares the prefix is still ordinary work.
     const ok = mechanicalFindings({ contract: contract({ allowed_paths: ['.gitignore'] }), changedPaths: ['.gitignore'] })
     expect(ok.some(f => f.dimension === 'hidden-authority-expansion'), '.gitignore was swept up').toBe(false)
+  })
+
+  it('flags the bare root of a Tier 1 subtree as the control-plane finding it is', () => {
+    // The floor scan and the Tier 1 scan sit ten lines apart and used to
+    // disagree: a changed path of exactly `.claude/hooks` was reported as a
+    // generic path-compliance miss rather than as touching the protected
+    // control plane without a grant. Still a blocker either way, so this is
+    // about the dimension and the sentence the operator reads.
+    for (const tier of PROTECTED_CONTROL_PLANE.filter(t => t.endsWith('/**'))) {
+      const root = tier.slice(0, -3)
+      const found = mechanicalFindings({ contract: contract({ allowed_paths: ['src/**'] }), changedPaths: [root] })
+      expect(found.map(f => f.dimension), root).toContain('hidden-authority-expansion')
+    }
   })
 })
 
