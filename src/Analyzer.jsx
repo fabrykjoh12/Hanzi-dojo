@@ -89,7 +89,7 @@ export default function Analyzer({ session, track, onBack }) {
     setAdding(true)
     const rows = result.newWords.map(v => ({
       user_id: session.user.id, vocab_id: v.id,
-      state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
+      state: 'new', learning_step: 0, due_at: new Date().toISOString(),
     }))
     const { error } = await supabase.from('cards').insert(rows)
     if (!error) {
@@ -110,7 +110,7 @@ export default function Analyzer({ session, track, onBack }) {
     if (!vocab || !vocab.id || cards[vocab.id]) return
     const row = {
       user_id: session.user.id, vocab_id: vocab.id,
-      state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
+      state: 'new', learning_step: 0, due_at: new Date().toISOString(),
       source_sentence: sentence || null,
     }
     let { error } = await supabase.from('cards').insert(row)
