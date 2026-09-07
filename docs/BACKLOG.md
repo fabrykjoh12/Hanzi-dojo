@@ -109,6 +109,33 @@ Check the content type, not the status.
   (`is_active = false` — never deleted, §7.1). **Do not repair as part of any
   audio run.**
 
+- [ ] 🟡 **`20260907020000_bound_analytics_event_rows.sql` — COMMITTED, NOT APPLIED.**
+  FAB-26 finding 5. Bounds every client-supplied column on `analytics_events`
+  (`name`, `session_id`, `language`, `app_version`, `level`, and `props` to a
+  jsonb object of at most 2 KB), and reinstates the insert policy with two added
+  clauses: an anonymous row must name a `session_id`, and no row may be dated
+  more than a day into the future. **Order does not matter** — it depends on no
+  other pending migration and nothing in the app changes with it.
+  Validated against live data before it was written: over all 6,157 rows the
+  longest `name` is 25 characters, the longest `props` 157, and there are zero
+  null `session_id`s, zero future-dated rows and zero non-object `props`. So it
+  cannot fail on the current table. Re-measure before applying if a long time
+  has passed.
+  **What it deliberately does NOT do:** close the `user_id is null` limb. That
+  limb is what makes the pre-signup funnel measurable, and 23 distinct event
+  names have arrived through it — including ones fired by signed-in clients in
+  the window before `setAnalyticsContext()` supplies the user id. Closing it, or
+  narrowing it to a name allowlist, would drop real events **in silence**,
+  because `track()` swallows every insert outcome by design. `docs/METRICS.md`
+  now names exactly which dashboard numbers an anonymous inserter can move and
+  which they cannot.
+  **Still open after it, and not fixable in SQL:** insert *volume*. A caller
+  rotating `session_id` cannot be rate-limited from inside RLS — session ids are
+  client-generated, so a per-session cap is theatre. The two real levers are
+  Supabase-side rate limiting on the REST endpoint (*dashboard*) and a retention
+  prune of old anonymous rows (a scheduled job, not a migration). Neither has
+  been set up.
+
 ## Auth / email / hosting
 - [ ] **Custom SMTP — LIVE TEST PENDING.** Configured 2026-07-18: Brevo is the sending provider; `hanzi-dojo.com` shows **Authenticated** in Brevo (DKIM `brevo1/brevo2._domainkey`, `brevo-code` TXT, DMARC `p=none` — all added in Cloudflare DNS, the authoritative nameserver; Vercel only hosts). Supabase custom SMTP wired to `smtp-relay.brevo.com:587`, sender `no-reply@hanzi-dojo.com`. **Still to verify:** send a real magic-link/sign-up to an external inbox and confirm it (a) arrives (not spam) and (b) shows From `no-reply@hanzi-dojo.com`. Brevo "Branding" (the `em`/`img.em`/`r.em` CNAMEs) shows *Not branded* — optional, tracking-link cosmetics only, doesn't block sending.
 - [ ] **Auth URL config** — set Site URL = `https://hanzi-dojo.com` and add redirect allowlist `https://hanzi-dojo.com/**` + `http://localhost:5173/**`. Fixes the login redirect that jumps to the raw github.io host. *(dashboard)*
