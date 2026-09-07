@@ -253,16 +253,24 @@ property of the pattern semantics and is checkable. The other half, that writing
 a directory fails for being a directory, is an observation about the tree rather
 than something the guard enforces, and this document calls that "luck rather
 than containment" two sections down. It is recorded here on that footing: bounded
-by the first argument, not closed by the second. One naming rule falls out of the tests rather than the tiers: **`seal-guard` is
+by the first argument, not closed by the second.
+
+One naming rule falls out of the tests rather than the tiers: **`seal-guard` is
 a reserved filename prefix inside `.agent/tasks`**. The seal specs write a probe
 contract into the real directory and run the real CLI against it, and vitest
 runs spec files in parallel workers, so any spec that reads that directory can
-catch the probe mid-write. Both cross-file readers in
-`runtime-scope.test.mjs` exclude the prefix; the two inside
-`task-contract.test.mjs` itself do not, since a file cannot race its own probe. A committed contract named `seal-guard-*.json` would be skipped in
-silence, and no assertion prevents that — the parity spec's count floor catches
-a contract renamed or deleted, not a new one added under the reserved name. This
-rule is the protection.
+catch the probe mid-write. Both readers in `runtime-scope.test.mjs` exclude the
+prefix, because that file cannot know when the probe exists. Of the three inside
+`task-contract.test.mjs`, one excludes it as well — it snapshots the committed
+set immediately before writing the probe, so a leftover from a crashed run would
+corrupt the snapshot — and the other two need not, since a file cannot race its
+own probe. A committed contract named `seal-guard-*.json` would drop out of the
+two parity sweeps in silence, and the count floor does not prevent it: the floor
+catches a contract renamed or deleted, not a new one added under the reserved
+name. Such a contract would still be VALIDATED — `task-contract.test.mjs` and
+the canonical CLI both read every `.json` in the directory — so what the
+reserved name costs is the runtime/validator parity check on that one contract,
+not its validation. This rule is what keeps the name free.
 
 These are the files that define what a task *is*
 (`.agent/tasks/**`, including its own `README.md`), who may own one
