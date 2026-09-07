@@ -3,7 +3,7 @@
 --
 -- WHY THIS EXISTS. grade_card applies p_updates as ABSOLUTE values under
 -- coalesce(...), with no ordering guard. Every column the client sends wins,
--- whenever it arrives. The client_op_id de-dupe does not help here: it makes a
+-- whenever it arrives. The client_op_id de-dupe does not help: it makes a
 -- REPLAY of the same op a no-op, and a stale op is not a replay — it has never
 -- been applied.
 --
@@ -20,29 +20,60 @@
 -- "a human graded this word inside Hanzi Dojo" (CLAUDE.md §7.3b), and
 -- isLearned, isMastered and the level-test gate all rest on it.
 --
--- THE GUARD. The card's scheduler columns are left alone when the incoming
--- last_review is strictly older than the row's current last_review. Both the
--- UPDATE branch and the INSERT ... ON CONFLICT branch, because a stale op with
--- cardId null reaches the second one.
+-- THE ORDERING KEY IS reps, NOT last_review, AND THAT IS THE WHOLE POINT.
+--
+-- An earlier draft of this migration compared last_review. That was wrong, and
+-- wrong in a way this repository has already ruled on: last_review is stamped
+-- by the DEVICE clock (src/srs.js), and 20260822160000 says in as many words,
+-- "Two timestamps from two clock domains should not be ordered by the
+-- database." Ordering two device clocks is worse still. It fails BOTH ways:
+--
+--   phone clock 10 min SLOW  — the web grades at 12:00; two minutes later the
+--     learner grades the same card on the phone, which stamps 11:52. The guard
+--     reads that as stale and DISCARDS a genuinely newer grade, while still
+--     writing its review_logs row — so the log count now exceeds reps, the same
+--     disagreement this guard exists to prevent, in the opposite direction.
+--   phone clock 2h FAST — Monday's stale op carries 14:00, Tuesday's real write
+--     carries 13:00, so the stale op wins anyway and the bug survives.
+--
+-- reps has neither problem, because it is not a clock. srs.schedule() derives
+-- the new value by incrementing the row the client READ, so a genuinely newer
+-- grade always carries exactly existing + 1, and a superseded one carries a
+-- value the row has already passed. `incoming > existing` is therefore the
+-- precise stale signature, and it is clock-free.
+--
+-- Two devices that both grade offline from reps 4 both produce 5. The first
+-- applies (5 > 4); the second is refused (5 > 5 is false). That is correct: the
+-- second was computed from a state the card has left.
+--
+-- THE GUARD IS PART OF THE WRITE, not a check before it. An earlier draft did
+-- SELECT ... then UPDATE, which is two statements: under READ COMMITTED a newer
+-- grade committing between them would be read as "not stale" and then
+-- overwritten. The predicate now lives in the UPDATE's own WHERE and in the
+-- ON CONFLICT ... DO UPDATE ... WHERE, so the decision and the write are one
+-- statement on one row version. Both paths, because a stale op with cardId null
+-- reaches the second one.
 --
 -- WHAT IS DELIBERATELY STILL WRITTEN. The review log and the daily activity.
 -- The grade genuinely happened; it is the SCHEDULING that is superseded, not
--- the history. Dropping the log would lose a real observation and make reps
--- disagree with the log count in the other direction.
+-- the history.
 --
--- WHAT IS DELIBERATELY NOT GUARDED. A null last_review on either side applies
--- as before: a row that was never graded has nothing to be stale against, and
--- an op carrying no last_review cannot be ordered. Failing open there keeps a
--- legitimate write from being dropped on a technicality; the columns that can
--- go backwards are exactly the ones last_review orders.
+-- WHAT IS DELIBERATELY NOT GUARDED. A null on either side applies as before: a
+-- row with no reps has nothing to be stale against, and an op carrying none
+-- cannot be ordered. Failing open there keeps a legitimate write from being
+-- dropped on a technicality.
 --
--- Comparison is on last_review rather than on reps. reps is a count, and two
--- devices can legitimately reach the same count from different observations;
--- last_review is the instant the scheduler used, which is what makes one write
--- older than another.
+-- WHAT THIS DOES NOT COVER, so the backlog entry does not over-claim: three
+-- client paths write cards scheduler columns WITHOUT going through grade_card —
+-- src/Study.jsx's undo, src/Test.jsx, src/CreativeMode.jsx. Undo in particular
+-- writes the client's pre-grade snapshot straight over whatever the server
+-- holds. Pre-existing, out of scope here, and recorded in docs/BACKLOG.md.
 --
--- Idempotent: create or replace. The function body below is the previous
--- migration's, unchanged except for the guard.
+-- The result now carries `stale`, so a client can tell a rejected write from an
+-- applied one instead of both looking like success.
+--
+-- Idempotent: create or replace. The body below is the previous migration's,
+-- unchanged except for the guard.
 --
 
 create or replace function public.grade_card(
@@ -84,9 +115,11 @@ declare
   -- would hand the device the ability to push a server-authoritative timestamp
   -- into the future.
   v_verified_at timestamptz := now();
-  -- Stale-replay guard. See the header.
-  v_incoming_last_review timestamptz := (p_updates->>'last_review')::timestamptz;
-  v_existing_last_review timestamptz;
+  -- Stale-replay guard. See the header. Read in the BODY rather than here: a
+  -- DECLARE default is evaluated before the auth check and before the
+  -- already-applied early return, so a malformed value would raise a cast error
+  -- on a path that previously returned cleanly.
+  v_incoming_reps int;
   v_stale boolean := false;
 begin
   if v_user_id is null then
@@ -115,58 +148,51 @@ begin
     end if;
   end if;
 
+  v_incoming_reps := (p_updates->>'reps')::int;
+
   -- ── Card ─────────────────────────────────────────────────────────────────
   if p_card_id is not null then
-    -- Is this write superseded? Read the row's own last_review first; a stale
-    -- op must not touch a single scheduler column.
-    select c.last_review into v_existing_last_review
-    from public.cards c
-    where c.id = p_card_id and c.user_id = v_user_id;
+    update public.cards c set
+      state          = coalesce(p_updates->>'state', c.state),
+      interval_days  = coalesce((p_updates->>'interval_days')::int, c.interval_days),
+      due_at         = coalesce((p_updates->>'due_at')::timestamptz, c.due_at),
+      is_easy        = coalesce((p_updates->>'is_easy')::boolean, c.is_easy),
+      learned        = coalesce((p_updates->>'learned')::boolean, c.learned),
+      stability      = coalesce((p_updates->>'stability')::real, c.stability),
+      difficulty     = coalesce((p_updates->>'difficulty')::real, c.difficulty),
+      reps           = coalesce((p_updates->>'reps')::int, c.reps),
+      lapses         = coalesce((p_updates->>'lapses')::int, c.lapses),
+      last_review    = coalesce((p_updates->>'last_review')::timestamptz, c.last_review),
+      scheduled_days = coalesce((p_updates->>'scheduled_days')::int, c.scheduled_days),
+      elapsed_days   = coalesce((p_updates->>'elapsed_days')::int, c.elapsed_days),
+      learning_step  = coalesce((p_updates->>'learning_step')::int, c.learning_step),
+      -- The claim is verified by this very grade, in this very statement.
+      -- Server-derived (now()), so the client cannot steer it, and it cannot be
+      -- set on a card that was never claimed.
+      verified_at    = case
+                         when c.prior_known_at is not null and c.verified_at is null
+                           then v_verified_at
+                         else c.verified_at
+                       end
+    where c.id = p_card_id
+      and c.user_id = v_user_id
+      -- The guard, inside the write. See the header: one statement, one row
+      -- version, so a grade committing concurrently cannot slip between a
+      -- check and an update.
+      and (v_incoming_reps is null or c.reps is null or v_incoming_reps > c.reps)
+    returning c.id, c.vocab_id into v_card_id, v_vocab_id;
 
     if not found then
-      raise exception 'Card not found';
-    end if;
-
-    v_stale := v_incoming_last_review is not null
-           and v_existing_last_review is not null
-           and v_incoming_last_review < v_existing_last_review;
-
-    if v_stale then
-      -- Resolve the ids so the log and activity below still write, then leave
-      -- the card exactly as the newer grade left it.
+      -- Either the card is gone, or this write is superseded. Tell them apart:
+      -- a missing card is still an error, a superseded one is not.
       select c.id, c.vocab_id into v_card_id, v_vocab_id
       from public.cards c
       where c.id = p_card_id and c.user_id = v_user_id;
-    else
-      update public.cards c set
-        state          = coalesce(p_updates->>'state', c.state),
-        interval_days  = coalesce((p_updates->>'interval_days')::int, c.interval_days),
-        due_at         = coalesce((p_updates->>'due_at')::timestamptz, c.due_at),
-        is_easy        = coalesce((p_updates->>'is_easy')::boolean, c.is_easy),
-        learned        = coalesce((p_updates->>'learned')::boolean, c.learned),
-        stability      = coalesce((p_updates->>'stability')::real, c.stability),
-        difficulty     = coalesce((p_updates->>'difficulty')::real, c.difficulty),
-        reps           = coalesce((p_updates->>'reps')::int, c.reps),
-        lapses         = coalesce((p_updates->>'lapses')::int, c.lapses),
-        last_review    = coalesce((p_updates->>'last_review')::timestamptz, c.last_review),
-        scheduled_days = coalesce((p_updates->>'scheduled_days')::int, c.scheduled_days),
-        elapsed_days   = coalesce((p_updates->>'elapsed_days')::int, c.elapsed_days),
-        learning_step  = coalesce((p_updates->>'learning_step')::int, c.learning_step),
-        -- The claim is verified by this very grade, in this very statement.
-        -- Server-derived (now()), so the client cannot steer it, and it cannot be
-        -- set on a card that was never claimed.
-        verified_at    = case
-                           when c.prior_known_at is not null and c.verified_at is null
-                             then v_verified_at
-                           else c.verified_at
-                         end
-      where c.id = p_card_id
-        and c.user_id = v_user_id
-      returning c.id, c.vocab_id into v_card_id, v_vocab_id;
 
       if not found then
         raise exception 'Card not found';
-    end if;
+      end if;
+      v_stale := true;
     end if;
   else
     if p_vocab_id is null then
@@ -220,19 +246,17 @@ begin
                            then v_verified_at
                          else c.verified_at
                        end
-    -- Same guard on the conflict path: an op with no card id still lands here
-    -- when the row already exists, which is exactly the offline-replay shape.
-    where c.last_review is null
-       or excluded.last_review is null
-       or excluded.last_review >= c.last_review
+    -- Same guard, same reason, on the path a stale op with no card id takes.
+    where excluded.reps is null or c.reps is null or excluded.reps > c.reps
     returning c.id, c.vocab_id into v_card_id, v_vocab_id;
 
-    -- A filtered-out conflict updates no row, so RETURNING gives nothing.
-    -- The card exists and its ids are still needed for the log below.
+    -- A filtered-out conflict updates no row, so RETURNING gives nothing. The
+    -- card exists and its ids are still needed for the log below.
     if v_card_id is null then
       select c.id, c.vocab_id into v_card_id, v_vocab_id
       from public.cards c
       where c.user_id = v_user_id and c.vocab_id = p_vocab_id;
+      v_stale := true;
     end if;
   end if;
 
@@ -302,7 +326,11 @@ begin
 
   return jsonb_build_object(
     'card_id', v_card_id, 'log_id', v_log_id,
-    'already_applied', false, 'inserted', v_inserted);
+    'already_applied', false, 'inserted', v_inserted,
+    -- So a rejected scheduler write is distinguishable from an applied one.
+    -- Without it src/syncQueue.js reports ok and the client keeps its
+    -- superseded local card with no signal to refresh.
+    'stale', v_stale);
 end;
 $$;
 
