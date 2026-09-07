@@ -224,8 +224,10 @@ not match `.git`, and neither does the reverse. So a contract naming that bare
 subtree root — `.git`, `.agent/tasks` — was refused by nothing, at validation or
 at runtime, and in a git worktree `.git` is a regular file, so that was a real
 write rather than a curiosity. FAB-60 closed it in the canonical validator, in
-the runtime policy and in the review protocol at once, through one predicate
-(`reachesTier`) that asks the root question alongside the two containment ones.
+the runtime policy and in the review protocol at once, through one new question
+— `isSubtreeRoot` — asked directly where a concrete path is judged, and folded
+into `reachesTier` alongside the two containment tests where a contract entry
+is.
 What remains open: an entry naming an ANCESTOR of a tier root, `.agent` above
 `.agent/tasks/**`. An exact entry authorises only itself, so the whole of the
 authority it adds is one directory path and nothing beneath it — that half is a
@@ -554,10 +556,13 @@ directory in every checkout anyone has run, so the write failed for that reason
 rather than because the guard stopped it: luck rather than containment. It was a
 property of the pattern semantics rather than of the exemption, and the
 canonical validator had the same shape, so fixing it meant fixing both halves in
-one change. FAB-60 did that: `reachesTier` now backs the floor and Tier 1 tests
-in `tools/verify-task-contracts.mjs`, in `.claude/hooks/task-scope-policy.mjs`
-(both the contract check and the two `decide()` floor loops, lexical and
-resolved) and in `tools/review-protocol.mjs`'s diff scan. A parity spec drives
+one change. FAB-60 did that. Two spellings, because two different questions are being
+asked: `reachesTier` backs the CONTRACT tests — what an `allowed_paths` or
+`protected_paths` entry may name — in `tools/verify-task-contracts.mjs` and in
+`.claude/hooks/task-scope-policy.mjs`; and `isSubtreeRoot` is asked directly
+where a concrete path is being judged rather than a pattern, which is both
+`decide()` floor loops (lexical and resolved) and `tools/review-protocol.mjs`'s
+diff scan. A parity spec drives
 the two copies of the predicate over the same pairs, so they cannot drift.
 
 **One more thing the exemption does not exempt, and it will be felt.** The

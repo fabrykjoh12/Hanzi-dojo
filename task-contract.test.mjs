@@ -372,7 +372,9 @@ describe('contradictory path permissions are rejected', () => {
   it('the floor is COMPLETE over the accepted grammar', () => {
     // Every accepted expression matches either exactly one path or exactly one
     // subtree, so containment against a floor entry is decidable in both
-    // directions — there is no accepted form the floor can fail to see.
+    // directions. What the floor can still fail to REFUSE is an ancestor of a
+    // tier root (`.agent`), which names one directory and nothing beneath it —
+    // decidable, and deliberately allowed; see docs/AUTOMATION-AUTHORITY.md.
     for (const floor of ALWAYS_FORBIDDEN) {
       expect(pathGrammarError(floor), 'floor entry is not itself valid grammar: ' + floor).toBeNull()
 
@@ -1056,10 +1058,18 @@ describe('a grant fails closed on every malformation', () => {
     // `.agent/tasks` is refused for reaching the floor. Both are refusals; the
     // point of asserting them is that neither is an accidental pass, and the
     // floor half moved to reachTier in this change.
-    for (const tier of [...ALWAYS_FORBIDDEN, ...PROTECTED_CONTROL_PLANE].filter(t => t.endsWith('/**'))) {
-      const root = tier.slice(0, -3)
-      expect(bad({ ...ok, protected_paths: [root] }), root)
-        .toMatch(/absolute floor|not inside the protected control plane/)
+    // The two messages are asserted SEPARATELY, because the alternation that
+    // accepted either passed identically before and after the floor test was
+    // widened: a floor root is not inside PROTECTED_CONTROL_PLANE, so it fell to
+    // the second message under the old predicate too, and the widening it
+    // claimed to pin was unverified.
+    for (const tier of ALWAYS_FORBIDDEN.filter(t => t.endsWith('/**'))) {
+      expect(bad({ ...ok, protected_paths: [tier.slice(0, -3)] }), tier)
+        .toMatch(/absolute floor/)
+    }
+    for (const tier of PROTECTED_CONTROL_PLANE.filter(t => t.endsWith('/**'))) {
+      expect(bad({ ...ok, protected_paths: [tier.slice(0, -3)] }), tier)
+        .toMatch(/not inside the protected control plane/)
     }
   })
 

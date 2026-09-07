@@ -892,25 +892,29 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
         }
         if (isSubtreeRoot(f, relative)) {
           return deny('Tier 0: "' + target + '" resolves to ' + relative + ', the root of the absolute floor (' + f +
-            '). Not inside the pattern, which is the residual isSubtreeRoot documents — refused here all the same')
+            '). Not inside the pattern — covers() relates neither to the other — and refused all the same')
         }
       }
       for (const p of PROTECTED_TIER) {
         // Two different facts, so two different sentences. INSIDE the tier, a
         // grant is what authorizes the write and this caller has none. At the
-        // bare ROOT, the opposite is true on both halves: no grant can reach it
-        // — `contractSecurityViolations` requires a protected_path to be inside
-        // PROTECTED_TIER, and the root is not inside its own `dir/**` — while an
-        // ordinary allowed_paths entry is accepted and does authorize it. One
-        // message covering both said the reverse of the truth for the root.
+        // bare ROOT, no grant can reach it at all: `contractSecurityViolations`
+        // requires a protected_path to be inside PROTECTED_TIER, and a root is
+        // not inside its own `dir/**`.
+        //
+        // Until FAB-60 the second half of that was worse — an ordinary
+        // allowed_paths entry naming the root WAS accepted and did authorize the
+        // write, which is what these two sentences were split to stop saying in
+        // one breath. That is closed now: reachesTier refuses the root in
+        // allowed_paths too, in this module and in the canonical validator.
         if (covers(p, relative)) {
           return deny('Tier 1: "' + target + '" resolves to ' + relative + ', in the protected control plane (' + p +
             '), which only a granted contract may authorize — and "' + agentType + '" carries no bound contract')
         }
         if (isSubtreeRoot(p, relative)) {
           return deny('Tier 1: "' + target + '" resolves to ' + relative + ', the root of the protected control plane (' +
-            p + '). No grant reaches it and no contract is bound here, so nothing authorizes this caller. ' +
-            'An ordinary contract could still name it — that is the residual isSubtreeRoot documents, not a grant')
+            p + '). No grant reaches it — a granted path must be INSIDE the tier — and no contract is bound here, ' +
+            'so nothing authorizes this caller')
         }
       }
     }

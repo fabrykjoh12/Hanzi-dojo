@@ -443,10 +443,12 @@ describe('FIXTURE 7: a diff that edits the contract it is reviewed against', () 
   it('flags the bare ROOT of a floor subtree, not only what is inside it', () => {
     // FAB-60. `covers('.git/**', '.git')` is false and `p === floorPath` does
     // not fire either, so this scan used to walk past the root of every floor
-    // subtree. Unreachable in practice — a changed path of `.git` cannot appear
-    // in a git diff — but it is the same defect the validator and the runtime
-    // policy both carried, and a reader comparing the three floor tests should
-    // find them saying the same thing.
+    // subtree. Nearly unreachable in practice — a changed path of `.git` does
+    // not appear in an ordinary git diff, though replacing a tracked directory
+    // with a symlink makes `.agent/tasks` or `.claude/hooks` representable, so
+    // "cannot" would be too strong. Either way it is the same defect the
+    // validator and the runtime policy both carried, and a reader comparing the
+    // floor and Tier 1 tests should find them saying the same thing.
     for (const floor of ALWAYS_FORBIDDEN.filter(f => f.endsWith('/**'))) {
       const root = floor.slice(0, -3)
       const found = mechanicalFindings({ contract: contract({ allowed_paths: ['src/**'] }), changedPaths: [root] })

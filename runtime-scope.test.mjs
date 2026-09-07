@@ -1060,6 +1060,25 @@ describe('who the policy governs', () => {
     expect(d.reason).toMatch(/Tier 1/)
   })
 
+  it('an ancestor of a tier root authorises that path and nothing beneath it', () => {
+    // The surviving residual, asserted rather than described. The authority doc
+    // calls this half "a property of the pattern semantics and checkable"; this
+    // is the check. `.agent` is accepted in allowed_paths — reachesTier relates
+    // it to neither `.agent/tasks/**` nor `.agent/roles.json` — and what it buys
+    // is exactly one path.
+    expect(contractSecurityViolations({ allowed_paths: ['.agent'], forbidden_paths: [] })
+      .filter(v => /Tier 0|control plane/.test(v)), '.agent stopped being the residual it is documented as')
+      .toEqual([])
+    const c = writeContract(contract({ id: 'ancestor', allowed_paths: ['.agent'] }))
+    const env = { [BINDING_ENV]: bindingFor(c) }
+    expect(run(call(path.join(ROOT, '.agent')), env).allow, 'the ancestor entry stopped authorising itself').toBe(true)
+    // And nothing beneath it: an exact entry covers only itself, which is the
+    // whole of the bound the residual rests on.
+    const inside = run(call(path.join(ROOT, '.agent/tasks/anything.json')), env)
+    expect(inside.allow, 'an ancestor entry reached inside the tier').toBe(false)
+    expect(inside.reason).toMatch(/Tier 0/)
+  })
+
   it('refuses the bare root of a tier subtree, not only what is inside it', () => {
     // covers('.git/**', '.git') is false — the subtree test is a prefix match
     // on '.git/', and '.git' does not start with it. Correct for covers(), which
