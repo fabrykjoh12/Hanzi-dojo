@@ -83,8 +83,12 @@ const RESET_DELETED_OP_KINDS = ['grade', 'storyRead', 'storyClaim']
  * the choice is between possibly discarding another track's unsynced write and
  * possibly resurrecting progress the learner explicitly asked to delete. A
  * reset is an explicit, destructive, confirmed action; silently undoing part of
- * it is the worse failure, and the window for an untagged op is one app version
- * and one offline session wide.
+ * it is the worse failure. The window is one app version wide for an op that
+ * flushes normally — but NOT for one that does not: flushOutbox has no attempt
+ * counter and leaves a failing op in place forever (the poison pill described
+ * at the top of this section), so an untagged op that never replays cleanly
+ * persists indefinitely. An earlier version of this comment said the window
+ * was one version and one offline session wide, full stop, which was wrong.
  *
  * THE USER DIMENSION DEFAULTS THE OTHER WAY, and the asymmetry is deliberate.
  * The outbox is one IndexedDB store per origin, not per account, and an
@@ -181,8 +185,44 @@ export function enqueueAnalytics(event) {
   return outboxAdd({ kind: 'analytics', event })
 }
 
-export function pendingWrites() {
-  return outboxCount()
+/**
+ * Is this queued op replayable under the account currently signed in?
+ *
+ * THE HALF THE DROP CANNOT DO. dropQueuedWritesForTrack keeps an op that names
+ * another account, on the reasoning that destroying it would be a loss with no
+ * matching deletion. That is only safe if the op is not then REPLAYED as this
+ * account — and it would be: grade_card writes under auth.uid() and ignores
+ * op.userId entirely (20260822170000), so account A's queued grade, flushed
+ * while B is signed in, becomes B's card at A's reps and stability. The outbox
+ * is one store per device and sign-out never clears it, so this is reachable
+ * without anything unusual happening, and it predates the reset work — it is
+ * fixed here because the reset's "only your own account's" guarantee is not
+ * true without it.
+ *
+ * An op carrying no userId is replayable under any session: analytics ops are
+ * enqueued without one (enqueueAnalytics stores the event, not an owner), and
+ * an empty or unrecognised row must still be drained rather than wedge the
+ * queue.
+ */
+export function opIsReplayableBy(op, userId) {
+  if (!userId) return false
+  if (!op) return true
+  return !op.userId || op.userId === userId
+}
+
+/**
+ * How many queued writes are waiting.
+ *
+ * With a userId: only the ops that account would actually flush — what the sync
+ * bar should show, since another account's held ops are not this learner's work
+ * and will never clear while they are signed in.
+ *
+ * Without one: the device-wide row count, which is the honest number for
+ * Settings' offline-storage card — that card is about what is ON THE DEVICE.
+ */
+export function pendingWrites(userId) {
+  if (!userId) return outboxCount()
+  return outboxAll().then(rows => (rows || []).filter(r => opIsReplayableBy(r.op, userId)).length)
 }
 
 // ── Pure helpers (unit-tested) ──────────────────────────────────────────────
@@ -399,8 +439,18 @@ let flushing = false
 // Replay the whole outbox against Supabase. Ops that fail are left in place for
 // the next attempt. daily_activity is reconciled once at the end over exactly
 // the ops that flushed this pass.
-export async function flushOutbox(supabase) {
+export async function flushOutbox(supabase, userId) {
   if (flushing || !supabase) return { flushed: 0 }
+  // A flush that cannot say which account it is flushing for has no business
+  // writing to one: every replay lands under auth.uid(), so an unattributed
+  // flush is exactly how one account's queued work becomes another's.
+  //
+  // This line is a short-circuit, not the guarantee — opIsReplayableBy already
+  // refuses every op when userId is missing, so deleting this early return
+  // changes nothing except that the whole outbox gets read first. Said plainly
+  // because a mutation test proved it: removing it fails no spec, and the rule
+  // it looks like it enforces lives one function up.
+  if (!userId) return { flushed: 0 }
   flushing = true
   try {
     const rows = (await outboxAll()) || []
@@ -411,18 +461,22 @@ export async function flushOutbox(supabase) {
     // Only ops whose day counts the RPC did NOT write (the legacy fallback
     // path) are folded in below — replaying through the RPC already did it.
     const unreconciled = []
-    let userId = null
     for (const row of rows) {
       const op = row.op
+      // Held, not dropped: it is another account's unsynced work and replays
+      // correctly the next time that account signs in here.
+      if (!opIsReplayableBy(op, userId)) continue
       const res = await replayOp(supabase, op)
       if (!res.ok) continue
       await outboxDelete(row.id)
       flushed += 1
       if (res.reconcile) unreconciled.push(op)
-      if (op && op.userId) userId = op.userId
     }
 
-    if (unreconciled.length > 0 && userId) {
+    // Reconcile under the signed-in account. This used to scavenge the last
+    // op's userId, which was the same value on every ordinary device and the
+    // wrong one on a shared device.
+    if (unreconciled.length > 0) {
       await reconcile(supabase, userId, unreconciled)
     }
     return { flushed }

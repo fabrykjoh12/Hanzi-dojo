@@ -22,6 +22,7 @@ import {
   gradeCardWrite, resetGradeRpcProbe, enqueueGrade, flushOutbox,
   enqueueStoryRead, enqueueStoryClaim, enqueueAnalytics,
   queuedOpBelongsToTrack, dropQueuedWritesForTrack,
+  opIsReplayableBy, pendingWrites,
 } from './syncQueue'
 
 // ── A minimal chainable Supabase double ─────────────────────────────────────
@@ -277,7 +278,7 @@ describe('offline replay', () => {
     const opId = store.rows[0].op.opId
     const sb = fakeSupabase({ rpc: () => ({ data: { card_id: 'card-1', log_id: 'log-1', already_applied: false }, error: null }) })
 
-    const out = await flushOutbox(sb)
+    const out = await flushOutbox(sb, 'u1')
     expect(out.flushed).toBe(1)
     expect(store.rows).toHaveLength(0)
     expect(sb.calls.rpc[0].fn).toBe('grade_card')
@@ -304,11 +305,11 @@ describe('offline replay', () => {
     }
 
     const sb = fakeSupabase({ rpc })
-    await flushOutbox(sb)
+    await flushOutbox(sb, 'u1')
     // The op survived the flush (an outbox delete that never landed) and is
     // replayed on the next reconnect.
     store.rows.push({ id: 99, op })
-    await flushOutbox(sb)
+    await flushOutbox(sb, 'u1')
 
     expect(sb.calls.rpc).toHaveLength(2)
     expect(applied).toBe(1)                  // written exactly once
@@ -320,7 +321,7 @@ describe('offline replay', () => {
     await queued()
     const sb = fakeSupabase() // no grade_card
 
-    const out = await flushOutbox(sb)
+    const out = await flushOutbox(sb, 'u1')
     expect(out.flushed).toBe(1)
     expect(sb.calls.update[0]).toMatchObject({ table: 'cards' })
     const activity = sb.calls.upsert.filter(c => c.table === 'daily_activity')
@@ -328,11 +329,70 @@ describe('offline replay', () => {
     expect(activity[0].vals).toMatchObject({ activity_date: '2026-07-22', studied_cards: 1, review_cards: 1 })
   })
 
+  it('never replays another account\'s queued write as this account', async () => {
+    // The half the reset's drop cannot do. dropQueuedWritesForTrack KEEPS an op
+    // that names another account, because destroying it would be a loss with no
+    // matching deletion — but grade_card writes under auth.uid() and ignores
+    // op.userId, so replaying it here would insert account A's card, at A's
+    // reps and stability, into account B. The outbox is one store per device
+    // and sign-out never clears it, so nothing unusual has to happen.
+    await queued()
+    store.rows.push({ id: 42, op: { kind: 'grade', userId: 'someone-else', vocabId: 'v9', cardId: null, updates: { reps: 9, stability: 40 }, opId: 'op-x' } })
+    const sb = fakeSupabase({ rpc: () => ({ data: { card_id: 'c', log_id: 'l', already_applied: false }, error: null }) })
+
+    const out = await flushOutbox(sb, 'u1')
+
+    expect(out.flushed).toBe(1)
+    expect(sb.calls.rpc).toHaveLength(1)              // only u1's grade was sent
+    expect(store.rows.map(r => r.op.userId)).toEqual(['someone-else'])  // held, not dropped
+  })
+
+  it('still replays an op that names no account', async () => {
+    // Analytics ops are enqueued without an owner, and an unrecognised row has
+    // to drain rather than wedge the queue behind it.
+    await enqueueAnalytics({ name: 'x' })
+    store.rows.push({ id: 43, op: null })
+    const sb = fakeSupabase()
+
+    const out = await flushOutbox(sb, 'u1')
+
+    expect(out.flushed).toBe(2)
+    expect(store.rows).toHaveLength(0)
+  })
+
+  it('refuses to flush at all when it cannot say which account it is for', async () => {
+    await queued()
+    const sb = fakeSupabase({ rpc: () => ({ data: { card_id: 'c', log_id: 'l' }, error: null }) })
+
+    expect(await flushOutbox(sb, null)).toEqual({ flushed: 0 })
+    expect(sb.calls.rpc).toHaveLength(0)
+    expect(store.rows).toHaveLength(1)
+  })
+
+  it('counts pending writes per account, and per device when asked', async () => {
+    // The sync bar shows the signed-in learner's work; Settings' offline-storage
+    // card is about what is on the DEVICE, so it keeps the whole count.
+    await queued()
+    store.rows.push({ id: 44, op: { kind: 'grade', userId: 'someone-else', vocabId: 'v9', updates: {} } })
+
+    expect(await pendingWrites('u1')).toBe(1)
+    expect(await pendingWrites()).toBe(2)
+  })
+
+  it('replays under the signed-in account, not the last op it happened to see', () => {
+    // The reconcile pass used to scavenge a userId off the last replayed op.
+    expect(opIsReplayableBy({ kind: 'grade', userId: 'u1' }, 'u1')).toBe(true)
+    expect(opIsReplayableBy({ kind: 'grade', userId: 'u2' }, 'u1')).toBe(false)
+    expect(opIsReplayableBy({ kind: 'analytics', event: {} }, 'u1')).toBe(true)
+    expect(opIsReplayableBy(null, 'u1')).toBe(true)
+    expect(opIsReplayableBy({ kind: 'grade', userId: 'u1' }, null)).toBe(false)
+  })
+
   it('leaves a failed op in the outbox and does not count its day', async () => {
     await queued()
     const sb = fakeSupabase({ rpc: () => ({ data: null, error: { code: '42501', message: 'rls' } }) })
 
-    const out = await flushOutbox(sb)
+    const out = await flushOutbox(sb, 'u1')
     expect(out.flushed).toBe(0)
     expect(store.rows).toHaveLength(1)
     expect(sb.calls.upsert).toHaveLength(0)
@@ -458,19 +518,14 @@ describe("a progress reset drops that track's queued writes, and only those", ()
     expect(queuedOpBelongsToTrack(grade({ ...CN, userId: undefined }), CN, undefined)).toBe(false)
   })
 
-  it('covers the op that RESURRECTS a deleted card', () => {
-    // The worst of the two outcomes, and the one that is silent. A card first
-    // graded offline has no row, so cardId is null; grade_card's INSERT branch
-    // recreates it with the pre-reset reps and stability.
-    const resurrector = grade({ ...CN, cardId: null, updates: { state: 'review', reps: 6, stability: 30 } })
-    expect(queuedOpBelongsToTrack(resurrector, CN, U)).toBe(true)
-  })
-
-  it('covers the op that WEDGES the queue', () => {
-    // The other outcome: 'Card not found' -> ok:false -> left in place, with no
-    // attempt counter, so pendingWrites() never returns to zero.
-    expect(gradeU({ ...CN, cardId: 'gone' }, CN)).toBe(true)
-  })
+  // Two specs stood here, named for the bug's two failure modes — "covers the op
+  // that RESURRECTS a deleted card" and "covers the op that WEDGES the queue".
+  // They varied only cardId and updates, which the predicate never reads, so
+  // neither could fail without the first spec in this block failing too: they
+  // were documentation wearing a spec's name, and counting them as coverage of
+  // those two modes was the overstatement. The modes themselves are covered
+  // where the behaviour actually differs — cardId: null against the real
+  // deletion loop below, and the whole point of the header comment above.
 
   // ── The function that actually destroys queued writes ─────────────────────
   //

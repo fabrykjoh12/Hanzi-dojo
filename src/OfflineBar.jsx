@@ -28,13 +28,13 @@ export default function OfflineBar({ session, navVisible = true }) {
   useEffect(() => {
     let cancelled = false
     async function refresh() {
-      const n = await pendingWrites()
+      const n = await pendingWrites(session.user.id)
       if (!cancelled) setPending(n)
     }
     async function run() {
       if (!session) { setPending(0); return }
       await refresh()
-      const count = await pendingWrites()
+      const count = await pendingWrites(session.user.id)
       if (!online) {
         // Queue a background sync so a backgrounded page still flushes on reconnect.
         if (count > 0) registerFlushSync()
@@ -42,7 +42,7 @@ export default function OfflineBar({ session, navVisible = true }) {
       }
       if (count > 0) {
         if (!cancelled) setSyncing(true)
-        await flushOutbox(supabase)
+        await flushOutbox(supabase, session.user.id)
         if (!cancelled) setSyncing(false)
         await refresh()
       }
@@ -57,9 +57,9 @@ export default function OfflineBar({ session, navVisible = true }) {
     const onMessage = async (e) => {
       if (e.data && e.data.type === 'hd-flush') {
         setSyncing(true)
-        await flushOutbox(supabase)
+        await flushOutbox(supabase, session.user.id)
         setSyncing(false)
-        setPending(await pendingWrites())
+        setPending(await pendingWrites(session.user.id))
       }
     }
     navigator.serviceWorker.addEventListener('message', onMessage)

@@ -241,12 +241,16 @@ export function takePreparedSession({ userId, track }, now = Date.now) {
 
 // Drop the prepared slot without serving it.
 //
-// The specs use it to isolate; the four progress-reset paths (Profile x2,
-// Dev, CreativeMode) call it because a reset DELETES the cards the slot was
-// built from, and takePreparedSession's key check would still match — so
-// Study's next run would open on a set of rows that no longer exist. There is
-// no logout caller, despite what this comment said for a long time: sign-out
-// goes through supabase.auth.signOut() alone.
+// The specs use it to isolate; the four progress-reset paths (Profile x2, Dev,
+// CreativeMode) call it because when the reset target IS the prepared track, a
+// reset deletes the cards the slot was built from and prepKey — learner, track,
+// level, day — still matches, so Study's next run would open on rows that no
+// longer exist. Profile's second path can reset a track that is not the
+// prepared one; there the clear costs a wasted re-prepare and nothing more,
+// which is the cheaper side of getting this wrong.
+//
+// There is no logout caller, despite what this comment said for a long time:
+// sign-out goes through supabase.auth.signOut() alone.
 export function clearPreparedSession() {
   slot = null
 }
