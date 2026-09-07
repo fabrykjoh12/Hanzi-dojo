@@ -262,7 +262,10 @@ describe('PRIOR_SOURCES', () => {
     const dir = 'supabase/migrations'
     let check = null
     for (const name of readdirSync(dir).filter(n => n.endsWith('.sql')).sort()) {
-      const found = /add constraint cards_prior_source_check[\s\S]*?\)\s*\)/.exec(readFileSync(dir + '/' + name, 'utf8'))
+      // Case-insensitive: SQL keywords are, and a migration written ADD
+      // CONSTRAINT would otherwise be invisible here — leaving this spec green
+      // against a definition two years old while the live constraint moved.
+      const found = /add\s+constraint\s+cards_prior_source_check[\s\S]*?\)\s*\)/i.exec(readFileSync(dir + '/' + name, 'utf8'))
       if (found) check = found
     }
     expect(check, 'no migration declares cards_prior_source_check any more').not.toBeNull()
@@ -272,7 +275,21 @@ describe('PRIOR_SOURCES', () => {
   })
 
   it('separates what the constraint permits from what any code writes', () => {
-    expect(WRITTEN_PRIOR_SOURCES).toEqual(['placement', 'paste', 'checklist'])
+    // Derived from the call sites, not restated. Asserting the literal against
+    // the literal is a tautology that passes whatever the code does — and the
+    // mutation that matters is exactly the one it could not see: a path that
+    // starts writing 'legacy_claim' or 'assumed_prerequisite'.
+    const written = new Set()
+    for (const file of ['src/Onboarding.jsx', 'src/KnownWords.jsx', 'src/priorKnowledgeSeed.js']) {
+      const code = readFileSync(file, 'utf8').split('\n').filter(l => !l.trim().startsWith('//')).join('\n')
+      for (const m of code.matchAll(/source:\s*(?:[^,\n]*\?\s*)?'([a-z_]+)'(?:\s*:\s*'([a-z_]+)')?/g)) {
+        if (m[1]) written.add(m[1])
+        if (m[2]) written.add(m[2])
+      }
+    }
+    expect(written.size, 'no prior_source literal found at any call site').toBeGreaterThan(0)
+    expect([...WRITTEN_PRIOR_SOURCES].sort()).toEqual([...written].sort())
+
     for (const source of WRITTEN_PRIOR_SOURCES) {
       expect(PRIOR_SOURCES, source + ' must be permitted by the constraint too').toContain(source)
     }

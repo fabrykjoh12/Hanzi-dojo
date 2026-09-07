@@ -350,6 +350,23 @@ export async function mockSupabaseRoutes(page) {
     }
     if (url.pathname.startsWith('/rest/v1/')) {
       const table = url.pathname.replace('/rest/v1/', '').split('?')[0];
+      // A prior-knowledge claim upserts cards with ignoreDuplicates and then
+      // .select()s the result. PostgREST returns ONLY the rows it inserted, and
+      // that difference is the whole point of the confirmation the screen shows
+      // — so the mock has to model it rather than echoing every card. Rows
+      // whose vocab_id the fixture already has a card for are the duplicates.
+      if (req.method() === 'POST' && table === 'cards') {
+        const sent = req.postDataJSON();
+        const rows = Array.isArray(sent) ? sent : [sent];
+        const held = new Set(liveCards.map(card => card.vocab_id));
+        const fresh = rows.filter(row => !held.has(row.vocab_id));
+        fresh.forEach((row) => { liveCards.push({ ...row, id: `seeded-${row.vocab_id}` }); });
+        return route.fulfill({
+          status: 201,
+          headers: { ...CORS, 'content-type': 'application/json' },
+          body: JSON.stringify(fresh.map(row => ({ vocab_id: row.vocab_id }))),
+        });
+      }
       let body;
       if (table in TABLE_FIXTURES) {
         const f = table === 'cards' ? liveCards : TABLE_FIXTURES[table];

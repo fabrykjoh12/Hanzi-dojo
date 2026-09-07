@@ -11,6 +11,20 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+### Two branches add the same two toast icons
+
+`src/Toasts.jsx` maps a toast's `kind` to an icon and falls back to `Award` for
+anything it does not know, so an unmapped kind arrives wearing an achievement
+medal. Two branches noticed this independently and added the identical
+`info: Info, warn: TriangleAlert` entries: `claude/fab-30-honest-import-results`
+(the "we couldn't add your earlier words" apology) and
+`claude/fab-26-narrow-client-grants` (the dictionary limit toasts). Whichever
+merges second will conflict on that one line, and either side of the conflict is
+the right resolution.
+
+Noted here rather than in a comment in `Toasts.jsx`: a branch name in shipped
+source is stale the moment either branch merges, and nobody deletes it.
+
 ### A word-list import that fails halfway reports as if nothing landed
 
 `seedClaim` writes in batches of 500 and throws on the first failure, so a claim
