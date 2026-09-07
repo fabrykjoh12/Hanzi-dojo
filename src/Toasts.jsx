@@ -44,8 +44,12 @@ export default function Toasts() {
   // container created in the same tick as its first child is usually missed
   // entirely by VoiceOver — the announcement only lands when the region already
   // existed and its contents then changed. So only the toasts are conditional.
+  //
+  // It is NAMED because it is not the only role="status" on screen — Home's
+  // gentle-return banner is another — and a test (or a screen reader user)
+  // needs to be able to say which region it means.
   return (
-    <div role="status" aria-live="polite" style={{
+    <div role="status" aria-live="polite" aria-label="Notifications" style={{
       // Fixed to the viewport, so the app shell's top inset doesn't reach it —
       // clear the status bar / notch here or the first toast lands inside it.
       position: 'fixed', top: 'calc(18px + env(safe-area-inset-top, 0px))', right: '18px', zIndex: 60,

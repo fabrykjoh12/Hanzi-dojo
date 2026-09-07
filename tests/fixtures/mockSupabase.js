@@ -19,7 +19,10 @@ import {
   storyFromManhuaManifest,
 } from './manhuaManifest.js';
 
-const REF = 'mock';
+// Exported so a spec can stage a write the UI cannot produce on its own — see
+// known-words.spec.js, which claims a card from "another device" between the
+// check and the add.
+export const REF = 'mock';
 const USER_ID = '00000000-0000-4000-8000-000000000001';
 const past = '2026-01-01T08:00:00.000Z';
 const dueNow = '2026-01-10T06:00:00.000Z';

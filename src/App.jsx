@@ -355,10 +355,13 @@ export default function App() {
       clearPriorSeedFailure()
     })
     return () => { cancelled = true }
-    // location.pathname is in here because the trust pages and the recovery
-    // screen are route branches: leaving one is the moment the shell appears,
-    // and without it this effect would not re-run to notice.
-  }, [justOnboarded, profile, track, bootstrapError, location.pathname])
+    // location.pathname is in here because the trust pages are route branches:
+    // leaving one is the moment the shell appears, and without it this effect
+    // would not re-run to notice. `recovery` is its own dependency because it
+    // is NOT always a route branch — the web email link fires PASSWORD_RECOVERY
+    // from the URL hash, so the pathname can already be '/' when the recovery
+    // screen goes up and still be '/' when it comes down.
+  }, [justOnboarded, profile, track, bootstrapError, recovery, location.pathname])
 
   // Navigate between views (updates the URL). Profile/track/counts reload only
   // when landing on Home — the dashboard is the one view that renders them, and

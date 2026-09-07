@@ -1,4 +1,4 @@
-import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
+import { authedTest as test, expect, REF } from '../fixtures/mockSupabase.js';
 
 // "Words you already know" — the paste flow, end to end.
 //
@@ -43,22 +43,38 @@ test.describe('Words you already know', () => {
     await goto(page);
     await page.getByRole('button', { name: 'Paste a list' }).click();
     // Two fixture words the mocked account has no card for. Every v1…v13 word
-    // already has one, and a word already in the deck is exactly what the
-    // upsert declines — so pasting those would produce nothing to add.
+    // already has one, and the screen drops those before sending — so pasting
+    // one of them would just make the button say "Add 1", not produce a
+    // duplicate for the database to decline.
     await page.locator('textarea').fill('面条儿\n声音');
     await page.getByRole('button', { name: 'Check this list' }).click();
 
     const add = page.getByRole('button', { name: /^Add \d+ to review$/ });
-    await expect(add).toBeVisible();
-    const count = Number((await add.textContent()).match(/\d+/)[0]);
-    expect(count).toBeGreaterThan(0);
+    await expect(add, 'both words must be offered, or the race below stages nothing')
+      .toHaveText('Add 2 to review');
+
+    // Stage the ONE situation where sent and inserted differ: another device
+    // claims 声音 after this screen counted it and before the learner taps Add.
+    // Without this the two numbers are always equal and the toast could be
+    // reporting either — which is exactly the regression this test exists to
+    // catch, since the screen used to report `claimIds.length`.
+    await page.evaluate(async (ref) => {
+      await fetch('https://' + ref + '.supabase.co/rest/v1/cards', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify([{ vocab_id: 'upstairs-v1' }]),
+      });
+    }, REF);
+
     await add.click();
 
-    // The toast lives in the live region <Toasts /> keeps mounted. Reading the
-    // TEXT is the point: a payload of the wrong shape renders a card with no
-    // title, which is visible-but-empty and would pass a bare visibility check.
-    const status = page.locator('[role="status"]');
-    await expect(status).toContainText(new RegExp('Added ' + count + ' word'));
+    // The toast lives in the live region <Toasts /> keeps mounted — named, so
+    // this does not also match Home's gentle-return banner once the learner is
+    // back there. Reading the TEXT is the point: a payload of the wrong shape
+    // renders a card with no title, which is visible-but-empty and would pass a
+    // bare visibility check.
+    const status = page.getByRole('status', { name: 'Notifications' });
+    await expect(status).toContainText('Added 1 word to review · 1 already in your deck');
     // And back to the screen it came from, so the toast is not sitting on a
     // screen the learner never reached.
     await expect(page.getByRole('button', { name: 'Paste a list' })).toHaveCount(0);
