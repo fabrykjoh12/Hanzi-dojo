@@ -298,8 +298,10 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     // The cards and story rows this track had are gone. Any queued offline
     // write for them would either recreate them at their pre-reset state or
     // wedge the outbox forever on 'Card not found' — so they go too, and only
-    // they.
-    await dropQueuedWritesForTrack(targetTrack)
+    // they. The user id is not decoration: the outbox is one store per device,
+    // shared by every account that has signed in on it, and the reset RPC
+    // deletes only this account's rows.
+    await dropQueuedWritesForTrack(targetTrack, session.user.id)
     clearPreparedSession()
 
     setResetting(false)
@@ -352,7 +354,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
 
     // Same reason as the reset panel above: the rows are deleted, so their
     // queued writes must not outlive them.
-    await dropQueuedWritesForTrack({ language: langCode, system: target.system })
+    await dropQueuedWritesForTrack({ language: langCode, system: target.system }, session.user.id)
     clearPreparedSession()
 
     const { error } = await supabase

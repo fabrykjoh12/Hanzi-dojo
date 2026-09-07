@@ -63,12 +63,13 @@ export function enqueueGrade(op) {
 const RESET_DELETED_OP_KINDS = ['grade', 'storyRead', 'storyClaim']
 
 /**
- * Does this queued op belong to the track being reset?
+ * Does this queued op belong to the reset that just ran — this user, on this
+ * track?
  *
  * Pure, and deliberately the only place the rule lives.
  *
- * The rule is one sentence: an op of a kind the reset deletes is dropped
- * UNLESS a tag it actually carries says it belongs to some other track.
+ * The rule is one sentence: an op of a kind the reset deletes is dropped UNLESS
+ * something it actually carries says it belongs to some other user or track.
  *
  * That matters for a partially-tagged op, which the two obvious spellings both
  * get wrong. `!op.language && !op.system` treats {language:'chinese'} as tagged
@@ -77,41 +78,61 @@ const RESET_DELETED_OP_KINDS = ['grade', 'storyRead', 'storyClaim']
  * drops it, so {language:'japanese'} — plainly NOT this track's — is destroyed.
  * Comparing only the tags present is right in both directions.
  *
- * An op carrying NO tags is dropped, and that is a judgement worth stating
- * rather than hiding. It cannot be attributed to a language, so the choice is
- * between possibly discarding another track's unsynced write and possibly
- * resurrecting progress the learner explicitly asked to delete. A reset is an
- * explicit, destructive, confirmed action; silently undoing part of it is the
- * worse failure, and the window for an untagged op is one app version and one
- * offline session wide.
+ * An op carrying no LANGUAGE tag at all is dropped, and that is a judgement
+ * worth stating rather than hiding. It cannot be attributed to a language, so
+ * the choice is between possibly discarding another track's unsynced write and
+ * possibly resurrecting progress the learner explicitly asked to delete. A
+ * reset is an explicit, destructive, confirmed action; silently undoing part of
+ * it is the worse failure, and the window for an untagged op is one app version
+ * and one offline session wide.
+ *
+ * THE USER DIMENSION DEFAULTS THE OTHER WAY, and the asymmetry is deliberate.
+ * The outbox is one IndexedDB store per origin, not per account, and an
+ * ordinary sign-out never clears it (outboxClear() runs only on account
+ * deletion). So two accounts that have used the same device share a queue. The
+ * RPC this mirrors deletes only auth.uid()'s rows, and a drop wider than the
+ * reset it is cleaning up after would destroy an account's durable writes while
+ * that account's cards still exist on the server — a loss with no
+ * corresponding deletion, which is worse than either failure the language rule
+ * weighs. An op that does not name THIS user is therefore kept, missing userId
+ * included: unlike the language tag, which this change introduced, userId has
+ * been on every op since the queue existed, so its absence is not a version
+ * window to trade away.
  */
-export function queuedOpBelongsToTrack(op, track) {
+export function queuedOpBelongsToTrack(op, track, userId) {
   if (!op || !RESET_DELETED_OP_KINDS.includes(op.kind)) return false
   if (!track || !track.language || !track.system) return false
+  if (!userId || op.userId !== userId) return false
   if (op.language && op.language !== track.language) return false
   if (op.system && op.system !== track.system) return false
   return true
 }
 
 /**
- * Drop this track's queued writes. Call it AFTER a reset RPC succeeds — before
- * would leave the queue emptied for a reset that then failed.
+ * Drop this user's queued writes for this track. Call it AFTER a reset RPC
+ * succeeds — before would leave the queue emptied for a reset that then failed.
  *
- * Returns how many ops were actually deleted. The counter lives outside the
- * try so a store that fails halfway still reports the ops that really went,
- * rather than the 0 an earlier version returned while the queue had already
- * shrunk. Never throws: a browser with no IndexedDB has no outbox to drain,
- * and a reset must not fail because of it.
+ * `userId` is required, not optional: without it this drops nothing. The outbox
+ * is shared by every account that has signed in on the device, so a call that
+ * cannot name the account has no business deleting from it.
+ *
+ * Returns how many ops were actually deleted. No caller reads it yet — it is
+ * kept and asserted because it is the only thing this function makes
+ * observable, and a count that lies is worse than no count. The counter lives
+ * outside the try so a store that fails halfway reports the ops that really
+ * went, rather than the 0 an earlier version returned while the queue had
+ * already shrunk. Never throws: a browser with no IndexedDB has no outbox to
+ * drain, and a reset must not fail because of it.
  *
  * NOT a lock. flushOutbox can be mid-replay when this runs; see docs/BACKLOG.md
  * ("Reset races an in-flight outbox flush").
  */
-export async function dropQueuedWritesForTrack(track) {
+export async function dropQueuedWritesForTrack(track, userId) {
   let dropped = 0
   try {
     const rows = (await outboxAll()) || []
     for (const row of rows) {
-      if (!queuedOpBelongsToTrack(row.op, track)) continue
+      if (!queuedOpBelongsToTrack(row.op, track, userId)) continue
       await outboxDelete(row.id)
       dropped += 1
     }

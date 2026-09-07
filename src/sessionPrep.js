@@ -239,7 +239,14 @@ export function takePreparedSession({ userId, track }, now = Date.now) {
   return record.promise
 }
 
-// Test/logout hook.
+// Drop the prepared slot without serving it.
+//
+// The specs use it to isolate; the four progress-reset paths (Profile x2,
+// Dev, CreativeMode) call it because a reset DELETES the cards the slot was
+// built from, and takePreparedSession's key check would still match — so
+// Study's next run would open on a set of rows that no longer exist. There is
+// no logout caller, despite what this comment said for a long time: sign-out
+// goes through supabase.auth.signOut() alone.
 export function clearPreparedSession() {
   slot = null
 }
