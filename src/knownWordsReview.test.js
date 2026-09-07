@@ -9,6 +9,7 @@ import {
   idsOf,
   claimIdsFor,
   claimSummaryLine,
+  claimToast,
   initialOpenLevels,
   toggleLevelOpen,
 } from './knownWordsReview'
@@ -208,5 +209,35 @@ describe('claimSummaryLine', () => {
     expect(claimSummaryLine({ inserted: 0, skipped: 0 })).toBe('Nothing to add')
     expect(claimSummaryLine()).toBe('Nothing to add')
     expect(claimSummaryLine(null)).toBe('Nothing to add')
+  })
+})
+
+describe('claimToast', () => {
+  // The payload, because the payload was the bug: KnownWords passed the bare
+  // string to toast(), <Toasts /> spread it into character keys, and `title`
+  // came out undefined — an empty card, for as long as the screen has existed.
+  it('is an object with a title, not a bare string', () => {
+    const t = claimToast({ inserted: 3, skipped: 0 })
+    expect(typeof t).toBe('object')
+    expect(t.title).toBe('Added 3 words to review')
+  })
+
+  it('survives being spread, which is what <Toasts /> does to it', () => {
+    // The exact operation that turned the old string into {0:'A',1:'d',…}.
+    const spread = { id: 1, ...claimToast({ inserted: 1, skipped: 2 }) }
+    expect(spread.title).toBe('Added 1 word to review · 2 already in your deck')
+    expect(spread['0']).toBeUndefined()
+  })
+
+  it('carries the screen accent and is tagged as information', () => {
+    // Untagged toasts fall back to the achievement medal (Toasts.jsx).
+    const t = claimToast({ inserted: 1, skipped: 0, accent: '#B83A24' })
+    expect(t.accent).toBe('#B83A24')
+    expect(t.kind).toBe('info')
+  })
+
+  it('never throws, whatever it is handed', () => {
+    expect(claimToast().title).toBe('Nothing to add')
+    expect(claimToast(null).title).toBe('Nothing to add')
   })
 })

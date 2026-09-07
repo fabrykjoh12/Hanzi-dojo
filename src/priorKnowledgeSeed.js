@@ -24,9 +24,10 @@ export const SEED_BATCH_SIZE = 500
 // seedClaim({ userId, vocabIds, perDay, source, now }) → { inserted, skipped, batches }
 //
 // `vocabIds` must already be in frequency order (see spreadDueDates). `source`
-// is one of knowledgeState.PRIOR_SOURCES and is now PERSISTED on every row as
-// `prior_source` — until this change it existed only inside an analytics event,
-// so there was no way to ask which of a learner's cards were claimed.
+// is one of knowledgeState.PRIOR_SOURCES and is PERSISTED on every row as
+// `prior_source`. (That was an earlier change, not this one: before it, the
+// source existed only inside an analytics event, so there was no way to ask
+// which of a learner's cards were claimed.)
 //
 // `inserted` is what the database actually created; `skipped` is what it
 // declined because a card already existed. Their sum is what was attempted.

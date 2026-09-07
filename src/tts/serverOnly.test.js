@@ -66,40 +66,6 @@ function read(file) {
   return readFileSync(file, 'utf8')
 }
 
-// The same file with its comments removed.
-//
-// The guards below scan for identifiers that must not be IMPORTED, and a
-// scan of raw text counts a file that merely talks about one. That is not
-// hypothetical: a comment in knowledgeState.js naming
-// src/migration/legacyClaimMigration.js as where the historical claim rows came
-// from turned that file into a "violation" of the migration-tooling guard.
-//
-// It stops a true sentence about the codebase from failing a check about what
-// the bundle contains.
-//
-// ORDER MATTERS, and getting it backwards weakens the guard rather than
-// strengthening it. Stripping block comments first lets a `/*` inside a LINE
-// comment open a block that runs to the next `*/` anywhere below — in a string,
-// say — deleting real code in between, imports included. Line comments go
-// first for exactly that reason. This is still a lexer approximation and not a
-// parser: it does not know about template literals or regex literals, so treat
-// it as "good enough for the shapes this repo writes", not as a guarantee.
-function readCode(file) {
-  const withoutLineComments = read(file)
-    .split('\n')
-    .map(line => {
-      const i = line.indexOf('//')
-      if (i === -1) return line
-      // Only a comment if the // is not inside a string — the cheap test that
-      // covers this repo: an even number of quotes before it.
-      const before = line.slice(0, i)
-      const quotes = (before.match(/['"`]/g) || []).length
-      return quotes % 2 === 0 ? before : line
-    })
-    .join('\n')
-  return withoutLineComments.replace(/\/\*[\s\S]*?\*\//g, '')
-}
-
 // Which src/tts/* modules a file imports, by file name.
 function ttsImportsOf(source) {
   const found = []
@@ -147,7 +113,7 @@ describe('client/server boundary', () => {
   it('keeps CLI-only migration tooling out of every browser-reachable file', () => {
     const violations = []
     for (const file of clientFiles) {
-      const source = readCode(file)
+      const source = read(file)
       if (source.indexOf('migration/legacyClaim') !== -1
           || /from '\.\/legacyClaim/.test(source)) {
         violations.push(relPath(file))

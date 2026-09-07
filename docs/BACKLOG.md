@@ -24,6 +24,24 @@ truer; nothing consumes it yet, because the useful message ("N of M saved, try
 again for the rest") is a copy decision rather than a code one. Recorded so the
 next person does not have to rediscover which half of the claim landed.
 
+### The client-bundle guards match text, so prose can trip them
+
+`src/tts/serverOnly.test.js` scans raw source for tokens that must not be
+imported into a browser-reachable file — `'node:'`, `migration/legacyClaim`, a
+credential name. It does not distinguish code from comments, so a file that
+merely *writes about* one of those paths fails a check about what the bundle
+contains. That happened once in this session: a comment in `knowledgeState.js`
+naming where the historical claim rows came from made that file a "violation".
+
+**Left as-is deliberately, and the comment was reworded instead.** Stripping
+comments first is only correct with a real lexer: a naive pass gets `/*` inside
+a line comment, or `//` inside a template or regex literal, wrong — and getting
+it wrong deletes real code from the scanned text, so a genuine violating import
+would pass. A guard about credentials reaching the bundle should not become an
+approximation to accommodate prose. If the false positives ever become common,
+the fix is a parser (the repo already has one — the Vite/OXC toolchain), not a
+regex.
+
 ### Every roadmap item is cut at its first em-dash before it reaches Discord
 
 `.github/scripts/roadmap-render.mjs` does `item.replace(/ — [\s\S]*$/, '')` and

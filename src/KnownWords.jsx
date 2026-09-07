@@ -11,7 +11,7 @@ import { seedClaim } from './priorKnowledgeSeed'
 import {
   buildReviewGroups, selectAll, toggleSelection, setSelected,
   groupState, idsOf, claimIdsFor, initialOpenLevels, toggleLevelOpen,
-  claimSummaryLine,
+  claimToast,
 } from './knownWordsReview'
 import { loadAllVocab, fetchCardedVocabIds } from './knownWordsData'
 import { ArrowLeft, Check, ChevronDown, ChevronRight, Minus } from 'lucide-react'
@@ -153,13 +153,11 @@ export default function KnownWords({ session, profile, track, onBack }) {
       // open — the carded snapshot above is taken once, when it loads — and
       // saying "added N" for a word that was already there is the kind of small
       // lie that makes the rest of the numbers untrustworthy.
-      // An object, not a string. toast() dispatches its argument verbatim and
-      // <Toasts /> spreads it — spreading a string yields {0:'A',1:'d',…}, so
-      // `title` is undefined and the learner gets an empty card. This line has
-      // passed a string since it was written, which means this screen's
-      // confirmation has never actually said anything; making the count honest
-      // and leaving that in place would have been the same defect one layer up.
-      toast({ title: claimSummaryLine({ inserted, skipped }), accent: accentHex })
+      // claimToast, not a payload built here: the shape is what was broken —
+      // this line passed a STRING to toast() from the day it was written, so
+      // the confirmation never rendered at all — and a shape assembled in JSX
+      // is a shape no spec can see.
+      toast(claimToast({ inserted, skipped, accent: accentHex }))
       onBack()
     } catch (e) {
       setSaveError(e.message || 'Could not save. Please try again.')
@@ -249,7 +247,14 @@ export default function KnownWords({ session, profile, track, onBack }) {
                 fontSize: '13px', color: ink(accentHex), cursor: 'pointer',
                 // §5: 44px touch target, and accent-as-text goes through ink()
                 // so it lifts toward white in dark mode.
-                padding: '12px 2px', minHeight: '44px', display: 'flex', alignItems: 'center',
+                //
+                // NOT display:flex, which is the obvious way to centre this and
+                // costs the disclosure triangle: WebKit and Blink draw the
+                // default marker only for display:list-item, and Preflight does
+                // not restore it — so in an iOS WKWebView the affordance would
+                // be accent-coloured text and nothing else. Padding and
+                // line-height do the same job and keep the marker.
+                padding: '12px 2px', minHeight: '20px', lineHeight: '20px',
               }}>
                 See what we didn’t recognise
               </summary>

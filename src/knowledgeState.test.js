@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync } from 'node:fs'
+import { readFileSync, readdirSync } from 'node:fs'
 import {
   KNOWLEDGE, MASTERY_STABILITY_DAYS, PRIOR_SOURCES, WRITTEN_PRIOR_SOURCES,
   hasGenuineObservation, hasPriorClaim,
@@ -256,9 +256,16 @@ describe('PRIOR_SOURCES', () => {
     // fails only when someone edits PRIOR_SOURCES, which is the direction that
     // does not matter — the array exists to mirror the constraint, so the drift
     // worth catching is the constraint's.
-    const sql = readFileSync('supabase/migrations/20260822160000_prior_knowledge_columns.sql', 'utf8')
-    const check = /cards_prior_source_check[\s\S]*?\)\s*\)/.exec(sql)
-    expect(check, 'the constraint must still be declared where this points').not.toBeNull()
+    // The LAST migration that defines it, not one named here: a later
+    // migration redefining cards_prior_source_check would otherwise leave this
+    // spec green while PRIOR_SOURCES drifted from the live constraint.
+    const dir = 'supabase/migrations'
+    let check = null
+    for (const name of readdirSync(dir).filter(n => n.endsWith('.sql')).sort()) {
+      const found = /add constraint cards_prior_source_check[\s\S]*?\)\s*\)/.exec(readFileSync(dir + '/' + name, 'utf8'))
+      if (found) check = found
+    }
+    expect(check, 'no migration declares cards_prior_source_check any more').not.toBeNull()
     const fromSql = [...check[0].matchAll(/'([a-z_]+)'/g)].map(m => m[1])
     expect(fromSql.length, 'the parse must find something').toBeGreaterThan(1)
     expect([...PRIOR_SOURCES].sort()).toEqual([...fromSql].sort())

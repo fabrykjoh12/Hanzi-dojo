@@ -54,7 +54,7 @@ export const KNOWLEDGE = {
 //
 // Only THREE of these are written by any current code path: 'placement'
 // (Onboarding), 'paste' and 'checklist' (KnownWords). 'legacy_claim' is
-// historical, written once by src/migration/legacyClaimMigration.js, and is the
+// historical, written once by the legacy-claim repair script under src/migration/, and is the
 // only value present in production today. 'assumed_prerequisite' is written by
 // nothing at all — it was reserved for a path that was never built, and it is
 // listed because the constraint still permits it, not because it occurs.

@@ -152,6 +152,21 @@ export function claimSummaryLine(result) {
   return 'Added ' + words(inserted) + ' to review · ' + skipped + ' already in your deck'
 }
 
+// The whole toast, not just its sentence.
+//
+// The sentence being right was never the broken half: KnownWords passed the
+// STRING to toast(), which dispatches its argument verbatim, and <Toasts />
+// spreads it — so a string became {0:'A',1:'d',…}, `title` was undefined, and
+// the learner got an empty card. That had been true since the line was written,
+// so this screen's confirmation had never said anything at all. Returning the
+// payload from here is what makes the shape testable rather than a JSX detail.
+export function claimToast(result) {
+  // Destructured from a local, not in the signature: a default parameter covers
+  // undefined and not null, and claimSummaryLine already learned that lesson.
+  const { inserted = 0, skipped = 0, accent = null } = result || {}
+  return { kind: 'info', title: claimSummaryLine({ inserted, skipped }), accent }
+}
+
 function toSet(value) {
   if (value instanceof Set) return new Set(value)
   return new Set(value || [])

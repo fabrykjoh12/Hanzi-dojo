@@ -19,6 +19,7 @@ import Landing from './Landing'
 import PasswordReset from './PasswordReset'
 import Toasts from './Toasts'
 import { toast } from './toast'
+import { takePriorSeedFailure, shouldAnnouncePriorSeedFailure, priorSeedNoticeToast } from './priorSeedNotice'
 import OfflineBar from './OfflineBar'
 import { contentBottomInset, navVisibleFor } from './bottomBar'
 import { useNavFocused } from './navFocus'
@@ -140,10 +141,13 @@ export default function App() {
   const [justTastedWords, setJustTastedWords] = useState([])
   const [pendingStoryFirstMission, setPendingStoryFirstMission] = useState(false)
   // Onboarding's claim of the words below the placed level is best-effort and
-  // can fail. It cannot say so itself: <Toasts /> is mounted in the app shell
-  // only, and during onboarding that shell does not exist yet — a toast fired
-  // there is dispatched into nothing. So the failure rides back on onComplete
-  // and is announced once the shell is up.
+  // can fail. It cannot say so itself — <Toasts /> lives in the shell below,
+  // which does not exist during onboarding — so the failure is written to
+  // device prefs and read back here. Prefs rather than a state hand-off,
+  // because a hand-off survives exactly one render: a reload or a backgrounded
+  // webview between onboarding and the shell loses it, and the network
+  // flakiness that makes the seed fail is the same flakiness that makes a
+  // mobile session unstable. See priorSeedNotice.js.
   const [priorSeedFailed, setPriorSeedFailed] = useState(false)
   // True while the user arrived via a password-recovery email link and hasn't
   // set a new password yet (Supabase signs them in and fires PASSWORD_RECOVERY).
@@ -335,15 +339,20 @@ export default function App() {
     }
   }, [loading, session, publicStoryId, routerNavigate])
 
-  // Say it once, after the shell exists, then forget it — a retry would be a
-  // second toast for the same failure.
+  // Read the durable flag once there is a shell to read it into. takePrior…
+  // clears it, so the notice is shown once however many times this re-runs.
   useEffect(() => {
-    if (!priorSeedFailed || justOnboarded || !profile || !track) return
-    toast({
-      kind: 'warn',
-      title: 'We couldn’t add your earlier words',
-      body: 'Add them any time from Practice → “Words you already know”.',
+    let cancelled = false
+    if (justOnboarded || !profile || !track) return undefined
+    takePriorSeedFailure().then((flagged) => {
+      if (!cancelled) setPriorSeedFailed(flagged)
     })
+    return () => { cancelled = true }
+  }, [justOnboarded, profile, track])
+
+  useEffect(() => {
+    if (!shouldAnnouncePriorSeedFailure({ flagged: priorSeedFailed, justOnboarded, profile, track })) return
+    toast(priorSeedNoticeToast())
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setPriorSeedFailed(false)
   }, [priorSeedFailed, justOnboarded, profile, track])
@@ -468,7 +477,7 @@ export default function App() {
     return (
       <>
         <Background language="chinese" />
-        <Onboarding session={session} onComplete={(tastedWords, meta) => { loadProfile(session.user.id); setJustOnboarded(true); setJustTastedWords(tastedWords || []); setPriorSeedFailed(Boolean(meta && meta.priorSeedFailed)) }} />
+        <Onboarding session={session} onComplete={(tastedWords) => { loadProfile(session.user.id); setJustOnboarded(true); setJustTastedWords(tastedWords || []) }} />
       </>
     )
   }

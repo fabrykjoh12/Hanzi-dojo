@@ -8,6 +8,7 @@ import { PACING } from './priorKnowledge'
 import { seedClaim } from './priorKnowledgeSeed'
 import { fetchEarlierVocabIds } from './priorKnowledgeVocab'
 import { fetchPaged } from './supabasePaging'
+import { recordPriorSeedFailure } from './priorSeedNotice'
 import { readPreloginPrefs, clearPreloginPrefs, encouragementFor } from './prelogin'
 import { daysToWords } from './onboardingGoal'
 import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
@@ -162,7 +163,6 @@ export default function Onboarding({ session, onComplete }) {
       // and the retry does exist: "Words you already know" can claim exactly
       // the same set by hand. So the failure now says so, once, calmly, and
       // says where to go. Still non-blocking: onboarding completes either way.
-      let priorSeedFailed = false
       if (level > 1) {
         try {
           const perDay = (PACING.find(p => p.key === claimPacing) || PACING[1]).perDay
@@ -172,16 +172,15 @@ export default function Onboarding({ session, onComplete }) {
           }
         } catch (seedErr) {
           console.error('prior-knowledge seed failed', seedErr)
-          priorSeedFailed = true
+          // Recorded rather than announced: <Toasts /> is mounted in the app
+          // shell, which does not exist yet here, and a flag in React state
+          // would not survive a reload between this screen and that one.
+          await recordPriorSeedFailure()
         }
       }
 
       track(EVENTS.ONBOARDING_COMPLETED, { language, level, goal })
-      // The failure rides back rather than being announced here: <Toasts /> is
-      // mounted in the app shell, which does not exist yet during onboarding, so
-      // a toast fired from this screen is dispatched into nothing. App says it
-      // once the shell is up.
-      onComplete(tastedWords, { priorSeedFailed })
+      onComplete(tastedWords)
     } catch (e) {
       setError(e.message)
       setSaving(false)
