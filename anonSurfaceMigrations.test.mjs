@@ -203,6 +203,21 @@ describe('scoping story children to published stories', () => {
     }
   })
 
+  it('widens nothing outside the policies it rewrites', () => {
+    // Every other assertion in this file reads `create policy` statements, so
+    // the migration could have appended `grant select on public.story_utterances
+    // to anon;` — or disabled RLS outright — and stayed green while opening
+    // everything. Neither belongs in a migration whose entire purpose is to
+    // narrow a read, so both are refused rather than inspected.
+    const sql = codeOf(SCOPE)
+    expect(sql, 'a grant to a client role does not belong in a scoping migration')
+      .not.toMatch(/\bgrant\b[\s\S]{0,200}?\bto\s+(anon|authenticated|public)\b/i)
+    expect(sql, 'RLS must not be disabled by a migration that tightens RLS')
+      .not.toMatch(/\bdisable\s+row\s+level\s+security\b/i)
+    expect(sql, 'and no policy may be dropped without this file re-creating it')
+      .not.toMatch(/\bdrop\s+policy\b(?![\s\S]*create policy)/i)
+  })
+
   it('reloads the PostgREST schema cache', () => {
     expect(codeOf(SCOPE)).toMatch(/notify pgrst, 'reload schema'/)
   })
@@ -226,7 +241,11 @@ describe('scoping story children to published stories', () => {
       // between `schema` and `net`. The first version carried /i on the revoke
       // half only, so `REVOKE USAGE ON SCHEMA NET FROM anon;` walked through a
       // guard whose comment said it caught exactly that.
-      const touchesNet = /\bschema\s+"?net"?\b/i.test(sql) || /\bnet\s*\.\s*http/i.test(sql)
+      // `net.` followed by ANY identifier, not just http*: pg_net has twelve
+      // functions and a revoke naming net.worker_restart() or the
+      // net._http_response table would otherwise ship — the underscore alone
+      // defeated the earlier /net\.http/ form.
+      const touchesNet = /\bschema\s+"?net"?\b/i.test(sql) || /\bnet\s*\.\s*\w/i.test(sql)
       if (touchesNet && /\brevoke\b/i.test(sql)) offenders.push(name)
     }
     // Known and accepted: this is FILE-scoped, not statement-scoped, so a future
