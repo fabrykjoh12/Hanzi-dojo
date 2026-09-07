@@ -935,9 +935,16 @@ src/xp.js
   Used by Study (award), Home (Lv pill), Profile (account-level panel).
 
 src/homeCounts.js
-  getHomeCounts(userId, track, dailyNewCards) — loads vocabulary and cards for the
-  current level, computes newCount/learnCount/dueCount/easyCount/totalWords/
-  learnedCount/masteredCount/masteredPct. Called by App.jsx on every navigate().
+  getHomeCounts(userId, track, dailyNewCards) — computes newCount/learnCount/
+  dueCount/calibrationCount/easyCount/totalWords/learnedCount/masteredCount/
+  masteredPct. Called by App.jsx on every navigate().
+    Two scopes, deliberately. newCount and the level-progress numbers are the
+  CURRENT LEVEL's; dueCount and calibrationCount are the whole DECK's, because
+  that is what a session serves — a word saved from a story or the dictionary is
+  due even though it sits outside the level window.
+    calibrationCount is capped at CALIBRATION_SESSION_CAP (src/calibration.js),
+  so unlike dueCount it is the size of the next session's slice rather than a
+  backlog. See docs/METRICS.md.
 
 src/testLogic.js
   getTestStatus(userId, track) — returns masteredCount/totalWords/masteredPct/
