@@ -302,14 +302,23 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     // shared by every account that has signed in on it, and the reset RPC
     // deletes only this account's rows.
     //
-    // The dialog above says "your other languages keep their progress" and not
-    // "are untouched", which it used to. Progress is exactly right: the RPC
-    // deletes only this track's rows. Untouched was not, because of the
-    // untagged rule in queuedOpBelongsToTrack — an unsynced write queued by a
-    // build that did not stamp the language yet is dropped whichever track it
-    // came from. That is a deliberate trade (see the comment there), and the
-    // sentence sat directly above an irreversible button, so it had to stop
-    // promising the half that is not true.
+    // The dialog above used to end "Your other languages are untouched", then
+    // briefly "keep their progress". Both are gone, and the second was not an
+    // improvement — it changed the noun, not the truth conditions. The untagged
+    // rule in queuedOpBelongsToTrack drops an unsynced write that carries no
+    // language tag whichever track it came from, and untagged is what the
+    // CURRENT production build queues, so resetting one language really can
+    // discard another's unsynced grades. Redefining "progress" as "rows on the
+    // server" is not how a learner reads the word, and the sentence sat
+    // directly above an irreversible button.
+    //
+    // Nothing replaces it. The line above already names the language and the
+    // scope; a promise about the other tracks cannot be made truthfully while
+    // the untagged rule stands, and a hedge ("anything you graded offline and
+    // haven't synced may be cleared") would alarm every learner about a case
+    // that needs an old build, an offline session and a second active track.
+    // The exact fix — attributing an untagged op through its vocab_id or
+    // story_id — is in docs/BACKLOG.md.
     await dropQueuedWritesForTrack(targetTrack, session.user.id)
     clearPreparedSession()
 
@@ -363,6 +372,13 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
 
     // Same reason as the reset panel above: the rows are deleted, so their
     // queued writes must not outlive them.
+    //
+    // With one asymmetry worth naming, because it is the reverse of the usual
+    // one: here the track being cleaned up is the one being REMOVED, so the
+    // untagged rule discards unsynced writes that most likely belong to the
+    // learner's ACTIVE track — removing a language they had stopped using can
+    // cost them queued grades from the language they are actually studying.
+    // Same root cause, same fix, in docs/BACKLOG.md.
     await dropQueuedWritesForTrack({ language: langCode, system: target.system }, session.user.id)
     clearPreparedSession()
 
@@ -692,8 +708,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
                 {languageTheme(targetTrack.language).languageName}
               </strong>{' '}
               and puts that track back to{' '}
-              {getLevelLabel(targetTrack.language, targetTrack.system, 1)}. Your other
-              languages keep their progress.
+              {getLevelLabel(targetTrack.language, targetTrack.system, 1)}.
             </div>
           </div>
           <SmallButton onClick={resetProgress} danger filled={confirmingReset} disabled={resetting} icon={RotateCcw}>

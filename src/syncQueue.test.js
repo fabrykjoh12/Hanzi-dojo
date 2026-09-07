@@ -322,6 +322,28 @@ describe('offline replay', () => {
     expect(sb.calls.upsert).toHaveLength(0)  // never a double-counted day
   })
 
+  it('reconciles under the signed-in account, not one scavenged off an op', async () => {
+    // The discriminating fixture: an op that names NO user, flushed as u1, with
+    // the RPC absent so the legacy reconcile path runs. The old code took the
+    // userId off the last replayed op — null here, so `unreconciled.length > 0
+    // && userId` was false and it reconciled nothing at all. The new code
+    // reconciles under the account doing the flushing.
+    //
+    // Every other reconcile spec in this file uses an op whose userId already
+    // equals the signed-in account, so none of them can tell the two apart.
+    store.rows.push({ id: 901, op: {
+      kind: 'grade', vocabId: 'v1', cardId: 'card-1', updates: UPDATES, log: LOG,
+      day: '2026-07-22', state: 'review', opId: 'op-ownerless',
+    } })
+    const sb = fakeSupabase() // no grade_card, so the legacy path reconciles
+
+    await flushOutbox(sb, 'u1')
+
+    const activity = sb.calls.upsert.filter(c => c.table === 'daily_activity')
+    expect(activity).toHaveLength(1)
+    expect(activity[0].vals).toMatchObject({ user_id: 'u1', activity_date: '2026-07-22' })
+  })
+
   it('keeps the old bulk reconcile when the RPC is absent', async () => {
     await queued()
     const sb = fakeSupabase() // no grade_card
@@ -568,7 +590,13 @@ describe("a progress reset drops that track's queued writes, and only those", ()
     await enqueueGrade({ userId: U, vocabId: 'v1', cardId: null, updates: {}, ...CN })
     await enqueueStoryRead({ userId: U, storyId: 's1', ...CN })
     await enqueueStoryClaim({ userId: U, storyId: 's1', claimDate: '2026-09-07', ...CN })
-    await enqueueAnalytics({ name: 'progress_reset', ...CN })
+    // Hand-built, not enqueueAnalytics(): that helper stores { kind, event } with
+    // no top-level userId, so the op would be refused by the USER guard whether
+    // or not 'analytics' is in RESET_DELETED_OP_KINDS — and this spec would then
+    // pass under the very mutation it is named for. An earlier version made
+    // exactly that mistake, and the mutation table reported a kill it had not
+    // earned. This row names the user, so only the kind filter can save it.
+    store.rows.push({ id: 900, op: { kind: 'analytics', userId: U, event: { name: 'progress_reset' }, ...CN } })
     await enqueueGrade({ userId: U, vocabId: 'v9', cardId: 'c9', updates: {}, ...JA })
 
     const dropped = await dropQueuedWritesForTrack(CN, U)
@@ -577,9 +605,14 @@ describe("a progress reset drops that track's queued writes, and only those", ()
     expect(store.rows.map(r => r.op.kind)).toEqual(['analytics', 'grade'])
   })
 
-  it('reports the writes it really deleted when the store fails halfway', async () => {
-    // An earlier version returned 0 from the catch while the queue had already
-    // shrunk, so a caller reporting the count would have reported a lie.
+  it('keeps the count it had when a throwing store interrupts the loop', async () => {
+    // Named for what it proves: the counter lives outside the try, so a throw
+    // cannot discard the deletes that already went. It is NOT a claim about
+    // production — offline.js's tx() resolves a fallback on every storage error
+    // rather than rejecting, so the real store never reaches this path and the
+    // count there is an upper bound (see the docstring). An earlier version of
+    // this comment sold it as "a caller reporting the count would have reported
+    // a lie", which is a guarantee this function does not have.
     await enqueueGrade({ userId: U, vocabId: 'v1', cardId: 'c1', updates: {}, ...CN })
     await enqueueGrade({ userId: U, vocabId: 'v2', cardId: 'c2', updates: {}, ...CN })
     store.failDeleteAfter = 1

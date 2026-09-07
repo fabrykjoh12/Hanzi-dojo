@@ -208,12 +208,19 @@ export function enqueueAnalytics(event) {
  * another account, on the reasoning that destroying it would be a loss with no
  * matching deletion. That is only safe if the op is not then REPLAYED as this
  * account — and it would be: grade_card writes under auth.uid() and ignores
- * op.userId entirely (20260822170000), so account A's queued grade, flushed
- * while B is signed in, becomes B's card at A's reps and stability. The outbox
- * is one store per device and sign-out never clears it, so this is reachable
- * without anything unusual happening, and it predates the reset work — it is
- * fixed here because the reset's "only your own account's" guarantee is not
- * true without it.
+ * op.userId entirely (20260822170000). Which branch of that RPC the op lands in
+ * decides what goes wrong, and both are bad:
+ *
+ *   - cardId null takes the INSERT branch, so account A's queued grade becomes
+ *     B's card at A's reps and stability — fabricated mastery in B's account.
+ *   - cardId set takes the UPDATE branch, which filters c.user_id = auth.uid()
+ *     and raises 'Card not found' — a permanent poison pill in B's queue, for a
+ *     card that exists and belongs to A.
+ *
+ * The outbox is one store per device and sign-out never clears it, so this is
+ * reachable without anything unusual happening, and it predates the reset work
+ * — it is fixed here because the reset's "only your own account's" guarantee is
+ * not true without it.
  *
  * An op carrying no userId is replayable under any session: analytics ops are
  * enqueued without one (enqueueAnalytics stores the event, not an owner), and
