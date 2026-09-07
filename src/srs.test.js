@@ -316,8 +316,13 @@ describe('elapsed days follow the LOCAL day grid', () => {
     expect(() => schedule(settled('2026-09-07T20:00:00Z'), 2, { now: 'not a date' }))
       .toThrow(/not a valid date/)
     // The epoch is a legitimate instant, and a truthiness check would have
-    // silently swapped the real clock in for it.
-    expect(() => schedule(settled('1969-12-31T00:00:00Z'), 2, { now: 0 })).not.toThrow()
+    // silently swapped the real clock in for it. Asserted as the VALUE, not as
+    // "does not throw": with `!options.now` the call falls through to the real
+    // clock and still returns normally, so the weaker form passed under the
+    // mutation it names.
+    const epoch = schedule(settled('1969-12-31T00:00:00Z'), 2, { now: 0 })
+    expect(new Date(epoch.updates.last_review).getTime(), 'now: 0 fell through to the real clock')
+      .toBe(0)
   })
 
   it('counts local days across a DST boundary, where the two offsets differ', () => {
@@ -411,5 +416,41 @@ describe('elapsed days follow the LOCAL day grid', () => {
     const good = schedule(card, 2, { now, targetRetention: 0.9 })
     const days = good.updates.scheduled_days
     expect(labels[2]).toBe(days === 1 ? '1 day' : days + ' days')
+  })
+
+  it('the Again label is a real minute count, not the grid offset', () => {
+    // THE ONLY STRING THIS CHANGE CAN VISIBLY BREAK, and it was the one the
+    // suite did not read. previewLabels scores on the grid and must convert
+    // each preview `due` back off it before formatting. Delete that
+    // fromLocalGrid call and every other assertion here still passes, because
+    // Good on a review card is a whole-day label and formatLabel returns
+    // scheduled_days for anything >= 1440 minutes — a seven-hour error in
+    // `due` changes nothing it prints.
+    //
+    // Again is sub-day, so it reads `due` directly. Correct is a single-digit
+    // step; the mutation adds the zone's whole offset to it.
+    vi.stubEnv('TZ', 'America/Los_Angeles')
+    const card = settled('2026-09-07T20:00:00-07:00')
+    const now = '2026-09-08T09:00:00-07:00'
+    const label = previewLabels(card, { now, targetRetention: 0.9 })[0]
+    expect(label).toMatch(/^\d+ min$/)
+    expect(Number(label.split(' ')[0]), 'the Again label carries the grid offset')
+      .toBeLessThan(60)
+  })
+
+  it('gives the same Again label in two zones with different offsets', () => {
+    // The property the minute bound above only approximates, and the one a
+    // vacuous spec cannot fake: the label is a scheduler interval, so it must
+    // not depend on where the learner is. Under the mutation Los Angeles adds
+    // 420 minutes and Tokyo subtracts 540, so the two disagree by sixteen
+    // hours. Same wall-clock story in both, expressed in each zone's own
+    // offset, so only the grid conversion differs.
+    vi.stubEnv('TZ', 'America/Los_Angeles')
+    const la = previewLabels(settled('2026-09-07T20:00:00-07:00'),
+      { now: '2026-09-08T09:00:00-07:00', targetRetention: 0.9 })[0]
+    vi.stubEnv('TZ', 'Asia/Tokyo')
+    const tokyo = previewLabels(settled('2026-09-07T20:00:00+09:00'),
+      { now: '2026-09-08T09:00:00+09:00', targetRetention: 0.9 })[0]
+    expect(la).toBe(tokyo)
   })
 })
