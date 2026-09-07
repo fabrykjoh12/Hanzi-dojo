@@ -180,7 +180,15 @@ describe('parity with the canonical validator', () => {
   it('computes the same digest for every contract on disk', () => {
     // The strongest parity check available: the real contracts, not fixtures.
     const dir = '.agent/tasks'
-    const names = readdirSync(dir).filter(n => n.endsWith('.json'))
+    // `seal-guard*` is excluded for the same reason task-contract.test.mjs
+    // excludes it from its own snapshot: those specs write a probe contract into
+    // the REAL directory and run the real CLI against it, so a file with a
+    // deliberately-wrong digest exists there for a few milliseconds. vitest runs
+    // test files in parallel workers, so this readdir can catch one mid-flight —
+    // observed as `seal-guard-probe.json seal: expected <digest> to be undefined`
+    // when these two files happen to race. The contracts this spec is about are
+    // the committed ones.
+    const names = readdirSync(dir).filter(n => n.endsWith('.json') && !n.startsWith('seal-guard'))
     expect(names.length).toBeGreaterThan(0)
     for (const n of names) {
       const c = JSON.parse(readFileSync(dir + '/' + n, 'utf8'))
