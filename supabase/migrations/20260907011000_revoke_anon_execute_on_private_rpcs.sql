@@ -6,12 +6,31 @@
 -- unchanged by that correction — those two genuinely hold no grant — but the
 -- description of it was claiming more than the SQL does.
 --
--- 18 advisor warnings, and harmless TODAY: each of these functions derives
--- identity from auth.uid(), which is null for anon, so they raise
--- 'Not authenticated' or return nothing. That is defence in depth resting on
--- one line inside each function. A future definer function that forgets the
--- check arrives reachable by anyone holding the publishable key, which ships in
--- every store build by design.
+-- 18 advisor warnings. THIRTEEN of the seventeen are harmless today: they
+-- derive identity from auth.uid(), directly or through assert_admin(), which is
+-- null for anon, so they raise 'Not authenticated' or return nothing. That is
+-- defence in depth resting on one line inside each function, and a future
+-- definer function that forgets the check arrives reachable by anyone holding
+-- the publishable key — which ships in every store build by design.
+--
+-- THE OTHER FOUR ARE NOT HARMLESS, and an earlier version of this header said
+-- they were. dict_search, dict_entry, dict_examples_for and
+-- dict_words_containing (20260719120000) are `language sql`, security definer,
+-- and contain no auth.uid() at all — verified against the live catalog, not
+-- read off the source. They are unconditional reads of dict_entries and
+-- dict_examples, whose own policies are `for select to authenticated`. So the
+-- definer wrapper hands an anonymous caller holding the publishable key the
+-- whole 122,981-entry dictionary and its example sentences, straight past the
+-- RLS on those tables.
+--
+-- Be precise about what that is and is not. The DATA is open — CC-CEDICT and
+-- Tatoeba, both credited in the app, both downloadable from their sources — so
+-- this is not a confidentiality breach and the migration should not be sold as
+-- one. What it is: an unauthenticated, unmetered bulk-read endpoint into this
+-- project's database, and a boundary that says `to authenticated` while
+-- behaving otherwise. That makes this migration a fix for those four rather
+-- than the hardening it is for the other thirteen, and it is the reason not to
+-- file it as low-risk-whenever.
 --
 -- WHAT ANON ACTUALLY NEEDS, established from the code rather than assumed. The
 -- signed-out surface is exactly three things (src/routes.js): the public story

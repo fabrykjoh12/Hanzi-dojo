@@ -77,7 +77,12 @@ export function isHeadwordLookup(value) {
 // the caller can tell "you are at the limit today" from "the request failed" —
 // which is worth doing, because the two are otherwise indistinguishable and one
 // of them resolves by itself tomorrow.
-export const DICT_ADD_LIMIT_CODE = 'HD429'
+//
+// The PT prefix is load-bearing: PostgREST maps SQLSTATE to HTTP status by
+// class and honours a caller-chosen status only for PTxxx, so PT429 arrives as
+// a real 429. An invented class would still reach this code — supabase-js reads
+// it out of the JSON body — but every capped add would be logged as a 500.
+export const DICT_ADD_LIMIT_CODE = 'PT429'
 
 export function isDictAddLimit(error) {
   return Boolean(error && error.code === DICT_ADD_LIMIT_CODE)

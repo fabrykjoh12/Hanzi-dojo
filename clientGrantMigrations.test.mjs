@@ -40,9 +40,14 @@ describe('capping dict_add_to_deck (finding 3)', () => {
     expect(raise, 'cap must precede the card insert').toBeLessThan(cardInsert)
   })
 
-  it('counts the caller\'s own additions, not a global total', () => {
-    // A global counter would let one abusive account lock out everyone else,
-    // which turns a rate limit into a denial of service.
+  it('counts the caller\'s own additions for the per-caller limb', () => {
+    // Per-caller ON PURPOSE for this limb — but an earlier version of this
+    // comment said a global counter "would let one abusive account lock out
+    // everyone else, which turns a rate limit into a denial of service" and
+    // stopped there, which is now the opposite of what shipped. The per-caller
+    // limb alone is not a control (the caller can delete the cards it counts),
+    // so there is a global limb too, and its denial-of-service cost is accepted
+    // deliberately rather than argued away — see the header and the spec below.
     const code = codeOf(CAP)
     expect(code).toMatch(/where c\.user_id = v_user_id/)
     expect(code).toMatch(/c\.created_at > now\(\) - interval '24 hours'/)
@@ -85,6 +90,63 @@ describe('capping dict_add_to_deck (finding 3)', () => {
     const reselect = code.indexOf('if v_vocab_id is null then')
     expect(conflict).toBeGreaterThan(-1)
     expect(reselect).toBeGreaterThan(conflict)
+  })
+
+  it('drops the older, unapplied index it supersedes', () => {
+    // 20260724170000 declares vocabulary_dict_word_uniq on the same key without
+    // the is_active limb. It is unapplied in production, but any environment
+    // applied in filename order gets both — and then a word deactivated by §7.1
+    // cleanup cannot be re-added at all: the older index is also a valid
+    // ON CONFLICT arbiter, DO NOTHING fires, the is_active-filtered re-select
+    // finds nothing, and the card insert violates vocab_id NOT NULL.
+    const cap = codeOf(CAP)
+    const dropAt = cap.indexOf('drop index if exists public.vocabulary_dict_word_uniq')
+    const createAt = cap.indexOf('create unique index if not exists vocabulary_dictionary_word_unique')
+    expect(dropAt, 'the superseded index must be dropped').toBeGreaterThan(-1)
+    expect(dropAt, 'and dropped before the replacement is built').toBeLessThan(createAt)
+  })
+
+  it('brakes on something the caller cannot delete', () => {
+    // The per-caller limb counts the caller's own `cards`, and `cards` carries
+    // a delete policy the app itself uses — so 200 adds, one DELETE, repeat,
+    // and the counter is zero while the global vocabulary rows remain (§7.1
+    // forbids deleting those). A cap counted from state the adversary controls
+    // is not a cap. The second limb counts `vocabulary` itself.
+    const cap = codeOf(CAP)
+    expect(cap).toMatch(/c_global_daily_cap constant int := \d+/)
+    expect(cap, 'the global limb must count vocabulary rows, not cards')
+      .toMatch(/from public\.vocabulary\n\s*where level is null\n\s*and created_at > now\(\) - interval '24 hours'/)
+    // And it must gate the branch that creates one, before the insert.
+    const brake = cap.indexOf('v_recent_global >= c_global_daily_cap')
+    const insert = cap.indexOf('insert into public.vocabulary')
+    expect(brake).toBeGreaterThan(-1)
+    expect(brake).toBeLessThan(insert)
+  })
+
+  it('gives the limit a code the client can recognise, in the PT class', () => {
+    // Without a code the 201st add of the day is indistinguishable from a dead
+    // connection: Dictionary.jsx swallowed the throw entirely and both readers
+    // replaced it with "Couldn't save that word".
+    //
+    // And the class is not decoration. PostgREST maps SQLSTATE to HTTP status
+    // by class and honours a caller-chosen status only for PTxxx, so PT429
+    // arrives as a real 429; an invented class still reaches the client (the
+    // code is in the JSON body) but logs every capped add as a 500.
+    const cap = codeOf(CAP)
+    expect(cap.match(/using errcode = c_limit_errcode/g)).toHaveLength(2)
+    expect(cap).toMatch(/c_limit_errcode constant text := 'PT429'/)
+    // The migration and the client must not drift apart.
+    expect(read('src/dictSearch.js')).toContain("DICT_ADD_LIMIT_CODE = 'PT429'")
+  })
+
+  it('documents BOTH limits on the function, not just the per-caller one', () => {
+    // \df+ is where the next person meets this function, and the comment used
+    // to name only the 200/day limb — so the bound it stated was not the bound.
+    const comment = /comment on function public\.dict_add_to_deck[\s\S]*?;/.exec(codeOf(CAP))
+    expect(comment, 'the function must carry a comment').not.toBeNull()
+    expect(comment[0]).toContain('200 adds per caller')
+    expect(comment[0]).toContain('500 new level-NULL vocabulary')
+    expect(comment[0]).toContain('PT429')
   })
 })
 
@@ -135,6 +197,15 @@ describe('revoking anon EXECUTE on the private RPCs (finding 7)', () => {
     // FROM ANON. `revoke ... from public` is not the same thing and does not
     // remove the explicit grant — conflating the two is what made an earlier
     // draft of this derivation report two functions instead of seventeen.
+    //
+    // WHAT IT CANNOT SEE, so nobody reads more into a green run than is there.
+    // It parses migration TEXT, so: a function created through apply_migration
+    // without a committed file is invisible (CLAUDE.md §8 permits that); the
+    // drop and revoke sets are keyed by bare name, so a drop-and-recreate under
+    // a new signature, or a revoke followed by a later re-grant to anon, would
+    // wrongly remove a function from `expected`. Neither shape exists in the
+    // tree today (the only drop is 20260825120000's), and both would be caught
+    // by deriving from the catalog instead — which no spec here can do.
     const files = readdirSync(DIR).filter(n => n.endsWith('.sql')).sort()
     const definer = new Set()
     const revokedFromAnon = new Set()
@@ -170,48 +241,10 @@ describe('revoking anon EXECUTE on the private RPCs (finding 7)', () => {
     expect(expected.length, 'the derivation itself must find something').toBeGreaterThan(10)
     expect(actual).toEqual(expected)
   })
+})
 
-  it('drops the older, unapplied index it supersedes', () => {
-    // 20260724170000 declares vocabulary_dict_word_uniq on the same key without
-    // the is_active limb. It is unapplied in production, but any environment
-    // applied in filename order gets both — and then a word deactivated by §7.1
-    // cleanup cannot be re-added at all: the older index is also a valid
-    // ON CONFLICT arbiter, DO NOTHING fires, the is_active-filtered re-select
-    // finds nothing, and the card insert violates vocab_id NOT NULL.
-    const cap = codeOf(CAP)
-    const dropAt = cap.indexOf('drop index if exists public.vocabulary_dict_word_uniq')
-    const createAt = cap.indexOf('create unique index if not exists vocabulary_dictionary_word_unique')
-    expect(dropAt, 'the superseded index must be dropped').toBeGreaterThan(-1)
-    expect(dropAt, 'and dropped before the replacement is built').toBeLessThan(createAt)
-  })
-
-  it('brakes on something the caller cannot delete', () => {
-    // The per-caller limb counts the caller's own `cards`, and `cards` carries
-    // a delete policy the app itself uses — so 200 adds, one DELETE, repeat,
-    // and the counter is zero while the global vocabulary rows remain (§7.1
-    // forbids deleting those). A cap counted from state the adversary controls
-    // is not a cap. The second limb counts `vocabulary` itself.
-    const cap = codeOf(CAP)
-    expect(cap).toMatch(/c_global_daily_cap constant int := \d+/)
-    expect(cap, 'the global limb must count vocabulary rows, not cards')
-      .toMatch(/from public\.vocabulary\n\s*where level is null\n\s*and created_at > now\(\) - interval '24 hours'/)
-    // And it must gate the branch that creates one, before the insert.
-    const brake = cap.indexOf('v_recent_global >= c_global_daily_cap')
-    const insert = cap.indexOf('insert into public.vocabulary')
-    expect(brake).toBeGreaterThan(-1)
-    expect(brake).toBeLessThan(insert)
-  })
-
-  it('gives the limit a code the client can recognise', () => {
-    // Without it the 201st add of the day is indistinguishable from a dead
-    // connection: Dictionary.jsx swallowed the throw entirely and the reader
-    // replaced it with "Couldn't save that word".
-    const cap = codeOf(CAP)
-    expect(cap.match(/using errcode = c_limit_errcode/g)).toHaveLength(2)
-    expect(cap).toMatch(/c_limit_errcode constant text := 'HD429'/)
-    expect(read('src/dictSearch.js')).toContain("DICT_ADD_LIMIT_CODE = 'HD429'")
-  })
-
+// Assertions that are about BOTH migrations rather than either finding.
+describe('both migrations', () => {
   it('reloads the PostgREST schema cache from both migrations', () => {
     // Grants and function bodies are exactly what PostgREST caches, and 35
     // migrations in this directory already do it.

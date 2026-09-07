@@ -130,6 +130,15 @@ describe('isDictAddLimit', () => {
     expect(isDictAddLimit({ message: 'Dictionary add limit reached — try again tomorrow' })).toBe(false)
   })
 
+  it('uses a PTxxx code, so the request is a 429 and not a 500', () => {
+    // PostgREST maps SQLSTATE to HTTP status by class and honours a
+    // caller-chosen status only for the PTxxx form. Any other class reaches
+    // this predicate just as well — supabase-js reads the code out of the JSON
+    // body — but logs every capped add as a server error.
+    expect(DICT_ADD_LIMIT_CODE).toMatch(/^PT\d{3}$/)
+    expect(DICT_ADD_LIMIT_CODE).toBe('PT429')
+  })
+
   it('is false for every other failure, including nothing at all', () => {
     expect(isDictAddLimit({ code: 'PGRST202', message: 'missing rpc' })).toBe(false)
     expect(isDictAddLimit({ code: '42501' })).toBe(false)

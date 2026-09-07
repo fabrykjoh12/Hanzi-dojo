@@ -437,6 +437,7 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
       toast({ title: 'Saved to your deck', body: entry.simplified || entry.word || null, accent: theme.accentHex })
     } catch (e) {
       toast({
+        kind: 'info',
         title: isDictAddLimit(e)
           ? 'That’s enough new words for today'
           : 'Couldn’t save that word',

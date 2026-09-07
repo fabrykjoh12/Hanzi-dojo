@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
-import { Award } from 'lucide-react'
+import { Award, Info, TriangleAlert } from 'lucide-react'
 
 // Calm, self-dismissing notification stack (top-right). Listens for the
 // 'hd-toast' CustomEvent fired by src/toast.js — no context or prop drilling,
 // so any module can raise a moment (achievement seals).
-const ICONS = { seal: Award }
+// A toast's icon comes from its `kind`. Award is the default because the first
+// toast in the app was an achievement seal — which meant every OTHER toast,
+// including a refusal, arrived wearing a medal. Calm and observational (§1)
+// rules that out: a limit is information, not a prize.
+const ICONS = { seal: Award, info: Info, warn: TriangleAlert }
 const DISMISS_MS = 4600
 
 let nextId = 1

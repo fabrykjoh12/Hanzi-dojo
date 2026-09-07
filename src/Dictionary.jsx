@@ -210,7 +210,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
       // different: it is not a failure they can retry into, and without a word
       // it is indistinguishable from a dead connection.
       if (isDictAddLimit(e)) {
-        toast({ title: 'That’s enough new words for today', body: 'Try again tomorrow — nothing was lost.' })
+        toast({ kind: 'info', title: 'That’s enough new words for today', body: 'Try again tomorrow — nothing was lost.' })
       }
     }
   }
