@@ -210,12 +210,12 @@ So paths fall into **three tiers**.
 ```
 
 No contract may name these, or anything inside them, or the bare root of one of
-the two subtrees, under any role, at any risk level, through any mechanism. Two
-shapes it may still name, and neither reaches anything: an *ancestor of a tier
-root* (`.agent`, `.claude`), which authorises that one directory path and
-nothing beneath it — the paragraph below says exactly what that costs — and a
-subtree hanging BELOW an exact floor file (`.agent/roles.json/sub/**`), which
-`resolveWithin` refuses at write time because the parent is a regular file. There is no grant and no override
+the two subtrees, or anything hanging BELOW one of the two exact files
+(`.agent/roles.json/sub`, and the same path spelled `.../sub/**`), under any
+role, at any risk level, through any mechanism. One shape it may still name: an
+*ancestor of a tier root* (`.agent`, `.claude`), which authorises that one
+directory path and nothing beneath it — the paragraph below says exactly what
+that costs. There is no grant and no override
 — the validator rejects the contract, and mechanical review reports the diff
 independently of whatever the contract says. The two exact entries,
 `.agent/roles.json` and `.claude/settings.local.json`, are refused by name;
@@ -231,6 +231,16 @@ the runtime policy and in the review protocol at once, through one new question
 — `isSubtreeRoot` — asked directly where a concrete path is judged, and folded
 into `reachesTier` alongside the two containment tests where a contract entry
 is.
+
+**Below an exact floor file was the same defect one shape over**, and closing
+it needed a second question rather than the same one. `.agent/roles.json/sub`
+is related to `.agent/roles.json` by neither direction of `covers` and by
+neither direction of `isSubtreeRoot`, so a contract could name it and the guard
+would allow the write; only ENOTDIR from the kernel stopped it, because the
+parent is a regular file. That is the tree refusing, not the floor — the same
+footing this document declines to accept for the ancestor case — so
+`hangsBelow` now asks it structurally, in `reachesTier` where a contract entry
+is judged and as its own branch in each floor loop where a concrete path is.
 What remains open: an entry naming an ANCESTOR of a tier root, `.agent` above
 `.agent/tasks/**`. An exact entry authorises only itself, so the whole of the
 authority it adds is one directory path and nothing beneath it — that half is a
@@ -550,8 +560,7 @@ did not, so a contract naming `.git` in ordinary `allowed_paths` was accepted by
 `npm run verify:tasks` and authorised the write. In a git worktree `.git` is a
 regular file, so it was not theoretical. FAB-60 closed it at every refusal site
 in both modules and in the review protocol's diff scan; what remains nameable is
-the ancestor case and the below-a-file case, both set out at the top of this
-document.
+the ancestor case, set out at the top of this document.
 
 **It was not only the floor.** `.claude/hooks` behaved the same way — a Tier 1
 subtree root in ordinary `allowed_paths` raised no violation and was matched
@@ -567,7 +576,12 @@ asked: `reachesTier` backs the CONTRACT tests — what an `allowed_paths` or
 where a concrete path is being judged rather than a pattern: all three floor
 loops in `decide()` — lexical, the exempt branch's resolved loop, and the
 producer path's resolved loop — its Tier 1 loop, and both scans in
-`tools/review-protocol.mjs`. A parity spec drives
+`tools/review-protocol.mjs`. `hangsBelow` rides alongside it in `reachesTier`
+and in the four `decide()` loops, each as its own branch with its own sentence,
+because "below `.agent/roles.json`" and "the root of `.agent/tasks/**`" are two
+different facts about a path and one message cannot report both honestly. The
+review-protocol scans do not ask it: they judge paths git reports as changed,
+and no file can exist below a regular file for git to report. A parity spec drives
 the two copies of the predicate over the same pairs, so they cannot drift.
 
 **One more thing the exemption does not exempt, and it will be felt.** The

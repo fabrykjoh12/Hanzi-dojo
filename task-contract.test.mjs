@@ -392,6 +392,14 @@ describe('contradictory path permissions are rejected', () => {
       const segs = body.split('/')
       const dirDepth = isSubtree ? segs.length : segs.length - 1
       const routes = [floor, isSubtree ? body : floor + '/**']
+      // And, for a FILE entry, the two spellings that hang below it —
+      // `.agent/roles.json/sub` and the same path as a subtree. Round 4 of the
+      // review found these: neither predicate related them to the floor entry,
+      // so a contract could name them and the guard allowed the write, with only
+      // ENOTDIR from the kernel between the two. Same standard as the paragraph
+      // above — an expression a contract can carry is an expression the floor
+      // must refuse, whether or not it can ever match a real file.
+      if (!isSubtree) routes.push(floor + '/sub', floor + '/sub/**')
       for (let i = 1; i <= dirDepth; i++) routes.push(segs.slice(0, i).join('/') + '/**')
 
       for (const p of routes) {
@@ -1064,8 +1072,21 @@ describe('a grant fails closed on every malformation', () => {
     // the second message under the old predicate too, and the widening it
     // claimed to pin was unverified.
     for (const tier of ALWAYS_FORBIDDEN.filter(t => t.endsWith('/**'))) {
-      expect(bad({ ...ok, protected_paths: [tier.slice(0, -3)] }), tier)
-        .toMatch(/absolute floor/)
+      const message = bad({ ...ok, protected_paths: [tier.slice(0, -3)] })
+      expect(message, tier).toMatch(/reaches the absolute floor/)
+      // "Reaches", not "is on". The test behind this message asks the wider
+      // question — it fires for a bare root and for a path below an exact floor
+      // file as well — and neither of those is INSIDE the pattern it answers to.
+      // decide() splits the same sentence three ways for exactly this reason;
+      // here one accurate verb does the job, and this pins it.
+      expect(message, tier + ' was reported as being ON the floor it merely reaches')
+        .not.toMatch(/is on the absolute floor/)
+    }
+    // The shape one over: a path BELOW an exact floor file. Same refusal, and
+    // it needs asserting separately because no other spec in this file reaches
+    // hangsBelow through protected_paths.
+    for (const below of ['.agent/roles.json/sub', '.claude/settings.local.json/x']) {
+      expect(bad({ ...ok, protected_paths: [below] }), below).toMatch(/reaches the absolute floor/)
     }
     for (const tier of PROTECTED_CONTROL_PLANE.filter(t => t.endsWith('/**'))) {
       expect(bad({ ...ok, protected_paths: [tier.slice(0, -3)] }), tier)

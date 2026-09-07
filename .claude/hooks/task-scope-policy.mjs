@@ -398,7 +398,7 @@ export function contractSecurityViolations(contract, { grants = GRANTS, root = '
     // check below refuses every floor path anyway. Kept as defence in depth and
     // noted as such, so a later change that narrows the tier cannot silently
     // promote this line from redundant to load-bearing without a reader noticing.
-    if (FLOOR.some(f => reachesTier(f, p))) out.push('control_plane.protected_paths may never name "' + p + '" — it is on the absolute floor')
+    if (FLOOR.some(f => reachesTier(f, p))) out.push('control_plane.protected_paths may never name "' + p + '" — it reaches the absolute floor')
     if (!PROTECTED_TIER.some(t => covers(t, p))) out.push('control_plane.protected_paths entry "' + p + '" is not inside the protected control plane')
     if (known && !mapped.some(m => covers(m, p))) out.push('grant "' + cp.grant + '" does not authorise "' + p + '"')
     if (forbidden.some(f => covers(f, p))) out.push('"' + p + '" is granted and forbidden at once')
@@ -701,7 +701,30 @@ export function isSubtreeRoot(pattern, relative) {
 }
 
 /**
- * Does a contract entry REACH a tier path — in any of the four ways an entry
+ * Does this path hang BELOW an exact pattern — is `pattern` the whole of its
+ * leading segments, with something further beneath?
+ *
+ * `.agent/roles.json/sub` is the shape, and `.agent/roles.json/sub/**` is the
+ * same shape spelled as a subtree. Neither can ever exist: the parent is a
+ * regular file, so the write fails with ENOTDIR — resolveWithin reports it for
+ * the subtree spelling, and the kernel reports it for the exact one. But that
+ * is the OPERATING SYSTEM refusing, not this floor, and a floor that leans on
+ * which files happen to exist is the same "luck rather than containment"
+ * footing the bare root was refused on. So the question is asked structurally,
+ * at the two places that decide: what a contract may NAME, and what a write may
+ * TOUCH.
+ *
+ * Only meaningful for an EXACT pattern: for `dir/**` covers() already answers
+ * it, and `**` covers everything by itself.
+ */
+export function hangsBelow(pattern, relative) {
+  const o = normalisePath(pattern)
+  if (o === '**' || o.endsWith('/**')) return false
+  return normalisePath(relative).startsWith(o + '/')
+}
+
+/**
+ * Does a contract entry REACH a tier path — in any of the five ways an entry
  * can touch a protected pattern? A copy of the canonical validator's
  * `reachesTier`, pinned to it by a parity spec, for the same reason FLOOR and
  * covers() are copied rather than imported: this hook must run standalone.
@@ -711,10 +734,13 @@ export function isSubtreeRoot(pattern, relative) {
  *   isSubtreeRoot(tierPath, entry)  entry IS the tier subtree's own root
  *   isSubtreeRoot(entry, tierPath)  entry is a subtree hanging off the tier
  *                                   path itself — `.claude/settings.json/**`
+ *   hangsBelow(tierPath, entry)     entry is a path below an exact tier file —
+ *                                   `.agent/roles.json/sub`
  */
 export function reachesTier(tierPath, entry) {
   return covers(tierPath, entry) || covers(entry, tierPath)
     || isSubtreeRoot(tierPath, entry) || isSubtreeRoot(entry, tierPath)
+    || hangsBelow(tierPath, entry)
 }
 
 /**
@@ -835,6 +861,13 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
         return deny('Tier 0: "' + target + '" is the root of the absolute floor (' + f +
           '), which no contract may authorize')
       }
+      // And a path hanging BELOW an exact floor file — `.agent/roles.json/sub`.
+      // The write cannot succeed there, but ENOTDIR is the kernel's answer, not
+      // this floor's; see hangsBelow.
+      if (hangsBelow(f, lexical)) {
+        return deny('Tier 0: "' + target + '" is below the absolute floor file (' + f +
+          '), which no contract may authorize')
+      }
     }
   }
 
@@ -899,6 +932,10 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
           return deny('Tier 0: "' + target + '" resolves to ' + relative + ', the root of the absolute floor (' + f +
             '). Not inside the pattern — covers() relates neither to the other — and refused all the same')
         }
+        if (hangsBelow(f, relative)) {
+          return deny('Tier 0: "' + target + '" resolves to ' + relative + ', below the absolute floor file (' + f +
+            '). Refused here rather than left to ENOTDIR')
+        }
       }
       for (const p of PROTECTED_TIER) {
         // Two different facts, so two different sentences. INSIDE the tier, a
@@ -920,6 +957,10 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
           return deny('Tier 1: "' + target + '" resolves to ' + relative + ', the root of the protected control plane (' +
             p + '). No grant reaches it — a granted path must be INSIDE the tier — and no contract is bound here, ' +
             'so nothing authorizes this caller')
+        }
+        if (hangsBelow(p, relative)) {
+          return deny('Tier 1: "' + target + '" resolves to ' + relative + ', below the protected file (' + p +
+            '). No grant reaches it either — a granted path must be INSIDE the tier')
         }
       }
     }
@@ -965,6 +1006,9 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
       // said this since FAB-58; the producer path says it now too.
       if (isSubtreeRoot(f, relative)) {
         return deny('Tier 0: "' + target + '" resolves to ' + relative + ', the root of the absolute floor (' + f + ')')
+      }
+      if (hangsBelow(f, relative)) {
+        return deny('Tier 0: "' + target + '" resolves to ' + relative + ', below the absolute floor file (' + f + ')')
       }
     }
 

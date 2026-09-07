@@ -541,22 +541,46 @@ export function isSubtreeRoot(pattern, p) {
 }
 
 /**
+ * Does `p` hang BELOW an exact pattern — is `pattern` the whole of its leading
+ * segments, with something further beneath?
+ *
+ * `.agent/roles.json/sub` is the shape, and `.agent/roles.json/sub/**` is the
+ * same shape spelled as a subtree. Neither can ever exist: the parent is a
+ * regular file, so the write fails with ENOTDIR. But that is the OPERATING
+ * SYSTEM refusing, not this floor — and a floor that leans on which files
+ * happen to exist is the "luck rather than containment" footing the paragraph
+ * above ALWAYS_FORBIDDEN refuses for every other shape. So the question is
+ * asked here, where it is structural, and a contract may not NAME it either.
+ *
+ * Only meaningful for an EXACT pattern: for `dir/**` the containment test in
+ * covers() already answers it, and `**` covers everything by itself.
+ */
+export function hangsBelow(pattern, p) {
+  const o = normalisePath(pattern)
+  if (o === '**' || o.endsWith('/**')) return false
+  return normalisePath(p).startsWith(o + '/')
+}
+
+/**
  * Does a contract entry `entry` REACH the tier path `tierPath` — in any of the
- * four ways an entry can touch a protected pattern?
+ * five ways an entry can touch a protected pattern?
  *
  *   covers(tierPath, entry)         entry is inside the tier
  *   covers(entry, tierPath)         entry is a subtree that contains the tier
  *   isSubtreeRoot(tierPath, entry)  entry IS the tier subtree's own root
  *   isSubtreeRoot(entry, tierPath)  entry is a subtree hanging off the tier
  *                                   path itself — `.claude/settings.json/**`
+ *   hangsBelow(tierPath, entry)     entry is a path below an exact tier file —
+ *                                   `.agent/roles.json/sub`
  *
- * The first two were the whole test until FAB-60; the last two are the gap it
+ * The first two were the whole test until FAB-60; the rest are the gap it
  * closes. Both directions are needed because a tier entry is either an exact
  * path or a `/**` subtree, and an allowed_paths entry can be either as well.
  */
 export function reachesTier(tierPath, entry) {
   return covers(tierPath, entry) || covers(entry, tierPath)
     || isSubtreeRoot(tierPath, entry) || isSubtreeRoot(entry, tierPath)
+    || hangsBelow(tierPath, entry)
 }
 
 /**
@@ -852,8 +876,13 @@ export function controlPlaneViolations(contract, at = '') {
       continue
     }
     if (inAbsoluteFloor(p)) {
+      // "Reaches", not "is on": inAbsoluteFloor asks the wider question, so this
+      // fires for a bare subtree root and for a path below an exact floor file
+      // as well, and neither is INSIDE the pattern it answers to. decide() splits
+      // the same sentence three ways for the same reason; one accurate verb does
+      // the job here, where the entry is being refused rather than located.
       out.push(at + 'control_plane.protected_paths may never name "' + p +
-        '" — it is on the absolute floor, which no grant reaches')
+        '" — it reaches the absolute floor, and nothing there is grantable')
       continue
     }
     if (!inProtectedTier(p)) {
