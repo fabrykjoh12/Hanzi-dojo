@@ -76,8 +76,12 @@ export const RULES = [
   // the shape.
   {
     id: 'service-role-marker',
-    // The single highest-value string here. A service-role key bypasses RLS
-    // entirely, and the marker appears in the key's own payload.
+    // A service-role key bypasses RLS entirely. NOT because the marker appears
+    // in the key itself — a JWT payload ships base64url-encoded, so this cannot
+    // see inside one; `privileged-jwt` below is what catches a leaked key. This
+    // catches the string written in PLAIN TEXT: a variable named for it, a
+    // comment, a fetch header assembled in source, a fixture. Cheap, and it has
+    // no overlap with the JWT rule rather than being a weaker version of it.
     test: ({ text }) => text != null && /\bservice_role\b/.test(text),
     message: 'the service_role marker is in the public bundle — a service-role key bypasses every RLS policy',
   },
@@ -94,17 +98,52 @@ export const RULES = [
     // never ship is a privileged one, so this decodes each token's payload and
     // checks the role rather than banning the shape.
     //
-    // This also closes something that was previously a manual console check:
-    // "confirm the key baked into the production build really is the anon key".
-    // The build now answers that itself, on every run.
+    // BE PRECISE ABOUT WHAT THIS DOES AND DOES NOT ANSWER. An earlier version
+    // of this comment claimed it closed the manual check "confirm the key baked
+    // into the PRODUCTION build really is the anon key". It does not, and the
+    // reason is worth writing down so nobody cites it as assurance:
+    //
+    //   * CI builds with no VITE_SUPABASE_* set at all (.github/workflows/ci.yml
+    //     says so in its own comment), so the artifact this scans in CI contains
+    //     no Supabase key and this rule iterates zero tokens.
+    //   * The build that DOES carry the real key is Vercel's — vercel.json runs
+    //     `npm run build` and never invokes this guard.
+    //
+    // What it genuinely catches is a privileged key that reaches the bundle FROM
+    // SOURCE: hardcoded, pasted into a constant, or supplied through a VITE_
+    // -named variable (CLAUDE.md §7.4's exact prohibition). That is the leak
+    // that has actually happened in this repo — see the devTools.js incident in
+    // the header — and it is caught with no env at all. Confirming the
+    // production artifact's key remains a console check, and docs/BACKLOG.md
+    // says so rather than letting this line imply otherwise.
     test: ({ text }) => text != null && privilegedJwtIn(text),
     message: 'a JWT in the public bundle carries a role other than anon — only the publishable key may ship',
   },
   {
     id: 'credential-assignment',
+    // Matches the NAME next to a value. Worth being honest about its reach:
+    // Vite substitutes `import.meta.env.VITE_*` with the value and drops the
+    // identifier, and minification renames locals — so this cannot fire on a
+    // value that arrived through the env. It fires on a name written in source
+    // and carried into the bundle, which is how a hand-pasted credential
+    // usually looks. The prefix rules below are what cover the value-only case.
+    //
+    // The name list matches src/tts/serverOnly.test.js's, which guards the same
+    // credentials at the source level — two lists naming different secrets
+    // would be worse than one incomplete list.
     test: ({ text }) => text != null &&
-      /\b(?:SUPABASE_SERVICE_KEY|SUPABASE_SERVICE_ROLE_KEY|GATE3_MANIFEST_PASSPHRASE|VAPID_PRIVATE_KEY)\s*[:=]\s*["']?\S{8,}/.test(text),
+      /\b(?:SUPABASE_SERVICE_KEY|SUPABASE_SERVICE_ROLE_KEY|GATE3_MANIFEST_PASSPHRASE|VAPID_PRIVATE_KEY|AZURE_SPEECH_KEY)\s*[:=]\s*["']?\S{8,}/.test(text),
     message: 'a privileged environment value is assigned in the public bundle',
+  },
+  {
+    id: 'provider-key-prefix',
+    // Unambiguous provider prefixes, which survive the bundler because they are
+    // part of the VALUE. Deliberately NOT `sk-`: lucide ships `flask-conical`
+    // and the codebase has `mask-`, so that one cries wolf and a guard that
+    // cries wolf gets disabled. `AIza` (Google) and `gsk_` (Groq) have no such
+    // collision — the audit lists both as hand-checked today.
+    test: ({ text }) => text != null && (/\bAIza[A-Za-z0-9_-]{20,}/.test(text) || /\bgsk_[A-Za-z0-9]{20,}/.test(text)),
+    message: 'a provider API key is in the public bundle',
   },
   {
     id: 'postgres-credential-url',

@@ -109,6 +109,12 @@ Check the content type, not the status.
   (`is_active = false` — never deleted, §7.1). **Do not repair as part of any
   audio run.**
 
+- [ ] 🔵 **The production artifact's baked Supabase key is still a console check.** `tools/verify-public-bundle.mjs`'s `privileged-jwt` rule decodes every JWT in the bundle and fails on any role other than `anon`, and it runs in `verify:pr` and now in `verify:native` too — but it cannot answer "which key is baked into the PRODUCTION build". Two reasons, both structural: CI builds with **no `VITE_SUPABASE_*` set at all** (`.github/workflows/ci.yml` says so in its own comment), so the artifact scanned in CI carries no Supabase key and the rule iterates zero tokens; and the build that does carry the key is Vercel's, which runs `npm run build` and never invokes the guard.
+
+  What the rule genuinely catches is a privileged key reaching the bundle **from source** — hardcoded, or through a `VITE_`-named variable, which is CLAUDE.md §7.4's exact prohibition and the leak that has actually happened here (the `devTools.js` email incident). That is worth having, and the guard's own comment now says this rather than implying the stronger claim.
+
+  Closing it properly means either giving CI a dummy `VITE_SUPABASE_ANON_KEY` (which proves nothing about production) or running the guard against the deployed artifact — a Vercel post-build step or a scheduled fetch-and-scan. Until then, decoding the production key remains a manual check before a release.
+
 ## Auth / email / hosting
 - [ ] **Custom SMTP — LIVE TEST PENDING.** Configured 2026-07-18: Brevo is the sending provider; `hanzi-dojo.com` shows **Authenticated** in Brevo (DKIM `brevo1/brevo2._domainkey`, `brevo-code` TXT, DMARC `p=none` — all added in Cloudflare DNS, the authoritative nameserver; Vercel only hosts). Supabase custom SMTP wired to `smtp-relay.brevo.com:587`, sender `no-reply@hanzi-dojo.com`. **Still to verify:** send a real magic-link/sign-up to an external inbox and confirm it (a) arrives (not spam) and (b) shows From `no-reply@hanzi-dojo.com`. Brevo "Branding" (the `em`/`img.em`/`r.em` CNAMEs) shows *Not branded* — optional, tracking-link cosmetics only, doesn't block sending.
 - [ ] **Auth URL config** — set Site URL = `https://hanzi-dojo.com` and add redirect allowlist `https://hanzi-dojo.com/**` + `http://localhost:5173/**`. Fixes the login redirect that jumps to the raw github.io host. *(dashboard)*

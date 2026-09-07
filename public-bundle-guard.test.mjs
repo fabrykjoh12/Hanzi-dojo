@@ -1,4 +1,8 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterAll } from 'vitest'
+import { spawnSync } from 'node:child_process'
+import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { findViolations, RULES } from './tools/verify-public-bundle.mjs'
 
 // The rules that keep internal tooling out of the store bundle. The build-side
@@ -66,6 +70,7 @@ describe('public bundle guard', () => {
       'supabase-secret-key',
       'privileged-jwt',
       'credential-assignment',
+      'provider-key-prefix',
       'postgres-credential-url',
     ])
   })
@@ -122,8 +127,24 @@ describe('the bundle guard refuses credentials', () => {
   it('catches a privileged environment assignment and a Postgres URL', () => {
     expect(rulesFor('SUPABASE_SERVICE_KEY="abcdefghijkl"')).toContain('credential-assignment')
     expect(rulesFor('VAPID_PRIVATE_KEY: "abcdefghijkl"')).toContain('credential-assignment')
+    // Named alongside the other two by src/tts/serverOnly.test.js, which guards
+    // the same credentials at the source level. Two lists naming different
+    // secrets would be worse than one incomplete list.
+    expect(rulesFor('AZURE_SPEECH_KEY = "abcdefghijkl"')).toContain('credential-assignment')
     expect(rulesFor('postgres://user:hunter2@db.example.com:5432/x'))
       .toContain('postgres-credential-url')
+  })
+
+  it('catches a provider key by its prefix, without crying wolf', () => {
+    // The value-only case the assignment rule above cannot reach: Vite
+    // substitutes import.meta.env.VITE_* with the VALUE and drops the name, so
+    // a name-based rule sees nothing. A prefix is part of the value.
+    expect(rulesFor('const k="AIzaSyD-abcdefghijklmnopqrstuvwx012"')).toContain('provider-key-prefix')
+    expect(rulesFor('gsk_abcdefghijklmnopqrstuvwxyz0123456789')).toContain('provider-key-prefix')
+    // And the reason `sk-` is deliberately absent: lucide ships these, and a
+    // guard that fires on an icon name gets disabled.
+    expect(rulesFor('flask-conical')).toEqual([])
+    expect(rulesFor('const cls = "mask-image"')).toEqual([])
   })
 
   it('does NOT reuse the log guard wholesale, and the reason is load-bearing', () => {
@@ -147,5 +168,54 @@ describe('the bundle guard refuses credentials', () => {
       'credential-assignment', 'postgres-credential-url']) {
       expect(ids, 'credential rule missing from RULES').toContain(id)
     }
+  })
+})
+
+
+// ── The CLI, end to end ─────────────────────────────────────────────────────
+// Everything above drives findViolations() in-process, which proves the rules
+// and nothing about the thing CI actually runs. The PR claimed this was
+// "proven both ways — a real anon build passes clean, and a build carrying the
+// service-role key is caught with exit 1", and no artifact reproduced it:
+// main() and its process.exit(1) had no coverage at all, and a guard that
+// prints its violations and exits 0 is not a gate.
+//
+// So this spawns the real CLI over a real directory. Cheap (two tiny files, a
+// few milliseconds) and it is the only assertion here that would notice the
+// guard being wired to warn instead of fail.
+
+describe('the CLI fails the build, and only when it should', () => {
+  const fixture = (files) => {
+    const dir = mkdtempSync(join(tmpdir(), 'bundle-guard-'))
+    mkdirSync(join(dir, 'assets'), { recursive: true })
+    for (const [name, body] of Object.entries(files)) writeFileSync(join(dir, name), body)
+    return dir
+  }
+  const run = (dir) => spawnSync(process.execPath, ['tools/verify-public-bundle.mjs', dir], { encoding: 'utf8' })
+  const cleanup = []
+  afterAll(() => { for (const dir of cleanup) rmSync(dir, { recursive: true, force: true }) })
+
+  it('exits 0 on a bundle carrying only the publishable key', () => {
+    const dir = fixture({ 'assets/main.js': 'const k="' + jwt({ iss: 'supabase', role: 'anon' }) + '";export default k' })
+    cleanup.push(dir)
+    const res = run(dir)
+    expect(res.stderr + res.stdout).toContain('clean')
+    expect(res.status, 'a legitimate anon build must not fail the gate').toBe(0)
+  })
+
+  it('exits 1 on a bundle carrying a service-role key', () => {
+    const dir = fixture({ 'assets/main.js': 'const k="' + jwt({ iss: 'supabase', role: 'service_role' }) + '";export default k' })
+    cleanup.push(dir)
+    const res = run(dir)
+    expect(res.status, 'a service-role key did not fail the build').toBe(1)
+    expect(res.stderr).toMatch(/privileged-jwt/)
+  })
+
+  it('exits 1 when there is no build to scan, rather than passing vacuously', () => {
+    // A guard that treats "nothing to check" as success is the failure mode
+    // that matters most in a pipeline: reorder two stages and it goes quiet.
+    const res = run(join(tmpdir(), 'bundle-guard-does-not-exist'))
+    expect(res.status).toBe(1)
+    expect(res.stderr).toMatch(/no build at/)
   })
 })
