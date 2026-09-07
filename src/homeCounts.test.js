@@ -205,6 +205,22 @@ describe('getHomeCounts — calibration checks', () => {
     expect(counts.learnCount).toBe(0)
   })
 
+  it('counts a claim whose word sits outside the level window', async () => {
+    // Same scope rule as Due, and for the same reason: calibration is served
+    // from the deck (pickCalibrationChecks), so a claim on a word saved from a
+    // story or the dictionary is checked whether or not it is in the current
+    // level. Every other spec in this block uses level-1 words, so narrowing
+    // the source from the deck to the level window would leave them all green.
+    state.vocab = [{ id: 'claim-0', level: 1, sort_order: 1 }]
+    state.cards = [
+      readyClaim(0),
+      { ...readyClaim(1), vocabulary: { id: 'claim-1', level: 9 } },
+      { ...readyClaim(2), vocabulary: { id: 'claim-2', level: null } },
+    ]
+
+    expect((await getHomeCounts('u1', TRACK, 5)).calibrationCount).toBe(3)
+  })
+
   it('caps at what one session will serve', async () => {
     // 25 ready claims, cap 20. Counting all 25 would promise more than the
     // session delivers, which is the mirror of the bug being fixed.

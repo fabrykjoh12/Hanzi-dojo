@@ -104,6 +104,16 @@ describe('waitingBadgeCount', () => {
     expect(waitingBadgeCount({ dueCount: 0, learnCount: 0, newCount: 0, calibrationCount: 20 })).toBe(20)
   })
 
+  it('survives the counts being null, not merely absent', () => {
+    // A default parameter covers undefined and NOT null, and App holds these
+    // counts in state that is null before the first load — so the rail, which
+    // renders on that first paint, would have taken the whole desktop shell
+    // down with it. The rail passes them straight through.
+    expect(waitingBadgeCount(null)).toBe(0)
+    expect(waitingBadgeCount(undefined)).toBe(0)
+    expect(homeQueueSummary(null).clear).toBe(true)
+  })
+
   it('is zero only when the queue really is empty', () => {
     expect(waitingBadgeCount({})).toBe(0)
     expect(waitingBadgeCount({ dueCount: 0, learnCount: 0, newCount: 0, calibrationCount: 0 })).toBe(0)

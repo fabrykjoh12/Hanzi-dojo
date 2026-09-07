@@ -1,4 +1,8 @@
-export function homeQueueSummary(counts = {}) {
+export function homeQueueSummary(counts) {
+  // `counts = {}` would not have covered this: a default parameter applies to
+  // undefined and NOT to null, and the callers hand this straight through from
+  // state that starts out null on some screens.
+  counts = counts || {}
   const dueCount = counts.dueCount || 0
   const learnCount = counts.learnCount || 0
   const newCount = counts.newCount || 0
@@ -22,7 +26,7 @@ export function homeQueueSummary(counts = {}) {
 //
 // Hidden at zero is the rail's own rule, not this function's: "0" is a nag, and
 // a cleared queue should look cleared.
-export function waitingBadgeCount(counts = {}) {
+export function waitingBadgeCount(counts) {
   return homeQueueSummary(counts).totalReady
 }
 
