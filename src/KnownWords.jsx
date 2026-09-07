@@ -11,6 +11,7 @@ import { seedClaim } from './priorKnowledgeSeed'
 import {
   buildReviewGroups, selectAll, toggleSelection, setSelected,
   groupState, idsOf, claimIdsFor, initialOpenLevels, toggleLevelOpen,
+  claimSummaryLine,
 } from './knownWordsReview'
 import { loadAllVocab, fetchCardedVocabIds } from './knownWordsData'
 import { ArrowLeft, Check, ChevronDown, ChevronRight, Minus } from 'lucide-react'
@@ -106,9 +107,9 @@ export default function KnownWords({ session, profile, track, onBack }) {
   }, [mode, review, ticked, picked, vocab, carded])
 
   const runPaste = () => {
-    const { matchedIds, unmatchedLines } = matchPastedText(text, vocabMap, track.language)
+    const { matchedIds, unmatchedLines, unmatchedSamples } = matchPastedText(text, vocabMap, track.language)
     const next = buildReviewGroups(vocab, matchedIds, carded)
-    setPasteResult({ ids: matchedIds, unmatchedLines })
+    setPasteResult({ ids: matchedIds, unmatchedLines, unmatchedSamples })
     setTicked(selectAll(next.orderedIds))       // everything ticked to start
     setOpenLevels(initialOpenLevels(next.groups))
   }
@@ -141,13 +142,18 @@ export default function KnownWords({ session, profile, track, onBack }) {
     setSaving(true); setSaveError(null)
     try {
       const perDay = (PACING.find(p => p.key === pacing) || PACING[1]).perDay
-      const { inserted } = await seedClaim({
+      const { inserted, skipped } = await seedClaim({
         userId: session.user.id,
         vocabIds: claimIds,
         perDay,
         source: mode === 'paste' ? 'paste' : 'checklist',
       })
-      toast(`Added ${inserted} word${inserted === 1 ? '' : 's'} to review`)
+      // `inserted` is what the database created, not what we sent. They differ
+      // when a word was added on another device or tab while this screen was
+      // open — the carded snapshot above is taken once, when it loads — and
+      // saying "added N" for a word that was already there is the kind of small
+      // lie that makes the rest of the numbers untrustworthy.
+      toast(claimSummaryLine({ inserted, skipped }))
       onBack()
     } catch (e) {
       setSaveError(e.message || 'Could not save. Please try again.')
@@ -226,6 +232,30 @@ export default function KnownWords({ session, profile, track, onBack }) {
               {review.alreadyKnown > 0 && ' · ' + review.alreadyKnown + ' already in your deck'}
               {pasteResult.unmatchedLines > 0 && ' · ' + pasteResult.unmatchedLines + ' line' + (pasteResult.unmatchedLines === 1 ? '' : 's') + ' we didn’t recognise'}.
             </p>
+          )}
+
+          {/* The lines we could not place. A count on its own made a typo, a
+              header row and a whole deck in traditional characters look the
+              same; showing the text is what lets the learner tell which. */}
+          {pasteResult && pasteResult.unmatchedLines > 0 && (
+            <details style={{ marginTop: '4px' }}>
+              <summary style={{ fontSize: '13px', color: accentHex, cursor: 'pointer' }}>
+                See what we didn’t recognise
+              </summary>
+              <ul style={{
+                margin: '8px 0 0', padding: '10px 12px 10px 26px', listStyle: 'disc',
+                ...flatPanel({}), fontSize: '13px', color: 'var(--text-muted)', lineHeight: 1.7,
+              }}>
+                {(pasteResult.unmatchedSamples || []).map((line, i) => (
+                  <li key={i} style={{ wordBreak: 'break-word' }}>{line}</li>
+                ))}
+                {pasteResult.unmatchedLines > (pasteResult.unmatchedSamples || []).length && (
+                  <li style={{ listStyle: 'none', marginLeft: '-16px', color: 'var(--text-faint)' }}>
+                    …and {pasteResult.unmatchedLines - (pasteResult.unmatchedSamples || []).length} more.
+                  </li>
+                )}
+              </ul>
+            </details>
           )}
 
           {pasteResult && review.total > 0 && (

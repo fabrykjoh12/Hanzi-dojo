@@ -8,6 +8,7 @@ import { PACING } from './priorKnowledge'
 import { seedClaim } from './priorKnowledgeSeed'
 import { fetchEarlierVocabIds } from './priorKnowledgeVocab'
 import { fetchPaged } from './supabasePaging'
+import { toast } from './toast'
 import { readPreloginPrefs, clearPreloginPrefs, encouragementFor } from './prelogin'
 import { daysToWords } from './onboardingGoal'
 import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
@@ -155,6 +156,13 @@ export default function Onboarding({ session, onComplete }) {
       // Best-effort: never block onboarding if the seed write fails. The fetch
       // is paged (priorKnowledgeVocab.js) — an HSK 6 placement covers 3,374
       // earlier words, far past PostgREST's 1000-row cap.
+      //
+      // Best-effort is not the same as silent, and it used to be. On failure
+      // the learner started at their placed level with NONE of the earlier
+      // words claimed, was never told, and had no way to know a retry existed —
+      // and the retry does exist: "Words you already know" can claim exactly
+      // the same set by hand. So the failure now says so, once, calmly, and
+      // says where to go. Still non-blocking: onboarding completes either way.
       if (level > 1) {
         try {
           const perDay = (PACING.find(p => p.key === claimPacing) || PACING[1]).perDay
@@ -164,6 +172,11 @@ export default function Onboarding({ session, onComplete }) {
           }
         } catch (seedErr) {
           console.error('prior-knowledge seed failed', seedErr)
+          toast({
+            kind: 'warn',
+            title: 'We couldn’t add your earlier words',
+            body: 'You’re all set to start. Add them any time from Practice → “Words you already know”.',
+          })
         }
       }
 

@@ -11,6 +11,28 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+### Every roadmap item is cut at its first em-dash before it reaches Discord
+
+`.github/scripts/roadmap-render.mjs` does `item.replace(/ — [\s\S]*$/, '')` and
+explains it as "This is why ROADMAP.md items are written `**Title.** —
+description`: the em-dash is the cut point."
+
+**`ROADMAP.md` is not written that way and has not been for a long time.** Its
+items are paragraphs of prose that use em-dashes mid-sentence, so the renderer
+cuts most of them somewhere arbitrary. That is usually just a truncation; it is
+worse than that whenever the first half describes a problem and the second half
+describes the fix, because the pinned public `#roadmap` message then announces
+the bug and stops. Check what an item actually publishes as before merging one:
+
+```
+node -e "const l=require('fs').readFileSync('ROADMAP.md','utf8').split('\n').find(x=>x.startsWith('- [x] **Your title'));console.log(l.replace(/ — [\s\S]*$/,''))"
+```
+
+Two ways out, neither taken yet: rewrite the renderer to keep the whole item
+(the cap is on item count, not length, so length is not the reason), or move the
+cut to a marker that cannot occur mid-sentence. Until then, write anything
+load-bearing before the first em-dash.
+
 ### Reading a red check: CI is authoritative, a sandbox is not
 
 Three kinds of red look identical in a terminal and mean completely different

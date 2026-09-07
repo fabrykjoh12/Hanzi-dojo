@@ -66,6 +66,33 @@ function read(file) {
   return readFileSync(file, 'utf8')
 }
 
+// The same file with its comments removed.
+//
+// The guards below scan for identifiers that must not be IMPORTED, and a
+// scan of raw text counts a file that merely talks about one. That is not
+// hypothetical: a comment in knowledgeState.js naming
+// src/migration/legacyClaimMigration.js as where the historical claim rows came
+// from turned that file into a "violation" of the migration-tooling guard.
+//
+// Stripping comments cannot weaken any of these guards — an import statement
+// inside a comment is not an import — and it stops a true sentence about the
+// codebase from failing a check about what the bundle contains.
+function readCode(file) {
+  return read(file)
+    .replace(/\/\*[\s\S]*?\*\//g, '')
+    .split('\n')
+    .map(line => {
+      const i = line.indexOf('//')
+      if (i === -1) return line
+      // Only a comment if the // is not inside a string or a URL — the cheap
+      // test that covers this repo: an even number of quotes before it.
+      const before = line.slice(0, i)
+      const quotes = (before.match(/['"`]/g) || []).length
+      return quotes % 2 === 0 ? before : line
+    })
+    .join('\n')
+}
+
 // Which src/tts/* modules a file imports, by file name.
 function ttsImportsOf(source) {
   const found = []
@@ -113,7 +140,7 @@ describe('client/server boundary', () => {
   it('keeps CLI-only migration tooling out of every browser-reachable file', () => {
     const violations = []
     for (const file of clientFiles) {
-      const source = read(file)
+      const source = readCode(file)
       if (source.indexOf('migration/legacyClaim') !== -1
           || /from '\.\/legacyClaim/.test(source)) {
         violations.push(relPath(file))

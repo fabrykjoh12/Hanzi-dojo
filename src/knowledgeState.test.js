@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  KNOWLEDGE, MASTERY_STABILITY_DAYS, PRIOR_SOURCES,
+  KNOWLEDGE, MASTERY_STABILITY_DAYS, PRIOR_SOURCES, WRITTEN_PRIOR_SOURCES,
   hasGenuineObservation, hasPriorClaim,
   isPriorKnown, isVerified, isMastered, isLearned, isScheduledForLearning,
   countsForReading, countsForMastery, needsCalibration,
@@ -242,5 +242,28 @@ describe('readingCoveragePct — the fast-path aggregate', () => {
 
   it('is zero with no words', () => {
     expect(readingCoveragePct([], 0)).toBe(0)
+  })
+})
+
+describe('PRIOR_SOURCES', () => {
+  // FAB-30 finding 7. The array reads as "the sources a claim can have", and a
+  // reader takes that to mean the values a live row can carry. It does not:
+  // 'assumed_prerequisite' is written by nothing, and 'legacy_claim' is written
+  // once, by a historical migration.
+  it('matches the database constraint it documents', () => {
+    // cards_prior_source_check, verified against production 2026-09-07.
+    expect(PRIOR_SOURCES).toEqual([
+      'placement', 'assumed_prerequisite', 'paste', 'checklist', 'legacy_claim',
+    ])
+  })
+
+  it('separates what the constraint permits from what any code writes', () => {
+    expect(WRITTEN_PRIOR_SOURCES).toEqual(['placement', 'paste', 'checklist'])
+    for (const source of WRITTEN_PRIOR_SOURCES) {
+      expect(PRIOR_SOURCES, source + ' must be permitted by the constraint too').toContain(source)
+    }
+    // The two the subset deliberately excludes, and why each is excluded.
+    expect(WRITTEN_PRIOR_SOURCES, 'reserved, never built').not.toContain('assumed_prerequisite')
+    expect(WRITTEN_PRIOR_SOURCES, 'historical: one migration, not a live path').not.toContain('legacy_claim')
   })
 })

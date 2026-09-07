@@ -8,6 +8,7 @@ import {
   groupState,
   idsOf,
   claimIdsFor,
+  claimSummaryLine,
   initialOpenLevels,
   toggleLevelOpen,
 } from './knownWordsReview'
@@ -179,5 +180,32 @@ describe('initialOpenLevels', () => {
     expect(shut.has(1)).toBe(false)
     expect(open.has(1)).toBe(true)
     expect(toggleLevelOpen(shut, 2).has(2)).toBe(true)
+  })
+})
+
+describe('claimSummaryLine', () => {
+  // FAB-30 finding 5. The toast printed the number of rows SENT, and the upsert
+  // uses ignoreDuplicates — so a word already in the deck was reported as added.
+  it('reports what the database inserted', () => {
+    expect(claimSummaryLine({ inserted: 40, skipped: 0 })).toBe('Added 40 words to review')
+    expect(claimSummaryLine({ inserted: 1, skipped: 0 })).toBe('Added 1 word to review')
+  })
+
+  it('names the skipped words instead of quietly shrinking the number', () => {
+    // "Added 38 words" for a claim of 40 is true and unexplained; the learner
+    // has no way to tell it from a partial failure.
+    expect(claimSummaryLine({ inserted: 38, skipped: 2 }))
+      .toBe('Added 38 words to review · 2 already in your deck')
+  })
+
+  it('does not say it added anything when nothing was added', () => {
+    // The case the old line got outright wrong: every word already carded.
+    expect(claimSummaryLine({ inserted: 0, skipped: 5 })).toBe('5 words were already in your deck')
+    expect(claimSummaryLine({ inserted: 0, skipped: 1 })).toBe('1 word was already in your deck')
+  })
+
+  it('has something to say for an empty claim, and never throws', () => {
+    expect(claimSummaryLine({ inserted: 0, skipped: 0 })).toBe('Nothing to add')
+    expect(claimSummaryLine()).toBe('Nothing to add')
   })
 })

@@ -12,17 +12,34 @@
 
 import { buildVocabMatcher, segmentLine, namesFor, particlesFor } from './storyReading'
 
+// How many unrecognised lines to keep for the UI. Enough to see the shape of
+// the problem — a typo, a whole file in the wrong script, a header row — while
+// bounding what a 50,000-line paste can put in React state.
+export const UNMATCHED_SAMPLE_LIMIT = 12
+
+// Long lines are usually an export's whole row, not a word. Trim for display
+// only; nothing downstream reads these.
+const SAMPLE_MAX_CHARS = 60
+
 // matchPastedText(text, vocabMap, language)
-//   → { matchedIds, matchedCount, unmatchedLines }
+//   → { matchedIds, matchedCount, unmatchedLines, unmatchedSamples }
 //
 // `vocabMap` is word-keyed (word → vocab object), the same shape the reader and
 // calculateStoryReadability already build. Ids come back in first-seen order,
-// deduped. `unmatchedLines` counts non-blank lines that yielded no word, so the
-// UI can say how much of the paste we did not recognise.
+// deduped. `unmatchedLines` counts non-blank lines that yielded no word.
+//
+// `unmatchedSamples` is the first few of those lines, verbatim (trimmed), and
+// it is the point: the count alone told the learner a number and nothing else,
+// so a typo, a header row and a paste in the wrong script all looked the same.
+// The script case is not hypothetical — the vocabulary carries simplified only,
+// and more than half of the HSK words are written differently in traditional,
+// so a Taiwan or Hong Kong deck matches almost nothing and the count was the
+// only clue.
 export function matchPastedText(text, vocabMap = {}, language) {
   const matchedIds = []
   const seen = new Set()
   let unmatchedLines = 0
+  const unmatchedSamples = []
 
   const lines = (text || '').split('\n')
   const matcher = buildVocabMatcher(vocabMap, language)
@@ -39,8 +56,15 @@ export function matchPastedText(text, vocabMap = {}, language) {
       seen.add(token.vocab.id)
       matchedIds.push(token.vocab.id)
     })
-    if (!found) unmatchedLines += 1
+    if (found) return
+    unmatchedLines += 1
+    if (unmatchedSamples.length < UNMATCHED_SAMPLE_LIMIT) {
+      const trimmed = line.trim()
+      unmatchedSamples.push(trimmed.length > SAMPLE_MAX_CHARS
+        ? trimmed.slice(0, SAMPLE_MAX_CHARS) + '…'
+        : trimmed)
+    }
   })
 
-  return { matchedIds, matchedCount: matchedIds.length, unmatchedLines }
+  return { matchedIds, matchedCount: matchedIds.length, unmatchedLines, unmatchedSamples }
 }
