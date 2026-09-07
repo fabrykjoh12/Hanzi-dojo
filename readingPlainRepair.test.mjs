@@ -140,6 +140,62 @@ describe('the comparison ignores space, apostrophe and case — on both sides', 
     for (const chars of classes) expect(chars).not.toContain(':')
   })
 
+  // The migration's predicate, rebuilt FROM THE SQL'S OWN TEXT — the fold map
+  // and the strip class are both parsed above, not restated — so this drives
+  // the real rule rather than a paraphrase of it. What it cannot do is prove
+  // Postgres agrees; `translate`, `lower` and `regexp_replace` are modelled.
+  const sqlFold = (value) => {
+    let out = ''
+    for (const ch of String(value == null ? '' : value)) {
+      const i = folds[0].from.indexOf(ch)
+      out += i === -1 ? ch : folds[0].to[i]
+    }
+    return out
+  }
+  const sqlKey = (value) => {
+    const strip = new RegExp('[' + classes[0].replace(/\\/g, '\\\\') + ']', 'g')
+    return String(value == null ? '' : value).replace(strip, '').toLowerCase()
+  }
+  const wouldUpdate = (reading, readingPlain) =>
+    reading != null && String(reading).trim() !== ''
+    && sqlKey(readingPlain) !== sqlKey(sqlFold(reading))
+
+  it('fires on all ten drifted rows and on none of the eleven curated ones', () => {
+    // The load-bearing claim of the whole migration, and until now the only one
+    // resting solely on a dry-run count: it repairs exactly these and disturbs
+    // exactly nothing. The first draft's predicate would have rewritten the
+    // eleven below, so this is the assertion whose absence caused that.
+    const drifted = [
+      ['chǎng', 'han'], ['guǎng', 'yan'], ['zhuī', 'dui'], ['yuē', 'yao'],
+      ['hé', 'ge'], ['quān', 'juan'], ['pàng', 'pan'], ['cáng', 'zang'],
+      ['hūlüè', 'hulu:e'], ['cèlüè', 'celu:e'],
+    ]
+    for (const [reading, plain] of drifted) {
+      expect(wouldUpdate(reading, plain), reading + ' / ' + plain + ' is not repaired').toBe(true)
+    }
+    const curated = [
+      ['nǐ hǎo', 'ni hao'], ['xià yǔ', 'xia yu'], ['dǎ diànhuà', 'da dianhua'],
+      ['méi guānxi', 'mei guanxi'], ['bú kèqi', 'bu keqi'], ['zuò fàn', 'zuo fan'],
+      ['Zhōngguó', 'Zhongguo'], ['Zhōngwén', 'Zhongwen'], ['Hànzì', 'Hanzi'],
+      ['Hànyǔ', 'Hanyu'], ["nǚ'ér", "nu'er"],
+    ]
+    for (const [reading, plain] of curated) {
+      expect(wouldUpdate(reading, plain), reading + ' / ' + plain + ' would be rewritten for nothing').toBe(false)
+    }
+    // A squashed key against a spaced reading, and the reverse. These are what
+    // make the strip class load-bearing: drop the space from it and both of
+    // these start firing, which is the first draft's 21-row over-reach.
+    expect(wouldUpdate('nǐ hǎo', 'nihao'), 'a squashed key was rewritten for spacing alone').toBe(false)
+    expect(wouldUpdate('nǐhǎo', 'ni hao'), 'a spaced key was rewritten for spacing alone').toBe(false)
+    // And the two shapes the guards exist for.
+    expect(wouldUpdate(null, 'hao'), 'a NULL reading reached the predicate').toBe(false)
+    expect(wouldUpdate('  ', 'hao'), 'an empty reading reached the predicate').toBe(false)
+    // A row whose key is missing entirely is filled in rather than skipped —
+    // coalesce('') is distinct from any real fold. Worth pinning: it is the one
+    // case where the migration writes a value that was never there.
+    expect(wouldUpdate('hǎo', null), 'a NULL reading_plain is left unrepaired').toBe(true)
+  })
+
   it('leaves the hand-curated HSK 1 rows alone, because they are not wrong', () => {
     // The eleven rows the first draft would have rewritten. They keep spaces,
     // capitals or an apostrophe, and every one is a correct answer key —

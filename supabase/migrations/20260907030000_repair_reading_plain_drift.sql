@@ -43,22 +43,30 @@
 -- (抢 qiāng/qiǎng, 作 zuō/zuò, 匹 pī/pǐ — tone-only changes, and the sandhi and
 -- capitalisation cases), so its `reading_plain` was already right. Two of the
 -- 54 look like they should qualify — 转 zhuǎi→zhuǎn and 战略 `zhàn lu:è`→zhànlüè
--- — and do not, because neither word was ever in `vocabulary` to begin with;
--- those two UPDATE statements matched zero rows in 2026-08 as well.
+-- — and do not, for one reason and one only: NEITHER WORD IS IN `vocabulary`
+-- TODAY. Queried by word on 2026-09-07, both return no row at all, in any
+-- language or system, so the predicate below has nothing to match.
 --
---   转    is in data/hsk3-vocab-snapshot.json and in no data/hsk[3-6].json, and
---         storyVocabAudit.test.mjs names it "the one true ingestion loss in the
---         whole published corpus" — a word the forms[0] import dropped.
---   战略  is in data/hsk-curriculum-bands.json and in no seed file either: one
---         of the curriculum rows that was never seeded.
+-- WHY they are absent is NOT established here, and two earlier drafts of this
+-- paragraph got it wrong in opposite directions, which is why the claim is now
+-- this narrow:
 --
--- NOT a reseed. An earlier draft of this header said the corpus had been
--- reseeded since, which is false in the opposite direction of the rule that
--- matters: docs/VOCAB-INGESTION.md opens with "Nothing in this document has
--- been implemented. No vocabulary row has been added, changed or reseeded",
--- and CLAUDE.md §7.1 forbids deleting vocabulary rows at all. Nothing was
--- removed; these two never arrived. Checked by word against the DB and against
--- the seed files, not inferred.
+--   * "the corpus was reseeded since" — false. docs/VOCAB-INGESTION.md opens
+--     with "Nothing in this document has been implemented. No vocabulary row
+--     has been added, changed or reseeded."
+--   * "neither word was ever in vocabulary" — also false, at least for 转.
+--     data/hsk3-vocab-snapshot.json carries ["转","zhuǎi"], and that file is a
+--     PRODUCTION dump (docs/PM-BOARD.md: "read from production", 2026-07-24;
+--     authored-stories.mjs selects from `vocabulary` where is_active). So the
+--     row existed in July and does not exist now.
+--
+-- src/authoredStories.test.js records the shape of that change — the snapshot
+-- holds "457 words from an OLDER HSK 3 draft, of which only 50 survive in the
+-- current level" — and storyVocabAudit.test.mjs classifies 转 as an ingestion
+-- loss today. Reconciling those two accounts is FAB-42's job, and FAB-42 is
+-- restricted to read-only provenance work for exactly this reason. Nothing in
+-- this migration depends on the answer: it is predicate-scoped, and neither
+-- word is referenced by it.
 --
 -- EIGHT OF THE TEN ARE THAT DEFECT. The last two are not, and saying so matters
 -- more than the tidier claim: 忽略 and 策略 carry `hulu:e` / `celu:e`, the ASCII
@@ -110,6 +118,19 @@
 -- a half-folded value into an answer key. `normalize(v.reading, nfc)` composes
 -- first so a decomposed tone mark — a documented past cause of mis-grading,
 -- docs/CHANGELOG.md — reaches the map as the precomposed character it expects.
+--
+-- WHAT ELSE IS IN SCOPE, since the ten were measured rather than enumerated:
+-- `dict_add_to_deck` (20260719130000) inserts learner-created rows with
+-- language/system copied from the caller's track and `level` null, so new
+-- chinese/hsk_3 rows can appear between the measurement above and the apply.
+-- Traced: `dict_entries.pinyin` is tone-marked and `pinyin_plain` is its
+-- toneless lowercase form, so such a row folds to an equal value and the
+-- predicate does not fire; where it could (a `lve`/`lüe` spelling), the value
+-- written is lenientPinyin-equivalent to the one replaced. And a row with a
+-- NULL `reading_plain` is FILLED IN rather than skipped — `coalesce(…, '')` is
+-- distinct from any real fold. That is the one case where this writes a value
+-- that was never there, and it is the right one: an absent answer key grades
+-- every typed answer wrong.
 --
 -- NOT INCLUDED, deliberately: the ~36 rows whose MEANING still describes the
 -- discarded reading (胖 glossed "healthy; at ease", 成功 glossed as a town in
