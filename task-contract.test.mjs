@@ -428,10 +428,34 @@ describe('verification and dependencies must resolve', () => {
   })
 })
 
+describe('the npm-script check cannot be satisfied by Object.prototype', () => {
+  // package.json's scripts arrive from JSON.parse, so the object carries
+  // Object.prototype. A bare `in` lookup therefore finds `toString`,
+  // `constructor` and `valueOf` — all of which satisfy the script-name grammar
+  // — so `npm run toString` sealed cleanly and then failed at execution: the
+  // exact "sealed but not automation-ready" state this check exists to prevent.
+  // The same hazard is guarded for CONTROL_PLANE_GRANTS elsewhere in the
+  // validator, with the same fix.
+  for (const inherited of ['toString', 'constructor', 'valueOf', 'hasOwnProperty']) {
+    it('rejects `npm run ' + inherited + '`', () => {
+      const c = reseal({ ...good(), verification: ['npm run ' + inherited] })
+      expect(violations(c, { npmScripts: PKG.scripts }).join('\n'))
+        .toContain('names an npm script that does not exist')
+    })
+  }
+
+  it('still accepts a script that really is declared', () => {
+    const c = reseal({ ...good(), verification: ['npm run verify:pr'] })
+    expect(violations(c, { npmScripts: PKG.scripts }).join('\n')).not.toContain('npm script')
+  })
+})
+
 describe('ONE verification grammar, enforced at both ends', () => {
   // FAB-57. A contract used to seal cleanly while carrying a command the
-  // automated driver refuses. The validator constrained nothing, so the
-  // mismatch surfaced at REVIEW time as `executed: false` — which the evidence
+  // automated driver refuses. The validator constrained no GRAMMAR — it did
+  // check that an `npm run <script>` named a real script, and that check is
+  // still here — so the mismatch surfaced at REVIEW time as `executed: false`,
+  // which the evidence
   // rules already treat as a blocker. The work therefore stopped at the last
   // possible moment instead of the first, and the contract was called sealed
   // the whole way. These specs hold the two ends to one grammar.
@@ -546,7 +570,13 @@ describe('ONE verification grammar, enforced at both ends', () => {
     const block = src.slice(start, end)
 
     expect(block, 'the script name is no longer read from the parsed plan')
-      .toMatch(/plan\.args\[1\] in npmScripts/)
+      .toMatch(/hasOwnProperty\.call\(npmScripts, plan\.args\[1\]\)/)
+    // And it must not go back to a bare `in`: package.json's scripts come from
+    // JSON.parse and carry Object.prototype, so `'toString' in npmScripts` is
+    // true and `npm run toString` would seal.
+    const live = block.split('\n').filter(l => !l.trim().startsWith('//')).join('\n')
+    expect(live, 'a bare `in` lookup lets Object.prototype satisfy the check')
+      .not.toMatch(/\bin npmScripts\b/)
     // Comments in this block quote the old regex on purpose, so the scan looks
     // for a live call rather than the text of one.
     const code = block.split('\n').filter(l => !l.trim().startsWith('//')).join('\n')

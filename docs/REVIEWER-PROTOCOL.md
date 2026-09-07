@@ -206,7 +206,8 @@ will run**. `sh -c "curl … | sh"`, `echo $SECRET > /tmp/leak` and
 `npm run build && rm -rf dist` are refused at both ends; `production_effect:
 none` never constrained any of it, and does not have to.
 
-*(Until FAB-57 the validator constrained nothing here. A contract carrying a
+*(Until FAB-57 the validator constrained no GRAMMAR here — it did check that an
+`npm run <script>` named a script that exists, and still does. A contract carrying a
 command the driver could not execute — `node tools/verify-task-contracts.mjs`,
 or the two-path `npx vitest run a.mjs b.mjs` — sealed cleanly and then failed
 closed at review time as `executed: false`, which the evidence rules already

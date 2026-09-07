@@ -793,7 +793,16 @@ export function findContractViolations(contract, { fileName, knownIds = [], npmS
           JSON.stringify(cmd) + ' — ' + error)
         continue
       }
-      if (npmScripts && plan.kind === 'npm-run' && !(plan.args[1] in npmScripts)) {
+      // hasOwnProperty, not `in` — the same hazard this file already guards
+      // for CONTROL_PLANE_GRANTS below. npmScripts is a JSON.parse product, so
+      // it carries Object.prototype: `npm run toString` (or constructor, or
+      // valueOf) satisfies the grammar and then `in` finds the inherited
+      // property, so the contract seals cleanly and fails at execution. That is
+      // precisely the "sealed but not automation-ready" state this check exists
+      // to move to seal time. `in` is what the pre-FAB-57 check used; this line
+      // was being rewritten anyway.
+      if (npmScripts && plan.kind === 'npm-run'
+        && !Object.prototype.hasOwnProperty.call(npmScripts, plan.args[1])) {
         out.push(at + 'verification names an npm script that does not exist: ' + cmd)
       }
     }
