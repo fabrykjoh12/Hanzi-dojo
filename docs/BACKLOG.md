@@ -11,6 +11,16 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+### The task-contract floor covers a pattern's own root (FAB-60)
+
+A `dir/**` entry does not cover its own root — `covers('.git/**', '.git')` is false and so is the reverse — so a contract naming `.git`, `.agent/tasks` or `.claude/hooks` in ordinary `allowed_paths` used to be refused by nothing: not `npm run verify:tasks`, not `contractSecurityViolations`, not the resolved floor loop, and the scope test then matched it exactly and **allowed the write**. In a git worktree `.git` is a regular file holding a gitdir pointer, and `/parallel` uses worktrees, so it was a real write rather than a curiosity.
+
+Closed in one change across the three modules that refuse a tier — `tools/verify-task-contracts.mjs`, `.claude/hooks/task-scope-policy.mjs` and `tools/review-protocol.mjs` — through `isSubtreeRoot`, asked directly where a concrete path is judged and folded into `reachesTier` where a contract entry is. `covers()` itself is unchanged: its semantics are right, it is at parity between the two modules, and widening it would grant more rather than less.
+
+A second shape went the same way: a path hanging BELOW an exact floor file (`.agent/roles.json/sub`, or the same path spelled `.../sub/**`) is related to `.agent/roles.json` by neither predicate, so a contract could name it and the guard said allow — the write failed only with ENOTDIR from the kernel, which is the tree refusing rather than the floor. `hangsBelow` asks it structurally now, in `reachesTier` and as its own branch in each of the four `decide()` loops.
+
+**Still nameable, deliberately:** an entry naming an *ancestor* of a tier root (`.agent`, above `.agent/tasks/**`). It buys one directory path and nothing beneath it — pinned by a spec that drives a non-floor descendant, since a floor one would be refused by the tier before the scope test is reached and would prove nothing. Whether writing that directory then fails is an observation about the tree, not something the guard enforces, and `docs/AUTOMATION-AUTHORITY.md` records it on that footing.
+
 ### Reading a red check: CI is authoritative, a sandbox is not
 
 Three kinds of red look identical in a terminal and mean completely different
