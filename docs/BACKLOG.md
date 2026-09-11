@@ -21,6 +21,26 @@ A second shape went the same way: a path hanging BELOW an exact floor file (`.ag
 
 **Still nameable, deliberately:** an entry naming an *ancestor* of a tier root (`.agent`, above `.agent/tasks/**`). It buys one directory path and nothing beneath it — pinned by a spec that drives a non-floor descendant, since a floor one would be refused by the tier before the scope test is reached and would prove nothing. Whether writing that directory then fails is an observation about the tree, not something the guard enforces, and `docs/AUTOMATION-AUTHORITY.md` records it on that footing.
 
+### The vocabulary integrity gate (FAB-36)
+
+`check-vocabulary-integrity.mjs` + `vocabularyIntegrity.mjs` + `data/vocabulary-integrity-baseline.json`, dispatched as **Actions → Content utilities → `vocab-integrity`** (compare-only) and **`vocab-integrity-accept`** (writes the baseline, refuses to run on `main`). Read-only against the database; it repairs nothing.
+
+**THE CORPUS IS THE CURRICULUM.** `vocabulary` is not a curated table: `dict_add_to_deck` (`20260719130000`) inserts a row for any dictionary word a learner saves — `level null, sort_order 0`, no `audio_path`, and a meaning that falls back to the headword when CC-CEDICT has no definition — and Dictionary, the story reader and the reader core all call it. Measuring those as curriculum debt would red the gate on ordinary use (one save grows `no-audio`) and could red the HARD tier on CC-CEDICT content nobody here can fix. So every content check reads rows **with a level**, and the level-null rows get one check of their own. All three level-null rows in production today have the SHAPE of a dictionary save (`sort_order 0`), which is what the check tests and all it can establish. It is not their provenance: `docs/VOCAB-INGESTION.md` calls the same three ingestion orphans, and two of them carry ready `tts_audio` rows that `dict_add_to_deck` never writes.
+
+**Ten HARD checks** — all clean in production as of 2026-09-07, measured before the tier was assigned. Any violation fails the run: blank or untrimmed `word`/`reading`/`reading_plain`/`meaning`; a placeholder gloss or one that just repeats the word; two curriculum rows sharing a `word`; a level-null row shadowing a curriculum row for the same word (a learner cannot cause it — `dict_add_to_deck` reuses an existing active row, `order by level nulls last` — but `seed-vocab.mjs` dedupes with `.eq('level', level)` and cannot see a level-null row, so a reseed can); a `level` outside 1-9; a level-null row whose shape is not that of a dictionary save (`sort_order <> 0`), which is how a curriculum row that lost its level is caught rather than silently dropping out of the corpus; `u:` or `v` in `reading` (the ASCII transliteration `20260724120000` removed); a syllable count that does not match the character count, allowing erhua; a card pointing at no vocabulary row at all; a `tts_audio` row marked `ready` with no `storage_path`.
+
+Two of those ten cannot currently fire, and it is worth knowing which: `card-orphan` is a tautology while `cards.vocab_id` keeps its foreign key, and `level-range` is one while `vocabulary_level_check` holds. They stay because a floor that rests on a constraint should notice the constraint going away.
+
+**Five DIRECTIONAL checks** — real debt, counted against the committed baseline. Shrinking is free, growing fails: stale `reading_plain` (`20260907030000` repairs them, and it is on the `claude/fab-36-reading-plain-drift` branch rather than in this one), words with no playable audio (the great majority of HSK 3-6 — a paid TTS run; see the 🟡 白 data-defect entry further down for why that number contradicts two older statements and which one is right), `tts_audio` rows whose word is gone, glosses carrying a truncated cross-reference (needs a Chinese reader), and numeric tones in `reading`. The counts are whatever `data/vocabulary-integrity-baseline.json` holds; do not restate them here, because a restated number goes stale silently.
+
+**Before the reseed, deactivate the level-null 白 — otherwise it is excluded from the curriculum forever.** `data/hsk-curriculum-bands.json` puts 白 at HSK 5, no built word list carries it, and production holds it only as a level-null row. It is tempting to read that as a collision waiting to happen; it is the opposite. `build-hsk-vocab.mjs`'s dedupe (`existingWords()`) selects `word` filtered by language, system and `is_active` and **not** by level, so the active level-null 白 is in the exclude set, `buildLevelRows` skips it, and the rebuild in `docs/VOCAB-INGESTION.md` step 2 leaves 白 out of `data/hsk5.json` — after which step 5 inserts nothing and 白 never becomes a curriculum row. That is precisely the failure the active-only filter was written to prevent ("so a deactivated word can be re-seeded rather than being excluded forever by a row the app no longer shows"), reappearing through a row that has no level rather than no `is_active`. So: `is_active = false` on the level-null row (§7.1 — never a delete) BEFORE the rebuild, not as part of the reseed and not after it — and only once step 1 has landed. 白 is one of the `forms[0]` casualties: its first form is *"surname Bai"*, which `isDegenerateMeaning` rejects, so a rebuild without the `hskEntryToRow` fix produces no 白 for a second, independent reason. Deactivate, rebuild without step 1, and the row simply does not appear — and its absence says nothing about whether the deactivation took, because the degenerate `forms[0]` alone is enough to keep it out. `docs/VOCAB-INGESTION.md` currently lists those three orphan rows as out of scope for the reseed; this is the one that is not.
+
+Two scoping decisions worth not re-deriving: **card-orphan and tts-orphan read every vocabulary id**, not the chinese/hsk_3 slice — a learner's other-track card is not a broken reference, and §7.1 deactivates rather than deletes, so scoping them to the active corpus would make the sanctioned repair (`is_active = false`) grow the count and red the gate. And the **`u:`/`v` check reads `reading` only**: two rows still carry `u:` in `reading_plain`, which the directional drift check already counts. Both are asserted, not left to the comment.
+
+The **answer-key comparison is deliberately stricter than the app's grader**: it ignores space, apostrophe and case, where `lenientPinyin` also ignores digits, `v`/`ü` and punctuation including `:`. Being stricter can only over-report drift, never miss it. It over-reports at least the two `hulu:e` rows, and by two further mechanisms the module's own comment sets out: `normalizePinyin` drops every combining mark (so it folds `ǹ`→`n` where the table does not) and folds `v` as well as `ü`. Which rows make up that count is not settled by that — it is settled by the dry run — so "at least", not "exactly".
+
+The script refuses to run at all if the corpus comes back empty. A checker that fetched nothing reports every check clean, which in a log is indistinguishable from a pass.
+
 ### Reading a red check: CI is authoritative, a sandbox is not
 
 Three kinds of red look identical in a terminal and mean completely different
@@ -107,8 +127,27 @@ Check the content type, not the status.
 - [ ] 🟡 **Data defect: the vocabulary row `白` (bái) has `level = null`.**
   `id 77d6738b-e7f8-4608-aad0-f16404bfb291`, language `chinese`, system `hsk_3`,
   `is_active = true` — with **no `audio_path`, no Azure `tts_audio` row, and no
-  `example_sentence`.** It is the only Chinese vocabulary row in the database
-  with no playable audio of any kind.
+  `example_sentence`.** ~~It is the only Chinese vocabulary row in the database
+  with no playable audio of any kind.~~ **That last sentence was wrong, and building the
+  vocabulary integrity gate is what caught it.** 4,471 of the 4,998 active
+  Chinese rows have no playable clip: only 504 have a file at their own
+  `audio_path`, and 23 more have a ready `tts_audio` row. That measurement is
+  over ALL active Chinese rows, which is wider than the gate's own corpus — the
+  gate reads the 4,995 with a level, so it excludes the three level-null rows,
+  among them 白 itself, this entry's subject. Only one of those three lacks a
+  clip (白; the other two have a ready `tts_audio` row), so on 2026-09-07 the
+  gate's `no-audio` came out one lower than the 4,471 here — not three lower.
+  The ACCEPTED count is whatever `data/vocabulary-integrity-baseline.json` holds; a compare-only run may measure fewer, which passes as `shrank` without anyone editing that file. HSK 1 and 2 are
+  complete (300/300 and 197/197); above them almost nothing resolves. The 2,369
+  objects that DO sit under `chinese/hsk_3/` are numbered for a superseded word
+  list — level 3 holds 457 files against 453 rows and exactly **2** of them are
+  at a path a current row points to. Spot-checked: `001_ba.mp3` and
+  `002_bei.mp3` exist, `003_wei.mp3` does not. What is special about 白 is that
+  it has no `audio_path` at all, which is a different defect from the 4,471.
+
+  This also settles `docs/TTS-RELICENSE-DRY-RUN.md`'s "4,473 rows whose ONLY
+  audio is legacy Google": that measured rows with no AZURE clip, and the legacy
+  Google files it assumed were behind them are not at the paths those rows name.
   Surfaced 2026-08-15 while scoping the Azure S0 re-licensing migration, and
   **deliberately kept out of it** — that migration re-renders existing audio
   under a paid tier; this row has none to re-render, so voicing it would be new
