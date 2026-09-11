@@ -162,6 +162,8 @@ latest. Keep it current — move things to **Shipped** as they land.
 
 ## 🧱 Technical
 
+- [x] **The rules that fence an automated task to its own files got stricter, twice.** A task's list of allowed files could name the top of a protected folder, or a path pretending to sit inside a protected file, and nothing refused either; the second gap was found while reviewing the fix for the first. Both are refused now, wherever that question is asked, and each refusal has a test that fails if the check is taken away. What this changes is the rulebook and the check that runs on every pull request: a task like that is now rejected before it starts. The guard that would also block the write itself, as it happens, is written and tested but still not switched on.
+
 ### Chinese TTS rebuild (Azure Speech) — phased
 Full design + operator runbook: **[`docs/TTS.md`](docs/TTS.md)**. Provider-independent
 domain layer, server-only synthesis, content-hash caching, guarded batch CLI. No

@@ -24,6 +24,9 @@ import {
   resolveWithin,
   contractSecurityViolations,
   decide,
+  isSubtreeRoot as policyIsSubtreeRoot,
+  hangsBelow as policyHangsBelow,
+  reachesTier as policyReachesTier,
 } from './.claude/hooks/task-scope-policy.mjs'
 
 // The canonical validator. Imported HERE, in the test, and nowhere in the
@@ -36,9 +39,13 @@ import {
   canonicalise,
   computeDigest,
   covers,
+  isSubtreeRoot,
+  hangsBelow,
+  reachesTier,
   normalisePath,
   pathGrammarError,
   effectiveAllowedPaths,
+  findContractViolations,
 } from './tools/verify-task-contracts.mjs'
 
 // THE RUNTIME TASK-SCOPE GUARD.
@@ -173,8 +180,26 @@ describe('parity with the canonical validator', () => {
   it('computes the same digest for every contract on disk', () => {
     // The strongest parity check available: the real contracts, not fixtures.
     const dir = '.agent/tasks'
-    const names = readdirSync(dir).filter(n => n.endsWith('.json'))
-    expect(names.length).toBeGreaterThan(0)
+    // `seal-guard*` is excluded for the same reason task-contract.test.mjs
+    // excludes it from its own snapshot: those specs write a probe contract into
+    // the REAL directory and run the real CLI against it, so a file with a
+    // deliberately-wrong digest exists there for a few milliseconds. vitest runs
+    // test files in parallel workers, so this readdir can catch one mid-flight —
+    // observed as `seal-guard-probe.json seal: expected <digest> to be undefined`
+    // when these two files happen to race. The contracts this spec is about are
+    // the committed ones.
+    //
+    // `seal-guard` is therefore a RESERVED prefix in .agent/tasks — a committed
+    // contract carrying it would drop out of this sweep and the one below in
+    // silence, and the floor does not change that: it catches a contract
+    // RENAMED or deleted, not a ninth one added under the reserved name. It
+    // would still be validated: task-contract.test.mjs reads every .json, and it
+    // is also what runs the canonical CLI in CI — nothing in .github invokes
+    // verify:tasks, so that coverage exists BECAUSE of this suite rather than
+    // beside it. What is lost is the parity check on that one contract. What keeps the name free is the rule, recorded
+    // in docs/AUTOMATION-AUTHORITY.md next to the tier lists, not this assertion.
+    const names = readdirSync(dir).filter(n => n.endsWith('.json') && !n.startsWith('seal-guard'))
+    expect(names.length, 'a committed contract disappeared from the parity spec').toBeGreaterThanOrEqual(8)
     for (const n of names) {
       const c = JSON.parse(readFileSync(dir + '/' + n, 'utf8'))
       expect(policyDigest(c), n).toBe(computeDigest(c))
@@ -220,6 +245,29 @@ describe('parity with the canonical validator', () => {
     }
   })
 
+  it('agrees on subtree roots and on tier reach, over the same pairs', () => {
+    // FAB-60. The floor tests in the two modules ask reachesTier now, so a
+    // divergence here is a contract the validator accepts and the runtime
+    // refuses, or the reverse — the exact split the parity work exists to stop.
+    const patterns = [
+      '.git/**', '.agent/tasks/**', '.agent/roles.json', '.claude/settings.json',
+      '.claude/hooks/**', 'src/**', 'a/b.js', '**', './src/**',
+    ]
+    const probes = [
+      '.git', '.git/config', '.gitignore', '.agent/tasks', '.agent', '.agent/roles.json',
+      '.agent/roles.json/**', '.agent/roles.json/sub', '.agent/roles.json/sub/**',
+      '.claude/hooks', '.claude/settings.json/**', '.claude/settings.json',
+      '.claude/settings.json/x', 'src', 'src/**', 'src/x.js', 'a/b.js',
+    ]
+    for (const o of patterns) {
+      for (const i of probes) {
+        expect(policyIsSubtreeRoot(o, i), 'isSubtreeRoot(' + o + ', ' + i + ')').toBe(isSubtreeRoot(o, i))
+        expect(policyHangsBelow(o, i), 'hangsBelow(' + o + ', ' + i + ')').toBe(hangsBelow(o, i))
+        expect(policyReachesTier(o, i), 'reachesTier(' + o + ', ' + i + ')').toBe(reachesTier(o, i))
+      }
+    }
+  })
+
   it('agrees on normalisation and on the path grammar', () => {
     const spellings = [
       'a/b', './a/b', 'a//b', 'a/**', './a/**', '**', '', ' a', 'a ', '/abs', '..', 'a/../b',
@@ -239,8 +287,11 @@ describe('parity with the canonical validator', () => {
   })
 
   it('derives the same effective scope as the validator, for contracts on disk', () => {
+    // Same `seal-guard` exclusion as the digest spec above, and for the same
+    // race: this loop JSON.parses every file it finds, so a probe caught
+    // half-written throws here rather than failing an assertion.
     const dir = '.agent/tasks'
-    for (const n of readdirSync(dir).filter(f => f.endsWith('.json'))) {
+    for (const n of readdirSync(dir).filter(f => f.endsWith('.json') && !f.startsWith('seal-guard'))) {
       const c = JSON.parse(readFileSync(dir + '/' + n, 'utf8'))
       expect(effectiveScope(c), n).toEqual(effectiveAllowedPaths(c))
     }
@@ -1034,6 +1085,34 @@ describe('who the policy governs', () => {
     expect(d.reason).toMatch(/Tier 1/)
   })
 
+  it('an ancestor of a tier root authorises that path and nothing beneath it', () => {
+    // The surviving residual, asserted rather than described. The authority doc
+    // calls this half "a property of the pattern semantics and checkable"; this
+    // is the check. `.agent` is accepted in allowed_paths — reachesTier relates
+    // it to neither `.agent/tasks/**` nor `.agent/roles.json` — and what it buys
+    // is exactly one path.
+    expect(contractSecurityViolations({ allowed_paths: ['.agent'], forbidden_paths: [] })
+      .filter(v => /Tier 0|control plane/.test(v)), '.agent stopped being the residual it is documented as')
+      .toEqual([])
+    const c = writeContract(contract({ id: 'ancestor', allowed_paths: ['.agent'] }))
+    const env = { [BINDING_ENV]: bindingFor(c) }
+    expect(run(call(path.join(ROOT, '.agent')), env).allow, 'the ancestor entry stopped authorising itself').toBe(true)
+    // And nothing beneath it: an exact entry covers only itself, which is the
+    // whole of the bound the residual rests on.
+    // A NON-floor descendant, deliberately. `.agent/tasks/anything.json` is
+    // refused by the Tier 0 lexical loop before the contract is even read, so
+    // asserting on it would pass whether or not an exact entry covers its
+    // descendants — the property this test exists to pin. `.agent/notes.txt` is
+    // on no tier, so the only thing that can refuse it is the scope test.
+    const outside = run(call(path.join(ROOT, '.agent/notes.txt')), env)
+    expect(outside.allow, 'an exact entry authorised a path beneath it').toBe(false)
+    expect(outside.reason).toMatch(/outside|not in|scope/i)
+    // And the floor still refuses what is inside the tier, for its own reason.
+    const inside = run(call(path.join(ROOT, '.agent/tasks/anything.json')), env)
+    expect(inside.allow, 'an ancestor entry reached inside the tier').toBe(false)
+    expect(inside.reason).toMatch(/Tier 0/)
+  })
+
   it('refuses the bare root of a tier subtree, not only what is inside it', () => {
     // covers('.git/**', '.git') is false — the subtree test is a prefix match
     // on '.git/', and '.git' does not start with it. Correct for covers(), which
@@ -1053,9 +1132,18 @@ describe('who the policy governs', () => {
     // The two Tier 0 sentences must differ for the same reason the Tier 1 pair
     // does: the bare root is not ON the floor pattern, so saying it is asserts a
     // membership the module denies. Pinned so the split cannot be collapsed.
-    const floorRoot = run(asAgent('general-purpose', '.git'), {})
-    expect(floorRoot.reason).toMatch(/the root of the absolute floor/)
-    expect(floorRoot.reason, 'the bare root claims to be inside the pattern').not.toMatch(/, on the absolute floor/)
+    // Through a SYMLINK, deliberately. Since FAB-60 the lexical floor loop in
+    // step 2 refuses a bare root before the exemption is ever reached, so a
+    // plain '.git' here would be denied by that branch and this assertion would
+    // pass with the exempt branch deleted. A link whose own spelling is
+    // innocent gets past step 2 and can only be caught where this test means to
+    // catch it: on the RESOLVED path, inside the exemption.
+    const exemptLink = path.join(ROOT, 'src/exempt-to-git')
+    try { symlinkSync(path.join(ROOT, '.git'), exemptLink) } catch { /* already there */ }
+    const floorRoot = run(asAgent('general-purpose', exemptLink), {})
+    expect(floorRoot.allow, 'the exemption reached the floor root through a symlink').toBe(false)
+    expect(floorRoot.reason).toMatch(/resolves to .*, the root of the absolute floor/)
+    expect(floorRoot.reason, 'the bare root claims to be inside the pattern').not.toMatch(/, on the absolute floor \(/)
     const inside = run(asAgent('general-purpose', '.git/config'), {})
     expect(inside.reason).toMatch(/on the absolute floor/)
 
@@ -1216,7 +1304,23 @@ describe('what this change does NOT claim', () => {
       // could never fire against the line it was written for.
       'can(?:not| never)? authorize any of it',
     ].join('|'))
-    const QUALIFIER = /bare[- ]subtree[- ]root|BARE SUBTREE ROOT|subtree root/i
+    // FAB-60 CHANGED WHAT COUNTS AS THE QUALIFIER, and that is the point of
+    // updating this line rather than deleting the spec. The bare subtree root
+    // is closed now, so a sentence still hedged with "except a bare subtree
+    // root" is not qualified — it is wrong, and the review that found six such
+    // sentences standing found them because this spec accepted the phrasing it
+    // was written for. The live residual is the ANCESTOR of a tier root, so
+    // that is what must now be within reach of an absolute claim. When that one
+    // closes too, this line moves again.
+    // The PHRASE, not the word. `\bancestor\b` under /i subsumed the two phrase
+    // alternatives, so the rule reduced to "the word ancestor appears within
+    // eight lines" — and commit-ancestry prose is ordinary vocabulary in these
+    // documents ("an ancestor of the reviewed head"), so an unrelated sentence
+    // would have licensed an absolute claim. It still cannot check polarity: a
+    // future sentence saying an ancestor of a tier root IS refused satisfies it
+    // while being false. Same blind spot, one residual later, recorded rather
+    // than papered over.
+    const QUALIFIER = /ancestor of a tier root/i
     // Scanned on a WHITESPACE-NORMALISED join, not line by line. A prose file
     // wraps, so a line-by-line scan misses any phrasing that straddles a
     // newline — and one already did: re-wrapping the floor's opening sentence
@@ -1240,7 +1344,14 @@ describe('what this change does NOT claim', () => {
       const out = []
       for (const m of joined.matchAll(new RegExp(ABSOLUTE.source, 'g'))) {
         const i = lineAt(m.index)
+        // Normalised the same way the ABSOLUTE side is, and for the same
+        // reason: the qualifier is a PHRASE, and a phrase straddles a line
+        // break, a `//` comment marker or a pair of markdown asterisks. A raw
+        // join reads "ANCESTOR of a // tier root" and finds nothing — a guard a
+        // re-flow can switch off, which is exactly the failure this file
+        // already fixed once on the other side of the same test.
         const near = lines.slice(Math.max(0, i - 8), i + 9).join(' ')
+          .replace(/(^|\s)(\/\/|--|#)(\s|$)/g, ' ').replace(/[*_`]/g, '').replace(/\s+/g, ' ')
         if (!QUALIFIER.test(near)) out.push(file + ':' + (i + 1) + ' — ' + m[0])
       }
       return out
@@ -1628,5 +1739,217 @@ describe('where a relative file_path is anchored', () => {
       expect(d.allow, String(cwd)).toBe(false)
       expect(d.reason, String(cwd)).toMatch(/cwd/)
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FAB-60 — the bare subtree root.
+//
+// `covers('.git/**', '.git')` is false in both directions, so until this change
+// a contract naming a floor or Tier 1 ROOT in ordinary allowed_paths was
+// refused by nothing: not the canonical validator, not contractSecurityViolations,
+// not the resolved floor loop, and the scope test then matched it exactly and
+// ALLOWED. Reproduced against the real modules before the fix:
+//
+//   contractSecurityViolations(['.git']) = []
+//   decide(producer, file_path: '.git')  = ALLOW  ".git (.git) — inside the bound contract scope"
+//
+// It is not theoretical: in a git WORKTREE `.git` is a regular file holding a
+// gitdir pointer, and this repository's parallel-work flow uses worktrees.
+// ---------------------------------------------------------------------------
+
+describe('a contract may not name a floor or tier root, in either module', () => {
+  const roots = ['.git', '.agent/tasks', '.claude/hooks']
+
+  it('the runtime refuses every one of them in allowed_paths', () => {
+    for (const r of roots) {
+      const out = contractSecurityViolations({ allowed_paths: [r], forbidden_paths: [] })
+      expect(out.join(' | '), r + ' authorised nothing to refuse it').toMatch(/Tier 0 floor|protected control plane/)
+    }
+  })
+
+  it('the canonical validator refuses the same ones, for the same reason', () => {
+    // The halves must move together: closing it only at runtime would leave
+    // `npm run verify:tasks` accepting a contract the guard then refuses.
+    for (const r of roots) {
+      const out = findContractViolations(contract({ allowed_paths: [r] }), { skipDigest: true })
+      expect(out.join(' | '), r + ' passed the validator').toMatch(/may never authorise|may not authorise/)
+    }
+  })
+
+  it('catches the subtree hanging off a protected FILE, too', () => {
+    // `.claude/settings.json/**` is the other direction: an entry whose own root
+    // is the protected path. Neither covers() direction relates them.
+    for (const spelling of ['.claude/settings.json/**', '.agent/roles.json/**']) {
+      expect(findContractViolations(contract({ allowed_paths: [spelling] }), { skipDigest: true }).join(' | '),
+        spelling + ' passed the validator').toMatch(/may never authorise|may not authorise/)
+      expect(contractSecurityViolations({ allowed_paths: [spelling], forbidden_paths: [] }).join(' | '),
+        spelling + ' passed the runtime').toMatch(/Tier 0 floor|protected control plane/)
+    }
+  })
+
+  it('leaves a sibling that merely shares a prefix alone', () => {
+    // The other half of a floor: it must not swallow the neighbours. Asserted,
+    // not assumed — `.gitignore` and `.agent/roles.json` are ordinary files that
+    // a contract may legitimately name.
+    for (const sibling of ['.gitignore', '.agent/roles.json.bak', '.claude/hooksmith.mjs']) {
+      expect(contractSecurityViolations({ allowed_paths: [sibling], forbidden_paths: [] }).join(' | '),
+        sibling + ' was swept up by a floor pattern').not.toMatch(/Tier 0 floor|protected control plane/)
+      expect(findContractViolations(contract({ allowed_paths: [sibling] }), { skipDigest: true }).join(' | '),
+        sibling + ' was swept up by the validator').not.toMatch(/may never authorise|may not authorise/)
+    }
+  })
+
+  it('refuses the write itself, even from a contract that somehow carries the root', () => {
+    // Defence in depth, and the branch that would have mattered: the tier tests
+    // in decide() run before the scope test, so a contract that got past
+    // validation — an older seal, a hand-edited file — still cannot reach it.
+    const c = writeContract(contract({ id: 'root-writer', allowed_paths: ['.git', 'src/**'] }))
+    const env = { [BINDING_ENV]: bindingFor(c) }
+    const d = run(call(path.join(ROOT, '.git')), env)
+    expect(d.allow, 'the bare floor root was written').toBe(false)
+    expect(d.reason).toMatch(/Tier 0/)
+    // Its ordinary allowance is dead too, and that is the designed behaviour
+    // rather than a side effect: a contract carrying a security violation
+    // authorises NOTHING (the suite above), so the floor entry poisons the
+    // whole contract instead of being quietly dropped from it.
+    expect(run(call(path.join(ROOT, 'src/existing.js')), env).allow,
+      'a contract with a floor entry still authorised its other paths').toBe(false)
+    // A contract without the floor entry is unaffected — this is a floor
+    // refusing one spelling, not the guard failing closed on everything.
+    const ok = writeContract(contract({ id: 'ordinary', allowed_paths: ['src/**'] }))
+    expect(run(call(path.join(ROOT, 'src/existing.js')), { [BINDING_ENV]: bindingFor(ok) }).allow).toBe(true)
+  })
+
+  it('refuses the bare root before a binding is even read, in its own words', () => {
+    // Step 2 is lexical and runs before the binding, the contract and the
+    // filesystem. Asserting it needs a call that NOTHING ELSE would deny for
+    // the same reason: with no binding at all, deleting this branch does not
+    // make the write succeed — it makes the denial come from step 4 with a
+    // different sentence. That is what makes the branch mutation-verified
+    // rather than merely covered.
+    const d = run(call(path.join(ROOT, '.git')), {})
+    expect(d.allow).toBe(false)
+    expect(d.reason, 'the lexical root branch is gone — this denial came from somewhere else')
+      .toMatch(/is the root of the absolute floor/)
+    expect(d.reason, 'a bare root was reported as being inside the pattern').not.toMatch(/is on the absolute floor/)
+    // And the path INSIDE the pattern still gets the membership sentence, so
+    // the two cannot be collapsed into one message.
+    expect(run(call(path.join(ROOT, '.git/config')), {}).reason).toMatch(/is on the absolute floor/)
+  })
+
+  it('refuses it through a symlink as well', () => {
+    // Step 2 is lexical and step 7 is on the resolved path; both now know about
+    // the root. A symlink launders the spelling, not the destination.
+    const link = path.join(ROOT, 'src/looks-innocent')
+    try { symlinkSync(path.join(ROOT, '.git'), link) } catch { /* already there */ }
+    const c = writeContract(contract({ id: 'symlink-root', allowed_paths: ['src/**'] }))
+    const d = run(call(link), { [BINDING_ENV]: bindingFor(c) })
+    expect(d.allow, 'a symlink reached the floor root').toBe(false)
+    expect(d.reason).toMatch(/Tier 0/)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FAB-60 — a path BELOW an exact floor or tier file.
+//
+// The same defect one shape over, and found by the round-4 review of the fix
+// for the shape above. `.agent/roles.json/sub` is related to
+// `.agent/roles.json` by neither direction of covers() and by neither
+// direction of isSubtreeRoot, so a contract could name it, the validator
+// accepted it, and decide() said ALLOW — the write failed only because the
+// parent is a regular file and the kernel answered ENOTDIR. That is the tree
+// refusing rather than the floor, which is the footing this repository
+// declines to accept anywhere else. `hangsBelow` asks it structurally.
+// ---------------------------------------------------------------------------
+
+describe('a contract may not name a path below an exact floor or tier file', () => {
+  // Same helper as the exemption suite above, re-declared rather than hoisted:
+  // an exempt helper carries no binding, which is what makes the resolved floor
+  // loops reachable at all.
+  const asAgent = (agentType, file, over = {}) => call(file, { agent_type: agentType, ...over })
+  const below = [
+    '.agent/roles.json/sub', '.agent/roles.json/sub/**',
+    '.claude/settings.local.json/x', '.claude/settings.json/x', '.claude/settings.json/x/**',
+  ]
+
+  it('the runtime and the canonical validator both refuse every spelling', () => {
+    for (const b of below) {
+      expect(contractSecurityViolations({ allowed_paths: [b], forbidden_paths: [] }).join(' | '),
+        b + ' passed the runtime').toMatch(/Tier 0 floor|protected control plane/)
+      expect(findContractViolations(contract({ allowed_paths: [b] }), { skipDigest: true }).join(' | '),
+        b + ' passed the validator').toMatch(/may never authorise|may not authorise/)
+    }
+  })
+
+  it('leaves the file itself, and its prefix siblings, alone', () => {
+    // hangsBelow tests for the separator, so `.agent/roles.json.bak` is not
+    // below `.agent/roles.json` — and the floor file itself is refused by the
+    // exact-entry test, not by this one, which is the other half of asserting
+    // the new predicate does only what it says.
+    for (const near of ['.agent/roles.json.bak', '.claude/settings.jsonx/a', '.claude/settings.json.bak/a']) {
+      expect(contractSecurityViolations({ allowed_paths: [near], forbidden_paths: [] }).join(' | '),
+        near + ' was swept up by hangsBelow').not.toMatch(/Tier 0 floor|protected control plane/)
+      expect(findContractViolations(contract({ allowed_paths: [near] }), { skipDigest: true }).join(' | '),
+        near + ' was swept up by the validator').not.toMatch(/may never authorise|may not authorise/)
+    }
+  })
+
+  it('refuses the write lexically, before a binding is read, in its own words', () => {
+    // Mutation-verified the same way the bare-root branch is: with no binding,
+    // deleting the lexical hangsBelow branch does not make this succeed — it
+    // moves the denial to the binding step with a different sentence.
+    const d = run(call(path.join(ROOT, '.agent/roles.json/sub')), {})
+    expect(d.allow).toBe(false)
+    expect(d.reason, 'the lexical below-a-file branch is gone — this denial came from elsewhere')
+      .toMatch(/is below the absolute floor file/)
+    // And it is not reported as being INSIDE the pattern, which it is not:
+    // covers() relates the two in neither direction.
+    expect(d.reason, 'a path below a floor file was reported as on the floor').not.toMatch(/is on the absolute floor/)
+  })
+
+  it('refuses it on the RESOLVED path too, so a symlink cannot launder it', () => {
+    // A link whose own spelling is innocent gets past the lexical loop, so this
+    // can only be caught where the test means to catch it: on the resolved
+    // path, in the exempt branch's floor loop. realpath resolves the PARENT
+    // here — the leaf cannot exist under a regular file — which is exactly the
+    // resolveWithin branch that used to hand this shape through.
+    const link = path.join(ROOT, 'src/looks-like-roles')
+    try { symlinkSync(path.join(ROOT, '.agent/roles.json'), link) } catch { /* already there */ }
+    const d = run(asAgent('general-purpose', path.join(link, 'sub')), {})
+    expect(d.allow, 'a symlink reached below the floor file').toBe(false)
+    expect(d.reason).toMatch(/resolves to .*, below the absolute floor file/)
+  })
+
+  it('refuses it below a Tier 1 file as well, with the Tier 1 sentence', () => {
+    // `.claude/settings.json` is the exact entry in PROTECTED_TIER, so the same
+    // shape exists one tier up — and no grant can reach it, since a granted
+    // path must be INSIDE the tier and this is not.
+    // The fixture root carries no .claude/settings.json of its own — the file
+    // has to exist for realpath to resolve the link's parent to it.
+    const settings = path.join(ROOT, '.claude/settings.json')
+    writeFileSync(settings, '{}')
+    const link = path.join(ROOT, 'src/looks-like-settings')
+    try { symlinkSync(settings, link) } catch { /* already there */ }
+    const d = run(asAgent('general-purpose', path.join(link, 'x')), {})
+    expect(d.allow, 'a symlink reached below the Tier 1 file').toBe(false)
+    expect(d.reason).toMatch(/Tier 1: .* below the protected file/)
+  })
+
+  it('refuses it on the producer path as well, from a contract that carries it', () => {
+    // The producer's own resolved loop, reached only with a valid binding. The
+    // contract cannot carry the entry (the suite above), so the mutation this
+    // pins is the floor loop itself. Without the branch the write is still
+    // denied — the scope test runs on the RESOLVED path, and `src/**` does not
+    // cover `.agent/roles.json/sub` — but it is denied as "outside the scope of
+    // contract below-writer", which is the wrong reason for a floor path and
+    // fails the sentence assertion below. That assertion is what pins the
+    // branch; the deny alone would not.
+    const link = path.join(ROOT, 'src/producer-to-roles')
+    try { symlinkSync(path.join(ROOT, '.agent/roles.json'), link) } catch { /* already there */ }
+    const c = writeContract(contract({ id: 'below-writer', allowed_paths: ['src/**'] }))
+    const d = run(call(path.join(link, 'sub')), { [BINDING_ENV]: bindingFor(c) })
+    expect(d.allow, 'a producer wrote below the floor file').toBe(false)
+    expect(d.reason).toMatch(/Tier 0: .* below the absolute floor file/)
   })
 })
