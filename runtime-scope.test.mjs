@@ -11,6 +11,8 @@ import {
   PROTECTED_TIER,
   BINDING_ENV,
   WRITE_TOOLS,
+  PRODUCER_AGENT_TYPE,
+  EXEMPT_AGENT_TYPES,
   canonicalise as policyCanonicalise,
   computeDigest as policyDigest,
   covers as policyCovers,
@@ -837,11 +839,328 @@ describe('the producer definition', () => {
     }
   })
 
+  it('declares the exact name the policy enforces against', () => {
+    // THE drift spec. agent_type is this frontmatter `name:` — proven on
+    // 2.1.259 by a definition in renamed-file.md declaring
+    // `name: inner-declared-name`, which emitted exactly that rather than the
+    // filename. So the protected policy's constant and this line are the same
+    // fact written twice, and they must be kept identical by CI rather than by
+    // memory. Renaming the producer no longer disables enforcement — the
+    // exemption list sees to that — but it would silently make this constant
+    // describe nothing, and a security constant that names no real agent is
+    // exactly the kind of quiet rot this file exists to prevent.
+    const declaredName = frontmatter.match(/^name:\s*(.*)$/m)?.[1]?.trim()
+    expect(declaredName, 'no name: line in the producer frontmatter').toBeTruthy()
+    expect(declaredName).toBe(PRODUCER_AGENT_TYPE)
+  })
+
+  it('cannot reach an exempt agent_type, because it cannot spawn one', () => {
+    // The exemption list is only safe while the producer cannot arrive wearing
+    // one of those names. Two things stop it. It cannot choose its own
+    // agent_type — the runtime sets that from the launched definition — and it
+    // holds no tool that launches another definition. Only the second is
+    // assertable here: the first is a platform property recorded in the
+    // contract's notes from the 2.1.259 recon, and no spec in this repository
+    // can pin it. So this asserts the half that can be asserted, and says
+    // plainly that it is a half.
+    for (const spawner of ['Task', 'Agent', 'Skill', 'Bash']) {
+      expect(tools, 'producer holds ' + spawner + ', so it could reach another agent_type').not.toContain(spawner)
+    }
+    // Deliberately NOT also scanning the definition's prose for exempt agent
+    // names: with no spawning tool such a string could never be acted on, so
+    // that assertion would pass for a reason unrelated to what it claims. The
+    // tool list is the whole of the evidence here.
+  })
+
   it('says plainly that it is not itself protected', () => {
     // .claude/agents/** is Tier 2. Claiming otherwise would be the kind of
     // half-true security statement this whole workstream exists to avoid.
     expect(src).toMatch(/Tier 2/)
     expect(src).toMatch(/not sealed|not protected/)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// WHO THE POLICY GOVERNS.
+//
+// The policy used to treat every `agent_type` as an untrusted producer. That is
+// fail-closed, but registering it would have denied writes from every ordinary
+// helper subagent in the repository — proven on Claude Code 2.1.259, where a
+// `general-purpose` subagent with no binding had an ordinary write denied.
+//
+// The fix cannot be `agentType === PRODUCER_AGENT_TYPE`, because `agent_type`
+// is the frontmatter `name:` of the launched definition and `.claude/agents/**`
+// is Tier 2 — that form would let a one-line rename silently switch enforcement
+// off. So the rule is stated as an exemption, and these specs pin the direction
+// of the failure as much as the behaviour.
+// ---------------------------------------------------------------------------
+
+describe('who the policy governs', () => {
+  const asAgent = (agentType, file, over = {}) => call(file, { agent_type: agentType, ...over })
+  const bound = (c) => ({ [BINDING_ENV]: bindingFor(c) })
+
+  it('enforces the real producer: in scope allows, out of scope denies', () => {
+    const c = writeContract(contract())
+    expect(run(asAgent(PRODUCER_AGENT_TYPE, 'src/thing.js'), bound(c)).allow).toBe(true)
+    const out = run(asAgent(PRODUCER_AGENT_TYPE, 'docs/other.md'), bound(c))
+    expect(out.allow).toBe(false)
+    expect(out.reason).toMatch(/scope/)
+  })
+
+  it('denies the real producer when the session carries no binding', () => {
+    const d = run(asAgent(PRODUCER_AGENT_TYPE, 'src/thing.js'), {})
+    expect(d.allow).toBe(false)
+    expect(d.reason).toMatch(/not bound to a task contract/)
+  })
+
+  it('leaves every recognised helper alone in an unbound session', () => {
+    // The list is pinned LITERALLY first. Iterating EXEMPT_AGENT_TYPES to test
+    // EXEMPT_AGENT_TYPES proves nothing — adding a name makes the loop run once
+    // more and pass, removing one makes it run once less and pass — which is
+    // the trap this file already refuses for WRITE_TOOLS. Deleting five of
+    // these names left the whole suite green before this assertion existed,
+    // while the authority doc's copy of the list silently became wrong.
+    expect(EXEMPT_AGENT_TYPES).toEqual([
+      'claude',
+      'claude-code-guide',
+      'Explore',
+      'fresh-context-reviewer',
+      'general-purpose',
+      'Plan',
+      'statusline-setup',
+    ])
+    for (const helper of EXEMPT_AGENT_TYPES) {
+      const d = run(asAgent(helper, 'src/thing.js'), {})
+      expect(d.allow, helper + ' was denied an ordinary write').toBe(true)
+      expect(d.reason).toMatch(/on the closed exemption list/)
+    }
+  })
+
+  it('still holds recognised helpers to Tier 0', () => {
+    // Not an ordering proof — the exempt branch does its own resolved floor
+    // check, so hoisting it above the lexical one would leave all three of
+    // these denying anyway. What this pins is the property itself: the floor
+    // applies to a recognised helper and not only to a producer. The ordering
+    // is defence in depth, and the spec below is what actually holds the
+    // resolved half of it.
+    for (const floorPath of ['.git/config', '.agent/tasks/demo-task.json', '.agent/roles.json']) {
+      const d = run(asAgent('general-purpose', floorPath), {})
+      expect(d.allow, floorPath + ' was allowed for a helper').toBe(false)
+      expect(d.reason).toMatch(/Tier 0/)
+    }
+  })
+
+  it('resolves the path before exempting, so a symlink cannot launder Tier 0', () => {
+    // The lexical floor check above sees only the spelling it was handed, and
+    // `src/floordoor/config` spells nothing forbidden. The authoritative
+    // resolved check lives downstream of the exemption and never runs for this
+    // caller, so the exemption has to resolve for itself. Without that, a
+    // helper writes .git through an in-scope-looking name — which is exactly
+    // the escape a cold probe proved live against an earlier design.
+    symlinkSync(path.join(ROOT, '.git'), path.join(ROOT, 'src/floordoor'))
+    const d = run(asAgent('general-purpose', 'src/floordoor/config'), {})
+    expect(d.allow, d.reason).toBe(false)
+    expect(d.reason).toMatch(/Tier 0/)
+    expect(d.reason, 'denied on the spelling rather than the resolved path').toMatch(/resolves to \.git\/config/)
+  })
+
+  it('refuses Tier 1 to an unbound helper, including through a symlink', () => {
+    // Reaching the protected control plane takes a digest-covered grant, and a
+    // session with no bound contract has none to offer. The sharpest case is
+    // .claude/hooks/** — this policy's own module — where an unbound helper
+    // rewriting the guard would end the tier model one layer down.
+    symlinkSync(path.join(ROOT, '.claude'), path.join(ROOT, 'src/planedoor'))
+    for (const target of [
+      '.claude/hooks/task-scope-policy.mjs',
+      '.claude/settings.json',
+      'src/planedoor/settings.json',
+    ]) {
+      const d = run(asAgent('general-purpose', target), {})
+      expect(d.allow, target + ' reached Tier 1: ' + d.reason).toBe(false)
+      expect(d.reason).toMatch(/Tier 1/)
+      // INSIDE the tier, a grant is what would authorize it, so the message
+      // says so.
+      expect(d.reason, target + ' got the bare-root message').toMatch(/only a granted contract may authorize/)
+    }
+
+    // The BARE ROOT is the opposite on both halves and must not share that
+    // sentence: no grant reaches it (contractSecurityViolations requires a
+    // protected_path to be inside PROTECTED_TIER, and a root is not inside its
+    // own dir/**), while an ordinary allowed_paths entry is accepted and does
+    // authorize it. One message for both said the reverse of the truth here.
+    const root = run(asAgent('general-purpose', '.claude/hooks'), {})
+    expect(root.allow, '.claude/hooks reached Tier 1: ' + root.reason).toBe(false)
+    expect(root.reason).toMatch(/the root of the protected control plane/)
+    expect(root.reason, 'the bare root claims a grant could authorize it').not.toMatch(/only a granted contract may authorize/)
+    expect(root.reason).toMatch(/No grant reaches it/)
+  })
+
+  it('denies an unresolvable path in the exempt branch, rather than allowing it', () => {
+    // The deny that carries the two checks above. Without it `relative` is
+    // undefined, covers() compares against the string 'undefined' and matches
+    // nothing, and both tier loops fall through to the allow — so a dangling
+    // link aimed at the floor, and any path outside the repository, would be
+    // written. Every other unresolvable-path spec in this file runs as the
+    // producer through the main path's resolution, so none of them reaches
+    // this branch: without these three cases the line is unpinned and its
+    // deletion leaves the suite green.
+    symlinkSync(path.join(ROOT, '.git/nothing-here'), path.join(ROOT, 'src/exemptdangler'))
+    const cases = [
+      ['a dangling link aimed at Tier 0', 'src/exemptdangler'],
+      ['an absolute path outside the repository', '/etc/passwd'],
+      ['a new file whose parent does not exist', 'src/no/such/parent/file.js'],
+    ]
+    for (const [label, target] of cases) {
+      const d = run(asAgent('general-purpose', target), {})
+      expect(d.allow, label + ' was allowed: ' + d.reason).toBe(false)
+    }
+    // And it denies for the resolution reason, not by accidentally matching a
+    // tier — the tier loops never run when resolution fails.
+    expect(run(asAgent('general-purpose', 'src/exemptdangler'), {}).reason).toMatch(/symlink whose target cannot be resolved/)
+    expect(run(asAgent('general-purpose', '/etc/passwd'), {}).reason).toMatch(/outside the repository/)
+  })
+
+  it('checks every target key in the exempt branch, not just the first', () => {
+    // The producer path guards this at 'checks EVERY path key an event
+    // carries'; the exempt branch mirrors that loop and had no equivalent.
+    // Reduce it to targets[0] and this is the case that goes quiet: an
+    // in-scope-looking file_path alongside a Tier 1 notebook_path, authorised
+    // on the path it did not write. The error direction is an allow, which is
+    // why it is worth a spec rather than a reading.
+    const d = run(asAgent('general-purpose', 'src/ok.js', {
+      tool_input: { file_path: 'src/ok.js', notebook_path: '.claude/settings.json' },
+    }), {})
+    expect(d.allow, 'the second target key was never examined: ' + d.reason).toBe(false)
+    expect(d.reason).toMatch(/Tier 1/)
+  })
+
+  it('refuses the bare root of a tier subtree, not only what is inside it', () => {
+    // covers('.git/**', '.git') is false — the subtree test is a prefix match
+    // on '.git/', and '.git' does not start with it. Correct for covers(), which
+    // is at parity with the canonical validator, so the exempt branch asks the
+    // question separately instead of changing it.
+    //
+    // It bites because a directory is not always a directory: in a git WORKTREE
+    // `.git` is a regular FILE holding a gitdir pointer, and this repository's
+    // parallel-work flow uses worktrees. Before the exemption existed every
+    // agent_type without a binding was denied, so this became reachable only
+    // when helpers stopped being governed by the contract.
+    for (const [tier, target] of [['Tier 0', '.git'], ['Tier 0', '.agent/tasks'], ['Tier 1', '.claude/hooks']]) {
+      const d = run(asAgent('general-purpose', target), {})
+      expect(d.allow, target + ' was allowed as a bare subtree root: ' + d.reason).toBe(false)
+      expect(d.reason).toMatch(new RegExp(tier))
+    }
+    // The two Tier 0 sentences must differ for the same reason the Tier 1 pair
+    // does: the bare root is not ON the floor pattern, so saying it is asserts a
+    // membership the module denies. Pinned so the split cannot be collapsed.
+    const floorRoot = run(asAgent('general-purpose', '.git'), {})
+    expect(floorRoot.reason).toMatch(/the root of the absolute floor/)
+    expect(floorRoot.reason, 'the bare root claims to be inside the pattern').not.toMatch(/, on the absolute floor/)
+    const inside = run(asAgent('general-purpose', '.git/config'), {})
+    expect(inside.reason).toMatch(/on the absolute floor/)
+
+    // A sibling whose name merely starts the same way is NOT the root.
+    expect(run(asAgent('general-purpose', '.gitignore'), {}).allow).toBe(true)
+
+    // And the predicate applies only to `dir/**` patterns. Without that
+    // conjunct an EXACT floor entry is truncated by slice(0, -3) and matches
+    // the wrong thing: '.agent/roles.json' minus three characters is
+    // '.agent/roles.j', so a helper writing that would be denied as Tier 0 and
+    // '.claude/settings.j' as Tier 1. Both are over-denies rather than escapes,
+    // which is why they need asserting — nothing else in this file would notice.
+    for (const nearMiss of ['.agent/roles.j', '.claude/settings.j']) {
+      expect(run(asAgent('general-purpose', nearMiss), {}).allow,
+        nearMiss + ' was denied by a truncated exact-path entry').toBe(true)
+    }
+  })
+
+  it('still allows an ordinary Tier 2 write, so the tier checks are not deny-all', () => {
+    expect(run(asAgent('general-purpose', 'src/ordinary.js'), {}).allow).toBe(true)
+  })
+
+  it('denies a malformed agent_type instead of reading it as the driver', () => {
+    // ABSENT is the driver; MALFORMED is not. Folding every unusable value
+    // into the absent case put `agent_type: ['task-producer']` through the one
+    // unconditional allow this policy has.
+    // The REASON is asserted for every case, not just the allow/deny. Without
+    // it ALL SIX pass for an adjacent reason: none is on the exemption list, so
+    // with this branch deleted every one falls through to parseBinding and
+    // denies for "no binding" instead. That is the same trap
+    // this file names and fixes for path values further up.
+    for (const bad of [['task-producer'], { name: 'task-producer' }, 42, '', '   ', true]) {
+      const d = run(call('.claude/settings.json', { agent_type: bad }), {})
+      expect(d.allow, 'agent_type ' + JSON.stringify(bad) + ' was allowed').toBe(false)
+      expect(d.reason, 'agent_type ' + JSON.stringify(bad) + ' denied for the wrong reason').toMatch(/not a name/)
+    }
+  })
+
+  it('enforces an agent_type it does not recognise — the rename fails closed', () => {
+    // THE spec this design exists for. A probe on 2.1.259 showed agent_type is
+    // the frontmatter name, not the filename: a definition in renamed-file.md
+    // declaring `name: inner-declared-name` emitted exactly that. Under a
+    // name-equality rule this call would be unenforced; here it is denied.
+    const d = run(asAgent('inner-declared-name', 'src/thing.js'), {})
+    expect(d.allow).toBe(false)
+    expect(d.reason).toMatch(/not bound to a task contract/)
+  })
+
+  it('enforces a recognised helper once a contract is bound to the session', () => {
+    // Deliberate: a binding means the session is doing one task's work, and a
+    // helper spawned inside it is doing that work too. Recorded as a decision
+    // rather than derived, because the opposite is defensible.
+    const c = writeContract(contract())
+    expect(run(asAgent('general-purpose', 'src/thing.js'), bound(c)).allow).toBe(true)
+    const out = run(asAgent('general-purpose', 'docs/other.md'), bound(c))
+    expect(out.allow).toBe(false)
+    expect(out.reason).toMatch(/scope/)
+  })
+
+  it('treats a present-but-broken binding as bound, for helpers too', () => {
+    // Presence, not validity. If the exemption tested whether the binding
+    // PARSES, a session could unbind itself by corrupting its own binding and
+    // every helper would fall back to unenforced.
+    for (const agent of [PRODUCER_AGENT_TYPE, 'general-purpose']) {
+      const d = run(asAgent(agent, 'src/thing.js'), { [BINDING_ENV]: '{ not json' })
+      expect(d.allow, agent + ' escaped through a corrupt binding').toBe(false)
+      expect(d.reason).toMatch(/not valid JSON/)
+    }
+    // Whitespace is the same as absent, matching parseBinding's own test.
+    expect(run(asAgent('general-purpose', 'src/thing.js'), { [BINDING_ENV]: '   ' }).allow).toBe(true)
+
+    // And so is null. process.env cannot produce it, but the presence test
+    // spells it out, and an unpinned conjunct is an unpinned conjunct: without
+    // it String(null) is 'null', which is truthy, so a null binding would read
+    // as bound and deny. Stricter than intended rather than looser — still not
+    // what the line says it does.
+    expect(run(asAgent('general-purpose', 'src/thing.js'), { [BINDING_ENV]: null }).allow).toBe(true)
+  })
+
+  it('leaves the trusted driver alone, bound session or not', () => {
+    const c = writeContract(contract())
+    for (const env of [{}, bound(c)]) {
+      // No agent_type key at all, which is what a real main-thread call sends.
+      const event = call('docs/other.md')
+      delete event.agent_type
+      const d = run(event, env)
+      expect(d.allow).toBe(true)
+      expect(d.reason).toMatch(/trusted driver/)
+
+      // And explicitly null, which is the OTHER disjunct of the same branch and
+      // was pinned only by an older spec asserting allow with no reason. No
+      // observed runtime sends it; the policy folds it into "absent" on purpose
+      // and says why. An unpinned disjunct is an unpinned disjunct — the same
+      // argument this file makes for the null binding a few suites below.
+      const nulled = call('docs/other.md', { agent_type: null })
+      expect(run(nulled, env).allow).toBe(true)
+      expect(run(nulled, env).reason, 'null agent_type denied, or allowed for another reason').toMatch(/trusted driver/)
+    }
+  })
+
+  it('never exempts the producer itself', () => {
+    // The one entry that would undo the whole change if it were ever added.
+    expect(EXEMPT_AGENT_TYPES).not.toContain(PRODUCER_AGENT_TYPE)
+    expect(new Set(EXEMPT_AGENT_TYPES).size, 'duplicate exempt entries').toBe(EXEMPT_AGENT_TYPES.length)
+    for (const name of EXEMPT_AGENT_TYPES) expect(typeof name).toBe('string')
   })
 })
 
@@ -865,10 +1184,121 @@ describe('what this change does NOT claim', () => {
     expect(contractFile.control_plane.protected_paths).not.toContain('.claude/hooks/**')
   })
 
+  it('never states the tier absolute without the exception beside it', () => {
+    // Four review rounds running caught the same failure: the
+    // bare-subtree-root residual gets documented in one place and the sentences
+    // asserting the opposite are left standing elsewhere — twice inside the
+    // protected module, which is the security artefact, and once in the
+    // paragraph that DEFINES the floor.
+    //
+    // What this spec is, exactly: a list of the phrasings this failure has
+    // actually taken, not a detector for the idea. Entries ACCUMULATE and are
+    // not pruned when the text moves on — a phrasing that matches nothing at
+    // this head still guards against its return, which is the cheaper error.
+    // What is not kept is a phrasing that was never written: one such was
+    // removed, because a speculative entry reads as coverage the list does not
+    // have. So a dead entry here is expected; an unwritten one is not. A new way of saying "nothing
+    // can reach Tier 0" passes it — the round-11 review found precisely that,
+    // where the definitional sentence used none of the four phrasings then
+    // listed. So this narrows the class rather than closing it, and the honest
+    // move when a new phrasing turns up is to add it here rather than to
+    // believe the guard already covered it.
+    const ABSOLUTE = new RegExp([
+      'unauthorisable',
+      'may reach neither tier',
+      'nothing can reach',
+      'unreachable through',
+      'no exception and no override',
+      'no grant and no override',
+      'under any role, at any risk level',
+      // `?` on the negation: the live sentence reads "no grant CAN authorize any
+      // of it", and the earlier form required "cannot" or "can never", so it
+      // could never fire against the line it was written for.
+      'can(?:not| never)? authorize any of it',
+    ].join('|'))
+    const QUALIFIER = /bare[- ]subtree[- ]root|BARE SUBTREE ROOT|subtree root/i
+    // Scanned on a WHITESPACE-NORMALISED join, not line by line. A prose file
+    // wraps, so a line-by-line scan misses any phrasing that straddles a
+    // newline — and one already did: re-wrapping the floor's opening sentence
+    // pushed "under any role, at any risk level" across two lines and silently
+    // disabled that entry, with nothing failing. A guard a re-flow can switch
+    // off is not a guard. Matching runs over the joined text; the offset is
+    // mapped back to a line so the window and the message stay readable.
+    const scanFile = (file) => {
+      const lines = readFileSync(file, 'utf8').split('\n')
+      const starts = []
+      let joined = ''
+      for (const line of lines) {
+        starts.push(joined.length)
+        joined += line.replace(/\s+/g, ' ') + ' '
+      }
+      const lineAt = (offset) => {
+        let lo = 0
+        for (let i = 0; i < starts.length; i++) if (starts[i] <= offset) lo = i
+        return lo
+      }
+      const out = []
+      for (const m of joined.matchAll(new RegExp(ABSOLUTE.source, 'g'))) {
+        const i = lineAt(m.index)
+        const near = lines.slice(Math.max(0, i - 8), i + 9).join(' ')
+        if (!QUALIFIER.test(near)) out.push(file + ':' + (i + 1) + ' — ' + m[0])
+      }
+      return out
+    }
+    const bare = [
+      ...scanFile('.claude/hooks/task-scope-policy.mjs'),
+      ...scanFile('docs/AUTOMATION-AUTHORITY.md'),
+    ]
+    expect(bare, 'the tier absolute is stated with no exception in reach').toEqual([])
+
+    // The SAME shape, for the ordering claim. Round 12 found "Tier 0 is the
+    // first branch" restated in a second place after the first was corrected —
+    // the identical one-site-fixed failure, in a sentence the list above cannot
+    // see because it enumerates authorisability phrasings only. Four denies now
+    // precede the floor check. Unlike the scan above, this is a flat BAN rather
+    // than a qualifier-in-reach rule: the claim is simply false now, so there is
+    // no qualified form of it worth keeping, and erring strict costs nothing.
+    const ORDERING = /Tier 0 is the \*\*first\*\* branch|Tier 0 is the first branch|floor is checked first|Checked first/
+    const ordering = []
+    for (const file of ['.claude/hooks/task-scope-policy.mjs', 'docs/AUTOMATION-AUTHORITY.md']) {
+      const lines = readFileSync(file, 'utf8').split('\n')
+      lines.forEach((line, i) => {
+        if (ORDERING.test(line)) ordering.push(file + ':' + (i + 1) + ' — ' + line.trim())
+      })
+    }
+    expect(ordering, 'Tier 0 is no longer the first branch; four denies precede it').toEqual([])
+    // And the rule is only worth anything if the absolute is actually stated
+    // somewhere — otherwise a rewrite that deleted every occurrence would pass
+    // this vacuously. That is the assertion below; an earlier draft had
+    // `expect(bare.length + 1).toBeGreaterThan(0)` here, which is true for
+    // every possible input and established nothing at all.
+    const stated = ['.claude/hooks/task-scope-policy.mjs', 'docs/AUTOMATION-AUTHORITY.md']
+      .flatMap(f => readFileSync(f, 'utf8').split('\n').filter(l => ABSOLUTE.test(l)))
+    expect(stated.length, 'no occurrence left to guard — this spec has gone vacuous').toBeGreaterThan(2)
+  })
+
   it('documents the residuals rather than claiming they are closed', () => {
     const doc = readFileSync('docs/AUTOMATION-AUTHORITY.md', 'utf8')
     expect(doc).toMatch(/disableAllHooks/)
     expect(doc).toMatch(/inert/)
+  })
+
+  it('keeps the authority doc\'s copy of the exemption list honest, both ways', () => {
+    // The doc names the exempted agents in prose, and nothing tied that list to
+    // the constant — so the two could drift and the doc would quietly describe
+    // a policy that no longer exists, in the one document this task's contract
+    // requires to state the enforcement scope exactly.
+    //
+    // Compared as SETS, not by containment. Checking only that the doc mentions
+    // every constant entry catches an addition but not a removal: drop a name
+    // from the constant and this would simply iterate once less and pass, while
+    // the doc went on listing an agent the policy no longer exempts. That is
+    // the same one-directional weakness this file refuses elsewhere.
+    const doc = readFileSync('docs/AUTOMATION-AUTHORITY.md', 'utf8')
+    const sentence = doc.match(/closed list of\s+recognised helper agents —([^.]+)\./)
+    expect(sentence, 'the authority doc no longer names the exempt agents where this spec looks').toBeTruthy()
+    const documented = [...sentence[1].matchAll(/`([^`]+)`/g)].map(m => m[1])
+    expect([...documented].sort()).toEqual([...EXEMPT_AGENT_TYPES].sort())
   })
 })
 
