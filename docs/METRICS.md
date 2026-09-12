@@ -46,6 +46,20 @@ Known instrumentation notes:
 - The manhua reader fires neither event today (its reads land in
   `story_reads` via its own progress flow); it is invisible to this metric.
 
+## Unsent work waiting on this device
+
+Two screens show a count of queued offline writes, and they are deliberately
+**not the same number**. Both come from `pendingWrites()` in `src/syncQueue.js`.
+
+| Where | Definition |
+|---|---|
+| **Sync pill** (`OfflineBar.jsx`) — "Syncing N saved reviews…" | `pendingWrites(userId)`: queued ops **this account** can replay. An op belonging to another account that has used this device is excluded, because it is not this learner's work and this session will never send it — a number that never reached zero would read as a stuck sync. |
+| **Settings** — "N queued writes stored on this device" | `pendingWrites()`: **every** row in the outbox, whoever queued it. The sentence is about the device, and the outbox is one IndexedDB store per origin shared by every account that has signed in on it. Under-reporting here would hide storage the learner is being told about. |
+
+So on a shared device the Settings number can exceed the sync pill's, and that
+is correct. Neither counts analytics events separately — an analytics op is a
+queued write like any other.
+
 ## Learner-facing progress terms
 
 Defined by `src/mastery.js`, `docs/ARCHITECTURE.md` §mastery:

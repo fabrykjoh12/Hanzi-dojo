@@ -19,7 +19,183 @@ import { outboxAdd, outboxAll, outboxDelete, outboxCount } from './offline'
 export function enqueueGrade(op) {
   // Stamp a stable id so a replayed grade can be recognised server-side.
   // Assigned after the spread so an explicit `opId: undefined` can't erase it.
+  //
+  // Callers also pass `language` and `system`. That is what lets a progress
+  // reset drop exactly this track's queued writes and leave another language's
+  // alone — see dropQueuedWritesForTrack below.
   return outboxAdd({ kind: 'grade', ...op, opId: (op && op.opId) || newOpId() })
+}
+
+// ── Reset: a queued write for deleted rows must not outlive them ────────────
+//
+// `reset_language_progress` DELETES this track's rows — cards and review_logs,
+// and also story_reads, story_unlocks and story_reward_claims
+// (20260809090000_story_chapter_rewards.sql). Anything already in the outbox
+// targeting those rows is a write against rows that no longer exist, and
+// replaying it does one of two bad things:
+//
+//   - RESURRECTION, the silent one. A grade op with `cardId: null` — a card
+//     first graded offline, so no row was ever written — takes grade_card's
+//     INSERT branch and RECREATES the card at its pre-reset state, real reps
+//     and stability included. A queued storyRead upserts the deleted read
+//     straight back. A queued storyClaim re-runs claim_story_reward, which
+//     writes a fresh claim row and a fresh chapter unlock. The reset is
+//     partially undone and the learner is never told.
+//   - A POISON PILL. A grade op with `cardId` set raises 'Card not found'.
+//     replayOp returns ok:false, flushOutbox leaves the row in place, and
+//     there is no attempt counter — so it is retried forever and
+//     pendingWrites() never returns to zero, in a queue the UI reports on.
+//
+// An earlier version of this code dropped only `grade` ops, reasoning that the
+// other kinds "are not writes against cards, so the delete cannot strand
+// them". That is true of the poison pill and FALSE of the resurrection: the
+// reset deletes the story rows too, and storyRead/storyClaim put them back.
+// Only `analytics` is genuinely untouched — analytics_events is not in the
+// reset's delete list, and it is append-only telemetry rather than learner
+// state.
+//
+// Why not outboxClear(): it wipes the WHOLE outbox, and a reset is
+// per-language. Discarding another language's unsynced writes to clean up this
+// one trades a silent bug for a silent data loss.
+
+// The op kinds whose target rows the reset deletes. `analytics` is absent on
+// purpose — see above.
+const RESET_DELETED_OP_KINDS = ['grade', 'storyRead', 'storyClaim']
+
+/**
+ * Does this queued op belong to the reset that just ran — this user, on this
+ * track?
+ *
+ * Pure, and deliberately the only place the rule lives.
+ *
+ * The rule is one sentence: an op of a kind the reset deletes is dropped UNLESS
+ * something it actually carries says it belongs to some other user or track.
+ *
+ * That matters for a partially-tagged op, which the two obvious spellings both
+ * get wrong. `!op.language && !op.system` treats {language:'chinese'} as tagged
+ * and then fails the equality test, so an op that plainly IS this track's
+ * survives the reset. `!op.language || !op.system` treats it as untagged and
+ * drops it, so {language:'japanese'} — plainly NOT this track's — is destroyed.
+ * Comparing only the tags present is right in both directions.
+ *
+ * An op carrying no LANGUAGE tag at all cannot be attributed, so the choice is
+ * between possibly discarding another track's unsynced write and possibly
+ * resurrecting progress the learner explicitly asked to delete. Which of those
+ * is worse depends on the track being cleaned, so the caller says which through
+ * `dropUntagged` — see shouldDropUntaggedOps for the reasoning. When it IS the
+ * learner's active track the op is dropped: a reset is an explicit,
+ * destructive, confirmed action, and silently undoing part of it is the worse
+ * failure. The window is one app version wide for an op that
+ * flushes normally — but NOT for one that does not: flushOutbox has no attempt
+ * counter and leaves a failing op in place forever (the poison pill described
+ * at the top of this section), so an untagged op that never replays cleanly
+ * persists indefinitely. An earlier version of this comment said the window
+ * was one version and one offline session wide, full stop, which was wrong.
+ *
+ * WHAT THE PAIR OF RULES DOES NOT COVER. An op naming NO user is kept here
+ * (undefined never equals a real id) and is replayable by anyone
+ * (opIsReplayableBy lets an ownerless op through, because analytics ops carry
+ * no owner and an unrecognised row must drain). For a grade or story op that
+ * combination would be the resurrection this whole module is about. It is
+ * unreachable today — every learner-op enqueue site stamps userId, and has
+ * since the queue existed — so it is a gap in the argument rather than in the
+ * behaviour, and it is written down instead of left to be discovered.
+ *
+ * THE USER DIMENSION DEFAULTS THE OTHER WAY, and the asymmetry is deliberate.
+ * The outbox is one IndexedDB store per origin, not per account, and an
+ * ordinary sign-out never clears it (outboxClear() runs only on account
+ * deletion). So two accounts that have used the same device share a queue. The
+ * RPC this mirrors deletes only auth.uid()'s rows, and a drop wider than the
+ * reset it is cleaning up after would destroy an account's durable writes while
+ * that account's cards still exist on the server — a loss with no
+ * corresponding deletion, which is worse than either failure the language rule
+ * weighs. An op that does not name THIS user is therefore kept, missing userId
+ * included: unlike the language tag, which this change introduced, userId has
+ * been on every LEARNER op since the queue existed — analytics ops carry none
+ * and never have, which is why opIsReplayableBy lets an ownerless op through
+ * while this rule does not — so for the three kinds this governs, its absence
+ * is not a version window to trade away.
+ */
+export function queuedOpBelongsToTrack(op, track, userId, { dropUntagged = true } = {}) {
+  if (!op || !RESET_DELETED_OP_KINDS.includes(op.kind)) return false
+  if (!track || !track.language || !track.system) return false
+  if (!userId || op.userId !== userId) return false
+  if (!op.language && !op.system && !dropUntagged) return false
+  if (op.language && op.language !== track.language) return false
+  if (op.system && op.system !== track.system) return false
+  return true
+}
+
+/**
+ * Should an op that carries no language tag be dropped when THIS track is
+ * cleaned up?
+ *
+ * The untagged rule above weighs "possibly discard another track's unsynced
+ * write" against "possibly resurrect progress the learner asked to delete", and
+ * concludes the second is worse. That conclusion holds when the track being
+ * cleaned is the one the learner is on — an untagged op is then almost
+ * certainly its own.
+ *
+ * It inverts when it is not. Resetting a track you are not studying, or
+ * removing a language outright, cleans up a track that by construction is not
+ * where your recent grades came from; the untagged op in the queue is most
+ * likely your ACTIVE track's, and dropping it is a strict regression on the
+ * behaviour before this change, where it would have replayed correctly against
+ * cards that still exist. Nothing is being resurrected in that case, because
+ * nothing of that track's was deleted.
+ *
+ * So the decision is made from the one fact that separates the two situations,
+ * rather than per call site. `activeLanguage` unknown keeps the old, wider
+ * behaviour, which is the safer default of the two — and the call-site spec
+ * requires every site to pass one, so "unknown" is not reachable from the app.
+ */
+export function shouldDropUntaggedOps(track, activeLanguage) {
+  if (!activeLanguage) return true
+  return Boolean(track) && track.language === activeLanguage
+}
+
+/**
+ * Drop this user's queued writes for this track. Call it AFTER a reset RPC
+ * succeeds — before would leave the queue emptied for a reset that then failed.
+ *
+ * `userId` is required, not optional: without it this drops nothing. The outbox
+ * is shared by every account that has signed in on the device, so a call that
+ * cannot name the account has no business deleting from it.
+ *
+ * Returns how many ops this function asked the store to delete, and be exact
+ * about what that is worth: offline.js's tx() resolves its fallback on every
+ * storage failure rather than rejecting ("Any failure resolves to `fallback` so
+ * callers never have to try/catch"), so a delete that did not land is
+ * indistinguishable here from one that did. The count is therefore an upper
+ * bound, not a measurement, and no caller reads it. An earlier version of this
+ * comment claimed the counter's placement outside the try made the number
+ * honest against a half-failing store; the placement is right, but the store it
+ * was defending against is not the one this app has.
+ *
+ * Kept anyway: it is the only thing this function makes observable, the
+ * arithmetic is worth a spec, and if offline.js ever surfaces failures the
+ * placement is already correct. Never throws — a browser with no IndexedDB has
+ * no outbox to drain, and a reset must not fail because of it.
+ *
+ * `activeLanguage` decides what happens to an op carrying no language tag —
+ * see shouldDropUntaggedOps. Pass the learner's current active_language; every
+ * call site does, and a spec requires it.
+ *
+ * NOT a lock. flushOutbox can be mid-replay when this runs; see docs/BACKLOG.md
+ * ("Reset races an in-flight outbox flush").
+ */
+export async function dropQueuedWritesForTrack(track, userId, { activeLanguage = null } = {}) {
+  const dropUntagged = shouldDropUntaggedOps(track, activeLanguage)
+  let dropped = 0
+  try {
+    const rows = (await outboxAll()) || []
+    for (const row of rows) {
+      if (!queuedOpBelongsToTrack(row.op, track, userId, { dropUntagged })) continue
+      await outboxDelete(row.id)
+      dropped += 1
+    }
+  } catch { /* no IndexedDB, or the store is gone: nothing queued to drop */ }
+  return dropped
 }
 
 // A client-generated uuid identifying one grade, so the same grade written
@@ -41,6 +217,9 @@ export function newOpId() {
   return out
 }
 
+// A story finished offline. Callers pass `language` and `system` for the same
+// reason grades do: the reset deletes story_reads, so a queued read has to be
+// droppable per-track or it upserts a deleted read straight back.
 export function enqueueStoryRead(op) {
   return outboxAdd({ kind: 'storyRead', ...op })
 }
@@ -60,8 +239,51 @@ export function enqueueAnalytics(event) {
   return outboxAdd({ kind: 'analytics', event })
 }
 
-export function pendingWrites() {
-  return outboxCount()
+/**
+ * Is this queued op replayable under the account currently signed in?
+ *
+ * THE HALF THE DROP CANNOT DO. dropQueuedWritesForTrack keeps an op that names
+ * another account, on the reasoning that destroying it would be a loss with no
+ * matching deletion. That is only safe if the op is not then REPLAYED as this
+ * account — and it would be: grade_card writes under auth.uid() and ignores
+ * op.userId entirely (20260822170000). Which branch of that RPC the op lands in
+ * decides what goes wrong, and both are bad:
+ *
+ *   - cardId null takes the INSERT branch, so account A's queued grade becomes
+ *     B's card at A's reps and stability — fabricated mastery in B's account.
+ *   - cardId set takes the UPDATE branch, which filters c.user_id = auth.uid()
+ *     and raises 'Card not found' — a permanent poison pill in B's queue, for a
+ *     card that exists and belongs to A.
+ *
+ * The outbox is one store per device and sign-out never clears it, so this is
+ * reachable without anything unusual happening, and it predates the reset work
+ * — it is fixed here because the reset's "only your own account's" guarantee is
+ * not true without it.
+ *
+ * An op carrying no userId is replayable under any session: analytics ops are
+ * enqueued without one (enqueueAnalytics stores the event, not an owner), and
+ * an empty or unrecognised row must still be drained rather than wedge the
+ * queue.
+ */
+export function opIsReplayableBy(op, userId) {
+  if (!userId) return false
+  if (!op) return true
+  return !op.userId || op.userId === userId
+}
+
+/**
+ * How many queued writes are waiting.
+ *
+ * With a userId: only the ops that account would actually flush — what the sync
+ * bar should show, since another account's held ops are not this learner's work
+ * and will never clear while they are signed in.
+ *
+ * Without one: the device-wide row count, which is the honest number for
+ * Settings' offline-storage card — that card is about what is ON THE DEVICE.
+ */
+export function pendingWrites(userId) {
+  if (!userId) return outboxCount()
+  return outboxAll().then(rows => (rows || []).filter(r => opIsReplayableBy(r.op, userId)).length)
 }
 
 // ── Pure helpers (unit-tested) ──────────────────────────────────────────────
@@ -278,8 +500,18 @@ let flushing = false
 // Replay the whole outbox against Supabase. Ops that fail are left in place for
 // the next attempt. daily_activity is reconciled once at the end over exactly
 // the ops that flushed this pass.
-export async function flushOutbox(supabase) {
+export async function flushOutbox(supabase, userId) {
   if (flushing || !supabase) return { flushed: 0 }
+  // A flush that cannot say which account it is flushing for has no business
+  // writing to one: every replay lands under auth.uid(), so an unattributed
+  // flush is exactly how one account's queued work becomes another's.
+  //
+  // This line is a short-circuit, not the guarantee — opIsReplayableBy already
+  // refuses every op when userId is missing, so deleting this early return
+  // changes nothing except that the whole outbox gets read first. Said plainly
+  // because a mutation test proved it: removing it fails no spec, and the rule
+  // it looks like it enforces lives one function up.
+  if (!userId) return { flushed: 0 }
   flushing = true
   try {
     const rows = (await outboxAll()) || []
@@ -290,18 +522,22 @@ export async function flushOutbox(supabase) {
     // Only ops whose day counts the RPC did NOT write (the legacy fallback
     // path) are folded in below — replaying through the RPC already did it.
     const unreconciled = []
-    let userId = null
     for (const row of rows) {
       const op = row.op
+      // Held, not dropped: it is another account's unsynced work and replays
+      // correctly the next time that account signs in here.
+      if (!opIsReplayableBy(op, userId)) continue
       const res = await replayOp(supabase, op)
       if (!res.ok) continue
       await outboxDelete(row.id)
       flushed += 1
       if (res.reconcile) unreconciled.push(op)
-      if (op && op.userId) userId = op.userId
     }
 
-    if (unreconciled.length > 0 && userId) {
+    // Reconcile under the signed-in account. This used to scavenge the last
+    // op's userId, which was the same value on every ordinary device and the
+    // wrong one on a shared device.
+    if (unreconciled.length > 0) {
       await reconcile(supabase, userId, unreconciled)
     }
     return { flushed }

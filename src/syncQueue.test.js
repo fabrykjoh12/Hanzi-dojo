@@ -1,17 +1,33 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
 // In-memory stand-in for the IndexedDB outbox so flushOutbox can be exercised.
-const store = vi.hoisted(() => ({ rows: [], nextId: 1 }))
+// `deletes` counts them and `failDeleteAfter` makes the store throw mid-loop.
+// That is NOT how the real store fails — offline.js's tx() resolves a fallback
+// on every storage error rather than rejecting — so what the spec using it
+// proves is the loop's arithmetic (the counter is outside the try, so a throw
+// cannot discard what already went), not a production scenario. Said here
+// because an earlier version of this comment claimed it modelled "the way a
+// real IndexedDB failure would be", which it does not.
+const store = vi.hoisted(() => ({ rows: [], nextId: 1, deletes: 0, failDeleteAfter: null }))
 vi.mock('./offline', () => ({
   outboxAdd: async (op) => { const id = store.nextId++; store.rows.push({ id, op }); return id },
   outboxAll: async () => store.rows.slice(),
-  outboxDelete: async (id) => { store.rows = store.rows.filter(r => r.id !== id) },
+  outboxDelete: async (id) => {
+    if (store.failDeleteAfter != null && store.deletes >= store.failDeleteAfter) {
+      throw new Error('outbox store is gone')
+    }
+    store.deletes += 1
+    store.rows = store.rows.filter(r => r.id !== id)
+  },
   outboxCount: async () => store.rows.length,
 }))
 
 import {
   dayCountsOf, nextActivityCounts, isMissingRpc, newOpId,
   gradeCardWrite, resetGradeRpcProbe, enqueueGrade, flushOutbox,
+  enqueueStoryRead, enqueueStoryClaim, enqueueAnalytics,
+  queuedOpBelongsToTrack, shouldDropUntaggedOps, dropQueuedWritesForTrack,
+  opIsReplayableBy, pendingWrites,
 } from './syncQueue'
 
 // ── A minimal chainable Supabase double ─────────────────────────────────────
@@ -66,6 +82,8 @@ const LOG = { grade: 2, previous_state: 'learning', next_state: 'review' }
 beforeEach(() => {
   store.rows = []
   store.nextId = 1
+  store.deletes = 0
+  store.failDeleteAfter = null
   resetGradeRpcProbe()
 })
 
@@ -265,7 +283,7 @@ describe('offline replay', () => {
     const opId = store.rows[0].op.opId
     const sb = fakeSupabase({ rpc: () => ({ data: { card_id: 'card-1', log_id: 'log-1', already_applied: false }, error: null }) })
 
-    const out = await flushOutbox(sb)
+    const out = await flushOutbox(sb, 'u1')
     expect(out.flushed).toBe(1)
     expect(store.rows).toHaveLength(0)
     expect(sb.calls.rpc[0].fn).toBe('grade_card')
@@ -292,11 +310,11 @@ describe('offline replay', () => {
     }
 
     const sb = fakeSupabase({ rpc })
-    await flushOutbox(sb)
+    await flushOutbox(sb, 'u1')
     // The op survived the flush (an outbox delete that never landed) and is
     // replayed on the next reconnect.
     store.rows.push({ id: 99, op })
-    await flushOutbox(sb)
+    await flushOutbox(sb, 'u1')
 
     expect(sb.calls.rpc).toHaveLength(2)
     expect(applied).toBe(1)                  // written exactly once
@@ -304,25 +322,392 @@ describe('offline replay', () => {
     expect(sb.calls.upsert).toHaveLength(0)  // never a double-counted day
   })
 
+  it('reconciles under the signed-in account, not one scavenged off an op', async () => {
+    // The discriminating fixture: an op that names NO user, flushed as u1, with
+    // the RPC absent so the legacy reconcile path runs. The old code took the
+    // userId off the last replayed op — null here, so `unreconciled.length > 0
+    // && userId` was false and it reconciled nothing at all. The new code
+    // reconciles under the account doing the flushing.
+    //
+    // Every other reconcile spec in this file uses an op whose userId already
+    // equals the signed-in account, so none of them can tell the two apart.
+    store.rows.push({ id: 901, op: {
+      kind: 'grade', vocabId: 'v1', cardId: 'card-1', updates: UPDATES, log: LOG,
+      day: '2026-07-22', state: 'review', opId: 'op-ownerless',
+    } })
+    const sb = fakeSupabase() // no grade_card, so the legacy path reconciles
+
+    await flushOutbox(sb, 'u1')
+
+    const activity = sb.calls.upsert.filter(c => c.table === 'daily_activity')
+    expect(activity).toHaveLength(1)
+    expect(activity[0].vals).toMatchObject({ user_id: 'u1', activity_date: '2026-07-22' })
+  })
+
   it('keeps the old bulk reconcile when the RPC is absent', async () => {
     await queued()
     const sb = fakeSupabase() // no grade_card
 
-    const out = await flushOutbox(sb)
+    const out = await flushOutbox(sb, 'u1')
     expect(out.flushed).toBe(1)
     expect(sb.calls.update[0]).toMatchObject({ table: 'cards' })
     const activity = sb.calls.upsert.filter(c => c.table === 'daily_activity')
     expect(activity).toHaveLength(1)
-    expect(activity[0].vals).toMatchObject({ activity_date: '2026-07-22', studied_cards: 1, review_cards: 1 })
+    // Pins the user_id, which nothing did before. It does NOT discriminate
+    // between the signed-in account and the old scavenged one — this op's
+    // userId is already 'u1', so both implementations produce this assertion.
+    // The spec above ("reconciles under the signed-in account") is the one that
+    // tells them apart, using an ownerless op; this is here so the field is
+    // pinned at all.
+    //
+    // And a foreign account's id can no longer reach reconcile by any route:
+    // flushOutbox skips an op that fails opIsReplayableBy, so everything left
+    // carries this account's id or none.
+    expect(activity[0].vals).toMatchObject({
+      user_id: 'u1', activity_date: '2026-07-22', studied_cards: 1, review_cards: 1,
+    })
+  })
+
+  it('never replays another account\'s queued write as this account', async () => {
+    // The half the reset's drop cannot do. dropQueuedWritesForTrack KEEPS an op
+    // that names another account, because destroying it would be a loss with no
+    // matching deletion — but grade_card writes under auth.uid() and ignores
+    // op.userId, so replaying it here would insert account A's card, at A's
+    // reps and stability, into account B. The outbox is one store per device
+    // and sign-out never clears it, so nothing unusual has to happen.
+    await queued()
+    store.rows.push({ id: 42, op: { kind: 'grade', userId: 'someone-else', vocabId: 'v9', cardId: null, updates: { reps: 9, stability: 40 }, opId: 'op-x' } })
+    const sb = fakeSupabase({ rpc: () => ({ data: { card_id: 'c', log_id: 'l', already_applied: false }, error: null }) })
+
+    const out = await flushOutbox(sb, 'u1')
+
+    expect(out.flushed).toBe(1)
+    expect(sb.calls.rpc).toHaveLength(1)              // only u1's grade was sent
+    expect(store.rows.map(r => r.op.userId)).toEqual(['someone-else'])  // held, not dropped
+  })
+
+  it('still replays an op that names no account', async () => {
+    // Analytics ops are enqueued without an owner, and an unrecognised row has
+    // to drain rather than wedge the queue behind it.
+    await enqueueAnalytics({ name: 'x' })
+    store.rows.push({ id: 43, op: null })
+    const sb = fakeSupabase()
+
+    const out = await flushOutbox(sb, 'u1')
+
+    expect(out.flushed).toBe(2)
+    expect(store.rows).toHaveLength(0)
+  })
+
+  it('refuses to flush at all when it cannot say which account it is for', async () => {
+    await queued()
+    const sb = fakeSupabase({ rpc: () => ({ data: { card_id: 'c', log_id: 'l' }, error: null }) })
+
+    expect(await flushOutbox(sb, null)).toEqual({ flushed: 0 })
+    expect(sb.calls.rpc).toHaveLength(0)
+    expect(store.rows).toHaveLength(1)
+  })
+
+  it('counts pending writes per account, and per device when asked', async () => {
+    // The sync bar shows the signed-in learner's work; Settings' offline-storage
+    // card is about what is on the DEVICE, so it keeps the whole count.
+    await queued()
+    store.rows.push({ id: 44, op: { kind: 'grade', userId: 'someone-else', vocabId: 'v9', updates: {} } })
+
+    expect(await pendingWrites('u1')).toBe(1)
+    expect(await pendingWrites()).toBe(2)
+  })
+
+  it('decides replayability from the signed-in account', () => {
+    // Named for what it actually exercises. It used to be called "replays under
+    // the signed-in account, not the last op it happened to see" and to talk
+    // about the reconcile pass, which it never touched — that claim is asserted
+    // by the reconcile spec above, which now pins the user_id the upsert
+    // carries.
+    expect(opIsReplayableBy({ kind: 'grade', userId: 'u1' }, 'u1')).toBe(true)
+    expect(opIsReplayableBy({ kind: 'grade', userId: 'u2' }, 'u1')).toBe(false)
+    expect(opIsReplayableBy({ kind: 'analytics', event: {} }, 'u1')).toBe(true)
+    expect(opIsReplayableBy(null, 'u1')).toBe(true)
+    expect(opIsReplayableBy({ kind: 'grade', userId: 'u1' }, null)).toBe(false)
   })
 
   it('leaves a failed op in the outbox and does not count its day', async () => {
     await queued()
     const sb = fakeSupabase({ rpc: () => ({ data: null, error: { code: '42501', message: 'rls' } }) })
 
-    const out = await flushOutbox(sb)
+    const out = await flushOutbox(sb, 'u1')
     expect(out.flushed).toBe(0)
     expect(store.rows).toHaveLength(1)
     expect(sb.calls.upsert).toHaveLength(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FAB-28 finding 4: a reset must not leave queued writes for deleted rows.
+// ---------------------------------------------------------------------------
+// reset_language_progress DELETES this track's cards and review_logs, and also
+// its story_reads, story_unlocks and story_reward_claims. outboxClear() existed
+// and was called from exactly one place — account deletion — so every reset
+// path left the outbox untouched. Replaying one of those ops either recreates
+// what the reset deleted (a grade op with cardId: null takes grade_card's
+// INSERT branch; a storyRead upserts the read back; a storyClaim re-runs the
+// reward RPC) or wedges the queue forever on 'Card not found'.
+describe("a progress reset drops that track's queued writes, and only those", () => {
+  const CN = { language: 'chinese', system: 'hsk_3' }
+  const JA = { language: 'japanese', system: 'jlpt' }
+
+  const U = 'user-a'
+  const OTHER_USER = 'user-b'
+
+  const grade = (over = {}) => ({
+    kind: 'grade', userId: U, vocabId: 'v1', cardId: 'c1',
+    updates: {}, opId: 'op-1', ...over,
+  })
+  // The predicate now takes the signed-in user too. gradeU() spells the common
+  // "this user's op, judged for this user" case so the track cases below stay
+  // about the track.
+  const gradeU = (over, track) => queuedOpBelongsToTrack(grade(over), track, U)
+
+  // ── The rule ──────────────────────────────────────────────────────────────
+
+  it('drops a queued grade for the track being reset', () => {
+    expect(gradeU({ ...CN }, CN)).toBe(true)
+  })
+
+  it("keeps another language's queued grade", () => {
+    // The reason this is a predicate and not outboxClear(): a reset is
+    // per-language, and discarding another track's unsynced grades to tidy up
+    // this one trades a silent bug for silent data loss.
+    expect(gradeU({ ...JA }, CN)).toBe(false)
+  })
+
+  it('keeps a grade for the same language on a different system', () => {
+    expect(gradeU({ language: 'chinese', system: 'other' }, CN)).toBe(false)
+  })
+
+  it('drops a queued story read and story claim for this track', () => {
+    // The correction to the first version of this change, which dropped only
+    // `grade` ops because "the other kinds are not writes against cards, so the
+    // delete cannot strand them". The reset deletes story_reads, story_unlocks
+    // and story_reward_claims too, and both of these put them straight back.
+    expect(queuedOpBelongsToTrack({ kind: 'storyRead', storyId: 's1', userId: U, ...CN }, CN, U)).toBe(true)
+    expect(queuedOpBelongsToTrack({ kind: 'storyClaim', claimDate: '2026-09-07', userId: U, ...CN }, CN, U)).toBe(true)
+  })
+
+  it("keeps another track's story read and story claim", () => {
+    expect(queuedOpBelongsToTrack({ kind: 'storyRead', storyId: 's1', userId: U, ...JA }, CN, U)).toBe(false)
+    expect(queuedOpBelongsToTrack({ kind: 'storyClaim', claimDate: '2026-09-07', userId: U, ...JA }, CN, U)).toBe(false)
+  })
+
+  it('never drops an analytics op', () => {
+    // analytics_events is not in the reset's delete list, and the queue treats
+    // analytics as lossy telemetry rather than learner state. Dropping it here
+    // would discard events that describe the reset itself.
+    expect(queuedOpBelongsToTrack({ kind: 'analytics', event: {}, userId: U, ...CN }, CN, U)).toBe(false)
+  })
+
+  it('judges a partially-tagged op by the tag it actually carries', () => {
+    // Both obvious spellings get this wrong in one direction:
+    //   `!op.language && !op.system` calls the first case tagged, then fails
+    //   the equality test — so an op that plainly IS this track's survives.
+    expect(gradeU({ language: 'chinese' }, CN)).toBe(true)
+    expect(gradeU({ system: 'hsk_3' }, CN)).toBe(true)
+    //   `!op.language || !op.system` calls the next case untagged and drops it
+    //   — destroying an unsynced write that is plainly NOT this track's.
+    expect(gradeU({ language: 'japanese' }, CN)).toBe(false)
+    expect(gradeU({ system: 'jlpt' }, CN)).toBe(false)
+  })
+
+  it('drops an UNTAGGED op when this IS the active track, deliberately', () => {
+    // One enqueued before the stamp existed and not yet flushed. It cannot be
+    // attributed, so the choice is between possibly discarding another track's
+    // unsynced write and possibly resurrecting progress the learner explicitly
+    // asked to delete. Resetting the track you are on makes the second the
+    // likelier and the worse one: the reset is explicit, confirmed and
+    // destructive, and silently undoing part of it is the bad outcome.
+    expect(gradeU({}, CN)).toBe(true)
+  })
+
+  it('KEEPS an untagged op when the track being cleaned is not the active one', () => {
+    // The inversion. Resetting a track you are not studying, or removing a
+    // language outright, deletes nothing an untagged op could resurrect — so
+    // dropping it destroys a write with nothing behind it, which is strictly
+    // worse than the behaviour before any of this existed, where it would have
+    // replayed correctly.
+    expect(queuedOpBelongsToTrack(grade({}), CN, U, { dropUntagged: false })).toBe(false)
+    // Tagged ops for the track are still dropped: this narrows the untagged
+    // rule, it does not switch the drop off.
+    expect(queuedOpBelongsToTrack(grade({ ...CN }), CN, U, { dropUntagged: false })).toBe(true)
+    expect(queuedOpBelongsToTrack(grade({ language: 'chinese' }), CN, U, { dropUntagged: false })).toBe(true)
+  })
+
+  it('drops nothing when the track is unknown', () => {
+    // A caller with no track must not accidentally empty the queue. Judged with
+    // an UNTAGGED op on purpose: with a fully tagged one the tag-mismatch rules
+    // reject {} and { language } anyway, so the test would pass with this guard
+    // deleted — which is what it used to do.
+    expect(gradeU({}, null)).toBe(false)
+    expect(gradeU({}, {})).toBe(false)
+    expect(gradeU({}, { language: 'chinese' })).toBe(false)
+    expect(gradeU({}, { system: 'hsk_3' })).toBe(false)
+    // And with a tagged one, so the guard is pinned from both directions.
+    expect(gradeU({ ...CN }, null)).toBe(false)
+    expect(gradeU({ ...CN }, {})).toBe(false)
+  })
+
+  it('decides the untagged rule from the active language, not the call site', () => {
+    // shouldDropUntaggedOps is the whole decision, so it is worth stating
+    // directly. Unknown keeps the wider behaviour — the call-site spec is what
+    // stops the app ever reaching that branch.
+    expect(shouldDropUntaggedOps(CN, 'chinese')).toBe(true)
+    expect(shouldDropUntaggedOps(CN, 'japanese')).toBe(false)
+    expect(shouldDropUntaggedOps(JA, 'chinese')).toBe(false)
+    expect(shouldDropUntaggedOps(CN, null)).toBe(true)
+    expect(shouldDropUntaggedOps(null, 'chinese')).toBe(false)
+    expect(shouldDropUntaggedOps(null, null)).toBe(true)
+  })
+
+  it("keeps another ACCOUNT's queued write, even on the very track being reset", () => {
+    // The outbox is one IndexedDB store per origin, not per account, and an
+    // ordinary sign-out never clears it — outboxClear() runs only on account
+    // deletion. So two accounts that have used the same device share a queue.
+    // The reset RPC deletes only auth.uid()'s rows, so a drop that ignored the
+    // user would destroy another account's durable writes while that account's
+    // cards still exist on the server: a loss with no matching deletion.
+    expect(queuedOpBelongsToTrack(grade({ ...CN, userId: OTHER_USER }), CN, U)).toBe(false)
+    expect(queuedOpBelongsToTrack({ kind: 'storyRead', storyId: 's1', userId: OTHER_USER, ...CN }, CN, U)).toBe(false)
+  })
+
+  it('keeps an op that names no account at all', () => {
+    // The opposite default to the language tag, deliberately: userId has been
+    // on every LEARNER op since the queue existed — analytics carries none and
+    // never has (enqueueAnalytics stores the event, not an owner) — so for the
+    // three kinds this rule governs, its absence is not a one-version window to
+    // trade away, and the op may be another account's.
+    expect(queuedOpBelongsToTrack(grade({ ...CN, userId: undefined }), CN, U)).toBe(false)
+  })
+
+  it('drops nothing when the caller cannot name the account', () => {
+    expect(queuedOpBelongsToTrack(grade({ ...CN }), CN, null)).toBe(false)
+    expect(queuedOpBelongsToTrack(grade({ ...CN }), CN, undefined)).toBe(false)
+    // The case a bare `op.userId !== userId` gets wrong: two undefineds are
+    // equal, so an unattributable op would match an unattributable caller and
+    // be deleted. That is why the guard tests `userId` on its own.
+    expect(queuedOpBelongsToTrack(grade({ ...CN, userId: undefined }), CN, undefined)).toBe(false)
+  })
+
+  // Two specs stood here, named for the bug's two failure modes — "covers the op
+  // that RESURRECTS a deleted card" and "covers the op that WEDGES the queue".
+  // They varied only cardId and updates, which the predicate never reads, so
+  // neither could fail without the first spec in this block failing too: they
+  // were documentation wearing a spec's name, and counting them as coverage of
+  // those two modes was the overstatement. The modes themselves are covered
+  // where the behaviour actually differs — cardId: null against the real
+  // deletion loop below, and the whole point of the header comment above.
+
+  // ── The function that actually destroys queued writes ─────────────────────
+  //
+  // These go through the real enqueue helpers against the in-memory outbox, so
+  // they also prove the helpers carry the tags into the STORED op — each is a
+  // `...op` spread, and a predicate that is right about ops nothing produces
+  // would fix nothing. What they cannot reach is the JSX call sites that pass
+  // the track in (Study.jsx, useStoryReaderCore.js, StoryReaderImmersive.jsx,
+  // storyRewardData.js); an op arriving untagged from one of those is covered
+  // only by the untagged rule above.
+
+  it('leaves an untagged write alone when another track is being cleaned', async () => {
+    // End to end through the store, not just the predicate: removing a language
+    // the learner had stopped using must not cost them a queued grade from the
+    // language they are actually studying.
+    await enqueueGrade({ userId: U, vocabId: 'v1', cardId: 'c1', updates: {} })
+    await enqueueGrade({ userId: U, vocabId: 'v9', cardId: 'c9', updates: {}, ...JA })
+
+    const dropped = await dropQueuedWritesForTrack(JA, U, { activeLanguage: 'chinese' })
+
+    expect(dropped).toBe(1)
+    expect(store.rows.map(r => [r.op.kind, r.op.language ?? null])).toEqual([['grade', null]])
+  })
+
+  it('still takes the untagged write when the active track is the one reset', async () => {
+    await enqueueGrade({ userId: U, vocabId: 'v1', cardId: 'c1', updates: {} })
+    await enqueueGrade({ userId: U, vocabId: 'v9', cardId: 'c9', updates: {}, ...JA })
+
+    const dropped = await dropQueuedWritesForTrack(CN, U, { activeLanguage: 'chinese' })
+
+    expect(dropped).toBe(1)
+    expect(store.rows.map(r => [r.op.kind, r.op.language ?? null])).toEqual([['grade', 'japanese']])
+  })
+
+  it("deletes this track's queued writes from the outbox and leaves the rest", async () => {
+    await enqueueGrade({ userId: U, vocabId: 'v1', cardId: 'c1', updates: {}, ...CN })
+    await enqueueGrade({ userId: U, vocabId: 'v9', cardId: 'c9', updates: {}, ...JA })
+    await enqueueStoryRead({ userId: U, storyId: 's9', ...JA })
+
+    const dropped = await dropQueuedWritesForTrack(CN, U)
+
+    expect(dropped).toBe(1)
+    expect(store.rows.map(r => [r.op.kind, r.op.language])).toEqual([
+      ['grade', 'japanese'], ['storyRead', 'japanese'],
+    ])
+  })
+
+  it('deletes every kind the reset deletes, and keeps analytics', async () => {
+    await enqueueGrade({ userId: U, vocabId: 'v1', cardId: null, updates: {}, ...CN })
+    await enqueueStoryRead({ userId: U, storyId: 's1', ...CN })
+    await enqueueStoryClaim({ userId: U, storyId: 's1', claimDate: '2026-09-07', ...CN })
+    // Hand-built, not enqueueAnalytics(): that helper stores { kind, event } with
+    // no top-level userId, so the op would be refused by the USER guard whether
+    // or not 'analytics' is in RESET_DELETED_OP_KINDS — and this spec would then
+    // pass under the very mutation it is named for. An earlier version made
+    // exactly that mistake, and the mutation table reported a kill it had not
+    // earned. This row names the user, so only the kind filter can save it.
+    store.rows.push({ id: 900, op: { kind: 'analytics', userId: U, event: { name: 'progress_reset' }, ...CN } })
+    await enqueueGrade({ userId: U, vocabId: 'v9', cardId: 'c9', updates: {}, ...JA })
+
+    const dropped = await dropQueuedWritesForTrack(CN, U)
+
+    expect(dropped).toBe(3)
+    expect(store.rows.map(r => r.op.kind)).toEqual(['analytics', 'grade'])
+  })
+
+  it('keeps the count it had when a throwing store interrupts the loop', async () => {
+    // Named for what it proves: the counter lives outside the try, so a throw
+    // cannot discard the deletes that already went. It is NOT a claim about
+    // production — offline.js's tx() resolves a fallback on every storage error
+    // rather than rejecting, so the real store never reaches this path and the
+    // count there is an upper bound (see the docstring). An earlier version of
+    // this comment sold it as "a caller reporting the count would have reported
+    // a lie", which is a guarantee this function does not have.
+    await enqueueGrade({ userId: U, vocabId: 'v1', cardId: 'c1', updates: {}, ...CN })
+    await enqueueGrade({ userId: U, vocabId: 'v2', cardId: 'c2', updates: {}, ...CN })
+    store.failDeleteAfter = 1
+
+    expect(await dropQueuedWritesForTrack(CN, U)).toBe(1)
+    expect(store.rows).toHaveLength(1)
+  })
+
+  it("leaves another account's queued writes in the shared outbox", async () => {
+    // The device-level version of the predicate spec above: two accounts have
+    // signed in here, and only the one doing the reset loses its queued writes.
+    await enqueueGrade({ userId: U, vocabId: 'v1', cardId: 'c1', updates: {}, ...CN })
+    await enqueueGrade({ userId: OTHER_USER, vocabId: 'v2', cardId: 'c2', updates: {}, ...CN })
+    await enqueueStoryRead({ userId: OTHER_USER, storyId: 's1', ...CN })
+
+    expect(await dropQueuedWritesForTrack(CN, U)).toBe(1)
+    expect(store.rows.map(r => [r.op.kind, r.op.userId])).toEqual([
+      ['grade', OTHER_USER], ['storyRead', OTHER_USER],
+    ])
+  })
+
+  it('touches nothing when the caller cannot name the account', async () => {
+    await enqueueGrade({ userId: U, vocabId: 'v1', cardId: 'c1', updates: {}, ...CN })
+    expect(await dropQueuedWritesForTrack(CN, null)).toBe(0)
+    expect(store.rows).toHaveLength(1)
+  })
+
+  it('touches nothing when the caller has no track', async () => {
+    await enqueueGrade({ userId: U, vocabId: 'v1', cardId: 'c1', updates: {}, ...CN })
+    expect(await dropQueuedWritesForTrack(null, U)).toBe(0)
+    expect(store.rows).toHaveLength(1)
   })
 })
