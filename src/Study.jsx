@@ -1129,7 +1129,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // it immediately rather than waiting for the next session.
   async function resetCard() {
     const fresh = {
-      state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
+      state: 'new', learning_step: 0, due_at: new Date().toISOString(),
       is_easy: false, learned: false,
       stability: null, difficulty: null, reps: 0, lapses: 0,
       last_review: null, scheduled_days: 0, elapsed_days: 0,
