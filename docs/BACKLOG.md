@@ -194,6 +194,12 @@ Check the content type, not the status.
 
 - [ ] 🔵 **ESLint does not cover `tools/*.mjs`.** `eslint.config.js` matches `**/*.{js,jsx}`, `tools/**/*.js` and root-level `*.mjs` — none of which reach the eighteen `.mjs` files under `tools/`, including the four verifiers `verify:pr` and `verify:native` depend on. So "zero lint errors" says nothing about them, and each new one arrives unlinted. Adding `tools/**/*.mjs` to the Node-globals block is one line; the work is fixing whatever it then reports across files nobody has linted yet, which is why it is a task and not a drive-by.
 
+- [ ] 🟡 **One `ease_factor` write survives, and it is in SQL rather than in `src/`.** `dict_add_to_deck` (`20260719130000_flashcard_anything.sql:89`, APPLIED) inserts the column explicitly, and it is reached from client code on every dictionary add-to-deck: `src/dictSearch.js:76` → `Dictionary.jsx`, `StoryReaderImmersive.jsx`, `useStoryReaderCore.js` and thence every story reader. So pressing "add to deck" still writes the dead column even though the literal is gone from the button's own file.
+
+  Effect is nil — 2.5 is the column's own default — so this is a truthfulness problem, not a data one. **The fix is already written:** `20260907010000_cap_dict_add_to_deck.sql` on `claude/fab-26-narrow-client-grants` rewrites the function without it (its own spec pins the absence). Deliberately not duplicated here: two competing `create or replace` definitions of one function in flight at once is how a rewrite silently loses half of itself.
+
+  `legacyColumnGuard.test.mjs` scans `src/` only and says so in its header. Extending it to migrations needs the "last definition wins" treatment `knowledgeState.test.js` uses for `cards_prior_source_check`, and would fail until that migration merges — worth doing after it does, not before.
+
 
 ## Auth / email / hosting
 - [ ] **Custom SMTP — LIVE TEST PENDING.** Configured 2026-07-18: Brevo is the sending provider; `hanzi-dojo.com` shows **Authenticated** in Brevo (DKIM `brevo1/brevo2._domainkey`, `brevo-code` TXT, DMARC `p=none` — all added in Cloudflare DNS, the authoritative nameserver; Vercel only hosts). Supabase custom SMTP wired to `smtp-relay.brevo.com:587`, sender `no-reply@hanzi-dojo.com`. **Still to verify:** send a real magic-link/sign-up to an external inbox and confirm it (a) arrives (not spam) and (b) shows From `no-reply@hanzi-dojo.com`. Brevo "Branding" (the `em`/`img.em`/`r.em` CNAMEs) shows *Not branded* — optional, tracking-link cosmetics only, doesn't block sending.
@@ -205,6 +211,27 @@ Check the content type, not the status.
 Already shipped (code side): `signUp` now sends `emailRedirectTo`; hardcoded github.io links replaced with `BRAND_URL`; app consolidated on Vercel (base `/`).
 
 ## Data safety
+- [ ] 🔴 **`20260822180000_scheduler_state_requires_observation.sql` is READY TO APPLY and is NOT APPLIED — and one admin tool will break when it is.** *(FAB-26 finding 6, measured live 2026-09-07.)*
+
+  The migration is the last step of the prior-knowledge rollout and its header says **apply this last**, because when it was written production held 594 rows in exactly the shape it forbids. **That blocker is gone.** Across all 1,899 cards today: **0** rows in `learning`/`relearning`/`review` with `reps < 1`, and **0** rows in `new` with `reps >= 1`. Confirmed absent from the database: `pg_constraint` on `public.cards` carries `cards_prior_claim_has_source`, `cards_prior_source_check`, `cards_state_check`, `cards_unverified_claim_is_inert` and `cards_verified_requires_claim`, and no `cards_scheduler_state_requires_observation`. It would apply cleanly now.
+
+  **Before applying it, fix `devTools.js`.** `learningCardRow` (`src/devTools.js:29`) writes `state: 'learning'` with **no `reps` key**, and the column defaults to 0 — so the admin "start all as learning" tool writes precisely the shape the constraint forbids and will start failing the moment it is applied. Its sibling `masteredCardRow` sets `reps` explicitly, which is why this reads as an oversight rather than intent. Deciding what it *should* write is a judgement about a tool that cannot be exercised outside an admin account: `state: 'new'` is honest but is no longer "learning", and a fabricated `reps` is a §7.3b violation. Not decided here.
+
+  **What applying it buys, stated exactly.** It enforces `state ∈ (learning, relearning, review) ⟹ reps >= 1`, which makes the legacy seed shape — weeks of asserted stability behind zero observations — unrepresentable, including for old store builds, which matters because there is no minimum-version gate anywhere. It does **not** stop a learner writing `state: 'review', reps: 50, stability: 999` straight through PostgREST: `reps >= 1`, so the constraint passes.
+
+- [ ] 🟡 **Mastery is client-honoured, not server-enforced — the full write surface, mapped.** *(FAB-26 finding 6.)* `users can update own cards` permits a direct PostgREST UPDATE of every scheduler column, so `grade_card` is a convenience rather than a gate. Closing that needs a `BEFORE UPDATE` trigger keyed on `current_user = 'authenticated'` — the pattern `profiles_guard_is_admin` already uses — and a trigger needs the legitimate direct-write surface to shrink first. It is smaller than it looks. A trigger permitting only `{is_easy, due_at}` would break exactly these and **nothing else in `src/`**:
+
+  - `src/Study.jsx:848` — undo of a grade. Writes the full 13-column bag plus `verified_at`. Always reachable; no RPC counterpart exists.
+  - `src/Study.jsx:1138` — the stuck-word "Reset this card". 13 columns including `reps: 0`.
+  - `src/Test.jsx:366` — level-test wrong answers: a real `schedule(card, 0)` written directly, with no `review_logs` row. **Already being fixed by PR #240**, which routes it through `gradeCardWrite`.
+  - `src/CreativeMode.jsx:213` and `src/Dev.jsx:117` — the admin sandboxes (UI-gated only; RLS permits the write for any authenticated user).
+  - `src/syncQueue.js:171/182/186` — the legacy fallback, reached only when `grade_card` is missing (`rpcUnavailable`, `syncQueue.js:110`).
+
+  Everything else that touches `cards` is an INSERT (add-to-deck in `Words.jsx`, `Dictionary.jsx`, `Analyzer.jsx`, `ChatMission.jsx`, `StoryReaderImmersive.jsx`, `useStoryReaderCore.js`; the inert claim in `priorKnowledgeSeed.js`) or writes only `is_easy` and `due_at` (`practiceSignal.js:14`, `Writing.jsx:454`).
+
+  **Order:** apply `20260822180000` → merge #240 → give Study's undo and reset RPCs of their own → then the trigger.
+
+- [ ] 🟡 **`creativeMode.js:178` writes `reps` by hand, which CLAUDE.md §7.3b forbids.** `reps: 3` or `reps: 9`, with no `srs.schedule()` anywhere, in a file whose own comment claims it produces "exactly the shape `schedule()` produces". It reaches the table through `src/CreativeMode.jsx:213` and, via `src/devTools.js:25`, `src/Dev.jsx:117`. It is the only hand-written `reps` left in the repo — every other `reps` write is either `schedule()`'s output, a restored undo snapshot, or a documented `reps: 0`. Admin-only in the UI, and it survives the constraint above (3 and 9 are both `>= 1`), so it is a rule violation rather than a live defect. Fixing it means deciding what an admin preview tool may fabricate, which is the same open question as the `devTools.js` item above.
 - [x] **Transactional grading — SHIPPED AND APPLIED (verified in prod 2026-08-07: `grade_card` function exists).** Collapsed the separate writes (card update, review log, daily activity) into the single security-definer RPC `public.grade_card()` (`20260722120000`, PR #116). The client falls back to separate writes only if the RPC is ever absent.
 - [ ] **Real-device verification pass** — offline grade replay, iOS/Safari flashcard + reader audio, and Web Push reminders end-to-end. All built and unit-tested but never exercised on a live device.
 

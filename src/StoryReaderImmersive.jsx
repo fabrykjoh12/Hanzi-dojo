@@ -525,7 +525,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
     setAdding(true)
     const rows = newWords.map(v => ({
       user_id: session.user.id, vocab_id: v.id,
-      state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
+      state: 'new', learning_step: 0, due_at: new Date().toISOString(),
     }))
     const { error } = await supabase.from('cards').insert(rows)
     if (!error) {
@@ -549,7 +549,6 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
       user_id: session.user.id,
       vocab_id: vocabItem.id,
       state: 'new',
-      ease_factor: 2.5,
       learning_step: 0,
       due_at: new Date().toISOString(),
       source_sentence: srcSentence,
