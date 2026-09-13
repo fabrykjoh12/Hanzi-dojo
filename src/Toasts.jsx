@@ -1,10 +1,26 @@
 import { useState, useEffect } from 'react'
-import { Award } from 'lucide-react'
+import { Award, Info, TriangleAlert } from 'lucide-react'
 
 // Calm, self-dismissing notification stack (top-right). Listens for the
 // 'hd-toast' CustomEvent fired by src/toast.js — no context or prop drilling,
 // so any module can raise a moment (achievement seals).
-const ICONS = { seal: Award }
+// A toast's icon comes from its `kind`, and Award is still the default because
+// the first toast in the app was an achievement seal. That default is why every
+// untagged toast — a refusal included — arrived wearing a medal, which §1's
+// calm, observational rule rules out for bad news.
+//
+// What this change does NOT do, so the comment does not claim it: retag every
+// caller. The success toasts still pass no kind and still render the medal,
+// which is at least the right shape for them. The ones that were wrong are the
+// ones now tagged — a limit is 'info', a failure is 'warn'.
+//
+// A SIDE EFFECT worth writing down rather than leaving to be noticed: six
+// callers already passed kind: 'info' (Dev.jsx x5, CreativeMode.jsx) and were
+// rendering the medal because nothing mapped it. They now render Info. That is
+// the intended icon for them — but one of those six tags a genuine FAILURE as
+// 'info' (Dev.jsx's "Failed" toast), which by the rule above should be 'warn'.
+// Left alone deliberately: it is an admin-only surface and not this task's.
+const ICONS = { seal: Award, info: Info, warn: TriangleAlert }
 const DISMISS_MS = 4600
 
 let nextId = 1
