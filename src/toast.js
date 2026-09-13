@@ -4,6 +4,10 @@
 //
 // detail: { title, body?, kind?: 'seal' | 'info' | 'warn', accent? }
 //
+// `kind` picks the icon in <Toasts />. An unknown kind falls back to the seal's
+// medal, which is why a refusal or a failure should name one: a medal on bad
+// news reads as a celebration (CLAUDE.md §1).
+//
 // THERE IS NO QUEUE, AND THAT IS THE TRAP. toast() dispatches a DOM event; if
 // no <Toasts /> is listening at that instant the event is simply lost, with no
 // error and nothing in the console. App returns a shell containing <Toasts />
