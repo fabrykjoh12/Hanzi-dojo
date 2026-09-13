@@ -1,8 +1,10 @@
 /**
  * THE RUNTIME TASK-SCOPE POLICY — protected control plane, Tier 1.
  *
- * Decides whether one tool call by an untrusted producer subagent may write one
- * path, from the sealed task contract the launcher bound to this session.
+ * Decides whether one tool call may write one path, from the sealed task
+ * contract the launcher bound to this session. Chiefly a call by an untrusted
+ * producer subagent — but it answers for every caller the runtime hands it, and
+ * WHO THIS POLICY GOVERNS below is the exact set.
  *
  * WHY THIS FILE IS HERE AND NOT IN tools/.
  *
@@ -28,13 +30,29 @@
  * because it is a process-launch flag and the producer has no Bash.
  *
  * FAIL CLOSED ON EVERY SECURITY QUESTION IT ANSWERS. Once `decide()` has
- * established that this is a producer's write, every route out of it is a deny
- * unless the write is positively established as in scope — "could not
- * establish" is never authorized. The two early allows above that point are not
- * exceptions to the rule but statements that the question was never this
- * policy's: a non-write tool, and a call with no `agent_type`, which is the
- * trusted driver. The driver holds Bash and git by design, and pretending to
- * police it would be a claim the mechanism cannot support.
+ * established that this is a GOVERNED write — a producer's, or any caller
+ * CARRYING AN agent_type that the exemption does not recognise, or any such
+ * caller in a bound session, the driver never being one of them — every
+ * route out of it is a deny unless the write is positively established as in
+ * scope; "could not establish" is never authorized. The three early allows above that point are
+ * not exceptions to the rule but statements that the question was never this
+ * policy's: a non-write tool; a call with no `agent_type`, which is the trusted
+ * driver; and a recognised helper agent in a session with no contract bound to
+ * it. The driver holds Bash and git by design, and pretending to police it
+ * would be a claim the mechanism cannot support.
+ *
+ * WHO THIS POLICY GOVERNS, and why it is stated as an exemption. Enforcement
+ * applies to every subagent EXCEPT a closed list of recognised helpers IN A
+ * SESSION WITH NO CONTRACT BOUND TO IT — a binding governs every subagent in
+ * the session, helpers included. And it is an exemption rather than a rule
+ * naming `task-producer`. The narrower form would be
+ * fail-open on a one-line Tier 2 edit: `agent_type` is the frontmatter `name:`
+ * of the launched definition, so renaming the producer would silently exempt
+ * it. Stated as an exemption, a rename produces MORE enforcement instead. What
+ * this does not close — an edit that renames the producer *to* a recognised
+ * helper name — is the pre-existing Tier 2 residual, since the same edit could
+ * hand the producer Bash and defeat the guard outright. It is documented in
+ * docs/AUTOMATION-AUTHORITY.md, not claimed closed.
  *
  * PLATFORM ASSUMPTION, stated because it is not enforced: path comparison is
  * byte-exact and case-sensitive, matching the contract grammar and Linux, where
@@ -49,9 +67,26 @@ import { lstatSync, readFileSync, realpathSync } from 'node:fs'
 import path from 'node:path'
 
 // ---------------------------------------------------------------------------
-// TIER 0 — the absolute floor. Checked first, before the binding is even parsed,
-// because no contract and no grant can authorize any of it. A copy of
-// ALWAYS_FORBIDDEN, pinned to the canonical list by a parity spec.
+// TIER 0 — the absolute floor. Checked before the binding is even parsed,
+// though four denies run earlier: two about the event and the caller (an event
+// that is not an object, an agent_type that is not a usable name) and two about
+// the path (no path at all, a path that is not a string). Each denies on its own
+// reason, so the outcome is the same and only the message differs. Checked here
+// because no grant can authorize any of it and no contract is meant to — with
+// the one exception this module still carries, an ANCESTOR of a tier root (see
+// isSubtreeRoot), which reaches one directory path and nothing beneath it.
+//
+// "No contract" used to be the half that was not quite true. A `dir/**` entry
+// does not cover its own root — `covers('.git/**', '.git')` is false in both
+// directions — so a contract naming a BARE SUBTREE ROOT in ordinary
+// allowed_paths was refused by nothing: not the containment check below, not
+// the resolved loop in decide(), not the canonical validator. FAB-60 closed it
+// in all three, through `reachesTier`, which asks the root question as well as
+// the two containment ones. See isSubtreeRoot for the account, and for the one
+// shape still open: an ANCESTOR of a tier root, which authorises only that one
+// directory path and whose write therefore fails for being a directory.
+//
+// A copy of ALWAYS_FORBIDDEN, pinned to the canonical list by a parity spec.
 // ---------------------------------------------------------------------------
 export const FLOOR = [
   '.agent/tasks/**',
@@ -81,6 +116,66 @@ export const WRITE_TOOLS = ['Write', 'Edit', 'MultiEdit', 'NotebookEdit']
 
 /** Every tool_input key that can name a write target. All of them are checked. */
 export const TARGET_KEYS = ['file_path', 'notebook_path']
+
+/**
+ * The agent this policy exists to constrain.
+ *
+ * `agent_type` is the frontmatter `name:` of the launched definition, NOT its
+ * filename — an agent defined in `renamed-file.md` declaring
+ * `name: inner-declared-name` emits exactly `inner-declared-name`. So this
+ * constant must equal the name `.claude/agents/task-producer.md` declares, and
+ * a spec asserts that rather than trusting the two to stay in step.
+ *
+ * It is deliberately NOT what the decision below keys on. See EXEMPT_AGENT_TYPES.
+ */
+export const PRODUCER_AGENT_TYPE = 'task-producer'
+
+/**
+ * The agents that are NOT task producers, and the reason this is an exemption
+ * list rather than the obvious `agentType === PRODUCER_AGENT_TYPE`.
+ *
+ * That obvious form is fail-OPEN on a Tier 2 edit. `agent_type` comes from the
+ * producer definition's frontmatter, and `.claude/agents/**` is Tier 2 — so
+ * renaming one line of a file an ordinary task can be authorized to write would
+ * make the producer stop matching and run with no contract enforcement at all,
+ * silently. Inverting it fixes the direction of that failure: anything not
+ * recognised here is enforced, so a rename yields MORE enforcement, not less,
+ * and an unknown agent fails closed loudly instead of escaping quietly.
+ *
+ * The residual this does not close: an attacker who can edit the producer
+ * definition could rename it TO one of these names. That is the same residual
+ * already documented for Tier 2 — the same edit could simply give the producer
+ * Bash and defeat the guard outright — so this changes nothing about it. It is
+ * recorded in docs/AUTOMATION-AUTHORITY.md rather than claimed closed.
+ *
+ * The cost is maintenance: a genuinely new helper agent is denied until it is
+ * added here. That failure is loud and cheap, which is the direction this
+ * whole file errs in.
+ *
+ * PROVENANCE, because "is this list complete?" is otherwise unanswerable from
+ * the repository. These are the agent types the harness offered on Claude Code
+ * 2.1.259 at the time of writing, minus the producer. Nothing in the repository
+ * enumerates the platform's built-ins, so this cannot be pinned by a spec the
+ * way the producer's name is — a built-in added upstream, or one this
+ * environment did not offer, will simply be absent. That is why the list is an
+ * exemption rather than a denylist: an unlisted helper is denied, which is
+ * visible the first time someone runs it, rather than exempted, which would
+ * never be visible at all.
+ */
+export const EXEMPT_AGENT_TYPES = [
+  'claude',
+  'claude-code-guide',
+  'Explore',
+  // Not a platform built-in: `.claude/agents/fresh-context-reviewer.md` is a
+  // repository-defined Tier 2 definition, listed here for the same reason as
+  // the rest. It holds no write tool today, so it never reaches the branch
+  // this list guards — but its name is Tier 2 like the producer's, and saying
+  // so is cheaper than someone rediscovering it.
+  'fresh-context-reviewer',
+  'general-purpose',
+  'Plan',
+  'statusline-setup',
+]
 
 /**
  * GRANT -> the paths it reaches. A protected copy of CONTROL_PLANE_GRANTS.
@@ -232,17 +327,26 @@ export function contractSecurityViolations(contract, { grants = GRANTS, root = '
     }
   }
 
-  // Ordinary allowed_paths may reach neither tier. The floor is unauthorisable
-  // outright; Tier 1 is reachable only through a grant, so naming it in
-  // allowed_paths is the exact escalation the tier exists to prevent.
+  // Ordinary allowed_paths may reach neither tier, excepting an ANCESTOR of a
+  // tier root (see isSubtreeRoot). The floor is meant to be unauthorisable
+  // outright and Tier 1 reachable only through a grant, since naming either in
+  // allowed_paths is the exact escalation the tiers exist to prevent.
+  //
+  // This asks reachesTier rather than covers() in both directions, which is
+  // what FAB-60 changed. covers() alone missed a BARE SUBTREE ROOT — neither
+  // direction relates `.git` to `.git/**` or `.claude/hooks` to
+  // `.claude/hooks/**` — so such an entry raised nothing here, survived
+  // effectiveScope, and was matched exactly by the scope test in decide().
+  // Verified against this module, not reasoned about, and now refused in the
+  // canonical validator by the same predicate so the two cannot disagree.
   const allowed = Array.isArray(contract.allowed_paths) ? contract.allowed_paths.filter(isNonEmptyString) : []
   for (const a of allowed) {
     if (pathGrammarError(a)) continue
     for (const f of FLOOR) {
-      if (covers(a, f) || covers(f, a)) out.push('allowed_paths entry "' + a + '" reaches the Tier 0 floor (' + f + ')')
+      if (reachesTier(f, a)) out.push('allowed_paths entry "' + a + '" reaches the Tier 0 floor (' + f + ')')
     }
     for (const t of PROTECTED_TIER) {
-      if (covers(a, t) || covers(t, a)) {
+      if (reachesTier(t, a)) {
         out.push('allowed_paths entry "' + a + '" reaches the protected control plane (' + t +
           ') — that authority has exactly one spelling, and it is not allowed_paths')
       }
@@ -294,7 +398,7 @@ export function contractSecurityViolations(contract, { grants = GRANTS, root = '
     // check below refuses every floor path anyway. Kept as defence in depth and
     // noted as such, so a later change that narrows the tier cannot silently
     // promote this line from redundant to load-bearing without a reader noticing.
-    if (FLOOR.some(f => covers(f, p))) out.push('control_plane.protected_paths may never name "' + p + '" — it is on the absolute floor')
+    if (FLOOR.some(f => reachesTier(f, p))) out.push('control_plane.protected_paths may never name "' + p + '" — it reaches the absolute floor')
     if (!PROTECTED_TIER.some(t => covers(t, p))) out.push('control_plane.protected_paths entry "' + p + '" is not inside the protected control plane')
     if (known && !mapped.some(m => covers(m, p))) out.push('grant "' + cp.grant + '" does not authorise "' + p + '"')
     if (forbidden.some(f => covers(f, p))) out.push('"' + p + '" is granted and forbidden at once')
@@ -452,7 +556,12 @@ export function effectiveScope(contract, { grants = GRANTS, root = '.', readFile
     : []
   for (const p of cp.protected_paths) {
     if (pathGrammarError(p)) return declared
-    if (FLOOR.some(f => covers(f, p))) return declared
+    // Redundant today for the same reason the copy in contractSecurityViolations
+    // is, and noted here too so a later change that narrows the tier cannot
+    // promote it from redundant to load-bearing without a reader noticing:
+    // FLOOR and PROTECTED_TIER are disjoint, so the tier test on the next line
+    // refuses every floor path anyway.
+    if (FLOOR.some(f => reachesTier(f, p))) return declared
     if (!PROTECTED_TIER.some(t => covers(t, p))) return declared
     if (!mapped.some(m => covers(m, p))) return declared
     if (forbidden.some(f => covers(f, p))) return declared
@@ -548,22 +657,140 @@ export function resolveWithin(root, target, { realpath = realpathSync, lstat = l
 }
 
 /**
+ * Does this path name the ROOT of a `dir/**` pattern, rather than something
+ * inside it?
+ *
+ * `covers('.git/**', '.git')` is false: the subtree test is a prefix match on
+ * `.git/`, and `.git` does not start with `.git/`. That is right for `covers`,
+ * which answers "is this path within the pattern", and it is why this is a
+ * separate question rather than a change to it — `covers` is at parity with the
+ * canonical validator and a parity spec would fail if it drifted.
+ *
+ * It matters because a directory is not always a directory. In a git WORKTREE
+ * `.git` is a regular FILE holding a gitdir pointer, and this repository's
+ * parallel-work flow uses worktrees. Overwriting it detaches the worktree from
+ * its repository. `.claude/hooks` and `.agent/tasks` are the same shape of
+ * question even where writing them would fail for being directories: a floor
+ * that stops at the children of the thing it names is not a floor.
+ *
+ * FAB-60 closed this across the governed path as well. It used to be used by
+ * the exemption alone, and a contract naming a bare subtree root in ordinary
+ * `allowed_paths` — say `.git` — was refused by nothing: neither direction of
+ * `covers` related `.git` to `.git/**`, so `contractSecurityViolations` raised
+ * nothing, the resolved floor loop matched nothing, and the scope test matched
+ * `.git` exactly and allowed. Both this module and the canonical validator now
+ * ask `reachesTier` wherever they used to ask `covers` in both directions, so
+ * `npm run verify:tasks` and the runtime refuse the same contract for the same
+ * reason.
+ *
+ * WHAT IS STILL NOT CLOSED, stated rather than left to be discovered: an entry
+ * naming an ANCESTOR of a tier root — `.agent`, above `.agent/tasks/**` — still
+ * raises nothing. It authorises writing that one exact path and no descendant
+ * of it (an exact entry covers only itself), so the only new authority is over
+ * a directory that is always a directory and whose write therefore fails. The
+ * worktree case that makes `.git` real does not arise there.
+ */
+export function isSubtreeRoot(pattern, relative) {
+  // Normalised on both sides, exactly as covers() is. The call sites here all
+  // pass an already-normalised path, so this changes nothing for them — it is
+  // for the parity spec, which compares this against the validator's copy over
+  // raw spellings like './src/**' and would otherwise report a divergence that
+  // is real in the function and unreachable in the module.
+  const o = normalisePath(pattern)
+  return o.endsWith('/**') && normalisePath(relative) === o.slice(0, -3)
+}
+
+/**
+ * Does this path hang BELOW an exact pattern — is `pattern` the whole of its
+ * leading segments, with something further beneath?
+ *
+ * `.agent/roles.json/sub` is the shape, and `.agent/roles.json/sub/**` is the
+ * same shape spelled as a subtree. Neither can ever exist: the parent is a
+ * regular file, so the write fails with ENOTDIR — resolveWithin reports it for
+ * the subtree spelling, and the kernel reports it for the exact one. But that
+ * is the OPERATING SYSTEM refusing, not this floor, and a floor that leans on
+ * which files happen to exist is the same "luck rather than containment"
+ * footing the bare root was refused on. So the question is asked structurally,
+ * at the two places that decide: what a contract may NAME, and what a write may
+ * TOUCH.
+ *
+ * Only meaningful for an EXACT pattern: for `dir/**` covers() already answers
+ * it, and `**` covers everything by itself.
+ */
+export function hangsBelow(pattern, relative) {
+  const o = normalisePath(pattern)
+  if (o === '**' || o.endsWith('/**')) return false
+  return normalisePath(relative).startsWith(o + '/')
+}
+
+/**
+ * Does a contract entry REACH a tier path — in any of the five ways an entry
+ * can touch a protected pattern? A copy of the canonical validator's
+ * `reachesTier`, pinned to it by a parity spec, for the same reason FLOOR and
+ * covers() are copied rather than imported: this hook must run standalone.
+ *
+ *   covers(tierPath, entry)         entry is inside the tier
+ *   covers(entry, tierPath)         entry is a subtree that contains the tier
+ *   isSubtreeRoot(tierPath, entry)  entry IS the tier subtree's own root
+ *   isSubtreeRoot(entry, tierPath)  entry is a subtree hanging off the tier
+ *                                   path itself — `.claude/settings.json/**`
+ *   hangsBelow(tierPath, entry)     entry is a path below an exact tier file —
+ *                                   `.agent/roles.json/sub`
+ */
+export function reachesTier(tierPath, entry) {
+  return covers(tierPath, entry) || covers(entry, tierPath)
+    || isSubtreeRoot(tierPath, entry) || isSubtreeRoot(entry, tierPath)
+    || hangsBelow(tierPath, entry)
+}
+
+/**
  * THE DECISION.
  *
  * Order is load-bearing and each step is a gate, not a hint:
  *
- *   1. Not a write, or not a producer call  -> not this policy's business.
- *   2. TIER 0                               -> deny, before anything is parsed.
- *   3. Binding                              -> deny if absent or malformed.
- *   4. Contract re-read and seal verified   -> deny on any mismatch.
- *   5. Realpath resolution                  -> deny if unresolvable or outside.
- *   6. TIER 0 again, on the RESOLVED path   -> deny; a symlink cannot launder it.
- *   7. forbidden_paths                      -> deny.
- *   8. Effective scope                      -> allow only on a positive match.
+ *   1. Not a write, or no agent_type at all  -> not this policy's business;
+ *                                              an agent_type present but not a
+ *                                              usable name -> deny.
+ *   2. TIER 0, lexically                    -> deny, before anything is parsed.
+ *   3. Exempt helper in an unbound session   -> resolve, then deny TIER 0 and
+ *                                              TIER 1 on the resolved path;
+ *                                              otherwise allow.
+ *   4. Binding                               -> deny if absent or malformed.
+ *   5. Contract re-read and seal verified    -> deny on any mismatch.
+ *   6. Realpath resolution                   -> deny if unresolvable or outside.
+ *   7. TIER 0 again, on the RESOLVED path    -> deny; a symlink cannot launder it.
+ *   8. forbidden_paths                       -> deny.
+ *   9. Effective scope                       -> allow only on a positive match.
  *
  * A call with no `agent_type` is the trusted driver, which this policy does not
  * police: the driver holds Bash and git by design, and pretending otherwise
  * would be a claim the mechanism cannot support.
+ *
+ * WHAT STEP 3 IS AND IS NOT. It exempts a recognised helper from one thing:
+ * the contract scope, which it has no contract to be measured against. It does
+ * not exempt anything from the tiers. Step 2 catches only the spelling it was
+ * handed, so step 3 resolves the path itself before allowing — otherwise
+ * `src/door/config`, where `src/door` is a symlink to `.git`, spells nothing
+ * forbidden and the authoritative check at step 7 never runs for this caller.
+ * Tier 1 is refused there too: reaching the protected control plane takes an
+ * explicit digest-covered grant, and an unbound session has none to offer. So
+ * through these four write tools an unbound helper reaches ordinary Tier 2
+ * paths and — hard links and case-folding aside — nothing else. Resolution
+ * follows symlinks because that is what realpath does; a hard link has nothing
+ * to resolve, so one placed at an in-scope name over a protected inode passes
+ * both tier checks. Making one needs a shell, which is already conceded below.
+ * The second clause is the PLATFORM ASSUMPTION above: comparison is byte-exact,
+ * so on a case-insensitive volume the outcome turns on whether realpath returns
+ * the canonical spelling, which nothing here establishes either way — an
+ * untested assumption, not a demonstrated escape. The hard link alone is what
+ * makes the absolute false; the second clause is there because an assumption
+ * this load-bearing should not sit unstated beside a word like "nothing". That is a statement about the
+ * tools, NOT about the
+ * caller: this policy passes everything else through, Bash included, and most
+ * of the exempted helpers have no definition in this repository limiting what
+ * they hold. One of them with a shell writes `.claude/hooks/**` — this file —
+ * without this file ever seeing the call. The branch itself says so again at
+ * the point of decision, because that is where it matters.
  */
 export function decide(event, { root, env = {}, grants = GRANTS, readFile, realpath, lstat } = {}) {
   // A hook event that is not an object is not something to reason about. `[]`,
@@ -575,8 +802,28 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
   const toolName = event?.tool_name
   if (!WRITE_TOOLS.includes(toolName)) return allow('not a write tool')
 
+  // ABSENT is the driver. A VALUE THAT IS NOT A NAME is not.
+  //
+  // A real main-thread call omits the key entirely — verified on 2.1.259,
+  // where the driver's event carried no `agent_type` property at all. `null`
+  // is treated the same as absent rather than denied: no observed runtime
+  // sends it, and the cost of being wrong runs the wrong way. Denying it would
+  // refuse the trusted driver outright on some future runtime that spells
+  // "no agent" as null, which is a worse failure than allowing an event the
+  // producer cannot forge in the first place — hook events come from the
+  // runtime, so this branch is a robustness question, not an attack surface.
+  //
+  // Everything else that is not a usable name — an array, an object, a number,
+  // an empty string — is a malformed event and denies. Folding those into the
+  // absent case put `agent_type: ['task-producer']` through the one
+  // unconditional allow this policy has.
   const agentType = event?.agent_type
-  if (!isNonEmptyString(agentType)) return allow('no agent_type — trusted driver call, not a producer')
+  if (agentType === undefined || agentType === null) {
+    return allow('no agent_type — trusted driver call, not a producer')
+  }
+  if (!isNonEmptyString(agentType)) {
+    return deny('the hook event carries an agent_type that is not a name, so the caller cannot be identified')
+  }
 
   // EVERY path key the event carries, not the first one found.
   //
@@ -598,7 +845,7 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
   // write is refused even when the session carries no binding at all. Made
   // repository-relative lexically — no filesystem access, no heuristics: an
   // absolute path under the root is stripped to its relative form, and anything
-  // else is compared as given. Step 6 repeats this on the resolved path, which
+  // else is compared as given. Step 7 repeats this on the resolved path, which
   // is the authoritative check; this one exists so the floor never depends on
   // the binding being present or the filesystem being readable.
   for (const target of targets) {
@@ -607,10 +854,126 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
       if (covers(f, lexical)) {
         return deny('Tier 0: "' + target + '" is on the absolute floor (' + f + '), which no contract may authorize')
       }
+      // The bare root of the pattern, which is not INSIDE it — see
+      // isSubtreeRoot. Separate branch and separate sentence, because saying
+      // `.git` is "on" `.git/**` would assert a membership this module denies.
+      if (isSubtreeRoot(f, lexical)) {
+        return deny('Tier 0: "' + target + '" is the root of the absolute floor (' + f +
+          '), which no contract may authorize')
+      }
+      // And a path hanging BELOW an exact floor file — `.agent/roles.json/sub`.
+      // The write cannot succeed there, but ENOTDIR is the kernel's answer, not
+      // this floor's; see hangsBelow.
+      if (hangsBelow(f, lexical)) {
+        return deny('Tier 0: "' + target + '" is below the absolute floor file (' + f +
+          '), which no contract may authorize')
+      }
     }
   }
 
-  const { binding, error: bindingError } = parseBinding(env[BINDING_ENV])
+  // (3) Is this caller a task producer at all?
+  //
+  // PRESENCE of the binding, deliberately, not its validity. A present-but-
+  // malformed binding must reach parseBinding below and be DENIED, so the test
+  // here is the same emptiness test parseBinding treats as "absent" — anything
+  // else and a session could unbind itself by corrupting its own binding.
+  const bindingRaw = env[BINDING_ENV]
+  const bindingPresent = bindingRaw !== undefined && bindingRaw !== null && String(bindingRaw).trim() !== ''
+
+  // Enforce unless this is a known helper agent in an unbound session. Stated
+  // in this direction so an UNKNOWN agent_type is enforced rather than exempt:
+  // the exemption list lives here, in the protected tier, but agent_type itself
+  // is declared in Tier 2, so the recognised set is the safe thing to enumerate
+  // and the unrecognised case is the safe default. See EXEMPT_AGENT_TYPES.
+  //
+  // A binding overrides the exemption: once a session is bound to a contract,
+  // that contract governs every subagent in it, not merely the producer. A
+  // helper spawned inside a bound session is doing that task's work.
+  if (!bindingPresent && EXEMPT_AGENT_TYPES.includes(agentType)) {
+    // An exemption from CONTRACT SCOPE is not an exemption from the tiers.
+    //
+    // Reaching the allow below without resolving the path first would have let
+    // a symlink launder a floor write: the lexical check above sees only the
+    // spelling it was handed, and `src/door/config` where `src/door -> .git`
+    // spells nothing forbidden. That is the one escape a cold probe proved
+    // live, and the resolved check further down — the authoritative one — is
+    // downstream of this branch, so this branch has to do its own.
+    //
+    // Tier 1 is refused for the same reason it is refused anywhere: reaching
+    // the protected control plane takes an explicit digest-covered grant, and
+    // a session with no bound contract has no grant to offer.
+    //
+    // WHAT THAT IS WORTH, exactly. Through the four write tools, an unbound
+    // helper reaches ordinary Tier 2 paths and — hard links and case-folding
+    // aside — nothing else. realpath resolves symlinks and has nothing to
+    // resolve for a hard link, so one placed at an in-scope name over a
+    // protected inode passes both loops here exactly as it does on the governed
+    // path; and both loops compare byte-exact, so the case-sensitivity
+    // assumption in this file's header applies to them as much as anywhere. It is NOT a
+    // statement about the caller, because this policy is an allowlist over
+    // those four tools and passes everything else — Bash included — straight
+    // through. The producer is constrained because its definition gives it no
+    // shell; most of the exempted helpers are platform agents with no
+    // definition in this repository and no such limit, so one of them can
+    // write any of these paths through a shell without this file ever seeing
+    // the call. The tier loops below are worth the caller's tool list, exactly
+    // as the producer's case is, and that is the honest scope of the claim.
+    for (const target of targets) {
+      const { relative, error: resolveError } = resolveWithin(root, String(target), { realpath, lstat, cwd: event?.cwd })
+      if (resolveError) return deny(resolveError)
+      // Split for the same reason the Tier 1 loop below is: the bare root is not
+      // ON the floor pattern — covers('.git/**', '.git') is false — so saying it
+      // is would assert a membership this module denies four times over.
+      for (const f of FLOOR) {
+        if (covers(f, relative)) {
+          return deny('Tier 0: "' + target + '" resolves to ' + relative + ', on the absolute floor (' + f + ')')
+        }
+        if (isSubtreeRoot(f, relative)) {
+          return deny('Tier 0: "' + target + '" resolves to ' + relative + ', the root of the absolute floor (' + f +
+            '). Not inside the pattern — covers() relates neither to the other — and refused all the same')
+        }
+        if (hangsBelow(f, relative)) {
+          return deny('Tier 0: "' + target + '" resolves to ' + relative + ', below the absolute floor file (' + f +
+            '). Refused here rather than left to ENOTDIR')
+        }
+      }
+      for (const p of PROTECTED_TIER) {
+        // Two different facts, so two different sentences. INSIDE the tier, a
+        // grant is what authorizes the write and this caller has none. At the
+        // bare ROOT, no grant can reach it at all: `contractSecurityViolations`
+        // requires a protected_path to be inside PROTECTED_TIER, and a root is
+        // not inside its own `dir/**`.
+        //
+        // Until FAB-60 the second half of that was worse — an ordinary
+        // allowed_paths entry naming the root WAS accepted and did authorize the
+        // write, which is what these two sentences were split to stop saying in
+        // one breath. That is closed now: reachesTier refuses the root in
+        // allowed_paths too, in this module and in the canonical validator.
+        if (covers(p, relative)) {
+          return deny('Tier 1: "' + target + '" resolves to ' + relative + ', in the protected control plane (' + p +
+            '), which only a granted contract may authorize — and "' + agentType + '" carries no bound contract')
+        }
+        if (isSubtreeRoot(p, relative)) {
+          return deny('Tier 1: "' + target + '" resolves to ' + relative + ', the root of the protected control plane (' +
+            p + '). No grant reaches it — a granted path must be INSIDE the tier — and no contract is bound here, ' +
+            'so nothing authorizes this caller')
+        }
+        if (hangsBelow(p, relative)) {
+          return deny('Tier 1: "' + target + '" resolves to ' + relative + ', below the protected file (' + p +
+            '). No grant reaches it either — a granted path must be INSIDE the tier')
+        }
+      }
+    }
+    // Says what the branch ESTABLISHED, not what it hopes: membership of the
+    // closed list AND no binding, which is what the guard above tested and what
+    // this string now reports. The residual documented earlier is precisely that
+    // a renamed producer can hold one of those names, at which point "is not a
+    // task producer" would have been the reverse of the truth — the same defect
+    // as the tier root messages above, in the allow direction.
+    return allow('"' + agentType + '" is on the closed exemption list, and the session carries no contract binding')
+  }
+
+  const { binding, error: bindingError } = parseBinding(bindingRaw)
   if (bindingError) return deny(bindingError)
 
   const { contract, error: contractError } = loadBoundContract(binding, { root, readFile })
@@ -634,10 +997,18 @@ export function decide(event, { root, env = {}, grants = GRANTS, readFile, realp
     const { relative, error: resolveError } = resolveWithin(root, String(target), { realpath, lstat, cwd: event?.cwd })
     if (resolveError) return deny(resolveError)
 
-    // (6) Tier 0 again, on what the write will REALLY touch.
+    // (7) Tier 0 again, on what the write will REALLY touch.
     for (const f of FLOOR) {
       if (covers(f, relative)) {
         return deny('Tier 0: "' + target + '" resolves to ' + relative + ', on the absolute floor (' + f + ')')
+      }
+      // A symlink cannot launder the bare root either. The exempt branch has
+      // said this since FAB-58; the producer path says it now too.
+      if (isSubtreeRoot(f, relative)) {
+        return deny('Tier 0: "' + target + '" resolves to ' + relative + ', the root of the absolute floor (' + f + ')')
+      }
+      if (hangsBelow(f, relative)) {
+        return deny('Tier 0: "' + target + '" resolves to ' + relative + ', below the absolute floor file (' + f + ')')
       }
     }
 
