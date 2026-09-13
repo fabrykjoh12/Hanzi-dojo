@@ -41,6 +41,74 @@ The **answer-key comparison is deliberately stricter than the app's grader**: it
 
 The script refuses to run at all if the corpus comes back empty. A checker that fetched nothing reports every check clean, which in a log is indistinguishable from a pass.
 
+### Two branches add the same two toast icons
+
+`src/Toasts.jsx` maps a toast's `kind` to an icon and falls back to `Award` for
+anything it does not know, so an unmapped kind arrives wearing an achievement
+medal. Two branches noticed this independently and added the identical
+`info: Info, warn: TriangleAlert` entries: `claude/fab-30-honest-import-results`
+(the "we couldn't add your earlier words" apology) and
+`claude/fab-26-narrow-client-grants` (the dictionary limit toasts). Whichever
+merges second will conflict on that one line, and either side of the conflict is
+the right resolution.
+
+Noted here rather than in a comment in `Toasts.jsx`: a branch name in shipped
+source is stale the moment either branch merges, and nobody deletes it.
+
+### A word-list import that fails halfway reports as if nothing landed
+
+`seedClaim` writes in batches of 500 and throws on the first failure, so a claim
+larger than one batch can leave rows written and still show "Could not save.
+Please try again." (`src/KnownWords.jsx`). Retrying is safe — the upsert ignores
+duplicates — but it then honestly reports those rows as already in the deck,
+which reads as if the first attempt did nothing.
+
+The error now carries `insertedBeforeFailure` so a caller can say something
+truer; nothing consumes it yet, because the useful message ("N of M saved, try
+again for the rest") is a copy decision rather than a code one. Recorded so the
+next person does not have to rediscover which half of the claim landed.
+
+### The client-bundle guards match text, so prose can trip them
+
+`src/tts/serverOnly.test.js` scans raw source for tokens that must not be
+imported into a browser-reachable file — `'node:'`, `migration/legacyClaim`, a
+credential name. It does not distinguish code from comments, so a file that
+merely *writes about* one of those paths fails a check about what the bundle
+contains. That happened once in this session: a comment in `knowledgeState.js`
+naming where the historical claim rows came from made that file a "violation".
+
+**Left as-is deliberately, and the comment was reworded instead.** Stripping
+comments first is only correct with a real lexer: a naive pass gets `/*` inside
+a line comment, or `//` inside a template or regex literal, wrong — and getting
+it wrong deletes real code from the scanned text, so a genuine violating import
+would pass. A guard about credentials reaching the bundle should not become an
+approximation to accommodate prose. If the false positives ever become common,
+the fix is a parser (the repo already has one — the Vite/OXC toolchain), not a
+regex.
+
+### Every roadmap item is cut at its first em-dash before it reaches Discord
+
+`.github/scripts/roadmap-render.mjs` does `item.replace(/ — [\s\S]*$/, '')` and
+explains it as "This is why ROADMAP.md items are written `**Title.** —
+description`: the em-dash is the cut point."
+
+**`ROADMAP.md` is not written that way and has not been for a long time.** Its
+items are paragraphs of prose that use em-dashes mid-sentence, so the renderer
+cuts most of them somewhere arbitrary. That is usually just a truncation; it is
+worse than that whenever the first half describes a problem and the second half
+describes the fix, because the pinned public `#roadmap` message then announces
+the bug and stops. Check what an item actually publishes as before merging one:
+
+```
+node -e "const l=require('fs').readFileSync('ROADMAP.md','utf8').split('\n').find(x=>x.startsWith('- [x] **Your title'));console.log(l.replace(/ — [\s\S]*$/,''))"
+```
+
+Two ways out, neither taken yet: rewrite the renderer to keep the whole item
+(the cap is on item count, not length, so length is not the reason), or move the
+cut to a marker that cannot occur mid-sentence. Until then, write anything
+load-bearing before the first em-dash.
+
+
 ### Reading a red check: CI is authoritative, a sandbox is not
 
 Three kinds of red look identical in a terminal and mean completely different

@@ -18,6 +18,8 @@ import { ThemeContext } from './ThemeContext'
 import Landing from './Landing'
 import PasswordReset from './PasswordReset'
 import Toasts from './Toasts'
+import { toast, toastsAreListening } from './toast'
+import { peekPriorSeedFailure, clearPriorSeedFailure, shouldAnnouncePriorSeedFailure, priorSeedNoticeToast } from './priorSeedNotice'
 import OfflineBar from './OfflineBar'
 import { contentBottomInset, navVisibleFor } from './bottomBar'
 import { useNavFocused } from './navFocus'
@@ -327,6 +329,39 @@ export default function App() {
       routerNavigate(storyPath(publicStoryId), { replace: true })
     }
   }, [loading, session, publicStoryId, routerNavigate])
+
+  // "We couldn't add your earlier words" — read the durable flag once a toast
+  // stack is actually listening, announce, and only then clear it.
+  //
+  // The gate is toastsAreListening(), not "profile and track are loaded". Those
+  // are both true on /privacy, /support, /read/:id, the public reading
+  // assessment and the password-recovery screen, and every one of them returns
+  // from App below without ever mounting <Toasts />. Reading the flag there
+  // would clear it and dispatch into nothing.
+  //
+  // Effects run child-first, so on the commit that first renders the shell
+  // <Toasts /> has already registered by the time this runs. The ref is a
+  // once-per-load latch: `profile` gets a new identity on every study update,
+  // and re-reading device storage each time is waste, not a bug.
+  const priorSeedTaken = useRef(false)
+  useEffect(() => {
+    if (priorSeedTaken.current || !toastsAreListening()) return undefined
+    priorSeedTaken.current = true
+    let cancelled = false
+    peekPriorSeedFailure().then((flagged) => {
+      if (cancelled) return
+      if (!shouldAnnouncePriorSeedFailure({ flagged, listening: toastsAreListening() })) return
+      toast(priorSeedNoticeToast())
+      clearPriorSeedFailure()
+    })
+    return () => { cancelled = true }
+    // location.pathname is in here because the trust pages are route branches:
+    // leaving one is the moment the shell appears, and without it this effect
+    // would not re-run to notice. `recovery` is its own dependency because it
+    // is NOT always a route branch — the web email link fires PASSWORD_RECOVERY
+    // from the URL hash, so the pathname can already be '/' when the recovery
+    // screen goes up and still be '/' when it comes down.
+  }, [justOnboarded, profile, track, bootstrapError, recovery, location.pathname])
 
   // Navigate between views (updates the URL). Profile/track/counts reload only
   // when landing on Home — the dashboard is the one view that renders them, and

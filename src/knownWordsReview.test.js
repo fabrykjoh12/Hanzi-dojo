@@ -8,6 +8,8 @@ import {
   groupState,
   idsOf,
   claimIdsFor,
+  claimSummaryLine,
+  claimToast,
   initialOpenLevels,
   toggleLevelOpen,
 } from './knownWordsReview'
@@ -179,5 +181,63 @@ describe('initialOpenLevels', () => {
     expect(shut.has(1)).toBe(false)
     expect(open.has(1)).toBe(true)
     expect(toggleLevelOpen(shut, 2).has(2)).toBe(true)
+  })
+})
+
+describe('claimSummaryLine', () => {
+  // FAB-30 finding 5. The toast printed the number of rows SENT, and the upsert
+  // uses ignoreDuplicates — so a word already in the deck was reported as added.
+  it('reports what the database inserted', () => {
+    expect(claimSummaryLine({ inserted: 40, skipped: 0 })).toBe('Added 40 words to review')
+    expect(claimSummaryLine({ inserted: 1, skipped: 0 })).toBe('Added 1 word to review')
+  })
+
+  it('names the skipped words instead of quietly shrinking the number', () => {
+    // "Added 38 words" for a claim of 40 is true and unexplained; the learner
+    // has no way to tell it from a partial failure.
+    expect(claimSummaryLine({ inserted: 38, skipped: 2 }))
+      .toBe('Added 38 words to review · 2 already in your deck')
+  })
+
+  it('does not say it added anything when nothing was added', () => {
+    // The case the old line got outright wrong: every word already carded.
+    expect(claimSummaryLine({ inserted: 0, skipped: 5 })).toBe('5 words were already in your deck')
+    expect(claimSummaryLine({ inserted: 0, skipped: 1 })).toBe('1 word was already in your deck')
+  })
+
+  it('has something to say for an empty claim, and never throws', () => {
+    expect(claimSummaryLine({ inserted: 0, skipped: 0 })).toBe('Nothing to add')
+    expect(claimSummaryLine()).toBe('Nothing to add')
+    expect(claimSummaryLine(null)).toBe('Nothing to add')
+  })
+})
+
+describe('claimToast', () => {
+  // The payload, because the payload was the bug: KnownWords passed the bare
+  // string to toast(), <Toasts /> spread it into character keys, and `title`
+  // came out undefined — an empty card, for as long as the screen has existed.
+  it('is an object with a title, not a bare string', () => {
+    const t = claimToast({ inserted: 3, skipped: 0 })
+    expect(typeof t).toBe('object')
+    expect(t.title).toBe('Added 3 words to review')
+  })
+
+  it('survives being spread, which is what <Toasts /> does to it', () => {
+    // The exact operation that turned the old string into {0:'A',1:'d',…}.
+    const spread = { id: 1, ...claimToast({ inserted: 1, skipped: 2 }) }
+    expect(spread.title).toBe('Added 1 word to review · 2 already in your deck')
+    expect(spread['0']).toBeUndefined()
+  })
+
+  it('carries the screen accent and is tagged as information', () => {
+    // Untagged toasts fall back to the achievement medal (Toasts.jsx).
+    const t = claimToast({ inserted: 1, skipped: 0, accent: '#B83A24' })
+    expect(t.accent).toBe('#B83A24')
+    expect(t.kind).toBe('info')
+  })
+
+  it('never throws, whatever it is handed', () => {
+    expect(claimToast().title).toBe('Nothing to add')
+    expect(claimToast(null).title).toBe('Nothing to add')
   })
 })

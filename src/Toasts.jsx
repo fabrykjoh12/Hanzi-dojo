@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { Award, Info, TriangleAlert } from 'lucide-react'
+import { registerToastListener } from './toast'
 
 // Calm, self-dismissing notification stack (top-right). Listens for the
 // 'hd-toast' CustomEvent fired by src/toast.js — no context or prop drilling,
@@ -39,8 +40,14 @@ export default function Toasts() {
       }, DISMISS_MS))
     }
     window.addEventListener('hd-toast', onToast)
+    // Registered in the same effect as the window listener, and released in the
+    // same cleanup, so toastsAreListening() cannot claim a stack that is not
+    // there. A caller that would otherwise dispatch into nothing asks it first
+    // — see src/toast.js.
+    const release = registerToastListener()
     return () => {
       window.removeEventListener('hd-toast', onToast)
+      release()
       timers.forEach(clearTimeout)
     }
   }, [])
@@ -49,8 +56,12 @@ export default function Toasts() {
   // container created in the same tick as its first child is usually missed
   // entirely by VoiceOver — the announcement only lands when the region already
   // existed and its contents then changed. So only the toasts are conditional.
+  //
+  // It is NAMED because it is not the only role="status" on screen — Home's
+  // gentle-return banner is another — and a test (or a screen reader user)
+  // needs to be able to say which region it means.
   return (
-    <div role="status" aria-live="polite" style={{
+    <div role="status" aria-live="polite" aria-label="Notifications" style={{
       // Fixed to the viewport, so the app shell's top inset doesn't reach it —
       // clear the status bar / notch here or the first toast lands inside it.
       position: 'fixed', top: 'calc(18px + env(safe-area-inset-top, 0px))', right: '18px', zIndex: 60,
