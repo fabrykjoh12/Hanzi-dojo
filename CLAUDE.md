@@ -394,8 +394,8 @@ Two things it does not cover, each with its own tier:
 
 - **Playwright e2e** — a separate CI job (`e2e.yml`).
 - **The native artifact** — `npm run verify:native` (shell agreement, the store
-  build, and a real-browser proof that it never contacts Google Fonts), plus a
-  `cap sync` of both platforms. It is deliberately out of `verify:pr` so a docs
+  build, a credential scan of that build, and a real-browser proof that it never
+  contacts Google Fonts), plus a `cap sync` of both platforms. It is deliberately out of `verify:pr` so a docs
   typo doesn't pay for a store build.
 
   `native.yml` runs on **every** pull request and filters internally: a cheap
