@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
+import { readFileSync, readdirSync } from 'node:fs'
 import {
-  KNOWLEDGE, MASTERY_STABILITY_DAYS, PRIOR_SOURCES,
+  KNOWLEDGE, MASTERY_STABILITY_DAYS, PRIOR_SOURCES, WRITTEN_PRIOR_SOURCES,
   hasGenuineObservation, hasPriorClaim,
   isPriorKnown, isVerified, isMastered, isLearned, isScheduledForLearning,
   countsForReading, countsForMastery, needsCalibration,
@@ -242,5 +243,58 @@ describe('readingCoveragePct — the fast-path aggregate', () => {
 
   it('is zero with no words', () => {
     expect(readingCoveragePct([], 0)).toBe(0)
+  })
+})
+
+describe('PRIOR_SOURCES', () => {
+  // FAB-30 finding 7. The array reads as "the sources a claim can have", and a
+  // reader takes that to mean the values a live row can carry. It does not:
+  // 'assumed_prerequisite' is written by nothing, and 'legacy_claim' is written
+  // once, by a historical migration.
+  it('matches the database constraint it documents', () => {
+    // Read out of the migration rather than restated here. A hardcoded literal
+    // fails only when someone edits PRIOR_SOURCES, which is the direction that
+    // does not matter — the array exists to mirror the constraint, so the drift
+    // worth catching is the constraint's.
+    // The LAST migration that defines it, not one named here: a later
+    // migration redefining cards_prior_source_check would otherwise leave this
+    // spec green while PRIOR_SOURCES drifted from the live constraint.
+    const dir = 'supabase/migrations'
+    let check = null
+    for (const name of readdirSync(dir).filter(n => n.endsWith('.sql')).sort()) {
+      // Case-insensitive: SQL keywords are, and a migration written ADD
+      // CONSTRAINT would otherwise be invisible here — leaving this spec green
+      // against a definition two years old while the live constraint moved.
+      const found = /add\s+constraint\s+cards_prior_source_check[\s\S]*?\)\s*\)/i.exec(readFileSync(dir + '/' + name, 'utf8'))
+      if (found) check = found
+    }
+    expect(check, 'no migration declares cards_prior_source_check any more').not.toBeNull()
+    const fromSql = [...check[0].matchAll(/'([a-z_]+)'/g)].map(m => m[1])
+    expect(fromSql.length, 'the parse must find something').toBeGreaterThan(1)
+    expect([...PRIOR_SOURCES].sort()).toEqual([...fromSql].sort())
+  })
+
+  it('separates what the constraint permits from what any code writes', () => {
+    // Derived from the call sites, not restated. Asserting the literal against
+    // the literal is a tautology that passes whatever the code does — and the
+    // mutation that matters is exactly the one it could not see: a path that
+    // starts writing 'legacy_claim' or 'assumed_prerequisite'.
+    const written = new Set()
+    for (const file of ['src/Onboarding.jsx', 'src/KnownWords.jsx', 'src/priorKnowledgeSeed.js']) {
+      const code = readFileSync(file, 'utf8').split('\n').filter(l => !l.trim().startsWith('//')).join('\n')
+      for (const m of code.matchAll(/source:\s*(?:[^,\n]*\?\s*)?'([a-z_]+)'(?:\s*:\s*'([a-z_]+)')?/g)) {
+        if (m[1]) written.add(m[1])
+        if (m[2]) written.add(m[2])
+      }
+    }
+    expect(written.size, 'no prior_source literal found at any call site').toBeGreaterThan(0)
+    expect([...WRITTEN_PRIOR_SOURCES].sort()).toEqual([...written].sort())
+
+    for (const source of WRITTEN_PRIOR_SOURCES) {
+      expect(PRIOR_SOURCES, source + ' must be permitted by the constraint too').toContain(source)
+    }
+    // The two the subset deliberately excludes, and why each is excluded.
+    expect(WRITTEN_PRIOR_SOURCES, 'reserved, never built').not.toContain('assumed_prerequisite')
+    expect(WRITTEN_PRIOR_SOURCES, 'historical: one migration, not a live path').not.toContain('legacy_claim')
   })
 })
