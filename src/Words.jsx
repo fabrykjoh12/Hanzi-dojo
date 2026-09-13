@@ -58,7 +58,7 @@ export default function Words({ session, profile, track, onBack }) {
   }
   const addToDeck = async (v) => {
     if (!v || !v.id || cardByVocab[v.id]) return
-    const row = { user_id: session.user.id, vocab_id: v.id, state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString() }
+    const row = { user_id: session.user.id, vocab_id: v.id, state: 'new', learning_step: 0, due_at: new Date().toISOString() }
     const { error } = await supabase.from('cards').insert(row)
     if (!error) setCardByVocab(prev => ({ ...prev, [v.id]: { vocab_id: v.id, state: 'new' } }))
   }

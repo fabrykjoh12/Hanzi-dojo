@@ -178,6 +178,12 @@ Check the content type, not the status.
 
 - [ ] 🔵 **ESLint does not cover `tools/*.mjs`.** `eslint.config.js` matches `**/*.{js,jsx}`, `tools/**/*.js` and root-level `*.mjs` — none of which reach the eighteen `.mjs` files under `tools/`, including the four verifiers `verify:pr` and `verify:native` depend on. So "zero lint errors" says nothing about them, and each new one arrives unlinted. Adding `tools/**/*.mjs` to the Node-globals block is one line; the work is fixing whatever it then reports across files nobody has linted yet, which is why it is a task and not a drive-by.
 
+- [ ] 🟡 **One `ease_factor` write survives, and it is in SQL rather than in `src/`.** `dict_add_to_deck` (`20260719130000_flashcard_anything.sql:89`, APPLIED) inserts the column explicitly, and it is reached from client code on every dictionary add-to-deck: `src/dictSearch.js:76` → `Dictionary.jsx`, `StoryReaderImmersive.jsx`, `useStoryReaderCore.js` and thence every story reader. So pressing "add to deck" still writes the dead column even though the literal is gone from the button's own file.
+
+  Effect is nil — 2.5 is the column's own default — so this is a truthfulness problem, not a data one. **The fix is already written:** `20260907010000_cap_dict_add_to_deck.sql` on `claude/fab-26-narrow-client-grants` rewrites the function without it (its own spec pins the absence). Deliberately not duplicated here: two competing `create or replace` definitions of one function in flight at once is how a rewrite silently loses half of itself.
+
+  `legacyColumnGuard.test.mjs` scans `src/` only and says so in its header. Extending it to migrations needs the "last definition wins" treatment `knowledgeState.test.js` uses for `cards_prior_source_check`, and would fail until that migration merges — worth doing after it does, not before.
+
 
 ## Auth / email / hosting
 - [ ] **Custom SMTP — LIVE TEST PENDING.** Configured 2026-07-18: Brevo is the sending provider; `hanzi-dojo.com` shows **Authenticated** in Brevo (DKIM `brevo1/brevo2._domainkey`, `brevo-code` TXT, DMARC `p=none` — all added in Cloudflare DNS, the authoritative nameserver; Vercel only hosts). Supabase custom SMTP wired to `smtp-relay.brevo.com:587`, sender `no-reply@hanzi-dojo.com`. **Still to verify:** send a real magic-link/sign-up to an external inbox and confirm it (a) arrives (not spam) and (b) shows From `no-reply@hanzi-dojo.com`. Brevo "Branding" (the `em`/`img.em`/`r.em` CNAMEs) shows *Not branded* — optional, tracking-link cosmetics only, doesn't block sending.
