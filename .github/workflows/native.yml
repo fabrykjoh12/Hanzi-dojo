@@ -102,6 +102,7 @@ jobs:
           ^tools/verify-native-fonts\.mjs$
           ^tools/verify-native-shell\.mjs$
           ^tools/verify-app-icons\.mjs$
+          ^tools/verify-public-bundle\.mjs$
           ^\.github/workflows/native\.yml$
           '
 
