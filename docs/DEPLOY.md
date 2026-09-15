@@ -62,6 +62,51 @@ calls it with relative paths, so it must be same-origin with the HQ build, and
 that deploy lives outside this repo (no `wrangler.toml`, no deploy workflow
 here). Changing `worker/index.js` does not ship anything by itself.
 
+#### The two red "Workers Builds" checks — a dashboard setting, not repo code
+
+Every PR (and every push) carries two permanently-failing checks:
+
+```
+Workers Builds: hanzi-dojo     failure
+Workers Builds: hanzidojo      failure
+```
+
+**They are not produced by anything in this repository.** They come from the
+*Cloudflare Workers and Pages* GitHub App: two Worker services in the Cloudflare
+account (`hanzi-dojo` and `hanzidojo`) each have the **Workers Builds git
+integration** pointed at this repo, so Cloudflare starts a build on every commit
+and reports the result back to GitHub as a check run.
+
+They cannot ever pass. Workers Builds needs a Wrangler config to know what to
+build, and this repo deliberately has none — no `wrangler.toml`, no
+`wrangler.json(c)`, no deploy script, nothing. The builds fail in **zero
+seconds** (the check's `started_at` and `completed_at` are identical), which is
+the signature of a build that dies before it runs, not of a broken build.
+
+**There is no repo-side fix, and adding one would be the wrong fix.** Grepping
+this repo for Cloudflare CI turns up nothing to delete: no workflow, no config,
+no secret. The two levers both live outside the code:
+
+1. **Cloudflare dashboard (the real fix).** Workers & Pages → open the Worker
+   (`hanzi-dojo`, then `hanzidojo`) → **Settings → Build** → disconnect the
+   GitHub repository. Do it on **both** — disconnecting one leaves the other
+   red. If the standalone `*.chatgpt.site` Dojo HQ build is retired, deleting
+   the Worker services outright does the same job.
+2. **GitHub App scope (equivalent, blunter).** Repo/owner **Settings → GitHub
+   Apps → Cloudflare Workers and Pages → Configure** → remove `Hanzi-dojo` from
+   the app's repository access. This kills the checks for every Cloudflare
+   project at once.
+
+Either way the checks stop appearing on *new* commits; old PRs keep the red
+marks they already have. They have never been required status checks (`main`
+is unprotected), so they have never blocked a merge — the cost is that two
+meaningless red checks on every PR are exactly how a real failure gets ignored.
+
+**Do not "fix" this by committing a Wrangler config.** A `wrangler.toml` that
+satisfies Workers Builds would turn every push to `main` into an automatic
+Worker deploy — shipping the Dojo HQ backend, which is deployed by hand on
+purpose. That trades two harmless red checks for an unreviewed deploy pipeline.
+
 ### GitHub Pages — retired
 The app used to also deploy to `https://fabrykjoh12.github.io/Hanzi-dojo/` under
 a `/Hanzi-dojo/` subpath. That is **gone**: `deploy.yml` has been removed and
