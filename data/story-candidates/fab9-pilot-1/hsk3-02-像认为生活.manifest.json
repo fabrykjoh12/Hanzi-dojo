@@ -1,0 +1,89 @@
+{
+ "schema": "fab9-story-target@1",
+ "id": "hsk3-02-像认为生活",
+ "batch": "fab9-pilot-1",
+ "language": "chinese",
+ "system": "hsk_3",
+ "level": 3,
+ "levelName": "HSK 3",
+ "tier": 1,
+ "required": [
+  {
+   "word": "像",
+   "reading": "xiàng",
+   "meaning": "to resemble; to be like",
+   "level": 3,
+   "cohort": "NEWLY_TAUGHT",
+   "why": "newly taught at HSK 3, 0 available stories",
+   "minOccurrences": 2
+  },
+  {
+   "word": "认为",
+   "reading": "rèn wéi",
+   "meaning": "to believe; to think; to consider; to feel",
+   "level": 3,
+   "cohort": "NEWLY_TAUGHT",
+   "why": "newly taught at HSK 3, 0 available stories",
+   "minOccurrences": 2
+  },
+  {
+   "word": "生活",
+   "reading": "shēng huó",
+   "meaning": "to live; life",
+   "level": 3,
+   "cohort": "NEWLY_TAUGHT",
+   "why": "newly taught at HSK 3, 0 available stories",
+   "minOccurrences": 2
+  },
+  {
+   "word": "发生",
+   "reading": "fā shēng",
+   "meaning": "to happen; to occur; to take place; to break out",
+   "level": 3,
+   "cohort": "NEWLY_TAUGHT",
+   "why": "newly taught at HSK 3, 0 available stories",
+   "minOccurrences": 2
+  },
+  {
+   "word": "而且",
+   "reading": "ér qiě",
+   "meaning": "(not only ...) but also; moreover",
+   "level": 3,
+   "cohort": "NEWLY_TAUGHT",
+   "why": "newly taught at HSK 3, 0 available stories",
+   "minOccurrences": 2
+  }
+ ],
+ "allowedVocabulary": {
+  "maxLevel": 3,
+  "size": 951,
+  "source": "reports/story-corpus-dump.json"
+ },
+ "limits": {
+  "lines": [
+   20,
+   28
+  ],
+  "maxLineChars": 34,
+  "minCoverage": 0.9,
+  "maxOutOfBandDistinct": 6,
+  "maxOutOfBandOccurrences": 6,
+  "maxOccurrencesPerTarget": 5,
+  "maxTargetShare": 0.25
+ },
+ "format": {
+  "speakers": [
+   "李明",
+   "小红",
+   "小明",
+   "妈妈"
+  ],
+  "colon": "：",
+  "titleChars": [
+   1,
+   12
+  ]
+ },
+ "premise": null,
+ "outputBudget": 2759
+}
