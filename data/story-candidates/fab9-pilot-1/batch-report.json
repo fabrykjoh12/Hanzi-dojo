@@ -1,0 +1,14 @@
+{
+ "version": "fab10-batch@1",
+ "total": 2,
+ "accepted": 0,
+ "rejected": 2,
+ "attempts": 0,
+ "acceptedIds": [],
+ "rejectedIds": [
+  "hsk3-01-被中如果",
+  "hsk3-02-像认为生活"
+ ],
+ "failureCodes": [],
+ "publication": "none — candidates are files for review; staging is a separate, human-run step"
+}
