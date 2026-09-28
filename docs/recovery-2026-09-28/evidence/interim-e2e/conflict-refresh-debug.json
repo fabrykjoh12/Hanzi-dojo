@@ -1,0 +1,513 @@
+[
+  {
+    "name": "applied",
+    "records": [
+      {
+        "opId": "conflict-first",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-first",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "revision": 1
+          }
+        },
+        "status": "applied",
+        "version": 1,
+        "ordinal": 1,
+        "createdAt": 1790595530479,
+        "card": {
+          "id": "c1",
+          "vocab_id": "v1",
+          "revision": 2
+        }
+      }
+    ]
+  },
+  {
+    "name": "conflict",
+    "result": {
+      "ok": false,
+      "status": "conflict",
+      "pending": false,
+      "durable": true,
+      "opId": "conflict-second",
+      "card": null,
+      "cardId": "c1",
+      "logId": null,
+      "alreadyApplied": false,
+      "error": "Review could not be confirmed. Try again when connected."
+    },
+    "records": [
+      {
+        "opId": "conflict-first",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-first",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "revision": 1
+          }
+        },
+        "status": "applied",
+        "version": 1,
+        "ordinal": 1,
+        "createdAt": 1790595530479,
+        "card": {
+          "id": "c1",
+          "vocab_id": "v1",
+          "revision": 2
+        }
+      },
+      {
+        "opId": "conflict-second",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-second",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "id": "c1",
+            "revision": 2
+          }
+        },
+        "status": "conflict",
+        "version": 1,
+        "ordinal": 2,
+        "createdAt": 1790595530488,
+        "card": null,
+        "error": "Review could not be confirmed. Try again when connected."
+      }
+    ]
+  },
+  {
+    "name": "blocked",
+    "result": {
+      "ok": false,
+      "status": "conflict",
+      "pending": false,
+      "durable": false,
+      "card": null,
+      "cardId": null,
+      "logId": null,
+      "alreadyApplied": false,
+      "error": "REVIEW_CONFLICT: this word has a newer or unfinished review. Return Home to refresh."
+    },
+    "records": [
+      {
+        "opId": "conflict-first",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-first",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "revision": 1
+          }
+        },
+        "status": "applied",
+        "version": 1,
+        "ordinal": 1,
+        "createdAt": 1790595530479,
+        "card": {
+          "id": "c1",
+          "vocab_id": "v1",
+          "revision": 2
+        }
+      },
+      {
+        "opId": "conflict-second",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-second",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "id": "c1",
+            "revision": 2
+          }
+        },
+        "status": "conflict",
+        "version": 1,
+        "ordinal": 2,
+        "createdAt": 1790595530488,
+        "card": null,
+        "error": "Review could not be confirmed. Try again when connected."
+      }
+    ]
+  },
+  {
+    "name": "baseline",
+    "baseline": [
+      {
+        "opId": "conflict-first",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-first",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "revision": 1
+          }
+        },
+        "status": "applied",
+        "version": 1,
+        "ordinal": 1,
+        "createdAt": 1790595530479,
+        "card": {
+          "id": "c1",
+          "vocab_id": "v1",
+          "revision": 2
+        }
+      },
+      {
+        "opId": "conflict-second",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-second",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "id": "c1",
+            "revision": 2
+          }
+        },
+        "status": "conflict",
+        "version": 1,
+        "ordinal": 2,
+        "createdAt": 1790595530488,
+        "card": null,
+        "error": "Review could not be confirmed. Try again when connected."
+      }
+    ]
+  },
+  {
+    "name": "reconciled",
+    "result": [
+      {
+        "id": "c1",
+        "vocab_id": "v1",
+        "revision": 3
+      }
+    ],
+    "records": [
+      {
+        "opId": "conflict-first",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-first",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "revision": 1
+          }
+        },
+        "status": "applied",
+        "version": 1,
+        "ordinal": 1,
+        "createdAt": 1790595530479,
+        "card": {
+          "id": "c1",
+          "vocab_id": "v1",
+          "revision": 2
+        }
+      },
+      {
+        "opId": "conflict-second",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-second",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "id": "c1",
+            "revision": 2
+          }
+        },
+        "status": "resolved",
+        "version": 2,
+        "ordinal": 2,
+        "createdAt": 1790595530488,
+        "card": {
+          "id": "c1",
+          "vocab_id": "v1",
+          "revision": 3
+        },
+        "error": "Review could not be confirmed. Try again when connected.",
+        "retiredCardId": null,
+        "retiredCardIds": []
+      }
+    ]
+  },
+  {
+    "name": "repaired",
+    "result": [
+      {
+        "id": "c1",
+        "vocab_id": "v1",
+        "revision": 3,
+        "vocabulary": {
+          "id": "v1",
+          "level": 1
+        }
+      }
+    ],
+    "records": [
+      {
+        "opId": "conflict-first",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-first",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "revision": 1
+          }
+        },
+        "status": "applied",
+        "version": 1,
+        "ordinal": 1,
+        "createdAt": 1790595530479,
+        "card": {
+          "id": "c1",
+          "vocab_id": "v1",
+          "revision": 2
+        }
+      },
+      {
+        "opId": "conflict-second",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-second",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "id": "c1",
+            "revision": 2
+          }
+        },
+        "status": "resolved",
+        "version": 2,
+        "ordinal": 2,
+        "createdAt": 1790595530488,
+        "card": {
+          "id": "c1",
+          "vocab_id": "v1",
+          "revision": 3
+        },
+        "error": "Review could not be confirmed. Try again when connected.",
+        "retiredCardId": null,
+        "retiredCardIds": []
+      }
+    ]
+  },
+  {
+    "name": "still-stale",
+    "result": {
+      "ok": false,
+      "status": "conflict",
+      "pending": false,
+      "durable": false,
+      "card": null,
+      "cardId": null,
+      "logId": null,
+      "alreadyApplied": false,
+      "error": "REVIEW_CONFLICT: this word has a newer or unfinished review. Return Home to refresh."
+    },
+    "records": [
+      {
+        "opId": "conflict-first",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-first",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "revision": 1
+          }
+        },
+        "status": "applied",
+        "version": 1,
+        "ordinal": 1,
+        "createdAt": 1790595530479,
+        "card": {
+          "id": "c1",
+          "vocab_id": "v1",
+          "revision": 2
+        }
+      },
+      {
+        "opId": "conflict-second",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-second",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "id": "c1",
+            "revision": 2
+          }
+        },
+        "status": "resolved",
+        "version": 2,
+        "ordinal": 2,
+        "createdAt": 1790595530488,
+        "card": {
+          "id": "c1",
+          "vocab_id": "v1",
+          "revision": 3
+        },
+        "error": "Review could not be confirmed. Try again when connected.",
+        "retiredCardId": null,
+        "retiredCardIds": []
+      }
+    ]
+  },
+  {
+    "name": "fresh",
+    "result": {
+      "ok": true,
+      "status": "pending",
+      "pending": true,
+      "durable": true,
+      "opId": "conflict-fifth",
+      "card": null,
+      "cardId": "c1",
+      "logId": null,
+      "alreadyApplied": false,
+      "error": null
+    },
+    "records": [
+      {
+        "opId": "conflict-fifth",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-fifth",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "id": "c1",
+            "revision": 3
+          }
+        },
+        "status": "pending",
+        "version": 0,
+        "ordinal": 3,
+        "createdAt": 1790595530521,
+        "card": null
+      },
+      {
+        "opId": "conflict-first",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-first",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "revision": 1
+          }
+        },
+        "status": "applied",
+        "version": 1,
+        "ordinal": 1,
+        "createdAt": 1790595530479,
+        "card": {
+          "id": "c1",
+          "vocab_id": "v1",
+          "revision": 2
+        }
+      },
+      {
+        "opId": "conflict-second",
+        "userId": "conflict-owner",
+        "intent": {
+          "language": "chinese",
+          "system": "hsk_3",
+          "level": 1,
+          "opId": "conflict-second",
+          "userId": "conflict-owner",
+          "vocabId": "v1",
+          "cardId": "c1",
+          "expected": {
+            "id": "c1",
+            "revision": 2
+          }
+        },
+        "status": "resolved",
+        "version": 2,
+        "ordinal": 2,
+        "createdAt": 1790595530488,
+        "card": {
+          "id": "c1",
+          "vocab_id": "v1",
+          "revision": 3
+        },
+        "error": "Review could not be confirmed. Try again when connected.",
+        "retiredCardId": null,
+        "retiredCardIds": []
+      }
+    ]
+  }
+]

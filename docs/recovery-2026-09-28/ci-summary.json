@@ -1,0 +1,68 @@
+{
+  "head": "5e8832c6e8e7ae6a55958057c599502a1eb92b00",
+  "jobs": [
+    {
+      "id": 108913423787,
+      "name": "native-gate",
+      "head_sha": "5e8832c6e8e7ae6a55958057c599502a1eb92b00",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/fabrykjoh12/Hanzi-dojo/actions/runs/36417802826/job/108913423787",
+      "completed_at": "2026-09-28T11:49:14Z"
+    },
+    {
+      "id": 108913215337,
+      "name": "Workers Builds: hanzidojo",
+      "head_sha": "5e8832c6e8e7ae6a55958057c599502a1eb92b00",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/fabrykjoh12/Hanzi-dojo/runs/108913215337",
+      "completed_at": "2026-09-28T11:48:28Z"
+    },
+    {
+      "id": 108913081225,
+      "name": "Vercel Preview Comments",
+      "head_sha": "5e8832c6e8e7ae6a55958057c599502a1eb92b00",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/fabrykjoh12/Hanzi-dojo/runs/108913081225",
+      "completed_at": "2026-09-28T11:48:03Z"
+    },
+    {
+      "id": 108913071524,
+      "name": "verify",
+      "head_sha": "5e8832c6e8e7ae6a55958057c599502a1eb92b00",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/fabrykjoh12/Hanzi-dojo/actions/runs/36417802826/job/108913071524",
+      "completed_at": "2026-09-28T11:49:07Z"
+    },
+    {
+      "id": 108913018229,
+      "name": "playwright",
+      "head_sha": "5e8832c6e8e7ae6a55958057c599502a1eb92b00",
+      "status": "completed",
+      "conclusion": "failure",
+      "url": "https://github.com/fabrykjoh12/Hanzi-dojo/actions/runs/36417803562/job/108913018229",
+      "completed_at": "2026-09-28T11:52:22Z"
+    },
+    {
+      "id": 108913016161,
+      "name": "check",
+      "head_sha": "5e8832c6e8e7ae6a55958057c599502a1eb92b00",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/fabrykjoh12/Hanzi-dojo/actions/runs/36417802955/job/108913016161",
+      "completed_at": "2026-09-28T11:49:12Z"
+    },
+    {
+      "id": 108913016092,
+      "name": "changes",
+      "head_sha": "5e8832c6e8e7ae6a55958057c599502a1eb92b00",
+      "status": "completed",
+      "conclusion": "success",
+      "url": "https://github.com/fabrykjoh12/Hanzi-dojo/actions/runs/36417802826/job/108913016092",
+      "completed_at": "2026-09-28T11:48:01Z"
+    }
+  ]
+}

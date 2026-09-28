@@ -1,0 +1,1221 @@
+{
+  "phase": "baseline",
+  "startedAt": "2026-09-28T11:17:27.974Z",
+  "sourceCommit": "8a26ecbc40eb1c1723b5d1c09ee15baf17cd2b19",
+  "viewportMode": "Chromium responsive browser, not native device",
+  "fontMode": "Bundled native fonts served in browser",
+  "screenshots": [
+    {
+      "file": "home-390-light.png",
+      "route": "/",
+      "theme": "light",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "Today"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "Open profile",
+          "width": 34,
+          "height": 34,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 298,
+      "pageErrors": []
+    },
+    {
+      "file": "study-question-390-light.png",
+      "route": "/study",
+      "theme": "light",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "Study session"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "Exit",
+          "width": 38,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 4,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 90,
+      "pageErrors": []
+    },
+    {
+      "file": "study-answer-390-light.png",
+      "route": "/study",
+      "theme": "light",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "Study session"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "Exit",
+          "width": 38,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 189,
+      "pageErrors": []
+    },
+    {
+      "file": "stories-390-light.png",
+      "route": "/stories",
+      "theme": "light",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "Stories",
+        "Top picks for you",
+        "HSK 1",
+        "Manhua",
+        "Practice through stories",
+        "Coming up in HSK 3"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "All",
+          "width": 49,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "HSK 2",
+          "width": 72,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "HSK 1",
+          "width": 69,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Manhua",
+          "width": 84,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 24,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 1067,
+      "pageErrors": []
+    },
+    {
+      "file": "reader-launch-390-light.png",
+      "route": "/stories/st1",
+      "theme": "light",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "Stories",
+        "Top picks for you",
+        "HSK 1",
+        "Manhua",
+        "Practice through stories",
+        "Coming up in HSK 3"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "All",
+          "width": 49,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "HSK 2",
+          "width": 72,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "HSK 1",
+          "width": 69,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Manhua",
+          "width": 84,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 24,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 1067,
+      "pageErrors": []
+    },
+    {
+      "file": "reader-lookup-390-light.png",
+      "route": "/stories/st1",
+      "theme": "light",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "很",
+          "width": 32,
+          "height": 44,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "好",
+          "width": 32,
+          "height": 44,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 15,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 135,
+      "pageErrors": []
+    },
+    {
+      "file": "reader-settings-390-light.png",
+      "route": "/stories/st1",
+      "theme": "light",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "很",
+          "width": 33,
+          "height": 44,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "好",
+          "width": 34,
+          "height": 44,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 23,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 276,
+      "pageErrors": []
+    },
+    {
+      "file": "practice-390-light.png",
+      "route": "/practice",
+      "theme": "light",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "Practice",
+        "Weak words"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        }
+      ],
+      "targetCount": 20,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 732,
+      "pageErrors": []
+    },
+    {
+      "file": "home-390-dark.png",
+      "route": "/",
+      "theme": "dark",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "Today"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "Open profile",
+          "width": 34,
+          "height": 34,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 298,
+      "pageErrors": []
+    },
+    {
+      "file": "study-question-390-dark.png",
+      "route": "/study",
+      "theme": "dark",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "Study session"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "Exit",
+          "width": 38,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 4,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 90,
+      "pageErrors": []
+    },
+    {
+      "file": "study-answer-390-dark.png",
+      "route": "/study",
+      "theme": "dark",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "Study session"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "Exit",
+          "width": 38,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 189,
+      "pageErrors": []
+    },
+    {
+      "file": "stories-390-dark.png",
+      "route": "/stories",
+      "theme": "dark",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "Stories",
+        "Top picks for you",
+        "HSK 1",
+        "Manhua",
+        "Practice through stories",
+        "Coming up in HSK 3"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "All",
+          "width": 49,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "HSK 2",
+          "width": 72,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "HSK 1",
+          "width": 69,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Manhua",
+          "width": 84,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 24,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 1067,
+      "pageErrors": []
+    },
+    {
+      "file": "reader-launch-390-dark.png",
+      "route": "/stories/st1",
+      "theme": "dark",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "公园里的下午"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "Back to library",
+          "width": 30,
+          "height": 30,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Paged",
+          "width": 163,
+          "height": 40.3,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Scroll",
+          "width": 163,
+          "height": 40.3,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 8,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 130,
+      "pageErrors": []
+    },
+    {
+      "file": "reader-lookup-390-dark.png",
+      "route": "/stories/st1",
+      "theme": "dark",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "很",
+          "width": 32,
+          "height": 44,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "好",
+          "width": 32,
+          "height": 44,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 15,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 135,
+      "pageErrors": []
+    },
+    {
+      "file": "reader-settings-390-dark.png",
+      "route": "/stories/st1",
+      "theme": "dark",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "很",
+          "width": 33,
+          "height": 44,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "好",
+          "width": 34,
+          "height": 44,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 23,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 276,
+      "pageErrors": []
+    },
+    {
+      "file": "practice-390-dark.png",
+      "route": "/practice",
+      "theme": "dark",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "Practice",
+        "Weak words"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        }
+      ],
+      "targetCount": 20,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 732,
+      "pageErrors": []
+    },
+    {
+      "file": "home-320-light.png",
+      "route": "/",
+      "theme": "light",
+      "width": 320,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 320,
+      "viewportWidth": 320,
+      "horizontalOverflow": false,
+      "heading": [
+        "Today"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "Open profile",
+          "width": 34,
+          "height": 34,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 298,
+      "pageErrors": []
+    },
+    {
+      "file": "home-430-dark.png",
+      "route": "/",
+      "theme": "dark",
+      "width": 430,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 430,
+      "viewportWidth": 430,
+      "horizontalOverflow": false,
+      "heading": [
+        "Today"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "Open profile",
+          "width": 34,
+          "height": 34,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 298,
+      "pageErrors": []
+    },
+    {
+      "file": "study-320-dark.png",
+      "route": "/study",
+      "theme": "dark",
+      "width": 320,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 320,
+      "viewportWidth": 320,
+      "horizontalOverflow": false,
+      "heading": [
+        "Study session"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "Exit",
+          "width": 38,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 189,
+      "pageErrors": []
+    },
+    {
+      "file": "stories-430-light.png",
+      "route": "/stories",
+      "theme": "light",
+      "width": 430,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 430,
+      "viewportWidth": 430,
+      "horizontalOverflow": false,
+      "heading": [
+        "Stories",
+        "Top picks for you",
+        "HSK 1",
+        "Manhua",
+        "Practice through stories",
+        "Coming up in HSK 3"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "All",
+          "width": 49,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "HSK 2",
+          "width": 72,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "HSK 1",
+          "width": 69,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Manhua",
+          "width": 84,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 24,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 1067,
+      "pageErrors": []
+    },
+    {
+      "file": "home-320-light-text200.png",
+      "route": "/",
+      "theme": "light",
+      "width": 320,
+      "largeTextStress": true,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 447,
+      "viewportWidth": 320,
+      "horizontalOverflow": true,
+      "heading": [
+        "Today"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Open profile",
+          "width": 21.8,
+          "height": 34,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 298,
+      "pageErrors": []
+    },
+    {
+      "file": "study-320-dark-text200.png",
+      "route": "/study",
+      "theme": "dark",
+      "width": 320,
+      "largeTextStress": true,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 320,
+      "viewportWidth": 320,
+      "horizontalOverflow": false,
+      "heading": [
+        "Study session"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Exit",
+          "width": 38,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 189,
+      "pageErrors": []
+    },
+    {
+      "file": "stories-390-light-text200.png",
+      "route": "/stories",
+      "theme": "light",
+      "width": 390,
+      "largeTextStress": true,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "Stories",
+        "Top picks for you",
+        "HSK 1",
+        "Manhua",
+        "Practice through stories",
+        "Coming up in HSK 3"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "All",
+          "width": 64,
+          "height": 41,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "HSK 2",
+          "width": 110,
+          "height": 41,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "HSK 1",
+          "width": 104,
+          "height": 41,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Manhua",
+          "width": 134,
+          "height": 41,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 24,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 1067,
+      "pageErrors": []
+    },
+    {
+      "file": "reader-390-dark-text200.png",
+      "route": "/stories/st1",
+      "theme": "dark",
+      "width": 390,
+      "largeTextStress": true,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [],
+      "undersizedTargets": [],
+      "targetCount": 12,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 83,
+      "pageErrors": []
+    },
+    {
+      "file": "home-390-light-reduced.png",
+      "route": "/",
+      "theme": "light",
+      "width": 390,
+      "largeTextStress": false,
+      "motion": "reduce",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 390,
+      "viewportWidth": 390,
+      "horizontalOverflow": false,
+      "heading": [
+        "Today"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "Open profile",
+          "width": 34,
+          "height": 34,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 7,
+      "reducedMotion": true,
+      "frameworkOverlay": false,
+      "contentLength": 298,
+      "pageErrors": []
+    },
+    {
+      "file": "home-1280-light.png",
+      "route": "/",
+      "theme": "light",
+      "width": 1280,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 1280,
+      "viewportWidth": 1280,
+      "horizontalOverflow": false,
+      "heading": [
+        "Today"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "Collapse sidebar",
+          "width": 29,
+          "height": 29,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Studying Chinese, HSK 2. Switch language",
+          "width": 207,
+          "height": 38.5,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Profile — Test Learner",
+          "width": 207,
+          "height": 40,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Switch to dark mode",
+          "width": 32,
+          "height": 32,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Settings",
+          "width": 32,
+          "height": 32,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Log out",
+          "width": 32,
+          "height": 32,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Open profile",
+          "width": 34,
+          "height": 34,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 15,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 362,
+      "pageErrors": []
+    },
+    {
+      "file": "stories-1280-dark.png",
+      "route": "/stories",
+      "theme": "dark",
+      "width": 1280,
+      "largeTextStress": false,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 1280,
+      "viewportWidth": 1280,
+      "horizontalOverflow": false,
+      "heading": [
+        "Stories",
+        "Top picks for you",
+        "HSK 1",
+        "Manhua",
+        "Practice through stories",
+        "Coming up in HSK 3"
+      ],
+      "undersizedTargets": [
+        {
+          "label": "Skip to content",
+          "width": 138,
+          "height": 35,
+          "disabled": false,
+          "viewport": false
+        },
+        {
+          "label": "Collapse sidebar",
+          "width": 29,
+          "height": 29,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Studying Chinese, HSK 2. Switch language",
+          "width": 207,
+          "height": 38.5,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Profile — Test Learner",
+          "width": 207,
+          "height": 40,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Switch to light mode",
+          "width": 32,
+          "height": 32,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Settings",
+          "width": 32,
+          "height": 32,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Log out",
+          "width": 32,
+          "height": 32,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "All",
+          "width": 49,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "HSK 2",
+          "width": 72,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "HSK 1",
+          "width": 69,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        },
+        {
+          "label": "Manhua",
+          "width": 84,
+          "height": 38,
+          "disabled": false,
+          "viewport": true
+        }
+      ],
+      "targetCount": 42,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 1131,
+      "pageErrors": []
+    }
+  ],
+  "journeys": [
+    {
+      "theme": "light",
+      "name": "Reader lookup/settings/escape",
+      "remainsOpenAfterChoice": true,
+      "focusReturns": true
+    },
+    {
+      "theme": "dark",
+      "name": "Reader lookup/settings/escape",
+      "remainsOpenAfterChoice": true,
+      "focusReturns": true
+    }
+  ],
+  "failures": [],
+  "finishedAt": "2026-09-28T11:18:46.270Z"
+}

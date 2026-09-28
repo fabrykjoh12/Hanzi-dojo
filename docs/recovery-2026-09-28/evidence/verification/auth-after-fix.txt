@@ -1,0 +1,23 @@
+[WebServer] (node:18) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 12 tests using 2 workers
+
+(node:55) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:54) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   2 tests/e2e/landing.spec.js:11:3 › Landing (logged out) › does not show the authenticated dashboard (5.7s)
+  ✓   1 tests/e2e/landing.spec.js:5:3 › Landing (logged out) › shows the hero and primary CTA (5.8s)
+  ✓   4 tests/e2e/landing.spec.js:69:3 › Pre-login onboarding wizard › an accidental reload resumes the wizard instead of restarting it (4.5s)
+  ✓   3 tests/e2e/landing.spec.js:24:3 › Pre-login onboarding wizard › flashcard → story → completion → questions → path → account last (7.7s)
+  ✓   5 tests/e2e/landing.spec.js:85:5 › Pre-login onboarding wizard › on a small phone (360x640) › the whole encounter stays reachable without horizontal scroll (3.3s)
+  ✓   6 tests/e2e/landing.spec.js:101:3 › Pre-login onboarding wizard › Log in skips the wizard for returning users (2.8s)
+  ✓   8 tests/e2e/landing.spec.js:131:3 › Pre-login recovery › an explicit Log in still opens login after earlier onboarding choices (4.1s)
+  ✓   7 tests/e2e/landing.spec.js:111:3 › Pre-login recovery › retains answers immediately across reloads, before the path is submitted (7.0s)
+  ✓   9 tests/e2e/password-reset.spec.js:17:1 › a recovery link lands on the set-a-new-password screen (2.3s)
+  ✓  10 tests/e2e/password-reset.spec.js:26:1 › the app’s recovery route shows the password form, not the app (2.2s)
+  ✓  11 tests/e2e/password-reset.spec.js:35:1 › a failed reset link explains itself on the sign-in screen (2.1s)
+  ✓  12 tests/e2e/password-reset.spec.js:42:1 › an ordinary visit shows no auth warning (2.3s)
+
+  12 passed (30.6s)

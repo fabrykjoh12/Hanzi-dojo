@@ -1,0 +1,118 @@
+[WebServer] (node:18) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 44 tests using 1 worker
+
+(node:57) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓   1 tests/e2e/home-v3-geometry.spec.js:71:5 › 320px light: Home, Stories, and Practice nav geometry (11.0s)
+  ✓   2 tests/e2e/home-v3-geometry.spec.js:71:5 › 320px dark: Home, Stories, and Practice nav geometry (6.6s)
+  ✓   3 tests/e2e/home-v3-geometry.spec.js:71:5 › 390px light: Home, Stories, and Practice nav geometry (5.7s)
+  ✓   4 tests/e2e/home-v3-geometry.spec.js:71:5 › 390px dark: Home, Stories, and Practice nav geometry (5.6s)
+  ✓   5 tests/e2e/home-v3-geometry.spec.js:71:5 › 430px light: Home, Stories, and Practice nav geometry (4.9s)
+  ✓   6 tests/e2e/home-v3-geometry.spec.js:71:5 › 430px dark: Home, Stories, and Practice nav geometry (4.7s)
+  ✓   7 tests/e2e/home-v3-geometry.spec.js:85:1 › Home content clears the floating dock and fonts settle without reflow (2.2s)
+  ✓   8 tests/e2e/home-v3-motion.spec.js:6:1 › Home actions have no entrance delay and navigation keeps its labels (2.9s)
+  ✓   9 tests/e2e/home-v3-motion.spec.js:29:1 › reduced motion flattens every Home animation and transition (2.0s)
+  ✓  10 tests/e2e/home-v3-states.spec.js:91:3 › cards renders from persisted learning state (2.1s)
+  ✓  11 tests/e2e/home-v3-states.spec.js:91:3 › story renders from persisted learning state (2.2s)
+  ✓  12 tests/e2e/home-v3-states.spec.js:91:3 › practice renders from persisted learning state (3.8s)
+  ✓  13 tests/e2e/home-v3-states.spec.js:91:3 › complete renders from persisted learning state (2.3s)
+  ✓  14 tests/e2e/home-v3-states.spec.js:91:3 › caught-up renders from persisted learning state (2.3s)
+  ✓  15 tests/e2e/home-v3-states.spec.js:145:1 › the hand-off opens today’s story directly once the queue is clear (2.2s)
+  ✓  16 tests/e2e/home.spec.js:14:3 › Home (logged in) › the primary action shows the real flashcard queue (2.2s)
+  ✓  17 tests/e2e/home.spec.js:36:3 › Home (logged in) › the hero itself is the control: tapping it opens Study (3.3s)
+  ✓  18 tests/e2e/home.spec.js:54:3 › Home (logged in) › the hero answers Enter and Space from the keyboard (5.9s)
+  ✓  19 tests/e2e/home.spec.js:68:3 › Home (logged in) › the primary control remains stable while pressed and focused (2.7s)
+  ✓  20 tests/e2e/home.spec.js:81:3 › Home (logged in) › queue labels wrap without overlap at 320px with 200% text (4.1s)
+  ✓  21 tests/e2e/home.spec.js:111:3 › Home (logged in) › every Home block scrolls clear of the floating dock at 320x568 (3.6s)
+  ✓  22 tests/e2e/home.spec.js:133:3 › Home (logged in) › content has no decorative scenery competing with learning actions (2.1s)
+  ✓  23 tests/e2e/home.spec.js:137:3 › Home (logged in) › the scene follows the local clock (4.9s)
+  ✓  24 tests/e2e/home.spec.js:146:3 › Home (logged in) › offers exactly one primary action (2.1s)
+  ✘  25 tests/e2e/home.spec.js:153:3 › Home (logged in) › reading stays available while cards are due, with a clear knowledge denominator (7.1s)
+(node:569) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  26 tests/e2e/home.spec.js:163:3 › Home (logged in) › shows weekly activity and honestly scoped vocabulary progress (2.3s)
+  ✓  27 tests/e2e/home.spec.js:172:3 › Home (logged in) › uses the approved three-tab primary navigation (2.3s)
+  ✓  28 tests/e2e/home.spec.js:181:3 › Home (logged in) › the header profile button opens Profile (2.2s)
+  ✓  29 tests/e2e/home.spec.js:186:3 › Home (logged in) › does not show a streak badge, XP, or a fluency score (2.0s)
+  ✓  30 tests/e2e/home.spec.js:193:3 › Home (logged in) › a placeholder holds the hand-off row while the story is found (5.3s)
+  ✓  31 tests/e2e/home.spec.js:207:3 › Home (logged in) › the hero opens Study while cards are due (2.6s)
+  ✓  32 tests/e2e/home.spec.js:213:3 › Home (logged in) › fits a small phone without horizontal overflow (3.3s)
+  ✓  33 tests/e2e/home.spec.js:227:3 › Home (logged in) › keeps retired Cards and More deep links compatible (7.5s)
+  ✓  34 tests/e2e/home.spec.js:242:3 › Home (logged in) › returns from a completed Study session with fresh Home availability (11.4s)
+  ✓  35 tests/e2e/reading-recovery.spec.js:3:1 › opening a story never resurfaces an interactive shelf (3.9s)
+  ✓  36 tests/e2e/reading-recovery.spec.js:26:1 › chapter origin survives reload and browser Back/Forward (6.7s)
+  ✓  37 tests/e2e/reading-recovery.spec.js:44:1 › an unavailable story has a safe exit without exposing the shelf (3.3s)
+  ✓  38 tests/e2e/reading-recovery.spec.js:52:1 › mobile scroll-reader preferences remain open while choosing pinyin (3.7s)
+  ✓  39 tests/e2e/reading-recovery.spec.js:65:1 › speaking retry replaces a prompt score and stale recognition cannot score the next prompt (3.8s)
+  ✓  40 tests/e2e/review-journal.spec.js:5:1 › review transactions commit, reject concurrent words, and preserve Undo CAS (2.0s)
+  ✓  41 tests/e2e/review-journal.spec.js:27:1 › retirement and compaction recheck row versions within the transaction (1.9s)
+  ✓  42 tests/e2e/review-journal.spec.js:48:1 › deleting one account preserves another account’s pending reviews and outbox (2.3s)
+  ✓  43 tests/e2e/review-journal.spec.js:65:1 › an offline tab cannot accept a stale absent or replaced card once a newer receipt is known (2.1s)
+  ✘  44 tests/e2e/review-journal.spec.js:82:1 › known conflicts prevent offline acceptance until authoritative refresh (2.3s)
+
+
+  1) tests/e2e/home.spec.js:153:3 › Home (logged in) › reading stays available while cards are due, with a clear knowledge denominator
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: /Back to (library|story)/ })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByRole('button', { name: /Back to (library|story)/ })
+
+
+      158 |     await home.storyHandoff.click();
+      159 |     await expect(page).toHaveURL(/\/stories\//);
+    > 160 |     await expect(page.getByRole('button', { name: /Back to (library|story)/ })).toBeVisible();
+          |                                                                                 ^
+      161 |   });
+      162 |
+      163 |   test('shows weekly activity and honestly scoped vocabulary progress', async () => {
+        at /workspace/scratch/bb2a1954cdbf/hanzi-dojo-recovery/tests/e2e/home.spec.js:160:81
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../../../tmp/hanzi-recovery-browser-results/home-Home-logged-in-readin-10b5c-clear-knowledge-denominator/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../../../tmp/hanzi-recovery-browser-results/home-Home-logged-in-readin-10b5c-clear-knowledge-denominator/error-context.md
+
+  2) tests/e2e/review-journal.spec.js:82:1 › known conflicts prevent offline acceptance until authoritative refresh
+
+    Error: expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 2
+    + Received  + 2
+
+      Object {
+        "blocked": false,
+    -   "fresh": true,
+    -   "repaired": 3,
+    +   "fresh": false,
+    +   "repaired": 2,
+        "stillStale": false,
+      }
+
+       99 |     return { blocked: blocked.ok, repaired: repaired[0].revision, stillStale: stillStale.ok, fresh: fresh.ok }
+      100 |   })
+    > 101 |   expect(result).toEqual({ blocked: false, repaired: 3, stillStale: false, fresh: true })
+          |                  ^
+      102 | })
+      103 |
+        at /workspace/scratch/bb2a1954cdbf/hanzi-dojo-recovery/tests/e2e/review-journal.spec.js:101:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    ../../../../tmp/hanzi-recovery-browser-results/review-journal-known-confl-fbf1f-until-authoritative-refresh/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: ../../../../tmp/hanzi-recovery-browser-results/review-journal-known-confl-fbf1f-until-authoritative-refresh/error-context.md
+
+  2 failed
+    tests/e2e/home.spec.js:153:3 › Home (logged in) › reading stays available while cards are due, with a clear knowledge denominator
+    tests/e2e/review-journal.spec.js:82:1 › known conflicts prevent offline acceptance until authoritative refresh
+  42 passed (3.1m)

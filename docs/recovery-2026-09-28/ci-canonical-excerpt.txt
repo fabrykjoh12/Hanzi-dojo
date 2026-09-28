@@ -1,0 +1,12 @@
+Source: https://github.com/fabrykjoh12/Hanzi-dojo/actions/runs/36417802955/job/108913016161
+Code head: 5e8832c6e8e7ae6a55958057c599502a1eb92b00
+Fetched from the completed GitHub Actions job; ANSI styling and timestamps omitted below.
+
+6 problems (0 errors, 6 warnings)
+Test Files  211 passed (211)
+Tests       5039 passed (5039)
+Built in 2.04s
+Built in 1.90s
+ALL CHECKS PASSED
+
+This is the canonical job, not the full release verdict. See ci-summary.json for separate checks, including the failed Playwright screenshot comparisons and legacy Cloudflare integration.

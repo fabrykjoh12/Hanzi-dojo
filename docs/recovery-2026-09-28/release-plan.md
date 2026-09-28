@@ -30,6 +30,14 @@ score and screenshots are historical evidence only. See [RECOVERY.md](RECOVERY.m
   redundant approval step merely because preparation and upload are separate
   states; do not treat checkpoint permission as satisfying those conditions.
 
+## Reconstructed candidate evidence
+
+Code checkpoint `5e8832c6e8e7ae6a55958057c599502a1eb92b00` passed GitHub canonical verification (5,039 unit tests plus builds/bundle/icons) and native verification. Local behavioral browser checks passed 181/181 with no retries; the final Auth-only style correction has a separate 12/12 pass. The exact-source rendered review covers 32 states, with no horizontal overflow or page exceptions. Actual disposable PostgreSQL checks pass 24/24. See [independent review](INDEPENDENT-REVIEW.md) for the provisional 8.21/10 result, scope and all seven dimensions (each at least 8).
+
+GitHub Playwright remains red: 183 passed, three reviewed visual comparisons failed and six skipped. The three differences are the intended Landing mobile and Stories desktop/mobile redesigns. Baselines must be produced by the existing `visual-baseline.yml` workflow on the recovery branch, inspected, and followed by fresh comparison CI. Current connector tools can read/rerun workflows but cannot dispatch a new one; no dispatch has been performed. The legacy Cloudflare Workers integration also fails separately.
+
+These results close local reconstruction checks within their stated scope. They do not apply the migration, prove live concurrency or create an installed native release. The verdict remains HOLD for the gates below.
+
 ## Milestone 1 — next redesigned TestFlight build
 
 ### Product and independent acceptance
@@ -73,7 +81,7 @@ Required local SQL checks execute the actual migration and app-produced intent:
    retain receipts. Test both serial orders, unsent first-card work across reset,
    and repeated replacement identities.
 6. Apply twice; test exact RPC argument/result shapes with `schedule()` and
-   `createStudyGradeIntent()` output. Keep the unchanged structural grant gate.
+   `createStudyGradeIntent()` output. Preserve structural grant coverage: the historical inventory is bounded to its migration date, with ordered forward checks for later private function grants.
 
 Required client checks use real IndexedDB transactions: no network send before
 commit; storage failure never claims success; lost grade/Undo acknowledgement

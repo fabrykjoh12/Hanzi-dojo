@@ -1,0 +1,7 @@
+{
+  "files": 614,
+  "sourceWithOnlyTwoAuthFixesReversed": "783c4a27f956b5416bbc19b4916d8ef486e52d4be6ed587d802330abcc9ae294",
+  "expectedInitialCapture": "783c4a27f956b5416bbc19b4916d8ef486e52d4be6ed587d802330abcc9ae294",
+  "originalAuthSha256": "ee1270418978ad898530bcfb14ca3f75067274141d613b52b1efc798c1677bda",
+  "matchesOriginal": true
+}

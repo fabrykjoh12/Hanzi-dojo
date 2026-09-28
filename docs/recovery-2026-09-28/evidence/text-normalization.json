@@ -1,0 +1,20 @@
+[
+  {
+    "file": "evidence/interim-e2e/run.txt",
+    "originalSha256": "a1263371f9fc8d7c7e16ef11c559ece1a3f4e03f832ec43ecc0bb7a24368a282",
+    "savedSha256": "7249eee7d4f69246c93b87740de7521553c481d3ce56bec0757bc156320d29bb",
+    "normalization": "Removed trailing horizontal whitespace only; content and line breaks preserved."
+  },
+  {
+    "file": "evidence/interim-e2e/review-journal-known-confl-fbf1f-until-authoritative-refresh/error-context.md",
+    "originalSha256": "b3ced2af1e5758ecd2de86c7b424b64c7b0b91e0201e44d5b107cf3103cdcec3",
+    "savedSha256": "b183c7e0d233d139c5b487e35b1d23a37c077eee563763b8ad10e70015fb5eb3",
+    "normalization": "Removed trailing horizontal whitespace only; content and line breaks preserved."
+  },
+  {
+    "file": "evidence/interim-e2e/home-Home-logged-in-readin-10b5c-clear-knowledge-denominator/error-context.md",
+    "originalSha256": "18d194bc249e84db7b71e04d8377810c707ba9dd93d807f9cc6e9592c9eef3fa",
+    "savedSha256": "a6deee15314c9dacf227b1dc310d108c21c3fe528a3a7d1764c75cee1bdf0891",
+    "normalization": "Removed trailing horizontal whitespace only; content and line breaks preserved."
+  }
+]
