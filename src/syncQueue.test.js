@@ -188,141 +188,66 @@ describe('gradeCardWrite — RPC path', () => {
   })
 })
 
-describe('gradeCardWrite — migration not applied yet', () => {
-  it('falls back to the previous separate writes', async () => {
-    const sb = fakeSupabase() // rpc missing by default
-    const res = await gradeCardWrite(sb, {
-      userId: 'u1', cardId: 'card-1', vocabId: 'v1', updates: UPDATES, log: LOG,
-      activity: { mode: 'set', date: '2026-07-22', studied: 2, new: 1, learning: 0, review: 1 },
-      opId: 'op-1',
-    })
-    expect(res.ok).toBe(true)
-    expect(res.viaRpc).toBe(false)
-    expect(res.cardId).toBe('card-1')
-    expect(sb.calls.update).toEqual([{ table: 'cards', vals: UPDATES, filters: { id: 'card-1' } }])
-    expect(sb.calls.insert.map(c => c.table)).toEqual(['review_logs'])
-    expect(sb.calls.upsert[0]).toMatchObject({
-      table: 'daily_activity',
-      vals: { activity_date: '2026-07-22', studied_cards: 2, new_cards: 1, learning_cards: 0, review_cards: 1 },
-    })
-    await expect(res.pendingLogId).resolves.toBe('log-legacy')
-  })
-
-  it('treats a backend that answers the call but does nothing as absent', async () => {
-    const sb = fakeSupabase({ rpc: () => ({ data: null, error: null }) })
-    const res = await gradeCardWrite(sb, { userId: 'u1', cardId: 'c1', vocabId: 'v1', updates: UPDATES })
-    expect(res.ok).toBe(true)
-    expect(res.viaRpc).toBe(false)
-    expect(sb.calls.update).toHaveLength(1)
-  })
-
-  it('inserts a first-seen card, de-duped on (user_id, vocab_id)', async () => {
-    const sb = fakeSupabase({ newCardId: 'card-fresh' })
-    const res = await gradeCardWrite(sb, { userId: 'u1', cardId: null, vocabId: 'v9', updates: UPDATES })
-    expect(res.cardId).toBe('card-fresh')
-    expect(sb.calls.insert[0]).toMatchObject({ table: 'cards', vals: { user_id: 'u1', vocab_id: 'v9' } })
-  })
-
-  it('updates instead of duplicating when the card already exists', async () => {
-    const sb = fakeSupabase({ existingCard: { id: 'card-existing' } })
-    const res = await gradeCardWrite(sb, { userId: 'u1', cardId: null, vocabId: 'v9', updates: UPDATES })
-    expect(res.cardId).toBe('card-existing')
-    expect(sb.calls.insert.filter(c => c.table === 'cards')).toHaveLength(0)
-    expect(sb.calls.update).toEqual([{ table: 'cards', vals: UPDATES, filters: { id: 'card-existing' } }])
-  })
-
-  it('fails the grade when the card write fails', async () => {
-    const err = { message: 'network' }
-    const sb = fakeSupabase({ updateError: err })
-    const res = await gradeCardWrite(sb, { userId: 'u1', cardId: 'c1', vocabId: 'v1', updates: UPDATES })
-    expect(res.ok).toBe(false)
-    expect(res.error).toBe(err)
-  })
-
-  it('stops re-probing the missing RPC on every grade', async () => {
+describe('gradeCardWrite — missing service fails closed', () => {
+  it('does not split scheduling, logs and activity into separate writes', async () => {
     const sb = fakeSupabase()
-    await gradeCardWrite(sb, { userId: 'u1', cardId: 'c1', vocabId: 'v1', updates: UPDATES })
-    await gradeCardWrite(sb, { userId: 'u1', cardId: 'c2', vocabId: 'v2', updates: UPDATES })
-    expect(sb.calls.rpc).toHaveLength(1)
-    expect(sb.calls.update).toHaveLength(2)
+    expect((await gradeCardWrite(sb, { userId: 'u1', cardId: 'c1', vocabId: 'v1', updates: UPDATES, log: LOG })).ok).toBe(false)
+    expect(sb.calls.update).toHaveLength(0)
+    expect(sb.calls.insert).toHaveLength(0)
+    expect(sb.calls.upsert).toHaveLength(0)
+  })
+  it('rejects a response without a confirmed card', async () => {
+    const sb = fakeSupabase({ rpc: () => ({ data: null, error: null }) })
+    expect((await gradeCardWrite(sb, { cardId: 'c1', updates: UPDATES })).ok).toBe(false)
+    expect(sb.calls.update).toHaveLength(0)
   })
 })
 
-describe('offline replay', () => {
-  const queued = () => enqueueGrade({
-    userId: 'u1', vocabId: 'v1', cardId: 'card-1', updates: UPDATES, log: LOG,
-    day: '2026-07-22', state: 'review',
-  })
-
-  it('stamps every queued grade with a stable op id', async () => {
-    await queued()
-    expect(store.rows[0].op.opId).toBeTruthy()
-    expect(store.rows[0].op.opId).not.toBe(store.rows[0].op.userId)
-  })
-
-  it('replays through the same RPC, carrying the op id and a +1 increment', async () => {
-    await queued()
-    const opId = store.rows[0].op.opId
-    const sb = fakeSupabase({ rpc: () => ({ data: { card_id: 'card-1', log_id: 'log-1', already_applied: false }, error: null }) })
-
-    const out = await flushOutbox(sb)
-    expect(out.flushed).toBe(1)
-    expect(store.rows).toHaveLength(0)
-    expect(sb.calls.rpc[0].fn).toBe('grade_card')
-    expect(sb.calls.rpc[0].args.p_op_id).toBe(opId)
-    expect(sb.calls.rpc[0].args.p_activity).toEqual({
-      mode: 'increment', date: '2026-07-22', studied: 1, new: 0, learning: 0, review: 1,
-    })
-    // The RPC wrote the day counts, so no second reconcile pass.
-    expect(sb.calls.upsert.filter(c => c.table === 'daily_activity')).toHaveLength(0)
-  })
-
-  it('is idempotent — a re-queued grade with the same op id writes once', async () => {
-    await queued()
-    const op = store.rows[0].op
-
-    let applied = 0
-    const rpc = (args) => {
-      // Mirrors the RPC: the dedupe key short-circuits a repeat.
-      if (args.p_op_id === op.opId && applied > 0) {
-        return { data: { card_id: 'card-1', log_id: 'log-1', already_applied: true }, error: null }
-      }
-      applied += 1
-      return { data: { card_id: 'card-1', log_id: 'log-1', already_applied: false }, error: null }
-    }
-
-    const sb = fakeSupabase({ rpc })
-    await flushOutbox(sb)
-    // The op survived the flush (an outbox delete that never landed) and is
-    // replayed on the next reconnect.
-    store.rows.push({ id: 99, op })
-    await flushOutbox(sb)
-
-    expect(sb.calls.rpc).toHaveLength(2)
-    expect(applied).toBe(1)                  // written exactly once
-    expect(sb.calls.insert).toHaveLength(0)  // never a duplicate review log
-    expect(sb.calls.upsert).toHaveLength(0)  // never a double-counted day
-  })
-
-  it('keeps the old bulk reconcile when the RPC is absent', async () => {
-    await queued()
-    const sb = fakeSupabase() // no grade_card
-
-    const out = await flushOutbox(sb)
-    expect(out.flushed).toBe(1)
-    expect(sb.calls.update[0]).toMatchObject({ table: 'cards' })
-    const activity = sb.calls.upsert.filter(c => c.table === 'daily_activity')
-    expect(activity).toHaveLength(1)
-    expect(activity[0].vals).toMatchObject({ activity_date: '2026-07-22', studied_cards: 1, review_cards: 1 })
-  })
-
-  it('leaves a failed op in the outbox and does not count its day', async () => {
-    await queued()
-    const sb = fakeSupabase({ rpc: () => ({ data: null, error: { code: '42501', message: 'rls' } }) })
-
-    const out = await flushOutbox(sb)
-    expect(out.flushed).toBe(0)
+describe('owner-scoped offline replay', () => {
+  it('retains legacy grades because they have no expected revision or reset generation', async () => {
+    await enqueueGrade({ userId: 'u1', vocabId: 'v1', updates: UPDATES })
+    const sb = fakeSupabase()
+    expect((await flushOutbox(sb, 'u1')).flushed).toBe(0)
     expect(store.rows).toHaveLength(1)
+    expect(sb.calls.rpc).toHaveLength(0)
+    expect(sb.calls.update).toHaveLength(0)
+  })
+  it('requires an explicitly signed-in owner', async () => {
+    store.rows.push({ id: 1, op: { kind: 'storyRead', userId: 'u1', storyId: 's1' } })
+    const sb = fakeSupabase()
+    expect((await flushOutbox(sb)).flushed).toBe(0)
     expect(sb.calls.upsert).toHaveLength(0)
   })
+  it('leaves other-account and ownerless operations intact', async () => {
+    store.rows.push(
+      { id: 1, op: { kind: 'storyRead', userId: 'u2', storyId: 's1' } },
+      { id: 2, op: { kind: 'analytics', event: { user_id: null } } },
+      { id: 3, op: { kind: 'storyRead', userId: 'u1', storyId: 's2' } },
+    )
+    const sb = fakeSupabase()
+    expect((await flushOutbox(sb, 'u1')).flushed).toBe(1)
+    expect(store.rows.map(row => row.id)).toEqual([1, 2])
+    expect(sb.calls.upsert[0].vals.user_id).toBe('u1')
+  })
+  it('rejects conflicting ownership fields even when one matches', async () => {
+    store.rows.push({ id: 1, op: { kind: 'analytics', userId: 'u1', event: { user_id: 'u2' } } })
+    const sb = fakeSupabase()
+    expect((await flushOutbox(sb, 'u1')).flushed).toBe(0)
+    expect(sb.calls.insert).toHaveLength(0)
+  })
+  it('replays only owned analytics, dropping a failed analytics write', async () => {
+    store.rows.push({ id: 1, op: { kind: 'analytics', event: { user_id: 'u1' } } })
+    const sb = fakeSupabase({ insertError: { message: 'offline' } })
+    expect((await flushOutbox(sb, 'u1')).flushed).toBe(1)
+    expect(store.rows).toHaveLength(0)
+  })
+})
+
+
+it('queued story claims carry the original owner and survive an unavailable owner-safe RPC', async () => {
+  store.rows.push({ id: 1, op: { kind: 'storyClaim', userId: 'u1', language: 'chinese', system: 'hsk_3', claimDate: '2026-09-28', storyId: 's1' } })
+  const sb = fakeSupabase()
+  expect((await flushOutbox(sb, 'u1')).flushed).toBe(0)
+  expect(sb.calls.rpc[0]).toMatchObject({ fn: 'claim_story_reward_v2', args: { p_user_id: 'u1', p_claim_date: '2026-09-28' } })
+  expect(store.rows).toHaveLength(1)
 })

@@ -106,3 +106,36 @@ test.describe('Pre-login onboarding wizard', () => {
     await expect(page.getByRole('heading', { name: /Which language are you learning/i })).toHaveCount(0);
   });
 });
+
+test.describe('Pre-login recovery', () => {
+  test('retains answers immediately across reloads, before the path is submitted', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.setItem('prelogin:prefs', JSON.stringify({ language: 'chinese', wizardStep: 'experience', tastedWords: ['你好'] })));
+    await page.reload();
+    await page.getByRole('button', { name: 'Around HSK 2', exact: true }).click();
+    await page.getByRole('button', { name: /Travel/ }).click();
+    await page.getByRole('button', { name: /Work/, exact: false }).click();
+    await page.reload();
+    await expect(page.getByRole('button', { name: /Travel/ })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.getByRole('button', { name: /Work/ })).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Continue', exact: true }).click();
+    await page.getByRole('button', { name: /15 minutes/ }).click();
+    await page.reload();
+    await expect(page.getByRole('button', { name: /15 minutes/ })).toHaveAttribute('aria-pressed', 'true');
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Around HSK 2', exact: true })).toHaveAttribute('aria-pressed', 'true');
+    expect(await page.evaluate(() => JSON.parse(localStorage.getItem('prelogin:prefs')))).toMatchObject({ language: 'chinese', experience: 'hsk2', purposes: ['travel', 'work'], minutesPerDay: 15, tastedWords: ['你好'] });
+  });
+
+  test('an explicit Log in still opens login after earlier onboarding choices', async ({ page }) => {
+    await page.goto('/');
+    await page.evaluate(() => localStorage.setItem('prelogin:prefs', JSON.stringify({ language: 'chinese', experience: 'few', wizardStep: null })));
+    await page.reload();
+    await page.getByRole('button', { name: 'Log in', exact: true }).click();
+    await expect(page.locator('button[aria-pressed="true"]')).toHaveText('Log in');
+    await expect(page.getByRole('button', { name: 'Create account', exact: true })).toHaveCount(0);
+    await page.getByRole('button', { name: 'Back', exact: true }).click();
+    await expect(page.getByRole('button', { name: 'Start your first story', exact: true })).toBeVisible();
+  });
+});

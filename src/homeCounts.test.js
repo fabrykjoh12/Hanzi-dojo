@@ -3,7 +3,8 @@ import { fakeSupabase, hskVocabRows } from './fakePostgrest'
 
 // Mutable test state the mocks read from.
 const state = {
-  cards: [],
+  cards: [], cardsError: false,
+  pendingIds: new Set(), pendingNew: 0,
   vocab: [], vocabError: null,
   acts: [], actsError: null,
   // When set, vocabulary queries run against this capped-PostgREST fake
@@ -33,7 +34,8 @@ const from = vi.fn((table) => {
 // Reference `from` lazily inside a wrapper — vi.mock is hoisted above the const
 // declarations, so a direct `{ from }` would read it before initialization.
 vi.mock('./supabase', () => ({ supabase: { from: (...a) => from(...a) } }))
-vi.mock('./data', () => ({ getTrackCards: vi.fn(async () => state.cards) }))
+vi.mock('./data', () => ({ getTrackCards: vi.fn(async () => { if (state.cardsError) throw new Error('unavailable'); return state.cards }) }))
+vi.mock('./reviewJournal', () => ({ pendingReviewVocabIds: vi.fn(async () => state.pendingIds), pendingIntroductionCount: vi.fn(async () => state.pendingNew) }))
 vi.mock('./grammarReview', () => ({ countDueGrammar: vi.fn(async () => 0) }))
 
 import { getHomeCounts } from './homeCounts'
@@ -50,7 +52,7 @@ const SHAPE = [
 ]
 
 beforeEach(() => {
-  state.cards = []
+  state.cards = []; state.cardsError = false; state.pendingIds = new Set(); state.pendingNew = 0
   state.vocab = []; state.vocabError = null
   state.acts = []; state.actsError = null
   state.vocabDb = null
@@ -159,5 +161,54 @@ describe('getHomeCounts — complete vocabulary past the 1000-row cap', () => {
     expect(counts.totalWords).toBe(1879)
     // 1,878 unstarted words exist; the daily allotment caps what Home offers.
     expect(counts.newCount).toBe(5)
+  })
+})
+
+
+describe('Home and Study share new-card and pending-write semantics', () => {
+  const today = new Date().toISOString()
+  const earlier = new Date(Date.now() - 3 * 86400000).toISOString()
+  it('offers explicitly saved ungraded cards from outside the window without spending today’s allowance', async () => {
+    state.vocab = [{ id: 'window' }]
+    state.cards = [{ vocab_id: 'saved', state: 'new', reps: 0, created_at: today }]
+    const counts = await getHomeCounts('u1', TRACK, 5)
+    expect(counts.newDoneToday).toBe(0)
+    expect(counts.newCount).toBe(2)
+  })
+  it('reserves the allowance only for genuine introductions, including off-level words', async () => {
+    state.vocab = [{ id: 'v1' }, { id: 'v2' }, { id: 'v3' }]
+    state.cards = [{ vocab_id: 'outside', state: 'learning', reps: 1, created_at: earlier, first_reviewed_at: today }]
+    const counts = await getHomeCounts('u1', TRACK, 2)
+    expect(counts.newDoneToday).toBe(1)
+    expect(counts.newCount).toBe(1)
+  })
+  it('does not spend new-word allowance on an observed prior-knowledge claim', async () => {
+    state.vocab = [{ id: 'v1' }]
+    state.cards = [{ vocab_id: 'claimed', state: 'review', reps: 1, created_at: today, first_reviewed_at: today, prior_known_at: earlier }]
+    const counts = await getHomeCounts('u1', TRACK, 1)
+    expect(counts.newDoneToday).toBe(0)
+    expect(counts.newCount).toBe(1)
+  })
+  it('excludes pending words from every review pool and reserves pending introductions', async () => {
+    state.vocab = [{ id: 'new-pending' }, { id: 'other' }]
+    state.pendingIds = new Set(['new-pending', 'review-pending'])
+    state.pendingNew = 1
+    state.cards = [{ vocab_id: 'review-pending', state: 'review', reps: 5, stability: 2, lapses: 3, due_at: earlier, created_at: earlier }]
+    const counts = await getHomeCounts('u1', TRACK, 2)
+    expect(counts.newDoneToday).toBe(1)
+    expect(counts.newCount).toBe(1)
+    expect(counts.dueCount).toBe(0)
+    expect(counts.weakCount).toBe(0)
+  })
+  it('reports a missing card load as a failure rather than an empty deck', async () => {
+    state.cardsError = true
+    state.vocab = [{ id: 'v1' }]
+    expect((await getHomeCounts('u1', TRACK, 5)).failed).toBe(true)
+  })
+  it('marks unavailable activity separately from a week with no sessions', async () => {
+    state.actsError = { message: 'offline' }
+    const counts = await getHomeCounts('u1', TRACK, 5)
+    expect(counts.rhythmFailed).toBe(true)
+    expect(counts.failed).toBe(false)
   })
 })

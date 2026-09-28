@@ -161,3 +161,20 @@ describe('speech availability', () => {
     expect(without).toEqual(withSpeech.filter(k => k !== 'speak'))
   })
 })
+
+describe('the recommendation reflects available learning context', () => {
+  it('offers a real first step when no words have been learned yet', () => {
+    const plan = buildPracticePlan({ ...CHINESE, learnedCount: 0 })
+    expect(plan.primary.key).toBe('study')
+    expect(plan.primary.cta).toBe('Start flashcards')
+    expect(keys(plan.drills)).toContain('listen')
+  })
+  it('does not claim that reviews are clear when only drill counts are available', () => {
+    const plan = buildPracticePlan({ ...CHINESE, learnedCount: null })
+    expect(plan.primary.key).toBe('listen')
+    expect(plan.primary.reason).not.toMatch(/nothing.*due|overdue|fastest/i)
+  })
+  it('prioritizes actual weak words over a zero learned count', () => {
+    expect(buildPracticePlan({ ...CHINESE, learnedCount: 0, weakCount: 2 }).primary.key).toBe('weak')
+  })
+})

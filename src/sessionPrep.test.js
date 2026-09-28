@@ -7,7 +7,7 @@ import { todayStr } from './streak'
 // counts and the Study queue are proven to read the same complete dataset.
 const db = vi.hoisted(() => ({ current: null }))
 vi.mock('./supabase', () => ({ supabase: { from: (...a) => db.current.from(...a) } }))
-vi.mock('./offline', () => ({ cacheGet: vi.fn(async () => null), cacheSet: vi.fn() }))
+vi.mock('./offline', async importOriginal => ({ ...await importOriginal(), cacheGet: vi.fn(async () => null), cacheSet: vi.fn() }))
 vi.mock('./ttsAudio', () => ({ loadTtsAudio: vi.fn(async () => {}) }))
 
 import {

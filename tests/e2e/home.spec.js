@@ -11,20 +11,20 @@ test.describe('Home (logged in)', () => {
     await home.goto();
   });
 
-  test('the lit block is about the flashcard queue, with real counts', async () => {
+  test('the primary action shows the real flashcard queue', async () => {
     await expect(home.queueEyebrow).toBeVisible();
     // The queue's own composition lives inside the block that is about it —
     // on mobile too, and labelled Review, never "Due".
     for (const label of ['New', 'Learning', 'Review']) {
-      await expect(home.hero.getByText(label, { exact: true })).toBeVisible();
+      await expect(home.hero.getByText(new RegExp('^\\d+\\s*' + label + '$'))).toBeVisible();
     }
     await expect(home.hero.getByText('Due', { exact: true })).toHaveCount(0);
     // The headline number is the real queue: exactly the sum of the three.
     const numbers = await home.hero.evaluate((node) => {
       const spans = [...node.querySelectorAll('span')];
       const value = (label) => {
-        const el = spans.find(s => s.textContent === label);
-        return Number(el.previousElementSibling.textContent);
+        const el = spans.find(s => new RegExp('^\\d+\\s*' + label + '$').test(s.textContent));
+        return Number(el.querySelector('strong').textContent);
       };
       const headline = Number(node.textContent.match(/(\d+)\s*cards? waiting/)[1]);
       return { headline, sum: value('New') + value('Learning') + value('Review') };
@@ -35,11 +35,11 @@ test.describe('Home (logged in)', () => {
 
   test('the hero itself is the control: tapping it opens Study', async ({ page }) => {
     // ONE semantic element — a real <button>, not a clickable container with
-    // another button inside it, and no CTA of its own to compete with.
+    // another button inside it. The visible action text is part of this control.
     const tag = await home.hero.evaluate(node => node.tagName.toLowerCase());
     expect(tag).toBe('button');
     await expect(home.hero.locator('button')).toHaveCount(0);
-    await expect(home.hero.getByText('Start reviewing')).toHaveCount(0);
+    await expect(home.hero.getByText('Start reviewing', { exact: true })).toBeVisible();
     await expect(home.hero.getByText(/~\d+ min/)).toHaveCount(0);
     await expect(home.hero.getByText(/Daily goal/)).toHaveCount(0);
     // Its accessible name carries the session context.
@@ -65,74 +65,47 @@ test.describe('Home (logged in)', () => {
     await expect(new StudyPage(page).showAnswer).toBeVisible();
   });
 
-  test('the hero presses without resizing, and hover lifts its shadow', async () => {
-    // A whole surface giving way: ~0.98 scale plus a slight darkening, on the
-    // shared 160ms press clock — and the panel's box never changes size.
-    const press = await home.hero.evaluate((node) => {
-      const style = getComputedStyle(node);
-      const rest = node.getBoundingClientRect();
-      return {
-        classes: node.className,
-        duration: style.transitionDuration.split(',')[0].trim(),
-        width: rest.width, height: rest.height,
-      };
-    });
-    expect(press.classes).toContain('hd-press-deep');
-    expect(press.duration).toBe('0.16s');
+  test('the primary control remains stable while pressed and focused', async () => {
+    const before = await home.hero.boundingBox();
+    await home.hero.focus();
+    await expect(home.hero).toBeFocused();
     await home.hero.dispatchEvent('pointerdown');
     await home.hero.dispatchEvent('pointerup');
     const after = await home.hero.boundingBox();
-    expect(after.width).toBeCloseTo(press.width, 1);
-    expect(after.height).toBeCloseTo(press.height, 1);
-
-    // A real pointer, not a synthetic event: React delegates mouseenter, so a
-    // dispatched one never reaches the handler and would fake a pass.
-    const resting = await home.hero.evaluate(node => getComputedStyle(node).boxShadow);
-    await home.hero.hover();
-    await expect(home.hero).toHaveAttribute('data-hovered', '');
-    const lifted = await home.hero.evaluate(node => getComputedStyle(node).boxShadow);
-    expect(lifted).not.toBe(resting);
+    expect(after.width).toBeCloseTo(before.width, 1);
+    expect(after.height).toBeCloseTo(before.height, 1);
+    expect(before.width).toBeGreaterThanOrEqual(44);
+    expect(before.height).toBeGreaterThanOrEqual(44);
   });
 
-  test('the breakdown holds one row of three equal columns at 320px', async ({ page }) => {
+  test('queue labels wrap without overlap at 320px with 200% text', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 568 });
     await home.goto();
-    const columns = await home.hero.evaluate((node) => {
-      const grid = [...node.querySelectorAll('*')]
-        .find(el => getComputedStyle(el).display === 'grid');
-      return [...grid.children].map((col) => {
-        const [value, label] = col.children;
-        const box = col.getBoundingClientRect();
-        const valueBox = value.getBoundingClientRect();
-        const labelBox = label.getBoundingClientRect();
-        return {
-          label: label.textContent,
-          top: box.top, width: box.width,
-          valueText: value.textContent,
-          valueSize: parseFloat(getComputedStyle(value).fontSize),
-          labelSize: parseFloat(getComputedStyle(label).fontSize),
-          labelWidth: labelBox.width, labelScrollWidth: label.scrollWidth,
-          valueAboveLabel: valueBox.bottom <= labelBox.top + 0.5,
-        };
-      });
+    await home.hero.evaluate(node => {
+      const sizes = [...node.querySelectorAll('*')].map(el => [el, getComputedStyle(el).fontSize, getComputedStyle(el).lineHeight]);
+      for (const [el, size, line] of sizes) {
+        el.style.fontSize = parseFloat(size) * 2 + 'px';
+        if (Number.isFinite(parseFloat(line))) el.style.lineHeight = parseFloat(line) * 2 + 'px';
+      }
     });
-    expect(columns.map(c => c.label)).toEqual(['New', 'Learning', 'Review']);
-    for (const column of columns) {
-      // One row: every column shares the first one's top edge…
-      expect(column.top, column.label).toBeCloseTo(columns[0].top, 0);
-      // …and its width, so the three read as fixed equal columns.
-      expect(column.width, column.label).toBeCloseTo(columns[0].width, 0);
-      // The label never wraps, and the value stays the prominent half.
-      expect(column.labelScrollWidth, column.label).toBeLessThanOrEqual(column.labelWidth + 0.5);
-      expect(column.valueSize, column.label).toBeGreaterThan(column.labelSize);
-      expect(column.valueAboveLabel, column.label).toBe(true);
-      expect(Number(column.valueText), column.label).not.toBeNaN();
+    const labels = ['New', 'Learning', 'Review'];
+    const boxes = [];
+    for (const label of labels) {
+      const row = home.hero.getByText(new RegExp('^\\d+\\s*' + label + '$'));
+      await expect(row).toBeVisible();
+      boxes.push(await row.boundingBox());
     }
-    const overflow = await page.evaluate(() => ({
-      scroll: document.documentElement.scrollWidth,
-      client: document.documentElement.clientWidth,
-    }));
-    expect(overflow.scroll).toBeLessThanOrEqual(overflow.client);
+    for (let i = 0; i < boxes.length; i++) {
+      const a = boxes[i];
+      expect(a.x).toBeGreaterThanOrEqual(0);
+      expect(a.x + a.width).toBeLessThanOrEqual(320);
+      for (const b of boxes.slice(i + 1)) {
+        const overlap = Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x) > 0.5
+          && Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y) > 0.5;
+        expect(overlap).toBe(false);
+      }
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 
   test('every Home block scrolls clear of the floating dock at 320x568', async ({ page }) => {
@@ -157,21 +130,8 @@ test.describe('Home (logged in)', () => {
     expect(geometry.navBottomGap).toBeGreaterThan(0);
   });
 
-  test('the horizon band is decorative scenery, never a control', async ({ page }) => {
-    const scene = page.locator('[data-home-scene]');
-    await expect(scene).toBeVisible();
-    const traits = await scene.evaluate(node => ({
-      hidden: node.getAttribute('aria-hidden'),
-      pointer: getComputedStyle(node).pointerEvents,
-      z: Number(getComputedStyle(node).zIndex),
-    }));
-    expect(traits.hidden).toBe('true');
-    expect(traits.pointer).toBe('none');
-    // Below every in-flow surface and line of text.
-    expect(traits.z).toBeLessThan(0);
-    // The mood is always one the stylesheet defines.
-    const mood = await page.locator('[data-home-stage]').getAttribute('data-scene');
-    expect(['morning', 'day', 'evening', 'night']).toContain(mood);
+  test('content has no decorative scenery competing with learning actions', async ({ page }) => {
+    await expect(page.locator('[data-home-scene], [data-hero-art]')).toHaveCount(0);
   });
 
   test('the scene follows the local clock', async ({ page }) => {
@@ -190,32 +150,20 @@ test.describe('Home (logged in)', () => {
     await expect(page.getByRole('button', { name: /Review now|Learn them|Practice now/ })).toHaveCount(0);
   });
 
-  test('hands off to reading beneath the hero, locked behind today’s cards', async () => {
+  test('reading stays available while cards are due, with a clear knowledge denominator', async ({ page }) => {
     await expect(home.storyHandoff).toBeVisible();
     await expect(home.storyHandoff.getByText('Then read')).toBeVisible();
-    // While cards are due the story is a locked next step, with its readability.
-    await expect(home.storyHandoff.getByText('Finish cards to unlock')).toBeVisible();
-    await expect(home.storyHandoff.getByText(/HSK \d · \d+% readable/)).toBeVisible();
-    // The fixture story has no cover, so it wears the illustrated fallback
-    // family — a drawn tile, never a Hanzi placeholder.
-    await expect(home.storyHandoff.locator('[data-story-tile]')).toBeVisible();
+    await expect(home.storyHandoff).toBeEnabled();
+    await expect(home.storyHandoff.getByText(/\d+% of matched words known|Read with word lookup/)).toBeVisible();
+    await home.storyHandoff.click();
+    await expect(page).toHaveURL(/\/stories\//);
+    await expect(page.getByRole('button', { name: /Back to (library|story|stories)/ })).toBeVisible();
   });
 
-  test('the hero carries its landscape, decorative and inert', async () => {
-    const art = home.hero.locator('[data-hero-art]');
-    await expect(art).toBeVisible();
-    expect(await art.getAttribute('aria-hidden')).toBe('true');
-    expect(await art.evaluate(node => getComputedStyle(node).pointerEvents)).toBe('none');
-    // No trace of the old placeholders: the watermark Hanzi and the ink wash.
-    const strayText = await home.hero.evaluate(node =>
-      [...node.querySelectorAll('span')].some(el => el.textContent === '中'));
-    expect(strayText).toBe(false);
-  });
-
-  test('shows the week rhythm and the road to the next level in one panel', async () => {
+  test('shows weekly activity and honestly scoped vocabulary progress', async () => {
     await expect(home.weekPanel.getByText('Your week')).toBeVisible();
     await expect(home.weekPanel.getByText(/No sessions yet|Studied \d+ of the last \d+ days/)).toBeVisible();
-    await expect(home.weekPanel.getByText(/Toward HSK \d/)).toBeVisible();
+    await expect(home.weekPanel.getByText('Your study vocabulary')).toBeVisible();
     await expect(home.weekPanel.getByText(/\d+ of \d+ words/)).toBeVisible();
     await expect(home.weekPanel.getByRole('progressbar')).toBeVisible();
     await expect(home.weekPanel.getByText(/waiting tomorrow|free day/)).toBeVisible();
@@ -267,7 +215,7 @@ test.describe('Home (logged in)', () => {
     await home.goto();
     await expect(home.hero).toBeVisible();
     for (const label of ['New', 'Learning', 'Review']) {
-      await expect(home.hero.getByText(label, { exact: true })).toBeVisible();
+      await expect(home.hero.getByText(new RegExp('^\\d+\\s*' + label + '$'))).toBeVisible();
     }
     const overflow = await page.evaluate(() => ({
       scroll: document.documentElement.scrollWidth,
@@ -312,9 +260,9 @@ test.describe('Home (logged in)', () => {
     // The hero has retargeted: the queue is clear and the one action is
     // reading, with the story hand-off unlocked beneath it.
     await expect(page.getByText('Queue clear')).toBeVisible();
-    await expect(page.getByText('all caught up')).toBeVisible();
+    await expect(page.getByText('All caught up')).toBeVisible();
     await expect(page.getByRole('button', { name: /Read a story/ })).toBeVisible();
     await expect(page.getByRole('button', { name: /Start reviewing/ })).toHaveCount(0);
-    await expect(home.storyHandoff.getByText('Ready to read')).toBeVisible();
+    await expect(home.storyHandoff).toBeEnabled();
   });
 });

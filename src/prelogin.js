@@ -73,3 +73,11 @@ export function readPreloginPrefs() {
 export function clearPreloginPrefs() {
   try { localStorage.removeItem(KEY) } catch { /* ignore */ }
 }
+
+// Save the selected answer before changing steps, so reload resumes the same
+// choices rather than only the last step number. Storage remains optional.
+export function updatePreloginPrefs(patch) {
+  const next = { ...(readPreloginPrefs() || {}), ...patch }
+  savePreloginPrefs(next)
+  return next
+}

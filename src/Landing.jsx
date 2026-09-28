@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import Auth from './Auth'
 import { track, EVENTS } from './analytics'
 import logo from './assets/Hanzi-logo.png'
-import bgLogin from './assets/bg-login.webp'
 import { BRAND_INK, BRAND_NAME, heroWordmarkStyle } from './brand'
 import { availableLanguages, ink, languageTheme } from './languageTheme'
 import PathBuilding from './PathBuilding'
@@ -16,7 +15,7 @@ import {
 } from './onboardingPath'
 import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
-import { encouragementFor, savePreloginPrefs, readPreloginPrefs, initialLandingMode } from './prelogin'
+import { encouragementFor, savePreloginPrefs, readPreloginPrefs, updatePreloginPrefs, initialLandingMode } from './prelogin'
 import { isNativeApp } from './nativeShell'
 import NativeWelcome from './NativeWelcome'
 import {
@@ -26,8 +25,8 @@ import {
 import { DISCORD_INVITE_URL, isDiscordConfigured } from './community'
 import { externalLinkProps } from './externalLink'
 
-const SAGE = '#6E8466'
-const SAGE_DARK = '#5C7155'
+const SAGE = '#4F674A'
+const SAGE_DARK = '#3F553B'
 const SYSTEM_LABELS = { chinese: 'HSK 3.0', japanese: 'JLPT', russian: 'CEFR' }
 
 
@@ -42,13 +41,13 @@ function CtaButton({ children, onClick, big }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '9px',
-        minHeight: big ? '54px' : '42px', padding: big ? '0 28px' : '0 18px',
+        minHeight: big ? '54px' : '44px', padding: big ? '0 28px' : '0 18px',
         borderRadius: '16px', border: 'none',
         background: hovered ? SAGE_DARK : SAGE, color: '#fff',
         fontSize: big ? '16px' : '14px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease, box-shadow 160ms ease',
-        transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
-        boxShadow: hovered ? '0 12px 28px rgba(110,132,102,0.30)' : '0 6px 18px rgba(110,132,102,0.20)',
+        transform: 'none',
+        boxShadow: 'none',
       }}
     >
       {children}
@@ -66,7 +65,7 @@ function GhostButton({ children, onClick }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
-        minHeight: '42px', padding: '0 18px', borderRadius: '14px',
+        minHeight: '44px', padding: '0 18px', borderRadius: '14px',
         border: '1px solid var(--border)',
         background: hovered ? 'var(--surface-2)' : 'var(--surface)',
         color: 'var(--text)', fontSize: '14px', fontWeight: 600, fontFamily: 'Inter, sans-serif',
@@ -84,36 +83,36 @@ function FlashcardMock() {
     { label: 'Again', color: '#DC2626' },
     { label: 'Hard', color: '#D97706' },
     { label: 'Good', color: '#3E63DD' },
-    { label: 'Easy', color: '#2F9E6D' },
+    { label: 'Easy', color: 'var(--text-muted)' },
   ]
   return (
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '22px',
-      padding: '26px 24px 20px', boxShadow: '0 24px 60px rgba(24,24,27,0.10)', textAlign: 'center',
+      padding: '26px 24px 20px', boxShadow: 'none', textAlign: 'center',
     }}>
       <div style={{
         display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 11px',
         borderRadius: '999px', background: '#B83A2410', border: '1px solid #B83A2418',
-        color: '#B83A24', fontSize: '11px', fontWeight: 750, marginBottom: '14px',
+        color: ink(BRAND_INK), fontSize: '11px', fontWeight: 750, marginBottom: '14px',
       }}>
-        <Sparkles size={12} strokeWidth={2} color="#B83A24" /> Review · due now
+        <Sparkles size={12} strokeWidth={2} color={ink(BRAND_INK)} /> Review · due now
       </div>
-      <div style={{ fontSize: '56px', color: 'var(--text)', fontFamily: "'Noto Sans SC'", lineHeight: 1.1 }}>朋友</div>
-      <div style={{ fontSize: '15px', color: '#B83A24', fontWeight: 650, marginTop: '8px' }}>péngyou</div>
+      <div lang="zh-Hans" style={{ fontSize: '56px', color: 'var(--text)', fontFamily: "'Noto Sans SC'", lineHeight: 1.1 }}>朋友</div>
+      <div style={{ fontSize: '15px', color: ink(BRAND_INK), fontWeight: 650, marginTop: '8px' }}>péngyou</div>
       <div style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px', marginBottom: '18px' }}>friend</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '7px' }}>
         {grades.map(g => (
           <div key={g.label} style={{
             padding: '9px 4px', borderRadius: '11px',
             background: g.color + '0D', border: '1px solid ' + g.color + '30',
-            color: g.color, fontSize: '12px', fontWeight: 750,
+            color: 'var(--text)', fontSize: '12px', fontWeight: 750,
           }}>
             {g.label}
           </div>
         ))}
       </div>
       <div style={{ fontSize: '11px', color: 'var(--text-faint)', marginTop: '12px', fontWeight: 600 }}>
-        Intervals predicted by FSRS — 10 min · 1 day · 4 days · 9 days
+        Example review card · your intervals adapt to your answers
       </div>
     </div>
   )
@@ -129,18 +128,18 @@ function StoryMock() {
   return (
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '22px',
-      padding: '24px', boxShadow: '0 24px 60px rgba(24,24,27,0.10)',
+      padding: '24px', boxShadow: 'none',
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
         <span style={{ fontSize: '13px', fontWeight: 750, color: 'var(--text)' }}>In the Park</span>
-        <span style={{ fontSize: '12px', fontWeight: 750, color: '#2F9E6D' }}>82% known</span>
+        <span style={{ fontSize: '12px', fontWeight: 750, color: 'var(--text-muted)' }}>Example · 5 of 7 words known</span>
       </div>
       <div style={{ height: '6px', borderRadius: '999px', overflow: 'hidden', display: 'flex', marginBottom: '16px', background: 'var(--border)' }}>
-        <div style={{ width: '82%', background: '#2F9E6D' }} />
-        <div style={{ width: '10%', background: '#CA8A04' }} />
-        <div style={{ width: '8%', background: '#B83A2455' }} />
+        <div style={{ width: '71.43%', background: '#2F9E6D' }} />
+        <div style={{ width: '14.285%', background: '#CA8A04' }} />
+        <div style={{ width: '14.285%', background: '#B83A2455' }} />
       </div>
-      <div style={{ fontSize: '20px', fontFamily: "'Noto Sans SC'", color: 'var(--text)', lineHeight: 2 }}>
+      <div lang="zh-Hans" style={{ fontSize: '20px', fontFamily: "'Noto Sans SC'", color: 'var(--text)', lineHeight: 2 }}>
         {words.map((w, i) => (
           <span key={i} style={{
             borderBottom: w.mark === 'new' ? '2px solid #B83A24AA' : w.mark === 'learning' ? '2px solid #CA8A04AA' : 'none',
@@ -152,7 +151,7 @@ function StoryMock() {
         ))}
       </div>
       <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px', lineHeight: 1.5 }}>
-        Tap an <span style={{ color: '#B83A24', fontWeight: 650 }}>underlined word</span> to see it — one more tap adds it to your deck.
+        Tap an <span style={{ color: ink(BRAND_INK), fontWeight: 650 }}>underlined word</span> to see it — one more tap adds it to your deck.
       </div>
     </div>
   )
@@ -163,18 +162,10 @@ function StoryMock() {
 // (the old fixed chip sat on top of whatever scrolled under it). Content is
 // top-aligned: vertically centring a short list leaves the screen looking
 // half-loaded on a phone. Inside the app the ground stays flat, matching the
-// welcome screen; the texture is web garnish.
+// welcome screen.
 function WizardShell({ isMobile, back, step, steps = 3, title, subtitle, children }) {
   return (
     <div style={{ minHeight: '100dvh', position: 'relative', background: 'var(--bg)' }}>
-      {!isNativeApp() && (
-        <div style={{
-          position: 'fixed', inset: 0, zIndex: 0,
-          backgroundImage: 'url(' + bgLogin + ')',
-          backgroundSize: 'cover', backgroundPosition: 'center',
-          opacity: 0.22, pointerEvents: 'none',
-        }} />
-      )}
       <div style={{
         position: 'relative', zIndex: 1, minHeight: '100dvh',
         display: 'flex', flexDirection: 'column', alignItems: 'center',
@@ -191,7 +182,7 @@ function WizardShell({ isMobile, back, step, steps = 3, title, subtitle, childre
             onClick={back}
             aria-label="Back"
             style={{
-              width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center',
               borderRadius: '12px', border: 'none', background: 'transparent',
               color: 'var(--text-muted)', cursor: 'pointer', marginLeft: '-8px',
             }}
@@ -214,7 +205,7 @@ function WizardShell({ isMobile, back, step, steps = 3, title, subtitle, childre
 
         {title ? (
           <h1 style={{
-            fontSize: isMobile ? '24px' : '30px', fontWeight: 800, color: 'var(--text)',
+            fontSize: isMobile ? '24px' : '30px', fontWeight: 650, color: 'var(--text)',
             lineHeight: 1.25, letterSpacing: '-0.02em', margin: '0 0 8px',
             fontFamily: 'Inter, sans-serif', maxWidth: '420px',
           }}>
@@ -236,14 +227,14 @@ function MethodCard({ icon: Icon, title, children, accent }) {
   return (
     <div style={{
       background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '18px',
-      padding: '22px', boxShadow: '0 8px 26px rgba(24,24,27,0.05)', textAlign: 'left',
+      padding: '22px', boxShadow: 'none', textAlign: 'left',
     }}>
       <div style={{
         width: '42px', height: '42px', borderRadius: '13px',
         background: accent + '12', border: '1px solid ' + accent + '22',
         display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '14px',
       }}>
-        <Icon size={21} strokeWidth={1.85} color={accent} />
+        <Icon size={21} strokeWidth={1.85} color={ink(accent)} />
       </div>
       <div style={{ fontSize: '16px', fontWeight: 750, color: 'var(--text)', marginBottom: '7px' }}>{title}</div>
       <div style={{ fontSize: '13.5px', color: 'var(--text-muted)', lineHeight: 1.6 }}>{children}</div>
@@ -289,6 +280,8 @@ export default function Landing({ authNotice = null }) {
     const prior = readPreloginPrefs() || {}
     savePreloginPrefs({ ...prior, wizardStep: RESUMABLE.indexOf(next) !== -1 ? next : null })
   }
+  const [authIntent, setAuthIntent] = useState('login')
+  const openAuth = (signup) => { setAuthIntent(signup ? 'signup' : 'login'); setMode('auth') }
   const [pickedLang, setPickedLang] = useState(() => readPreloginPrefs()?.language || null)
   const [experience, setExperience] = useState(() => readPreloginPrefs()?.experience || null)
   const [purposes, setPurposes] = useState(() => readPreloginPrefs()?.purposes || [])
@@ -314,8 +307,9 @@ export default function Landing({ authNotice = null }) {
     const chosen = langKey || soloLang
     if (chosen) {
       setPickedLang(chosen)
+      updatePreloginPrefs({ language: chosen })
       track(EVENTS.PRELOGIN_LANGUAGE_PICKED, { language: chosen })
-      setMode(FLAGS.WOW_ONBOARDING ? 'flashcard' : 'auth')
+      FLAGS.WOW_ONBOARDING ? setMode('flashcard') : openAuth(true)
     } else {
       setMode('lang')
     }
@@ -323,17 +317,21 @@ export default function Landing({ authNotice = null }) {
 
   const chooseLanguage = (langKey) => {
     setPickedLang(langKey)
+    updatePreloginPrefs({ language: langKey })
     track(EVENTS.PRELOGIN_LANGUAGE_PICKED, { language: langKey })
-    setMode(FLAGS.WOW_ONBOARDING ? 'flashcard' : 'auth')
+    FLAGS.WOW_ONBOARDING ? setMode('flashcard') : openAuth(true)
   }
 
   const chooseExperience = (key) => {
     setExperience(key)
+    updatePreloginPrefs({ experience: key })
     setMode('purpose')
   }
 
   const togglePurpose = (key) => {
-    setPurposes(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key])
+    const next = purposes.includes(key) ? purposes.filter(k => k !== key) : [...purposes, key]
+    setPurposes(next)
+    updatePreloginPrefs({ purposes: next })
   }
 
   // Questions answered (or skipped — the defaults are real answers). Persist
@@ -377,7 +375,7 @@ export default function Landing({ authNotice = null }) {
     return (
       <NativeWelcome
         onStart={() => startWizard()}
-        onLogIn={() => setMode('auth')}
+        onLogIn={() => openAuth(false)}
       />
     )
   }
@@ -416,7 +414,7 @@ export default function Landing({ authNotice = null }) {
       onClick={onClick}
       style={{
         background: 'none', border: 'none', color: 'var(--text-faint)',
-        fontSize: '13.5px', fontWeight: 600, cursor: 'pointer', padding: '6px',
+        fontSize: '13.5px', fontWeight: 600, cursor: 'pointer', padding: '8px', minHeight: '44px',
         fontFamily: 'Inter, sans-serif',
       }}
     >
@@ -492,7 +490,7 @@ export default function Landing({ authNotice = null }) {
         subtitle="An honest guess is plenty — nothing here is locked in.">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '400px' }}>
           {EXPERIENCE_LEVELS.map(e => (
-            <button key={e.key} onClick={() => chooseExperience(e.key)} style={questionRow(false)}>
+            <button key={e.key} onClick={() => chooseExperience(e.key)} aria-pressed={experience === e.key} style={questionRow(experience === e.key)}>
               <span style={{ fontSize: '16px', fontWeight: 650, color: 'var(--text)' }}>{e.label}</span>
             </button>
           ))}
@@ -506,7 +504,7 @@ export default function Landing({ authNotice = null }) {
     return (
       <WizardShell isMobile={isMobile} back={() => setMode('experience')} step={2} steps={3}
         title="Why are you learning Chinese?"
-        subtitle="Pick everything that applies — it tunes your stories and examples.">
+        subtitle="Pick what matters to you. You can change this later.">
         <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%', maxWidth: '400px' }}>
           {PURPOSES.map(pp => {
             const selected = purposes.includes(pp.key)
@@ -541,7 +539,7 @@ export default function Landing({ authNotice = null }) {
           {DAILY_PLANS.map(plan => {
             const selected = minutes === plan.minutes
             return (
-              <button key={plan.minutes} onClick={() => setMinutes(plan.minutes)} aria-pressed={selected} style={questionRow(selected)}>
+              <button key={plan.minutes} onClick={() => { setMinutes(plan.minutes); updatePreloginPrefs({ minutesPerDay: plan.minutes }) }} aria-pressed={selected} style={questionRow(selected)}>
                 <span style={{ flex: 1, fontSize: '16px', fontWeight: 650, color: 'var(--text)' }}>
                   {plan.minutes} minutes
                 </span>
@@ -567,7 +565,7 @@ export default function Landing({ authNotice = null }) {
           choices={{ experience, purposes, minutes }}
           onContinue={() => {
             track(EVENTS.PRELOGIN_SIGNUP_STARTED, { language: pickedLang, reason: primaryReason(purposes) })
-            setMode('auth')
+            openAuth(true)
           }}
         />
       </WizardShell>
@@ -580,9 +578,10 @@ export default function Landing({ authNotice = null }) {
       : null
     return (
       <Auth
-        intro={intro}
+        intro={authIntent === 'signup' ? intro : null}
+        initialSignup={authIntent === 'signup'}
         notice={authNotice}
-        onBack={() => setMode(experience ? 'minutes' : initialLandingMode(isNativeApp()))}
+        onBack={() => setMode(authIntent === 'signup' && experience ? 'minutes' : initialLandingMode(isNativeApp()))}
       />
     )
   }
@@ -596,23 +595,15 @@ export default function Landing({ authNotice = null }) {
 
   return (
     <div style={{ minHeight: '100vh', position: 'relative', background: 'var(--bg)' }}>
-      {/* Faint brush-painting backdrop, same asset as auth/onboarding. */}
-      <div style={{
-        position: 'fixed', inset: 0, zIndex: 0,
-        backgroundImage: 'url(' + bgLogin + ')',
-        backgroundSize: 'cover', backgroundPosition: 'center',
-        opacity: 0.22, pointerEvents: 'none',
-      }} />
-
       <div style={{ position: 'relative', zIndex: 1, maxWidth: '980px', margin: '0 auto', padding: isMobile ? '18px 18px 48px' : '22px 32px 72px' }}>
 
         {/* Top bar */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: isMobile ? '40px' : '64px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <img src={logo} alt={BRAND_NAME + ' logo'} style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+            <img src={logo} alt={BRAND_NAME + ' logo'} style={{ width: '44px', height: '44px', objectFit: 'contain' }} />
             <span style={{ ...heroWordmarkStyle('26px') }}>{BRAND_NAME}</span>
           </div>
-          <GhostButton onClick={() => setMode('auth')}>Log in</GhostButton>
+          <GhostButton onClick={() => openAuth(false)}>Log in</GhostButton>
         </div>
 
         {/* Hero */}
@@ -621,12 +612,12 @@ export default function Landing({ authNotice = null }) {
             display: 'inline-flex', alignItems: 'center', gap: '7px',
             padding: '6px 14px', borderRadius: '999px',
             background: '#6E846614', border: '1px solid #6E846630',
-            color: SAGE_DARK, fontSize: '12.5px', fontWeight: 700, marginBottom: '22px',
+            color: ink(SAGE_DARK), fontSize: '12.5px', fontWeight: 700, marginBottom: '22px',
           }}>
             Reading-first Chinese
           </div>
           <h1 style={{
-            fontSize: isMobile ? '34px' : '46px', fontWeight: 800, color: 'var(--text)',
+            fontSize: isMobile ? '34px' : '46px', fontWeight: 650, color: 'var(--text)',
             lineHeight: 1.15, letterSpacing: '-0.02em', margin: '0 0 18px',
             fontFamily: 'Inter, sans-serif',
           }}>
@@ -680,11 +671,11 @@ export default function Landing({ authNotice = null }) {
 
         {/* Method */}
         <div style={{ textAlign: 'center', marginBottom: '22px' }}>
-          <h2 style={{ fontSize: isMobile ? '24px' : '30px', fontWeight: 800, color: 'var(--text)', margin: '0 0 10px', letterSpacing: '-0.01em' }}>
+          <h2 style={{ fontSize: isMobile ? '24px' : '30px', fontWeight: 650, color: 'var(--text)', margin: '0 0 10px', letterSpacing: '-0.01em' }}>
             No shortcuts — that's the point.
           </h2>
           <p style={{ fontSize: '14.5px', color: 'var(--text-muted)', maxWidth: '540px', margin: '0 auto', lineHeight: 1.6 }}>
-            Most apps optimize for streaks. {BRAND_NAME} optimizes for memory.
+            Remember useful words, then meet them again in context.
           </p>
         </div>
         <div style={{
@@ -692,9 +683,7 @@ export default function Landing({ authNotice = null }) {
           gap: '16px', marginBottom: isMobile ? '44px' : '72px',
         }}>
           <MethodCard icon={Layers} title="Real spaced repetition" accent="#B83A24">
-            FSRS schedules each word for the moment you're about to forget it.
-            Mastery means the algorithm predicts you'll still know a word three
-            weeks out — it can't be faked by tapping buttons.
+            FSRS estimates when each word needs another review. Your answers adjust its schedule as you learn.
           </MethodCard>
           <MethodCard icon={BookOpen} title="Stories you can read" accent="#2E3A6E">
             Every story shows how much of it you already know. New words are
@@ -702,8 +691,7 @@ export default function Landing({ authNotice = null }) {
             deck. Comprehensible input without the hunting.
           </MethodCard>
           <MethodCard icon={GraduationCap} title="Honest progression" accent="#2563C9">
-            Levels unlock through a real test, available at 90% mastery and
-            passed only at 100%. When you move up, you've genuinely earned it.
+            A level test checks your recall before you move on. Progress reflects your reviews and test answers.
           </MethodCard>
         </div>
 
@@ -711,7 +699,7 @@ export default function Landing({ authNotice = null }) {
         <div style={{
           background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '20px',
           padding: isMobile ? '22px 18px' : '28px 32px', marginBottom: isMobile ? '40px' : '64px',
-          boxShadow: '0 8px 26px rgba(24,24,27,0.05)', textAlign: 'center',
+          boxShadow: 'none', textAlign: 'center',
         }}>
           <div style={{ fontSize: '14px', fontWeight: 750, color: 'var(--text)', marginBottom: '18px' }}>
             Your daily loop — about 15 focused minutes
@@ -725,7 +713,7 @@ export default function Landing({ authNotice = null }) {
                     background: SAGE + '14', border: '1px solid ' + SAGE + '2A',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
                   }}>
-                    <step.icon size={20} strokeWidth={1.8} color={SAGE_DARK} />
+                    <step.icon size={20} strokeWidth={1.8} color={ink(SAGE_DARK)} />
                   </span>
                   <span style={{ fontSize: '12px', fontWeight: 650, color: 'var(--text-muted)' }}>{step.label}</span>
                 </span>
@@ -737,7 +725,7 @@ export default function Landing({ authNotice = null }) {
 
         {/* Bottom CTA */}
         <div style={{ textAlign: 'center' }}>
-          <h2 style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: 800, color: 'var(--text)', margin: '0 0 20px', letterSpacing: '-0.01em' }}>
+          <h2 style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: 650, color: 'var(--text)', margin: '0 0 20px', letterSpacing: '-0.01em' }}>
             Fifteen minutes a day. Real reading you can feel.
           </h2>
           <CtaButton big onClick={() => startWizard()}>Build my reading path</CtaButton>
@@ -762,13 +750,13 @@ export default function Landing({ authNotice = null }) {
                 {...externalLinkProps(DISCORD_INVITE_URL)}
                 style={{
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
-                  minHeight: '42px', padding: '0 18px', borderRadius: '14px',
+                  minHeight: '44px', padding: '0 18px', borderRadius: '14px',
                   border: '1px solid var(--border)', background: 'var(--surface)',
                   color: 'var(--text)', fontSize: '14px', fontWeight: 650,
                   fontFamily: 'Inter, sans-serif', textDecoration: 'none',
                 }}
               >
-                <MessagesSquare size={16} strokeWidth={2} color={SAGE_DARK} />
+                <MessagesSquare size={16} strokeWidth={2} color={ink(SAGE_DARK)} />
                 Join our Discord
               </a>
             </>
@@ -784,7 +772,7 @@ export default function Landing({ authNotice = null }) {
                 // Client-side navigation (the app is already loaded); the href
                 // stays real for middle-click / open-in-new-tab.
                 onClick={(e) => { e.preventDefault(); navigate(href) }}
-                style={{ color: 'var(--text-muted)', fontWeight: 600, textDecoration: 'none' }}
+                style={{ display: 'inline-flex', alignItems: 'center', minHeight: '44px', color: 'var(--text-muted)', fontWeight: 600, textDecoration: 'none' }}
               >
                 {label}
               </a>

@@ -5,7 +5,6 @@ import { normalizeEmail } from './utils'
 import { track, EVENTS } from './analytics'
 import { emailProblem, passwordProblem, passwordWhitespaceNote, mapAuthError, MIN_PASSWORD } from './authValidation'
 import logo from './assets/Hanzi-logo.png'
-import bgLogin from './assets/bg-login.webp'
 import { BRAND_NAME, heroWordmarkStyle } from './brand'
 import { legalLinkProps } from './externalLink'
 import { signInWithProvider, signInWithAppleNative, authRedirectTo } from './nativeAuth'
@@ -13,11 +12,11 @@ import { isNativeApp } from './nativeShell'
 import { FLAGS } from './flags'
 import { useIsMobile } from './useIsMobile'
 
-export default function Auth({ intro = null, onBack = null, notice = null }) {
+export default function Auth({ intro = null, onBack = null, notice = null, initialSignup = null }) {
   const isMobile = useIsMobile()
   // Arriving from the pre-login wizard (language + reason chosen) means the user
   // is here to create an account, so default to the Sign-up tab in that case.
-  const [isSignup, setIsSignup] = useState(Boolean(intro))
+  const [isSignup, setIsSignup] = useState(initialSignup ?? Boolean(intro))
   // A returning reset link that could not be completed opens straight into the
   // "email me a link" form, with the reason on screen — the learner's next
   // action is to request a fresh one.
@@ -85,23 +84,21 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
 
   const handleReset = async (e) => {
     e.preventDefault()
-    const normalizedEmail = normalizeEmail(email)
-    if (!normalizedEmail) {
-      setMessageKind('error')
-      setMessage('Enter your email first.')
-      return
-    }
+    const problem = emailProblem(email)
+    if (problem) { setMessageKind('error'); setMessage(problem); return }
     setLoading(true)
     setMessage('')
-    const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo: recoveryRedirectTo })
-    if (error) {
-      setMessageKind('error')
-      setMessage(error.message)
-    } else {
+    try {
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizeEmail(email), { redirectTo: recoveryRedirectTo })
+      if (error) throw error
       setMessageKind('success')
       setMessage('Check your email for a password reset link.')
+    } catch (error) {
+      setMessageKind('error')
+      setMessage(mapAuthError(error.message))
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   // Enter mirrors the submit button, including its disabled-while-loading state
@@ -150,7 +147,7 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
             onClick={onBack}
             aria-label="Back"
             style={{
-              width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center',
               borderRadius: '12px', border: 'none', background: 'transparent',
               color: 'var(--text-muted)', cursor: 'pointer', marginLeft: '-8px',
             }}
@@ -159,21 +156,6 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
           </button>
         </div>
       )}
-      {/* Background texture — web only. Inside the app the ground stays flat,
-          matching the welcome screen it was opened from. */}
-      {!isNativeApp() && (
-        <div style={{
-          position: 'fixed',
-          inset: 0,
-          zIndex: 0,
-          backgroundImage: 'url(' + bgLogin + ')',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          opacity: 0.35,
-          pointerEvents: 'none',
-        }} />
-      )}
-
       {/* Card */}
       <div style={{
         position: 'relative',
@@ -181,8 +163,8 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
         width: '100%',
         maxWidth: '460px',
         background: 'var(--surface)',
-        borderRadius: '20px',
-        boxShadow: '0 4px 40px rgba(0,0,0,0.10)',
+        borderRadius: '16px',
+        border: '1px solid var(--border)',
         // 40px of side padding leaves ~232px of content on a 360px phone; the
         // mobile branch gives the inputs and buttons room to breathe.
         padding: isMobile ? '28px 20px 24px' : '40px 40px 32px',
@@ -194,8 +176,8 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
             an email, and the tabs already say which door this is. The wizard's
             personalized line (intro) is the one sentence worth keeping. */}
         <div style={{ textAlign: 'center', marginBottom: intro ? '6px' : '22px' }}>
-          <img src={logo} alt="" style={{ width: '56px', height: '56px', objectFit: 'contain', marginBottom: '2px' }} />
-          <h1 style={{ ...heroWordmarkStyle('30px'), margin: 0 }}>
+          <img src={logo} alt="" style={{ width: '56px', height: '56px', objectFit: 'contain', margin: '0 auto 2px' }} />
+          <h1 style={{ ...heroWordmarkStyle('30px'), margin: 0, whiteSpace: 'normal', overflowWrap: 'anywhere' }}>
             {BRAND_NAME}
           </h1>
         </div>
@@ -212,7 +194,7 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
             aria-pressed={!isSignup}
             style={{
               flex: 1,
-              padding: '10px 0',
+              padding: '10px 0', minHeight: '44px',
               background: 'none',
               border: 'none',
               borderBottom: !isSignup ? '2px solid #B83A24' : '2px solid transparent',
@@ -232,7 +214,7 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
             aria-pressed={isSignup}
             style={{
               flex: 1,
-              padding: '10px 0',
+              padding: '10px 0', minHeight: '44px',
               background: 'none',
               border: 'none',
               borderBottom: isSignup ? '2px solid #B83A24' : '2px solid transparent',
@@ -253,6 +235,8 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '16px' }}>
           <input
             type="email"
+            autoComplete="email"
+            autoCapitalize="none"
             placeholder="Email"
             aria-label="Email"
             value={email}
@@ -267,6 +251,7 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Password"
+                  autoComplete={isSignup ? 'new-password' : 'current-password'}
                   aria-label="Password"
                   aria-describedby={isSignup ? 'password-requirements' : (message && messageKind === 'error' ? 'auth-message' : undefined)}
                   value={password}
@@ -282,7 +267,7 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
                   aria-pressed={showPassword}
                   style={{
                     position: 'absolute', right: '4px', top: '50%', transform: 'translateY(-50%)',
-                    width: '40px', height: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: '44px', height: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center',
                     background: 'none', border: 'none', cursor: 'pointer', borderRadius: '10px',
                   }}
                 >
@@ -296,7 +281,7 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
               {isSignup && (
                 <p id="password-requirements" style={{
                   fontSize: '12px', margin: '6px 2px 0', lineHeight: 1.5,
-                  color: password.length >= MIN_PASSWORD ? '#3E7A4E' : 'var(--text-muted)',
+                  color: 'var(--text-muted)',
                 }}>
                   {password.length >= MIN_PASSWORD ? '✓ ' : ''}At least {MIN_PASSWORD} characters
                   {passwordWhitespaceNote(password) ? ' · ' + passwordWhitespaceNote(password) : ''}
@@ -318,11 +303,11 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
           disabled={loading}
           style={{
             width: '100%',
-            padding: '13px',
+            padding: '13px', minHeight: '48px',
             borderRadius: '12px',
             border: 'none',
-            background: '#B83A24',
-            color: '#fff',
+            background: 'var(--text)',
+            color: 'var(--bg)',
             fontSize: '15px',
             fontWeight: 600,
             cursor: loading ? 'not-allowed' : 'pointer',
@@ -356,7 +341,7 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
           <button
             onClick={() => { setResetMode(prev => !prev); setMessage('') }}
             style={{
-              width: '100%', marginTop: '12px', background: 'none', border: 'none',
+              width: '100%', minHeight: '44px', marginTop: '12px', background: 'none', border: 'none',
               color: 'var(--text-muted)', fontSize: '13px', fontWeight: 500,
               cursor: 'pointer', fontFamily: 'Inter, sans-serif',
             }}
@@ -439,7 +424,7 @@ export default function Auth({ intro = null, onBack = null, notice = null }) {
         {message && (
           <p id="auth-message" role={messageKind === 'error' ? 'alert' : 'status'} style={{
             textAlign: 'center', fontSize: '13px', marginTop: '16px',
-            color: messageKind === 'success' ? 'var(--success)' : '#DC2626',
+            color: messageKind === 'success' ? 'var(--text)' : 'var(--danger)',
           }}>
             {message}
           </p>

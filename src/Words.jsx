@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react'
 import { supabase } from './supabase'
-import { fetchPagedSafe } from './supabasePaging'
+import { fetchPaged } from './supabasePaging'
 import { getTrackCards } from './data'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
@@ -41,6 +41,8 @@ function statusOf(card) {
 export default function Words({ session, profile, track, onBack }) {
   const isMobile = useIsMobile()
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState(null)
+  const [reload, setReload] = useState(0)
   const [vocab, setVocab] = useState([])
   const [cardByVocab, setCardByVocab] = useState({})
   const [filter, setFilter] = useState('all')
@@ -69,9 +71,10 @@ export default function Words({ session, profile, track, onBack }) {
     let cancelled = false
     async function load() {
       setLoading(true)
+      setLoadError(null)
       // Paged: HSK 5/6 levels are past the 1000-row cap.
       const [vocabData, cards] = await Promise.all([
-        fetchPagedSafe(() => supabase
+        fetchPaged(() => supabase
           .from('vocabulary')
           .select('id, word, reading, meaning, sort_order')
           .eq('language', track.language)
@@ -92,10 +95,10 @@ export default function Words({ session, profile, track, onBack }) {
       setCardByVocab(map)
       setLoading(false)
     }
-    load()
+    load().catch(() => { if (!cancelled) { setLoadError('Your word list could not be loaded. Please reconnect and try again.'); setLoading(false) } })
     return () => { cancelled = true }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [reload])
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -135,6 +138,15 @@ export default function Words({ session, profile, track, onBack }) {
       </div>
     )
   }
+
+  if (loadError) return (
+    <div style={pageShell}>
+      <SecondaryButton onClick={onBack} icon={ArrowLeft}>Back</SecondaryButton>
+      <h1 style={{ marginTop: '24px', fontSize: '24px', color: 'var(--text)' }}>Word list unavailable</h1>
+      <p role="alert" style={{ margin: '16px 0', color: 'var(--text-muted)' }}>{loadError}</p>
+      <SecondaryButton onClick={() => setReload(value => value + 1)}>Try again</SecondaryButton>
+    </div>
+  )
 
   return (
     <div style={pageShell}>

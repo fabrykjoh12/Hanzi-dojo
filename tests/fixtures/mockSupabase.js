@@ -52,7 +52,7 @@ function vocabFull(n) {
 }
 
 export const PROFILE = {
-  id: USER_ID, active_language: 'chinese', daily_new_cards: 10, streak_freezes: 2,
+  id: USER_ID, review_generation: 0, active_language: 'chinese', daily_new_cards: 10, streak_freezes: 2,
   total_xp: 1250, theme: 'light', display_name: 'Test Learner',
   current_streak: 5, longest_streak: 12, created_at: past,
 };
@@ -225,6 +225,8 @@ function card(n, o = {}) {
   const state = o.state || 'review';
   const isNew = state === 'new';
   const base_ = {
+    revision: 0, first_reviewed_at: past, interval_days: 9, learning_step: 0,
+    prior_known_at: null, prior_source: null, verified_at: null,
     id: `c${n}`, user_id: USER_ID, vocab_id: `v${n}`, state,
     due_at: dueNow, created_at: past, last_review: past,
     source_sentence: '我今天很开心。',
@@ -324,6 +326,9 @@ export const ASSESSMENT_VOCAB = (() => {
 
 export async function mockSupabaseRoutes(page) {
   const liveCards = CARDS.map(row => ({ ...row }));
+  const liveProfile = { ...PROFILE };
+  const operations = new Map();
+  const activity = new Map();
   await page.route(`**/${REF}.supabase.co/**`, async (route) => {
     const req = route.request();
     if (req.method() === 'OPTIONS') return route.fulfill({ status: 204, headers: CORS, body: '' });
@@ -332,7 +337,58 @@ export async function mockSupabaseRoutes(page) {
     if (url.pathname.startsWith('/rest/v1/rpc/')) {
       const fn = url.pathname.replace('/rest/v1/rpc/', '');
       let body = null;
-      if (fn === 'grade_card') {
+      if (fn === 'grade_card_v2' || fn === 'undo_grade_v2') {
+        const payload = req.postDataJSON() || {};
+        const reject = message => route.fulfill({ status: 409, headers: { ...CORS, 'content-type': 'application/json' }, body: JSON.stringify({ code: '40001', message: 'REVIEW_CONFLICT: ' + message }) });
+        if (payload.p_user_id !== USER_ID) return reject('owner mismatch');
+        const known = operations.get(payload.p_op_id);
+        const currentFor = receipt => liveCards.find(row => row.id === receipt.cardId) || null;
+        if (fn === 'undo_grade_v2') {
+          if (!known) return reject('unknown operation');
+          const current = currentFor(known);
+          if (known.status !== 'undone') {
+            if (!current || current.revision !== known.after.revision) return reject('newer card revision');
+            if (known.before) Object.assign(current, known.before, { revision: current.revision + 1 });
+            else Object.assign(current, { state: 'new', reps: 0, lapses: 0, learned: false, is_easy: false, stability: null, difficulty: null, last_review: null, first_reviewed_at: null, due_at: known.after.due_at, interval_days: 0, scheduled_days: 0, elapsed_days: 0, learning_step: 0, revision: current.revision + 1 });
+            const day = activity.get(known.payload.p_day);
+            day.studied_cards -= 1;
+            day[known.bucket] -= 1;
+            known.status = 'undone';
+          }
+          body = { status: 'undone', card: current, card_id: known.cardId, log_id: known.logId, already_applied: true };
+        } else if (known) {
+          if (JSON.stringify(payload) !== JSON.stringify(known.payload)) return reject('operation payload changed');
+          body = { status: known.status, card: currentFor(known), card_id: known.cardId, log_id: known.logId, already_applied: true };
+        } else {
+          if (payload.p_generation !== liveProfile.review_generation) return reject('reset generation changed');
+          let row = liveCards.find(item => item.vocab_id === payload.p_vocab_id);
+          const expected = payload.p_expected;
+          if (row ? !expected || row.id !== payload.p_card_id || (row.revision || 0) !== (expected.revision || 0) : expected || payload.p_card_id) return reject('expected card changed');
+          if (row && Object.keys(expected).some(key => !['vocab', 'vocabulary', 'isCalibration', 'review_pending'].includes(key) && JSON.stringify(row[key] ?? null) !== JSON.stringify(expected[key] ?? null))) return reject('expected snapshot changed');
+          const before = row ? structuredClone(row) : null;
+          const updates = payload.p_updates;
+          if (updates.reps !== (row?.reps || 0) + 1 || payload.p_log?.previous_state !== (row?.state || 'new') || payload.p_log?.next_state !== updates.state) return reject('invalid transition');
+          if (!row) {
+            row = { id: 'graded-' + payload.p_vocab_id, user_id: USER_ID, vocab_id: payload.p_vocab_id, created_at: new Date().toISOString(), revision: 0, first_reviewed_at: null, prior_known_at: null, prior_source: null, verified_at: null };
+            liveCards.push(row);
+          }
+          Object.assign(row, updates, { revision: row.revision + 1, first_reviewed_at: row.first_reviewed_at || updates.last_review });
+          const bucket = (before?.state || 'new') === 'new' ? 'new_cards' : before?.state === 'review' ? 'review_cards' : 'learning_cards';
+          const day = activity.get(payload.p_day) || { user_id: USER_ID, activity_date: payload.p_day, studied_cards: 0, new_cards: 0, learning_cards: 0, review_cards: 0 };
+          day.studied_cards += 1;
+          day[bucket] += 1;
+          activity.set(payload.p_day, day);
+          const receipt = { payload: structuredClone(payload), before, after: structuredClone(row), cardId: row.id, logId: 'log-' + payload.p_op_id, status: 'applied', bucket };
+          operations.set(payload.p_op_id, receipt);
+          body = { status: 'applied', card: row, card_id: row.id, log_id: receipt.logId, already_applied: false, inserted: !before };
+        }
+      }
+      else if (fn === 'reset_language_progress' || fn === 'reset_current_language_progress') {
+        liveProfile.review_generation += 1;
+        liveCards.splice(0, liveCards.length);
+        body = { ok: true };
+      }
+      else if (fn === 'grade_card') {
         const payload = req.postDataJSON() || {};
         let row = liveCards.find(card => card.id === payload.p_card_id || card.vocab_id === payload.p_vocab_id);
         const inserted = !row;
@@ -363,7 +419,7 @@ export async function mockSupabaseRoutes(page) {
         const rows = Array.isArray(sent) ? sent : [sent];
         const held = new Set(liveCards.map(card => card.vocab_id));
         const fresh = rows.filter(row => !held.has(row.vocab_id));
-        fresh.forEach((row) => { liveCards.push({ ...row, id: `seeded-${row.vocab_id}` }); });
+        fresh.forEach((row) => { liveCards.push({ revision: 0, first_reviewed_at: null, ...row, id: `seeded-${row.vocab_id}` }); });
         return route.fulfill({
           status: 201,
           headers: { ...CORS, 'content-type': 'application/json' },
@@ -371,8 +427,11 @@ export async function mockSupabaseRoutes(page) {
         });
       }
       let body;
-      if (table in TABLE_FIXTURES) {
-        const f = table === 'cards' ? liveCards : TABLE_FIXTURES[table];
+      if (table === 'daily_activity') {
+        const rows = [...activity.values()];
+        body = wantsObject ? rows[0] || null : rows;
+      } else if (table in TABLE_FIXTURES) {
+        const f = table === 'cards' ? liveCards : table === 'profiles' ? liveProfile : TABLE_FIXTURES[table];
         let rows = f;
         // Unlike most broad fixture reads, comprehension is story-scoped. Keep
         // that contract in the mock so one story cannot accidentally display

@@ -39,7 +39,7 @@ export default function MobileNav({ view, onNavigate, language, hidden = false }
       style={{
         position: 'fixed', left: '16px', right: '16px', bottom: dockBottom(), zIndex: 30,
         minHeight: DOCK_HEIGHT + 'px', maxWidth: '440px', margin: '0 auto',
-        display: 'flex', alignItems: 'center', gap: '2px', padding: '6px',
+        display: 'flex', alignItems: 'center', gap: '2px', padding: '6px 3px',
         background: 'var(--surface)',
         border: '1px solid var(--border)', borderRadius: '18px',
         boxShadow: '0 10px 28px -14px rgba(24,24,27,0.30), 0 1px 2px rgba(24,24,27,0.05), inset 0 1px 0 var(--hairline)',
@@ -66,7 +66,7 @@ export default function MobileNav({ view, onNavigate, language, hidden = false }
             className="hd-dock-tab"
             style={{
               flex: '1 1 0',
-              minWidth: 0, minHeight: '46px', padding: '5px 3px', border: 0, borderRadius: '12px',
+              minWidth: 0, minHeight: '46px', padding: '5px 0', border: 0, borderRadius: '12px',
               display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px',
               background: active ? 'color-mix(in srgb, ' + accent + ' 9%, var(--surface))' : 'transparent',
               color: active ? ink(accent) : 'var(--text-muted)',

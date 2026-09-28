@@ -43,12 +43,12 @@ export default function FlashcardIntro({ onSeeStory }) {
   }
 
   const face = {
-    position: 'absolute', inset: 0,
+    gridArea: '1 / 1', minWidth: 0, minHeight: '300px', boxSizing: 'border-box',
     display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
     gap: '10px', padding: '24px',
     borderRadius: '22px',
     background: 'var(--surface)', border: '1px solid var(--border)',
-    boxShadow: '0 18px 44px rgba(24,24,27,0.10)',
+    boxShadow: 'var(--shadow-1)',
     backfaceVisibility: 'hidden', WebkitBackfaceVisibility: 'hidden',
   }
 
@@ -64,9 +64,9 @@ export default function FlashcardIntro({ onSeeStory }) {
           aria-label={flipped ? FLASHCARD.hanzi + ', ' + FLASHCARD.pinyin + ', ' + FLASHCARD.meaning : 'Reveal the meaning of ' + FLASHCARD.hanzi}
           style={{
             position: 'relative', width: '100%',
-            // Fixed height: the two faces are absolutely positioned, and a
-            // card that changes size mid-flip reads as broken, not physical.
-            height: 'clamp(300px, 42vh, 380px)',
+            // Both faces share one intrinsic grid cell. The taller face sets
+            // the height before the flip, including at larger text sizes.
+            display: 'grid',
             border: 'none', background: 'transparent', padding: 0,
             cursor: 'pointer', outlineOffset: '6px',
             transformStyle: 'preserve-3d', WebkitTransformStyle: 'preserve-3d',
@@ -78,7 +78,7 @@ export default function FlashcardIntro({ onSeeStory }) {
           <span style={face} aria-hidden={flipped}>
             <span lang="zh-Hans" style={{
               fontFamily: "'Noto Sans SC', sans-serif", fontSize: '76px',
-              lineHeight: 1.2, color: 'var(--text)',
+              lineHeight: 1.2, color: 'var(--text)', maxWidth: '100%', overflowWrap: 'anywhere',
             }}>
               {FLASHCARD.hanzi}
             </span>
@@ -88,7 +88,7 @@ export default function FlashcardIntro({ onSeeStory }) {
           <span style={{ ...face, transform: 'rotateY(180deg)' }} aria-hidden={!flipped}>
             <span lang="zh-Hans" style={{
               fontFamily: "'Noto Sans SC', sans-serif", fontSize: '54px',
-              lineHeight: 1.2, color: ink(BRAND_INK),
+              lineHeight: 1.2, color: ink(BRAND_INK), maxWidth: '100%', overflowWrap: 'anywhere',
             }}>
               {FLASHCARD.hanzi}
             </span>
@@ -100,7 +100,7 @@ export default function FlashcardIntro({ onSeeStory }) {
             </span>
 
             {/* The two characters, glossed — the lego idea in one row. */}
-            <span style={{ display: 'flex', gap: '18px', marginTop: '8px' }}>
+            <span style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'center', gap: '18px', marginTop: '8px' }}>
               {FLASHCARD.breakdown.map(b => (
                 <span key={b.hanzi} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
                   <span lang="zh-Hans" style={{ fontFamily: "'Noto Sans SC', sans-serif", fontSize: '22px', color: 'var(--text)' }}>{b.hanzi}</span>

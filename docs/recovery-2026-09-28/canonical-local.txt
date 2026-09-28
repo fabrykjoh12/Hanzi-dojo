@@ -1,0 +1,146 @@
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> hanzi-dojo@0.0.0 verify:pr
+> npm run lint && npm test && npm run build && npm run build:public && npm run verify:public-bundle && node tools/verify-app-icons.mjs
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> hanzi-dojo@0.0.0 lint
+> eslint .
+
+
+/tmp/hanzi-checkpoint-combined/src/KnownWords.jsx
+  76:6  warning  React Hook useEffect has a missing dependency: 'track'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/tmp/hanzi-checkpoint-combined/src/LanguageSwitcher.jsx
+  369:6  warning  React Hook useEffect has a missing dependency: 'loadTracks'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/tmp/hanzi-checkpoint-combined/src/Listen.jsx
+  62:6  warning  React Hook useEffect has a missing dependency: 'load'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/tmp/hanzi-checkpoint-combined/src/Profile.jsx
+  235:6  warning  React Hook useEffect has a missing dependency: 'loadStats'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/tmp/hanzi-checkpoint-combined/src/Test.jsx
+  269:6  warning  React Hook useEffect has a missing dependency: 'loadStatus'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/tmp/hanzi-checkpoint-combined/src/useStudyAudio.js
+  71:6  warning  React Hook useEffect has missing dependencies: 'playAudio', 'profile.audio_autoplay', and 'queue.length'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+✖ 6 problems (0 errors, 6 warnings)
+
+npm warn Unknown env config "http-proxy". This will stop working in the next major version of npm.
+
+> hanzi-dojo@0.0.0 test
+> vitest run
+
+
+ RUN  v4.1.9 /tmp/hanzi-checkpoint-combined
+
+leak guard: /tmp/leakguard-ZC89ex/raw.log FAILED
+  - uuid: a UUID-shaped identifier (card id, account id, vocab id) (1 occurrence(s))
+
+Sensitive-looking output detected; raw log withheld
+leak guard: cannot read /tmp/definitely-not-a-real-leakguard-file.log (ENOENT) — refusing to treat it as clean
+
+Sensitive-looking output detected; raw log withheld
+usage: node ops/leakGuard.mjs <file> [...]
+leak guard: /tmp/leakguard-multi-wS52FQ/b.log FAILED
+  - uuid: a UUID-shaped identifier (card id, account id, vocab id) (1 occurrence(s))
+
+Sensitive-looking output detected; raw log withheld
+ ❯ review-protocol.test.mjs (243 tests | 4 failed) 106427ms
+     × runs both a dependency-requiring npm script and a local binary 5294ms
+     × never reaches the network — no registry request appears in the evidence 5037ms
+     × leaves no shared node_modules behind in the driver checkout 5305ms
+     × REQUEST_CHANGES and BLOCKED from decide are non-zero 5297ms
+ ❯ clientGrantMigrations.test.mjs (14 tests | 1 failed) 43ms
+     × covers exactly the definer RPCs that still hold an anon grant 28ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  clientGrantMigrations.test.mjs > revoking anon EXECUTE on the private RPCs (finding 7) > covers exactly the definer RPCs that still hold an anon grant
+AssertionError: expected [ 'admin_active_users', …(16) ] to deeply equal [ 'admin_active_users', …(13) ]
+
+- Expected
++ Received
+
+@@ -11,6 +11,9 @@
+    "dict_entry",
+    "dict_examples_for",
+    "dict_search",
+    "dict_words_containing",
+    "dojo_hq_members",
++   "grade_card",
++   "reset_current_language_progress",
++   "reset_language_progress",
+  ]
+
+ ❯ clientGrantMigrations.test.mjs:284:20
+    282|
+    283|     expect(expected.length, 'the derivation itself must find something…
+    284|     expect(actual).toEqual(expected)
+       |                    ^
+    285|   })
+    286| })
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  review-protocol.test.mjs > verification works when the commands actually need dependencies > runs both a dependency-requiring npm script and a local binary
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ review-protocol.test.mjs:2272:5
+    2270|   }
+    2271|
+    2272|   it('runs both a dependency-requiring npm script and a local binary',…
+       |     ^
+    2273|     const r = depRepo()
+    2274|     const out = spawnSync('node', [CLI, 'verify', '--task', 'deps', '-…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  review-protocol.test.mjs > verification works when the commands actually need dependencies > never reaches the network — no registry request appears in the evidence
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ review-protocol.test.mjs:2289:5
+    2287|   })
+    2288|
+    2289|   it('never reaches the network — no registry request appears in the e…
+       |     ^
+    2290|     // The failure this pins: `npx vitest …` with the binary absent re…
+    2291|     // https://registry.npmjs.org/vitest. Resolving the local binary i…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  review-protocol.test.mjs > verification works when the commands actually need dependencies > leaves no shared node_modules behind in the driver checkout
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ review-protocol.test.mjs:2334:5
+    2332|   })
+    2333|
+    2334|   it('leaves no shared node_modules behind in the driver checkout', ()…
+       |     ^
+    2335|     const r = depRepo()
+    2336|     spawnSync('node', [CLI, 'verify', '--task', 'deps', '--head', r.he…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  review-protocol.test.mjs > exit codes mean different things per subcommand > REQUEST_CHANGES and BLOCKED from decide are non-zero
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ review-protocol.test.mjs:3141:5
+    3139|   })
+    3140|
+    3141|   it('REQUEST_CHANGES and BLOCKED from decide are non-zero', () => {
+       |     ^
+    3142|     const r = repo({ verification: ['npm run ok'] })
+    3143|     const ev = run(r, ['verify', '--task', 'exit', '--head', r.head]).…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  2 failed | 209 passed (211)
+      Tests  5 failed | 5032 passed (5037)
+   Start at  14:39:57
+   Duration  163.89s (transform 11.45s, setup 0ms, import 25.74s, tests 170.07s, environment 50ms)
+

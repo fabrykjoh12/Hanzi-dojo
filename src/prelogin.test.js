@@ -52,3 +52,37 @@ describe('tastedWordsLine', () => {
     expect(tastedWordsLine(['我', '爱', '家'])).toBe('You already met 我 and 爱 — nice start.')
   })
 })
+
+describe('prelogin choice checkpoints', () => {
+  it('preserves each answer when the step advances and when later answers change', async () => {
+    const values = new Map()
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, value: {
+      getItem: key => values.get(key) || null,
+      setItem: (key, value) => values.set(key, value),
+    } })
+    try {
+      const { updatePreloginPrefs, readPreloginPrefs } = await import('./prelogin')
+      updatePreloginPrefs({ language: 'chinese', tastedWords: ['你好'] })
+      updatePreloginPrefs({ experience: 'some' })
+      updatePreloginPrefs({ wizardStep: 'purpose' })
+      updatePreloginPrefs({ purposes: ['travel'], minutesPerDay: 10 })
+      expect(readPreloginPrefs()).toEqual({ language: 'chinese', tastedWords: ['你好'], experience: 'some', wizardStep: 'purpose', purposes: ['travel'], minutesPerDay: 10 })
+    } finally {
+      if (original) Object.defineProperty(globalThis, 'localStorage', original)
+      else delete globalThis.localStorage
+    }
+  })
+
+  it('returns the choice without breaking the wizard if device storage is blocked', async () => {
+    const original = Object.getOwnPropertyDescriptor(globalThis, 'localStorage')
+    Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('blocked') } })
+    try {
+      const { updatePreloginPrefs } = await import('./prelogin')
+      expect(updatePreloginPrefs({ experience: 'beginner' })).toEqual({ experience: 'beginner' })
+    } finally {
+      if (original) Object.defineProperty(globalThis, 'localStorage', original)
+      else delete globalThis.localStorage
+    }
+  })
+})

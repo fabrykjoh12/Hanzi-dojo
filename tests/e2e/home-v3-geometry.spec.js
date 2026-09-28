@@ -1,7 +1,7 @@
 import { authedTest as test, expect } from '../fixtures/mockSupabase.js';
 
-// The floating dock: three equal tabs where the selected one expands into a
-// labelled capsule. These tests pin the geometry that keeps it usable —
+// The floating dock: three equal tabs with persistent labels and a
+// stable active marker. These tests pin the geometry that keeps it usable —
 // floating clear of the edges, comfortable targets, no clipped label on the
 // active tab, no overflow — across widths and themes.
 
@@ -53,21 +53,13 @@ async function assertMobileNavGeometry(page, active) {
     // Comfortable targets on every tab, resting or selected.
     expect(button.width, button.name).toBeGreaterThanOrEqual(44);
     expect(button.height, button.name).toBeGreaterThanOrEqual(44);
-    // The selected tab shows its whole label; a resting tab keeps it clipped
-    // to zero (still in the DOM for the accessible name).
-    if (button.active) {
-      expect(button.labelScrollWidth, button.name).toBeLessThanOrEqual(button.labelWidth + 0.5);
-      expect(button.labelWidth, button.name).toBeGreaterThan(20);
-    } else {
-      expect(button.labelWidth, button.name).toBeLessThanOrEqual(0.5);
-    }
+    // All destination names stay visible, regardless of selection.
+    expect(button.labelScrollWidth, button.name).toBeLessThanOrEqual(button.labelWidth + 0.5);
+    expect(button.labelWidth, button.name).toBeGreaterThan(20);
   }
-
-  // The selected tab is wider than a resting one, but never dominant.
-  const activeTab = geometry.buttons.find(b => b.active);
-  const restingTab = geometry.buttons.find(b => !b.active);
-  expect(activeTab.width).toBeGreaterThan(restingTab.width);
-  expect(activeTab.width).toBeLessThan(geometry.rect.right - geometry.rect.left - restingTab.width * 2 + 1);
+  const firstWidth = geometry.buttons[0].width;
+  for (const button of geometry.buttons) expect(button.width).toBeCloseTo(firstWidth, 0);
+  expect(geometry.buttons.map(button => button.name)).toEqual(['Stories', 'Home', 'Practice']);
 
   const home = nav.getByRole('button', { name: 'Home' });
   if (active === 'Home') await expect(home).toHaveAttribute('aria-current', 'page');
@@ -99,7 +91,7 @@ test('Home content clears the floating dock and fonts settle without reflow', as
   const before = await heading.boundingBox();
   await page.evaluate(() => document.fonts.ready);
   const after = await heading.boundingBox();
-  expect(await page.evaluate(() => document.fonts.check('16px "Mona Sans"'))).toBe(true);
+  expect(await page.evaluate(() => document.fonts.check('16px Inter'))).toBe(true);
   expect(Math.abs(before.width - after.width)).toBeLessThan(0.5);
   expect(Math.abs(before.height - after.height)).toBeLessThan(0.5);
 

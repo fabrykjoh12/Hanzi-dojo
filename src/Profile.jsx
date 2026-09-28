@@ -75,7 +75,7 @@ function IconButton({ icon: Icon, label, onClick }) {
   )
 }
 
-export default function Profile({ session, profile, track, onBack, onNavigate, onUpdate, hasInternalTooling = true }) {
+export default function Profile({ session, profile, track, onBack, onNavigate, onUpdate, onProgressReset, hasInternalTooling = true }) {
   const [stats, setStats] = useState({ learned: 0, totalCards: 0, masteredCount: 0, totalWords: 0 })
   const [editingGoal, setEditingGoal] = useState(false)
   const [newGoal, setNewGoal] = useState(profile.daily_new_cards)
@@ -266,7 +266,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
     // Server side is gone; clear this device's copy (caches AND the write
     // outbox — queued grades for a dead account would fail forever), drop the
     // local session, and start the app over from the top.
-    await forgetDeviceData()
+    await forgetDeviceData(session.user.id)
     try { await supabase.auth.signOut() } catch { /* session already dead */ }
     window.location.assign('/')
   }
@@ -293,6 +293,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       return
     }
 
+    if (onProgressReset) await onProgressReset()
     setResetting(false)
     setConfirmingReset(false)
     setClearHistory(false)
@@ -341,6 +342,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       return
     }
 
+    if (onProgressReset) await onProgressReset()
     const { error } = await supabase
       .from('language_tracks')
       .delete()

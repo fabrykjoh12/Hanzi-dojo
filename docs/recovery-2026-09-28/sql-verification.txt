@@ -1,0 +1,140 @@
+2:31:47 PM [vite] (ssr) page reload /workspace/scratch/bb2a1954cdbf/hanzi-persistence/src/offline.js
+PASS real FSRS producer: one atomic grade, duplicate replay, immutable payload
+PASS Undo preserves inert first card, receipt and duplicate tombstone
+PASS two sessions add independently; Undo subtracts only own original day
+PASS stale snapshot and stale revision fail before any mutation
+PASS duplicate returns CURRENT card after a later grade
+PASS reset rejects queued absent intent; receipts cannot resurrect deleted cards
+PASS compatibility reset alias increments generation and clears requested history
+PASS prior-knowledge calibration verifies on server and Undo restores inert claim
+PASS partial failure rolls back card, log, activity and receipt
+PASS Undo refuses damaged aggregate and leaves full grade intact
+PASS legacy RPC remains transactional/additive and preserves tombstones
+PASS v2 operation cannot be replayed through legacy endpoint after Undo
+PASS owner identity, ledger RLS, and direct mutation grants are enforced
+PASS anonymous and helper execution denied including inherited default grants
+PASS direct card edits advance server revision and invalidate pending grades
+PASS late Undo failure rolls back restored card, deleted log, and activity subtraction
+PASS malformed intent, missing updates, and inconsistent log cannot write partially
+PASS legacy and v2 sessions share additive totals without accepting stale observations
+PASS repeated reset/replacement never returns a newer identity through an old receipt
+PASS protected columns reject hostile INSERT and catalog grants remain least privilege
+PASS pre-migration log cannot be reused as a new v2 operation
+PASS story reward wrapper binds queued owner and preserves claim idempotency
+PASS both reset aliases clear latest story rewards and active series only for owner
+PASS account deletion cascades owned receipts while reset does not
+{
+  "engine": "PGlite 0.5.8 (single connection)",
+  "migration": "supabase/migrations/20260928120000_durable_review_operations.sql",
+  "postgres": "PostgreSQL 18.3 (PGlite 0.5.8) on wasm32-unknown-emscripten, compiled by emcc (Emscripten gcc/clang-like replacement + linker emulating GNU ld) 3.1.74 (1092ec30a3fb1d46b1782ff1b4db5094d3d06ae5), 32-bit",
+  "capturedAt": "2026-09-28T11:32:06.429Z",
+  "migrationSha256": "d5edcddb2d37f3bdb6df60dce3a0ca9edc674b7613df1329536b2416a82e91eb",
+  "producerSha256": "ba80c9e7d3f0b47de5e063f2cda6584c34bfa5d8e955dc96d414fd5bf1aa4702",
+  "schedulerSha256": "cb4c113af04bea8e344a8b6e5473136de0fcbbb2e63629a1afa9931d1ef4744e",
+  "producer": "/workspace/scratch/bb2a1954cdbf/hanzi-persistence/src/studyGradeIntent.js",
+  "tests": 24,
+  "passed": 24,
+  "results": [
+    {
+      "name": "real FSRS producer: one atomic grade, duplicate replay, immutable payload",
+      "pass": true
+    },
+    {
+      "name": "Undo preserves inert first card, receipt and duplicate tombstone",
+      "pass": true
+    },
+    {
+      "name": "two sessions add independently; Undo subtracts only own original day",
+      "pass": true
+    },
+    {
+      "name": "stale snapshot and stale revision fail before any mutation",
+      "pass": true
+    },
+    {
+      "name": "duplicate returns CURRENT card after a later grade",
+      "pass": true
+    },
+    {
+      "name": "reset rejects queued absent intent; receipts cannot resurrect deleted cards",
+      "pass": true
+    },
+    {
+      "name": "compatibility reset alias increments generation and clears requested history",
+      "pass": true
+    },
+    {
+      "name": "prior-knowledge calibration verifies on server and Undo restores inert claim",
+      "pass": true
+    },
+    {
+      "name": "partial failure rolls back card, log, activity and receipt",
+      "pass": true
+    },
+    {
+      "name": "Undo refuses damaged aggregate and leaves full grade intact",
+      "pass": true
+    },
+    {
+      "name": "legacy RPC remains transactional/additive and preserves tombstones",
+      "pass": true
+    },
+    {
+      "name": "v2 operation cannot be replayed through legacy endpoint after Undo",
+      "pass": true
+    },
+    {
+      "name": "owner identity, ledger RLS, and direct mutation grants are enforced",
+      "pass": true
+    },
+    {
+      "name": "anonymous and helper execution denied including inherited default grants",
+      "pass": true
+    },
+    {
+      "name": "direct card edits advance server revision and invalidate pending grades",
+      "pass": true
+    },
+    {
+      "name": "late Undo failure rolls back restored card, deleted log, and activity subtraction",
+      "pass": true
+    },
+    {
+      "name": "malformed intent, missing updates, and inconsistent log cannot write partially",
+      "pass": true
+    },
+    {
+      "name": "legacy and v2 sessions share additive totals without accepting stale observations",
+      "pass": true
+    },
+    {
+      "name": "repeated reset/replacement never returns a newer identity through an old receipt",
+      "pass": true
+    },
+    {
+      "name": "protected columns reject hostile INSERT and catalog grants remain least privilege",
+      "pass": true
+    },
+    {
+      "name": "pre-migration log cannot be reused as a new v2 operation",
+      "pass": true
+    },
+    {
+      "name": "story reward wrapper binds queued owner and preserves claim idempotency",
+      "pass": true
+    },
+    {
+      "name": "both reset aliases clear latest story rewards and active series only for owner",
+      "pass": true
+    },
+    {
+      "name": "account deletion cascades owned receipts while reset does not",
+      "pass": true
+    }
+  ],
+  "limitations": [
+    "No live Supabase apply",
+    "No separate-connection advisory-lock/concurrency proof",
+    "No installed native/offline lifecycle proof"
+  ]
+}

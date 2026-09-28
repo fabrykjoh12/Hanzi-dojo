@@ -551,6 +551,14 @@ Uses **ts-fsrs v5**. Configuration: `request_retention: 0.9`, `enable_fuzz: true
 
 **Legacy columns** `ease_factor` and the old SM-2 `learning_step` semantics are kept in the DB but not written to by the new FSRS code. `learning_step` is repurposed to store FSRS `learning_steps` (the step index within the learning phase sequence).
 
+### Durable review protocol (recovery candidate)
+
+Requires `20260928120000_durable_review_operations.sql` before deploying the reconstructed client. The migration has not been applied to production by this recovery. `cards.revision` versions schedule writes; `cards.first_reviewed_at` records the first genuine study event separately from an earlier dictionary/story save; `profiles.review_generation` invalidates unknown requests from before a progress reset. The owner-scoped `grade_operations` ledger retains immutable request and before/after receipts through card/log resets.
+
+`studyGradeIntent.js` creates one stable intent from the real FSRS result. `reviewJournal.js` commits it to the separate IndexedDB review store before a network request or offline advancement, reuses it on every retry, and calls atomic `grade_card_v2`. `undo_grade_v2` checks the exact after-version and reverses only that operation's original-day contribution. A duplicate returns the current card, including no card after reset; it never restores an old after-image. Strict local compare-and-swap prevents late responses from replacing Undo/reset state. Query overlays use a baseline captured before the fetch and respect track/level scope and replacement identities.
+
+Download/cache clearing preserves pending reviews. Account deletion clears only the deleted owner’s journal and legacy outbox. Queued story rewards use `claim_story_reward_v2`, which verifies the original owner before the shared learner lock and legacy claim. Pending vocabulary is withheld from all selectable pools; pending first grades reserve daily introduction capacity. Legacy queued grades remain quarantined instead of falling back to weaker writes. Profile reset clears any prepared Study handoff and reloads the generation. See [recovery notes](recovery-2026-09-28/RECOVERY.md), [SQL protocol and evidence](recovery-2026-09-28/sql.md), and [metric definitions](METRICS.md). Local tests do not certify deployed migration/RLS state, live multi-device concurrency, installed storage behavior or native upgrades.
+
 ---
 
 ## Design system

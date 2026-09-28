@@ -1,3 +1,4 @@
+import * as journal from './reviewJournal'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { fakeSupabase, hskVocabRows } from './fakePostgrest'
 
@@ -23,7 +24,7 @@ function cardsFor(vocab, userId = 'u1') {
   }))
 }
 
-vi.mock('./offline', () => ({ cacheGet: vi.fn(async () => null), cacheSet: vi.fn() }))
+vi.mock('./offline', async importOriginal => ({ ...await importOriginal(), cacheGet: vi.fn(async () => null), cacheSet: vi.fn() }))
 
 let getTrackCards
 beforeEach(async () => { ({ getTrackCards } = await import('./data')) })
@@ -89,4 +90,25 @@ describe('getTrackCards — complete past the 1000-row PostgREST cap', () => {
     const out = await getTrackCards('u1', track, { level: 6 }, db)
     expect(out).toHaveLength(1621)
   })
+})
+
+
+describe('getTrackCards unavailable versus genuinely empty', () => {
+  it('does not invent an empty deck when neither server nor cache is available', async () => {
+    const broken = { from() { throw new Error('offline') } }
+    await expect(getTrackCards('u1', track, {}, broken)).rejects.toThrow('offline')
+  })
+  it('still accepts an authoritative empty deck', async () => {
+    const { supabase } = makeSupabase([])
+    expect(await getTrackCards('u1', track, {}, supabase)).toEqual([])
+  })
+})
+
+
+it('requests full scheduler truth before resolving a known conflict through a partial projection', async () => {
+  const baseline = vi.spyOn(journal, 'reviewBaseline').mockResolvedValue([{ status: 'conflict' }])
+  const { supabase, calls } = makeSupabase([])
+  await getTrackCards('u1', track, { columns: 'vocab_id,state' }, supabase)
+  expect(calls.find(call => call[0] === 'select')[1]).toBe('*, vocabulary!inner(id, level)')
+  baseline.mockRestore()
 })
