@@ -185,7 +185,7 @@ export default function WordLookupSheet({ selected, theme, accent, userCards, la
                 and pushing the definition down. */}
             {reading && (
               <div style={{
-                fontSize: '16px', color: '#B45309', fontWeight: 600, marginTop: '4px',
+                fontSize: '16px', color: 'var(--reading-ink)', fontWeight: 600, marginTop: '4px',
                 opacity: reading.pending ? 0.45 : 1, letterSpacing: reading.pending ? '0.12em' : 'normal',
               }} aria-hidden={reading.pending ? 'true' : undefined}>{reading.text}</div>
             )}

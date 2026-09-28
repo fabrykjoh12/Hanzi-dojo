@@ -11,7 +11,7 @@ test.describe('the floating dock', () => {
     await page.setViewportSize({ width: 390, height: 844 });
   });
 
-  test('selection travels: the capsule expands on the tapped tab', async ({ page }) => {
+  test('tabs keep equal geometry and visible labels when selection changes', async ({ page }) => {
     await page.goto('/');
     const nav = page.getByRole('navigation', { name: 'Primary' });
     const home = nav.getByRole('button', { name: 'Home' });
@@ -19,22 +19,26 @@ test.describe('the floating dock', () => {
 
     const homeSelected = await home.boundingBox();
     const practiceResting = await practice.boundingBox();
-    expect(homeSelected.width).toBeGreaterThan(practiceResting.width);
+    expect(Math.abs(homeSelected.width - practiceResting.width)).toBeLessThan(1);
 
     await practice.click();
     await expect(practice).toHaveAttribute('aria-current', 'page');
     await expect(home).not.toHaveAttribute('aria-current', 'page');
 
-    // Wait out the capsule animation, then the roles have swapped — and the
-    // dock itself has not moved or changed size.
+    // Selection changes without resizing either destination.
     await page.waitForTimeout(400);
     const practiceSelected = await practice.boundingBox();
     const homeResting = await home.boundingBox();
-    expect(practiceSelected.width).toBeGreaterThan(homeResting.width);
+    expect(Math.abs(practiceSelected.width - homeResting.width)).toBeLessThan(1);
     expect(Math.round(practiceSelected.width)).toBe(Math.round(homeSelected.width));
 
     const navBox = await nav.boundingBox();
-    expect(Math.round(navBox.height)).toBe(58);
+    expect(navBox.height).toBeGreaterThanOrEqual(58);
+    for (const name of ['Stories', 'Home', 'Practice']) {
+      const label = nav.getByRole('button', { name }).getByText(name);
+      await expect(label).toBeVisible();
+      expect((await label.boundingBox()).width).toBeGreaterThan(20);
+    }
   });
 
   test('every resting tab keeps its destination as the accessible name', async ({ page }) => {
@@ -135,7 +139,7 @@ test.describe('the floating dock', () => {
     const nav = page.getByRole('navigation', { name: 'Primary' });
     await expect(nav).toBeVisible();
 
-    await page.getByRole('button', { name: /Featured for you/ }).click();
+    await page.getByRole('button', { name: /Featured story/ }).click();
     // Every reader presentation (and the paced reader's launch screen) is
     // inside StoryReader, which declares focus.
     const back = page.getByRole('button', { name: /Back to (library|stories)/ });

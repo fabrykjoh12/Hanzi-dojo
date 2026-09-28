@@ -168,6 +168,7 @@ export default function App() {
   // Apply the theme to the document so the CSS variables (index.css) switch.
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
+    document.documentElement.setAttribute('data-quiet-bg', 'true')
   }, [theme])
 
   // Fetch the active language's web font if the base stylesheet doesn't
@@ -689,7 +690,10 @@ export default function App() {
         routeKind={storyRouteState?.kind || 'browse'}
         routeStoryId={storyRouteState?.kind === 'story' ? storyRouteState.id : null}
         routeSeriesKey={storyRouteState?.kind === 'series' ? storyRouteState.key : null}
-        onStoryRoute={(id) => routerNavigate(storyPath(id))}
+        readerSeriesKey={location.state?.readerSeriesKey || null}
+        onStoryRoute={(id, key = null) => routerNavigate(storyPath(id), {
+          state: key ? { readerSeriesKey: key } : null,
+        })}
         onSeriesRoute={(key) => routerNavigate(seriesPath(key))}
         onBrowseRoute={() => routerNavigate(viewToPath('stories'))}
         onInitialStoryConsumed={() => { setPendingStoryId(null); setPendingStoryWords(null); setPendingStoryFirstMission(false) }}

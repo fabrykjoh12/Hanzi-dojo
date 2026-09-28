@@ -31,15 +31,15 @@ test('uses only the locked Home motion timings', async ({ page }) => {
   const heroDurations = (await hero.evaluate(node => getComputedStyle(node).transitionDuration)).split(',');
   expect(heroDurations[0].trim()).toBe('0.16s');
 
-  // The dock's selected capsule expands/collapses at the locked nav timing.
+  // The dock changes selection at the locked nav timing without resizing.
   const nav = page.getByRole('navigation', { name: 'Primary' });
   const activeTab = nav.locator('[aria-current="page"]');
   const tabTransition = await activeTab.evaluate(node => getComputedStyle(node).transitionDuration);
   expect(tabTransition.split(',')[0].trim()).toBe('0.26s');
-  // …and its label reveals on the same clock, so the two never disagree.
+  // Labels stay visible; they do not animate into or out of view.
   const labelTransition = await activeTab.locator('span').last()
     .evaluate(node => getComputedStyle(node).transitionDuration);
-  expect(labelTransition.split(',')[0].trim()).toBe('0.26s');
+  expect(labelTransition.split(',')[0].trim()).toBe('0s');
 
   // And the whole screen stays smooth while settling.
   const frames = await page.evaluate(() => new Promise(resolve => {

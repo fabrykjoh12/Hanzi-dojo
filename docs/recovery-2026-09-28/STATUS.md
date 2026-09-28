@@ -21,3 +21,9 @@
 - Integration and remote checkpoints: `hanzi-dojo-recovery`, `codex/recovery-redesign-2026-09-28`.
 
 Local worktree paths are temporary. Only changes present in the remote recovery branch are durable. Once integrated, update this status with actual check results and remote commit links.
+
+## Checkpoint 2: reading, navigation and native build validation
+
+Reconstructed route-driven Stories, persistent Home-centered mobile navigation, larger reader/sidebar controls, speaking retry accounting, and native dispatch validation. Targeted implementation checks passed:30 reading unit tests,96 native/workflow contract tests,3 browser regressions. One speaking test URL was corrected; integrated history/speaking checks remain pending.
+
+Canonical `npm run verify:pr` in a clean isolated copy completed its test stage:4,987 passed,3 failed,209 files; zero lint errors and6 existing warnings. The3 failures are unchanged review-tool dependency subprocess tests exceeding their5-second deadlines. The interrupted-run fixture failures did not recur. Build stages remain unexecuted in this run. This is a durable **draft checkpoint, not a release-ready or8+/10 candidate**; remote CI and further integrated validation are required.

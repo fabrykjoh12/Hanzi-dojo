@@ -1,9 +1,10 @@
+import { ink } from './languageTheme'
 import { useEffect, useRef } from 'react'
 import { Check, ChevronRight, Lock, Zap } from 'lucide-react'
 import ComprehensionCheck from './ComprehensionCheck'
 import { trapDialogFocus } from './dialogFocus'
 
-const SAGE = '#6E8466'
+const SAGE = 'var(--reader-action)'
 const btn = { border: 'none', borderRadius: '16px', background: SAGE, color: '#fff', fontSize: '15.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px', width: 'auto', padding: '12px 22px', marginTop: '14px' }
 
 // The end of a chapter must never be a dead end: it either hands the learner
@@ -48,7 +49,7 @@ function NextChapterBlock({ next, accent, onNextChapter, onStudy }) {
           <span style={{ display: 'block', fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', opacity: 0.85 }}>
             Next
           </span>
-          <span style={{ display: 'block', marginTop: '3px', fontSize: '15px', fontWeight: 800, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ display: 'block', marginTop: '3px', fontSize: '15px', fontWeight: 700, lineHeight: 1.5, overflowWrap: 'anywhere' }}>
             {chapterName}
           </span>
         </span>
@@ -120,14 +121,14 @@ export default function FinishOverlay({ story, accent, onBack, note, core, onPra
         padding: '34px', gap: '8px', overflowY: 'auto', outline: 'none',
       }}>
       <div style={{ width: '100%', maxWidth: '440px', margin: 'auto', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
-        <div style={{ width: '58px', height: '58px', borderRadius: '18px', background: accent + '18', color: accent, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}><Check size={28} color={accent} /></div>
+        <div style={{ width: '58px', height: '58px', borderRadius: '18px', background: accent + '18', color: ink(accent), display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '6px' }}><Check size={28} color={ink(accent)} /></div>
         <h2 id="finish-overlay-title" style={{ fontSize: '22px', fontWeight: 800 }}>
           {nextChapter ? 'Chapter complete' : 'You read it'}
         </h2>
         <p style={{ fontSize: '13.5px', color: 'var(--text-muted)', maxWidth: '280px', lineHeight: 1.6 }}>
           Nice — you read all of &ldquo;{story.title}&rdquo;.
         </p>
-        {note && <p style={{ fontSize: '13px', fontWeight: 700, color: accent, marginTop: '2px' }}>{note}</p>}
+        {note && <p style={{ fontSize: '13px', fontWeight: 700, color: ink(accent), marginTop: '2px' }}>{note}</p>}
 
         {hasQuiz && (
           <div style={{ width: '100%', marginTop: '18px' }}>

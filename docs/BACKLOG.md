@@ -13,7 +13,7 @@ long-lived engineering backlog; the board holds short-lived execution state.
 
 ### Redesign recovery and durable development checkpoints
 
-In progress on `codex/recovery-redesign-2026-09-28`. The prior local candidate and ZIP are unavailable; its reported scores and test counts cannot certify this reconstruction. [Recovery record](recovery-2026-09-28/RECOVERY.md) captures the retained design/protocol notes, remote-checkpoint procedure and remaining gates. Save each coherent increment to GitHub and verify the remote SHA before reporting it saved. Reconstruct client/SQL idempotency and reset-safe review recovery, then the primary UI flows, with new independent rendered review and native/backend gates before TestFlight. No production database change or app release has occurred through this recovery.
+In progress on `codex/recovery-redesign-2026-09-28`. The prior local candidate and ZIP are unavailable; its reported scores and test counts cannot certify this reconstruction. [Recovery record](recovery-2026-09-28/RECOVERY.md) captures the retained design/protocol notes, remote-checkpoint procedure and remaining gates. Save each coherent increment to GitHub and verify the remote SHA before reporting it saved. Reconstruct client/SQL idempotency and reset-safe review recovery, then the primary UI flows, with new independent rendered review and native/backend gates before TestFlight. Reading/navigation and native-dispatch validation are now reconstructed on the recovery branch; the canonical local run retains three unchanged review-tool subprocess timeouts and is not a release pass. No production database change or app release has occurred through this recovery.
 
 ### The task-contract floor covers a pattern's own root (FAB-60)
 

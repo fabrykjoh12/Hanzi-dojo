@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { readFileSync, existsSync } from 'node:fs'
+import { readFileSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs'
 import { spawnSync } from 'node:child_process'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 
 // The native verification TIER's contract: what runs it, what it covers, what
 // it must stay out of, and — the part that took a correction — the shape that
@@ -23,6 +25,7 @@ const NATIVE_WF = '.github/workflows/native.yml'
 const NATIVE = readFileSync(NATIVE_WF, 'utf8')
 const CI = readFileSync('.github/workflows/ci.yml', 'utf8')
 const ANDROID = readFileSync('.github/workflows/android-build.yml', 'utf8')
+const IOS = readFileSync('.github/workflows/ios-testflight.yml', 'utf8')
 const PKG = JSON.parse(readFileSync('package.json', 'utf8'))
 
 const executable = text => text.split('\n').filter(l => !/^\s*#/.test(l)).join('\n')
@@ -430,5 +433,118 @@ describe('the Android release build is ref-scoped', () => {
     const on = executable(ANDROID).slice(0, executable(ANDROID).indexOf('jobs:'))
     expect(on).toContain('workflow_dispatch')
     expect(on).not.toContain('pull_request')
+  })
+})
+
+// Execute the dispatch lane's actual shell guard. npm is a local fixture
+// producing a tiny bundle, so these tests never build, sign or upload an app.
+// grep remains real: missing config in the resulting artifact must fail.
+function releaseVerifyScript(yaml) {
+  const lines = yaml.split('\n')
+  const start = lines.findIndex(line => line.includes('name: Build and verify the native web app'))
+  expect(start, 'release verification step is missing').toBeGreaterThan(-1)
+  const runAt = lines.findIndex((line, index) => index > start && /^\s*run: \|/.test(line))
+  expect(runAt).toBeGreaterThan(start)
+  const indent = lines[runAt].match(/^\s*/)[0].length + 2
+  const body = []
+  for (const line of lines.slice(runAt + 1)) {
+    if (line.trim() && line.match(/^\s*/)[0].length < indent) break
+    body.push(line.slice(indent))
+  }
+  const script = body.join('\n')
+  expect(script).toContain('npm run verify:native')
+  expect(script).not.toContain('${{')
+  return script
+}
+
+function runReleaseVerify(yaml, { url = 'https://native-fixture.supabase.invalid', key = 'sb_publishable_native_fixture', bundle = 'both', verifierFails = false } = {}) {
+  const cwd = mkdtempSync(join(tmpdir(), 'hanzi-native-contract-'))
+  try {
+    const bin = join(cwd, 'bin')
+    mkdirSync(bin)
+    writeFileSync(join(bin, 'npm'), `#!/bin/sh
+set -eu
+printf '%s\\n' "$*" > invoked
+[ "$*" = 'run verify:native' ] || exit 97
+[ "$NATIVE_FIXTURE_FAIL" = 'false' ] || exit 39
+mkdir -p dist/client/assets
+: > dist/client/assets/app.js
+case "$NATIVE_FIXTURE_BUNDLE" in
+  both|url) printf '%s\\n' "$VITE_SUPABASE_URL" >> dist/client/assets/app.js ;;
+esac
+case "$NATIVE_FIXTURE_BUNDLE" in
+  both|key) printf '%s\\n' "$VITE_SUPABASE_ANON_KEY" >> dist/client/assets/app.js ;;
+esac
+`, { mode: 0o755 })
+    const result = spawnSync('bash', ['-c', releaseVerifyScript(yaml)], {
+      cwd, encoding: 'utf8', env: {
+        PATH: bin + ':' + process.env.PATH,
+        VITE_SUPABASE_URL: url, VITE_SUPABASE_ANON_KEY: key,
+        NATIVE_FIXTURE_BUNDLE: bundle, NATIVE_FIXTURE_FAIL: String(verifierFails),
+      },
+    })
+    return { code: result.status, output: result.stdout + result.stderr,
+      invoked: existsSync(join(cwd, 'invoked')) ? readFileSync(join(cwd, 'invoked'), 'utf8').trim() : null }
+  } finally { rmSync(cwd, { recursive: true, force: true }) }
+}
+
+describe.each([
+  ['Android', ANDROID, 'android', 'Install the upload keystore'],
+  ['iOS', IOS, 'ios', 'Install the App Store Connect API key'],
+])('%s dispatch verifies the shipped native artifact', (name, yaml, platform, signingStep) => {
+  it('installs the browser and verifies before sync and signing', () => {
+    const code = executable(yaml)
+    const deps = code.indexOf('npm ci')
+    const browser = code.indexOf('npx playwright install --with-deps chromium')
+    const verify = code.indexOf('npm run verify:native')
+    const sync = code.indexOf('npx cap sync ' + platform)
+    const signing = code.indexOf('name: ' + signingStep)
+    expect(deps).toBeGreaterThan(-1)
+    expect(browser).toBeGreaterThan(deps)
+    expect(verify).toBeGreaterThan(browser)
+    expect(sync).toBeGreaterThan(verify)
+    expect(signing).toBeGreaterThan(sync)
+    expect(code).not.toContain('npm run build:public')
+  })
+
+  it('injects both publishable settings from the existing repository secrets', () => {
+    expect(yaml).toContain('VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}')
+    expect(yaml).toContain('VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}')
+    const start = yaml.indexOf('name: Build and verify the native web app')
+    const step = yaml.slice(start, yaml.indexOf('name: Sync into', start))
+    expect(step).toContain('VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}')
+    expect(step).toContain('VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}')
+  })
+
+  it.each([{ url: '' }, { key: '' }])('refuses missing configuration before building (%j)', settings => {
+    const result = runReleaseVerify(yaml, settings)
+    expect(result.code).not.toBe(0)
+    expect(result.invoked).toBeNull()
+    expect(result.output).toContain('Missing repository secret(s)')
+  })
+
+  it.each(['url', 'key'])('rejects a verified artifact containing only the %s', bundle => {
+    const result = runReleaseVerify(yaml, { bundle })
+    expect(result.invoked).toBe('run verify:native')
+    expect(result.code).not.toBe(0)
+    expect(result.output).toContain('Built bundle does not contain')
+  })
+
+  it('propagates verifier failure before configuration checks', () => {
+    const result = runReleaseVerify(yaml, { verifierFails: true })
+    expect(result.code).toBe(39)
+    expect(result.invoked).toBe('run verify:native')
+    expect(result.output).not.toContain('Built bundle does not contain')
+  })
+
+  it('accepts a verified artifact with both settings without printing their values', () => {
+    const url = 'https://native-fixture.supabase.invalid'
+    const key = 'sb_publishable_native_fixture'
+    const result = runReleaseVerify(yaml, { url, key })
+    expect(result.code).toBe(0)
+    expect(result.invoked).toBe('run verify:native')
+    expect(result.output).toContain('Native bundle verified')
+    expect(result.output).not.toContain(url)
+    expect(result.output).not.toContain(key)
   })
 })

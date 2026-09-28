@@ -46,14 +46,14 @@ export function dockBottom() {
 // reader) drops to the focused value, so a hidden dock never reserves space.
 export function contentBottomInset(navVisible = true) {
   if (!navVisible) return 'calc(' + FOCUS_GAP + 'px + env(safe-area-inset-bottom))'
-  return 'calc(' + (DOCK_HEIGHT + CONTENT_GAP) + 'px + ' + dockBottom() + ')'
+  return 'calc(' + 'var(--hd-dock-height, ' + DOCK_HEIGHT + 'px) + ' + CONTENT_GAP + 'px + ' + dockBottom() + ')'
 }
 
 // `bottom` for a control that floats above the dock (feedback, offline pill,
 // the reader's audio bar). Same contract, slightly tighter gap.
 export function floatingBottom(navVisible = true) {
   if (!navVisible) return 'calc(' + FOCUS_GAP + 'px + env(safe-area-inset-bottom))'
-  return 'calc(' + (DOCK_HEIGHT + FLOAT_GAP) + 'px + ' + dockBottom() + ')'
+  return 'calc(' + 'var(--hd-dock-height, ' + DOCK_HEIGHT + 'px) + ' + FLOAT_GAP + 'px + ' + dockBottom() + ')'
 }
 
 // Whether the dock is shown for a given view. Focused learning experiences own

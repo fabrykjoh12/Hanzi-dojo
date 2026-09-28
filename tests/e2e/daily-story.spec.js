@@ -6,7 +6,7 @@ test.describe('Story of the day', () => {
   test('shows a daily pick that opens into the reader', async ({ page }) => {
     await page.goto('/stories');
 
-    const daily = page.getByRole('button', { name: /Featured for you/i });
+    const daily = page.getByRole('button', { name: /Featured story/i });
     await expect(daily).toBeVisible();
 
     await daily.click();
