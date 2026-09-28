@@ -11,6 +11,10 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+### Redesign recovery and durable development checkpoints
+
+In progress on `codex/recovery-redesign-2026-09-28`. The prior local candidate and ZIP are unavailable; its reported scores and test counts cannot certify this reconstruction. [Recovery record](recovery-2026-09-28/RECOVERY.md) captures the retained design/protocol notes, remote-checkpoint procedure and remaining gates. Save each coherent increment to GitHub and verify the remote SHA before reporting it saved. Reconstruct client/SQL idempotency and reset-safe review recovery, then the primary UI flows, with new independent rendered review and native/backend gates before TestFlight. No production database change or app release has occurred through this recovery.
+
 ### The task-contract floor covers a pattern's own root (FAB-60)
 
 A `dir/**` entry does not cover its own root — `covers('.git/**', '.git')` is false and so is the reverse — so a contract naming `.git`, `.agent/tasks` or `.claude/hooks` in ordinary `allowed_paths` used to be refused by nothing: not `npm run verify:tasks`, not `contractSecurityViolations`, not the resolved floor loop, and the scope test then matched it exactly and **allowed the write**. In a git worktree `.git` is a regular file holding a gitdir pointer, and `/parallel` uses worktrees, so it was a real write rather than a curiosity.
