@@ -1,5 +1,6 @@
 import { supabase } from './supabase'
 import { cacheGet, cacheSet } from './offline'
+import { reviewBaseline, reconcileReviewCards } from './reviewJournal'
 import { fetchPaged } from './supabasePaging'
 
 // Shared, server-side-scoped card queries.
@@ -22,6 +23,11 @@ import { fetchPaged } from './supabasePaging'
 export async function getTrackCards(userId, track, { level, maxLevel, columns = '*', includeUnleveled = false } = {}, client = supabase) {
   const scope = level != null ? String(level) : (maxLevel != null ? 'lte' + maxLevel + (includeUnleveled ? '+u' : '') : 'all')
   const key = 'cards:' + userId + ':' + track.language + ':' + track.system + ':' + scope + ':' + columns
+  const baseline = await reviewBaseline(userId)
+  const options = { level, maxLevel, includeUnleveled }
+  // A conflict needs a complete scheduler snapshot before quarantine can
+  // clear. Partial Home projections cannot repair an older full Study cache.
+  const selected = columns === '*' || baseline.some(row => row.status === 'conflict') ? '*' : [...new Set([...columns.split(',').map(value => value.trim()), 'id', 'revision', 'vocab_id'])].join(',')
   try {
     // Paged: a deck past PostgREST's 1000-row cap (an HSK 1-4 window is
     // already 1,879 words) must never lose cards to a truncated response —
@@ -30,7 +36,7 @@ export async function getTrackCards(userId, track, { level, maxLevel, columns = 
     const data = await fetchPaged(() => {
       let query = client
         .from('cards')
-        .select(columns + ', vocabulary!inner(id, level)')
+        .select(selected + ', vocabulary!inner(id, level)')
         .eq('user_id', userId)
         .eq('vocabulary.language', track.language)
         .eq('vocabulary.system', track.system)
@@ -48,10 +54,11 @@ export async function getTrackCards(userId, track, { level, maxLevel, columns = 
       }
       return query.order('id', { ascending: true })
     })
-    cacheSet(key, data)
-    return data
-  } catch {
+    await cacheSet(key, data)
+    return await reconcileReviewCards(userId, data, track, options, { fresh: true, baseline, complete: selected === '*' })
+  } catch (error) {
     const cached = await cacheGet(key)
-    return cached || []
+    if (cached == null) throw error
+    return reconcileReviewCards(userId, cached, track, options)
   }
 }

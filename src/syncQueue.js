@@ -1,18 +1,6 @@
-// Offline write queue — durable outbox of writes made while offline, replayed
-// in order when the network returns — plus the single grade-write helper both
-// the online screen and the replay path go through (`gradeCardWrite`).
-//
-// Design goals:
-//  - The ONLINE path only touches `gradeCardWrite`. Study/Stories still enqueue
-//    exclusively when `navigator.onLine` is false, so normal use is unaffected.
-//  - One grade = one transaction. `gradeCardWrite` calls the `grade_card` RPC,
-//    which writes the card row, the review log and the day's activity together.
-//  - Replay is idempotent: every queued grade carries a stable `opId`, and the
-//    RPC turns a repeat into a no-op. Where the RPC is unavailable the older
-//    de-dupe rules still apply (card de-duped by (user_id, vocab_id)).
-//  - supabase is passed in (not imported) so the pure helpers below stay
-//    unit-testable without the client or its env.
-
+// Account-scoped legacy outbox for story and analytics writes. Review grading
+// now uses reviewJournal.js. Old grades are retained because they lack the
+// original snapshot and reset generation needed for safe recovery.
 import { outboxAdd, outboxAll, outboxDelete, outboxCount } from './offline'
 
 // ── Enqueue (called from the offline branch of Study / Stories) ─────────────
@@ -60,8 +48,12 @@ export function enqueueAnalytics(event) {
   return outboxAdd({ kind: 'analytics', event })
 }
 
-export function pendingWrites() {
-  return outboxCount()
+export async function pendingWrites(ownerId) {
+  if (!ownerId) return outboxCount()
+  return (await outboxAll()).filter(row => {
+    const owners = [row.op?.userId, row.op?.event?.user_id].filter(Boolean)
+    return owners.length && owners.every(owner => owner === ownerId)
+  }).length
 }
 
 // ── Pure helpers (unit-tested) ──────────────────────────────────────────────
@@ -94,8 +86,8 @@ export function nextActivityCounts(cur, cardState) {
 
 // ── The one grade write ─────────────────────────────────────────────────────
 // Is this error "the grade_card function isn't there"? PostgREST answers a call
-// to an unknown function with PGRST202 / a 404. That is the expected state until
-// the owner applies the migration, so it must fall back, not surface an error.
+// to an unknown function with PGRST202 / a 404. Review writes fail closed;
+// story-reward compatibility still uses this classifier.
 export function isMissingRpc(error) {
   if (!error) return false
   if (error.code === 'PGRST202' || error.code === '404') return true
@@ -120,10 +112,8 @@ export function resetGradeRpcProbe() {
 //
 // Preferred path: the `grade_card` RPC — card row + review log + daily activity
 // in a single transaction, de-duped on `opId`.
-// Fallback (migration not applied yet): exactly the writes the screen used to
-// make — the card write is awaited and fatal, the log and the activity upsert
-// stay best-effort and never block the grade. `pendingLogId` resolves with the
-// log's id when that non-blocking insert lands, so undo can still remove it.
+// Compatibility for existing callers only; Study uses reviewJournal v2.
+// Missing RPCs never fall back to separate card/log/activity writes.
 export async function gradeCardWrite(supabase, payload) {
   const p = payload || {}
   if (!rpcUnavailable) {
@@ -152,73 +142,14 @@ export async function gradeCardWrite(supabase, payload) {
       }
     }
     // A real failure (RLS, constraint, network) must surface. Only an absent
-    // function — or a backend answering the call without doing anything, which
-    // is indistinguishable from absent — drops to the legacy path.
+    // function — or a backend answering without doing anything — is unavailable.
     if (error && !isMissingRpc(error)) {
       return { ok: false, cardId: null, logId: null, viaRpc: true, activityWritten: false, pendingLogId: null, error }
     }
     rpcUnavailable = true
   }
-  return legacyGradeWrite(supabase, p)
-}
-
-// The pre-RPC write path, kept verbatim in behavior so an unapplied migration
-// changes nothing the learner can see.
-async function legacyGradeWrite(supabase, p) {
-  let cardId = p.cardId
-  let inserted = false
-  if (cardId) {
-    const { error } = await supabase.from('cards').update(p.updates).eq('id', cardId)
-    if (error) return { ok: false, cardId: null, logId: null, viaRpc: false, activityWritten: false, pendingLogId: null, error }
-  } else {
-    // A card met for the first time. It may already exist (studied online
-    // meanwhile, or a prior partial flush inserted it), so de-dupe on
-    // (user_id, vocab_id) before inserting.
-    const { data: existing } = await supabase
-      .from('cards').select('id')
-      .eq('user_id', p.userId).eq('vocab_id', p.vocabId).maybeSingle()
-    if (existing && existing.id) {
-      cardId = existing.id
-      const { error } = await supabase.from('cards').update(p.updates).eq('id', cardId)
-      if (error) return { ok: false, cardId: null, logId: null, viaRpc: false, activityWritten: false, pendingLogId: null, error }
-    } else {
-      const { data, error } = await supabase
-        .from('cards')
-        .insert({ user_id: p.userId, vocab_id: p.vocabId, ...p.updates })
-        .select('id').single()
-      if (error) return { ok: false, cardId: null, logId: null, viaRpc: false, activityWritten: false, pendingLogId: null, error }
-      cardId = data && data.id
-      inserted = true
-    }
-  }
-
-  // review_logs is history for FSRS tuning — best-effort, never blocks a grade.
-  let pendingLogId = null
-  if (p.log && cardId) {
-    pendingLogId = Promise.resolve(
-      supabase.from('review_logs').insert({
-        user_id: p.userId, card_id: cardId, vocab_id: p.vocabId, ...p.log,
-      }).select('id').single()
-    ).then(({ data }) => (data && data.id) || null).catch(() => null)
-  }
-
-  // Only absolute ('set') counts can be replayed safely without a transaction.
-  // Increment mode (offline replay) is reported unwritten so `flushOutbox`
-  // folds those days in one reconcile pass, exactly as it did before.
-  let activityWritten = false
-  if (p.activity && (p.activity.mode || 'set') === 'set') {
-    activityWritten = true
-    supabase.from('daily_activity').upsert({
-      user_id: p.userId,
-      activity_date: p.activity.date,
-      studied_cards: p.activity.studied,
-      new_cards: p.activity.new,
-      learning_cards: p.activity.learning,
-      review_cards: p.activity.review,
-    }, { onConflict: 'user_id,activity_date' }).then(() => {})
-  }
-
-  return { ok: true, cardId, logId: null, alreadyApplied: false, inserted, viaRpc: false, activityWritten, pendingLogId, error: null }
+  return { ok: false, cardId: null, logId: null, viaRpc: true, activityWritten: false,
+    pendingLogId: null, error: { message: 'The review service is unavailable. Please try again later.' } }
 }
 
 // ── Replay one op. `ok` = it may leave the outbox; `reconcile` = its day counts
@@ -242,34 +173,20 @@ async function replayOp(supabase, op) {
   if (op.kind === 'storyClaim') {
     // The RPC is idempotent per (track, claim_date). A claim whose day has a
     // redeemed row already just reports that state — never a second unlock.
-    // An absent RPC (migration not applied) drops the op rather than wedging
-    // the queue behind the grade writes.
-    const { error } = await supabase.rpc('claim_story_reward', {
+    // Owner identity is checked at execution time, including if authentication
+    // changes while the request is in flight. An absent RPC retains the claim.
+    const { error } = await supabase.rpc('claim_story_reward_v2', {
+      p_user_id: op.userId,
       p_language: op.language,
       p_system: op.system,
       p_claim_date: op.claimDate,
       p_story_id: op.storyId || null,
     })
-    return { ok: !error || isMissingRpc(error), reconcile: false }
+    return { ok: !error, reconcile: false }
   }
-  if (op.kind === 'grade') {
-    // Same transaction the online screen uses. `opId` makes a repeat a no-op,
-    // so a flush interrupted after the write cannot double-count on retry.
-    const counts = op.day ? dayCountsOf([op])[op.day] : null
-    const res = await gradeCardWrite(supabase, {
-      userId: op.userId,
-      cardId: op.cardId || null,
-      vocabId: op.vocabId,
-      updates: op.updates,
-      log: op.log || null,
-      activity: counts
-        ? { mode: 'increment', date: op.day, studied: counts.studied, new: counts.new, learning: counts.learning, review: counts.review }
-        : null,
-      opId: op.opId || null,
-    })
-    // Without the RPC the day counts were not written — flush reconciles them.
-    return { ok: res.ok, reconcile: res.ok && !res.activityWritten }
-  }
+  // Legacy intents lack a server snapshot and generation. They cannot be
+  // safely replayed after reset or another device's review; retain for recovery.
+  if (op.kind === 'grade') return { ok: false, reconcile: false }
   return { ok: true, reconcile: false }
 }
 
@@ -278,8 +195,8 @@ let flushing = false
 // Replay the whole outbox against Supabase. Ops that fail are left in place for
 // the next attempt. daily_activity is reconciled once at the end over exactly
 // the ops that flushed this pass.
-export async function flushOutbox(supabase) {
-  if (flushing || !supabase) return { flushed: 0 }
+export async function flushOutbox(supabase, ownerId) {
+  if (flushing || !supabase || !ownerId) return { flushed: 0 }
   flushing = true
   try {
     const rows = (await outboxAll()) || []
@@ -287,50 +204,19 @@ export async function flushOutbox(supabase) {
     rows.sort((a, b) => a.id - b.id)
 
     let flushed = 0
-    // Only ops whose day counts the RPC did NOT write (the legacy fallback
-    // path) are folded in below — replaying through the RPC already did it.
-    const unreconciled = []
-    let userId = null
     for (const row of rows) {
       const op = row.op
+      const owners = [op?.userId, op?.event?.user_id].filter(Boolean)
+      if (!owners.length || owners.some(owner => owner !== ownerId)) continue
       const res = await replayOp(supabase, op)
       if (!res.ok) continue
       await outboxDelete(row.id)
       flushed += 1
-      if (res.reconcile) unreconciled.push(op)
-      if (op && op.userId) userId = op.userId
-    }
-
-    if (unreconciled.length > 0 && userId) {
-      await reconcile(supabase, userId, unreconciled)
     }
     return { flushed }
   } catch {
     return { flushed: 0 }
   } finally {
     flushing = false
-  }
-}
-
-// Fold the flushed ops' day counts into the live server rows. Best-effort: a
-// failure here loses a little calendar count, never data.
-async function reconcile(supabase, userId, ops) {
-  const days = dayCountsOf(ops)
-  for (const day of Object.keys(days)) {
-    const inc = days[day]
-    try {
-      const { data } = await supabase
-        .from('daily_activity').select('studied_cards, new_cards, learning_cards, review_cards')
-        .eq('user_id', userId).eq('activity_date', day).maybeSingle()
-      const cur = data || {}
-      await supabase.from('daily_activity').upsert({
-        user_id: userId,
-        activity_date: day,
-        studied_cards: (cur.studied_cards || 0) + inc.studied,
-        new_cards: (cur.new_cards || 0) + inc.new,
-        learning_cards: (cur.learning_cards || 0) + inc.learning,
-        review_cards: (cur.review_cards || 0) + inc.review,
-      }, { onConflict: 'user_id,activity_date' })
-    } catch { /* calendar counts are cosmetic */ }
   }
 }

@@ -3,6 +3,7 @@ import { WifiOff, RefreshCw } from 'lucide-react'
 import { supabase } from './supabase'
 import { flushOutbox, pendingWrites } from './syncQueue'
 import { useOnline } from './useOnline'
+import { pendingReviewCount, recoverReviews, subscribeReviewChanges } from './reviewJournal'
 import { floatingBottom } from './bottomBar'
 
 // Ask the browser to replay the outbox when connectivity returns, even if the
@@ -20,7 +21,7 @@ function registerFlushSync() {
 //  - online with queued writes → flush the outbox and show a brief "syncing".
 // It also drives the flush: on mount, every time the connection returns, and
 // when the service worker's background-sync handler pings. Sits above the nav.
-export default function OfflineBar({ session, navVisible = true }) {
+export default function OfflineBar({ session, navVisible = true, hidden = false }) {
   const online = useOnline()
   const [pending, setPending] = useState(0)
   const [syncing, setSyncing] = useState(false)
@@ -28,13 +29,13 @@ export default function OfflineBar({ session, navVisible = true }) {
   useEffect(() => {
     let cancelled = false
     async function refresh() {
-      const n = await pendingWrites()
+      const n = await pendingWrites(session?.user?.id) + await pendingReviewCount(session?.user?.id)
       if (!cancelled) setPending(n)
     }
     async function run() {
       if (!session) { setPending(0); return }
       await refresh()
-      const count = await pendingWrites()
+      const count = await pendingWrites(session?.user?.id) + await pendingReviewCount(session.user.id)
       if (!online) {
         // Queue a background sync so a backgrounded page still flushes on reconnect.
         if (count > 0) registerFlushSync()
@@ -42,13 +43,17 @@ export default function OfflineBar({ session, navVisible = true }) {
       }
       if (count > 0) {
         if (!cancelled) setSyncing(true)
-        await flushOutbox(supabase)
+        await recoverReviews(supabase, session.user.id)
+        await flushOutbox(supabase, session.user.id)
         if (!cancelled) setSyncing(false)
         await refresh()
       }
     }
     run()
-    return () => { cancelled = true }
+    // Changes refresh the count only: immediate replay here would race the
+    // foreground request and Undo. Recovery runs on mount/reconnect/SW wake.
+    const unsubscribe = subscribeReviewChanges(userId => { if (userId === session?.user?.id) refresh() })
+    return () => { cancelled = true; unsubscribe() }
   }, [online, session])
 
   // Flush when the service worker's background-sync handler wakes us.
@@ -57,16 +62,17 @@ export default function OfflineBar({ session, navVisible = true }) {
     const onMessage = async (e) => {
       if (e.data && e.data.type === 'hd-flush') {
         setSyncing(true)
-        await flushOutbox(supabase)
+        await recoverReviews(supabase, session.user.id)
+        await flushOutbox(supabase, session.user.id)
         setSyncing(false)
-        setPending(await pendingWrites())
+        setPending(await pendingWrites(session?.user?.id) + await pendingReviewCount(session.user.id))
       }
     }
     navigator.serviceWorker.addEventListener('message', onMessage)
     return () => navigator.serviceWorker.removeEventListener('message', onMessage)
   }, [session])
 
-  if (online && pending === 0) return null
+  if (hidden || online && pending === 0) return null
 
   const bar = {
     position: 'fixed', left: '50%', transform: 'translateX(-50%)',
@@ -86,12 +92,12 @@ export default function OfflineBar({ session, navVisible = true }) {
       {!online ? (
         <>
           <WifiOff size={15} strokeWidth={2.2} />
-          <span>Offline — your reviews are saved on this device and sync when you reconnect.</span>
+          <span>Offline — saved answers will sync when you reconnect.</span>
         </>
       ) : (
         <>
           <RefreshCw size={15} strokeWidth={2.2} style={syncing ? { animation: 'hd-spin 0.9s linear infinite' } : undefined} />
-          <span>Syncing {pending} saved {pending === 1 ? 'review' : 'reviews'}…</span>
+          <span>{syncing ? 'Syncing saved progress…' : pending + ' saved updates need a connection or review.'}</span>
         </>
       )}
     </div>

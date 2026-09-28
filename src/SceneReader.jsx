@@ -1,3 +1,4 @@
+import { ink } from './languageTheme'
 import { useCallback } from 'react'
 import { getLevelLabel } from './utils'
 import { wordStatus, isPlaceWord, isWordlikeToken } from './storyReading'
@@ -74,7 +75,7 @@ export default function SceneReader(props) {
           {beat && beat.emoji && (
             <div aria-hidden="true" style={{ fontSize: '72px', lineHeight: 1, marginBottom: '26px' }}>{beat.emoji}</div>
           )}
-          {beat && beat.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: accent, marginBottom: '10px' }}>{beat.speaker}</div>}
+          {beat && beat.speaker && <div style={{ fontSize: '12.5px', fontWeight: 800, color: ink(accent), marginBottom: '10px' }}>{beat.speaker}</div>}
           <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'center', gap: '8px' }}>
             <div style={{ fontFamily: c.readingFontFamily, fontSize: '30px', lineHeight: reserve ? 2.05 : 1.6, fontWeight: 500, color: isDone ? DONE_GREEN : undefined }}>
               {beat && beat.tokens.map((t, k) => {

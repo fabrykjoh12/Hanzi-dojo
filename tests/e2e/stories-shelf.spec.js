@@ -89,7 +89,7 @@ test.describe('Story library — poster shelves', () => {
   test('leads with one hero, filter chips, and level rows — and no back button', async ({ page }) => {
     await page.goto('/stories');
     await expect(page.getByRole('heading', { name: 'Stories', exact: true })).toBeVisible();
-    await expect(page.getByRole('button', { name: /Featured for you/ })).toBeVisible();
+    await expect(page.getByRole('button', { name: /Featured story/ })).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Top picks for you' })).toBeVisible();
     // Earlier levels get their own named rows now.
     await expect(page.getByRole('heading', { name: 'HSK 1', exact: true })).toBeVisible();

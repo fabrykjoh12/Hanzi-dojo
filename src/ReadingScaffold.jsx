@@ -1,3 +1,4 @@
+import { ink } from './languageTheme'
 import { useState, useEffect, useRef } from 'react'
 import { tokenReading, furiganaSplit, FURIGANA_MODES } from './storyReading'
 import { readingFontOptions, readingFontHint } from './readingFonts'
@@ -11,7 +12,7 @@ import { trapDialogFocus } from './dialogFocus'
 // (tokenReading → readingVisibleFor), the same rule the classic scroll reader
 // uses; this file only draws it and offers the quiet control that picks a mode.
 
-const RT_COLOR = '#B45309'
+const RT_COLOR = 'var(--reading-ink)'
 
 // U+00A0. A plain space collapses in HTML, so it could not hold an empty
 // annotation row open; this one can.
@@ -174,8 +175,8 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
                 flex: '1 1 auto', minWidth: '68px', minHeight: '44px', fontSize: '12px', fontWeight: 700, padding: '8px 10px',
                 borderRadius: '10px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                 border: '1px solid ' + (on ? accent + '73' : 'var(--border)'),
-                background: on ? accent + '14' : 'var(--surface)',
-                color: on ? accent : 'var(--text-muted)',
+                background: on ? 'color-mix(in srgb, ' + accent + ' 8%, var(--surface))' : 'var(--surface)',
+                color: on ? ink(accent) : 'var(--text-muted)',
               }}
             >{MODE_LABELS[value]}</button>
           )
@@ -202,8 +203,8 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
                     // visible before the choice is made.
                     fontFamily: opt.stack,
                     border: '1px solid ' + (on ? accent + '73' : 'var(--border)'),
-                    background: on ? accent + '14' : 'var(--surface)',
-                    color: on ? accent : 'var(--text-muted)',
+                    background: on ? 'color-mix(in srgb, ' + accent + ' 8%, var(--surface))' : 'var(--surface)',
+                    color: on ? ink(accent) : 'var(--text-muted)',
                   }}
                 >
                   {opt.sample && (
@@ -234,8 +235,8 @@ export function ReadingSettings({ mode, setMode, language, accent, onOpenChange,
                     flex: '1 1 auto', minHeight: '44px', fontSize: '12px', fontWeight: 700, padding: '8px 10px',
                     borderRadius: '10px', cursor: 'pointer', fontFamily: 'Inter, sans-serif',
                     border: '1px solid ' + (on ? accent + '73' : 'var(--border)'),
-                    background: on ? accent + '14' : 'var(--surface)',
-                    color: on ? accent : 'var(--text-muted)',
+                    background: on ? 'color-mix(in srgb, ' + accent + ' 8%, var(--surface))' : 'var(--surface)',
+                    color: on ? ink(accent) : 'var(--text-muted)',
                   }}
                 >{value}×</button>
               )

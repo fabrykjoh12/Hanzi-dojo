@@ -1,0 +1,95 @@
+{
+  "phase": "interim-scroll",
+  "startedAt": "2026-09-28T11:33:07.261Z",
+  "sourceCommit": "a3f73ccd41a5053f32dcb50e30ba2cba756bb610",
+  "sourceStart": {
+    "algorithm": "sha256 of sorted tracked and unignored src path NUL then file bytes",
+    "fileCount": 614,
+    "sha256": "6f12fa40dc2077fbed0871c8b9044db16b07ef90c6a4f9b8f93cd16571a00fda"
+  },
+  "viewportMode": "Chromium responsive browser, not native device",
+  "fontMode": "Bundled native fonts served in browser",
+  "screenshots": [
+    {
+      "file": "home-320-light-text200.png",
+      "route": "/",
+      "theme": "light",
+      "width": 320,
+      "largeTextStress": true,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 320,
+      "viewportWidth": 320,
+      "horizontalOverflow": false,
+      "heading": [
+        "Today",
+        "Your week"
+      ],
+      "undersizedTargets": [],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 319,
+      "pageErrors": []
+    },
+    {
+      "file": "study-320-dark-text200.png",
+      "route": "/study",
+      "theme": "dark",
+      "width": 320,
+      "largeTextStress": true,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 320,
+      "viewportWidth": 320,
+      "horizontalOverflow": false,
+      "heading": [
+        "Study session"
+      ],
+      "undersizedTargets": [],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 189,
+      "pageErrors": []
+    },
+    {
+      "file": "study-grades-scrolled-320-dark-text200.png",
+      "route": "/study",
+      "theme": "dark",
+      "width": 320,
+      "largeTextStress": true,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 320,
+      "viewportWidth": 320,
+      "horizontalOverflow": false,
+      "heading": [
+        "Study session"
+      ],
+      "undersizedTargets": [],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 189,
+      "pageErrors": []
+    }
+  ],
+  "journeys": [
+    {
+      "name": "Large text grade reachability after scrolling",
+      "width": 320,
+      "visibleTop": true,
+      "visibleBottom": true,
+      "hit": true
+    }
+  ],
+  "failures": [],
+  "finishedAt": "2026-09-28T11:33:21.537Z",
+  "sourceEnd": {
+    "algorithm": "sha256 of sorted tracked and unignored src path NUL then file bytes",
+    "fileCount": 614,
+    "sha256": "6f12fa40dc2077fbed0871c8b9044db16b07ef90c6a4f9b8f93cd16571a00fda"
+  },
+  "sourceStable": true
+}

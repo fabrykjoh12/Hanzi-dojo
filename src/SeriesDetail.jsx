@@ -64,7 +64,7 @@ function ChapterRow({ row, accentHex, fontFamily, showLockHint, onOpen }) {
       <span style={{ flex: 1, minWidth: 0 }}>
         <span style={{
           display: 'block', fontSize: '14.5px', fontWeight: current ? 800 : 700, color: 'var(--text)',
-          fontFamily, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+          fontFamily, lineHeight: 1.5, overflowWrap: 'anywhere',
         }}>
           {nativeLabel ? nativeLabel + ' · ' + title : title}
         </span>
@@ -156,7 +156,7 @@ export default function SeriesDetail({
 
         <div style={{ display: 'flex', gap: isMobile ? '16px' : '26px', alignItems: 'flex-start', marginBottom: '10px' }}>
           <StoryCover
-            story={coverStory} path={coverStory && coverStory.image_path} accent={accentHex} radius={16}
+            story={coverStory} path={coverStory && coverStory.image_path} accent={accentHex} radius={16} fit="contain"
             style={{
               width: posterWidth + 'px', aspectRatio: '2 / 3', flexShrink: 0,
               border: '1px solid var(--border)', boxShadow: '0 14px 34px rgba(24,24,27,0.16)',
@@ -171,7 +171,7 @@ export default function SeriesDetail({
             </div>
             <h1 style={{
               margin: 0, fontSize: isMobile ? '23px' : '30px', fontWeight: 800,
-              color: 'var(--text)', fontFamily, lineHeight: 1.18, letterSpacing: '-0.02em',
+              color: 'var(--text)', fontFamily, lineHeight: 1.45, overflowWrap: 'anywhere',
             }}>
               {unit.title}
             </h1>
@@ -331,7 +331,7 @@ function SeriesActions({
         ) : canMakeActive ? (
           <button onClick={onMakeActive} className="hd-press" style={{
             display: 'inline-flex', alignItems: 'center', gap: '6px',
-            minHeight: '40px', padding: '0 14px', borderRadius: '999px', cursor: 'pointer',
+            minHeight: '44px', padding: '0 14px', borderRadius: '999px', cursor: 'pointer',
             border: '1px solid var(--border)', background: 'var(--surface)',
             fontSize: '12.5px', fontWeight: 700, color: 'var(--text-muted)', fontFamily: 'Inter, sans-serif',
           }}>

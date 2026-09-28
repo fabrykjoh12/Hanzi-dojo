@@ -13,7 +13,7 @@ describe('dockBottom', () => {
 describe('contentBottomInset', () => {
   it('reserves the dock plus a content gap while the dock is shown', () => {
     expect(contentBottomInset(true))
-      .toBe('calc(82px + max(env(safe-area-inset-bottom), 12px))')
+      .toBe('calc(var(--hd-dock-height, 58px) + 24px + max(env(safe-area-inset-bottom), 12px))')
   })
 
   // The reservation a scrolled-to-the-end page depends on: the dock's own
@@ -31,7 +31,7 @@ describe('contentBottomInset', () => {
 describe('floatingBottom', () => {
   it('parks a floating control above the dock, never on it', () => {
     expect(floatingBottom(true))
-      .toBe('calc(70px + max(env(safe-area-inset-bottom), 12px))')
+      .toBe('calc(var(--hd-dock-height, 58px) + 12px + max(env(safe-area-inset-bottom), 12px))')
   })
 
   it('follows the dock away in focused screens', () => {

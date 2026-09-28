@@ -1,0 +1,101 @@
+[
+  {
+    "tag": "DIV",
+    "color": "color(srgb 0.805098 0.459216 0.398824)",
+    "background": "rgba(0, 0, 0, 0)",
+    "image": "none",
+    "opacity": "1",
+    "fontSize": "21px",
+    "fontWeight": "650"
+  },
+  {
+    "tag": "DIV",
+    "color": "rgb(232, 232, 234)",
+    "background": "rgba(0, 0, 0, 0)",
+    "image": "none",
+    "opacity": "1",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "tag": "DIV",
+    "color": "rgb(232, 232, 234)",
+    "background": "rgba(0, 0, 0, 0)",
+    "image": "none",
+    "opacity": "1",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "tag": "DIV",
+    "color": "rgb(232, 232, 234)",
+    "background": "rgb(26, 29, 36)",
+    "image": "none",
+    "opacity": "1",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "tag": "DIV",
+    "color": "rgb(232, 232, 234)",
+    "background": "rgba(0, 0, 0, 0)",
+    "image": "none",
+    "opacity": "1",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "tag": "DIV",
+    "color": "rgb(232, 232, 234)",
+    "background": "rgba(0, 0, 0, 0)",
+    "image": "none",
+    "opacity": "1",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "tag": "MAIN",
+    "color": "rgb(232, 232, 234)",
+    "background": "rgba(0, 0, 0, 0)",
+    "image": "none",
+    "opacity": "1",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "tag": "DIV",
+    "color": "rgb(232, 232, 234)",
+    "background": "rgb(15, 17, 21)",
+    "image": "none",
+    "opacity": "1",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "tag": "DIV",
+    "color": "rgb(232, 232, 234)",
+    "background": "rgba(0, 0, 0, 0)",
+    "image": "none",
+    "opacity": "1",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "tag": "BODY",
+    "color": "rgb(232, 232, 234)",
+    "background": "rgb(15, 17, 21)",
+    "image": "none",
+    "opacity": "1",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  },
+  {
+    "tag": "HTML",
+    "color": "rgb(255, 255, 255)",
+    "background": "rgba(0, 0, 0, 0)",
+    "image": "none",
+    "opacity": "1",
+    "fontSize": "16px",
+    "fontWeight": "400"
+  }
+]

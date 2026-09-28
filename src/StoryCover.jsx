@@ -6,7 +6,7 @@ import StoryFormatIcon from './StoryFormatIcon'
 // browser's broken-image glyph.
 function fallbackBackground(accent) {
   const a = accent || '#6E8466'
-  return 'linear-gradient(135deg, ' + a + '26 0%, ' + a + '0D 55%, var(--surface-2) 100%)'
+  return 'color-mix(in srgb, ' + a + ' 6%, var(--surface-2))'
 }
 
 // Story cover / thumbnail with a designed fallback. The storage blob for a cover
@@ -17,7 +17,7 @@ function fallbackBackground(accent) {
 //
 // The caller sizes the slot via `style` (e.g. a fixed aspectRatio); overlays
 // like a "read" badge pass through as children.
-export default function StoryCover({ story, path, accent, alt = '', radius = 14, style, children, loading = 'lazy' }) {
+export default function StoryCover({ story, path, accent, alt = '', radius = 14, style, children, loading = 'lazy', fit = 'cover' }) {
   const src = path ? getAudioUrl(path) : null
   const [failed, setFailed] = useState(false)
   // A new story swapped into the same slot (the reader stays mounted across
@@ -37,7 +37,7 @@ export default function StoryCover({ story, path, accent, alt = '', radius = 14,
       {showImg ? (
         <img
           src={src} alt={alt} loading={loading} onError={() => setFailed(true)}
-          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+          style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: fit, display: 'block' }}
         />
       ) : (
         <span aria-hidden="true" style={{ display: 'grid', placeItems: 'center', opacity: 0.68, color: accent || 'var(--text-muted)' }}>

@@ -1,0 +1,66 @@
+{
+  "phase": "interim",
+  "startedAt": "2026-09-28T11:31:45.706Z",
+  "sourceCommit": "a3f73ccd41a5053f32dcb50e30ba2cba756bb610",
+  "sourceStart": {
+    "algorithm": "sha256 of sorted tracked and unignored src path NUL then file bytes",
+    "fileCount": 614,
+    "sha256": "a0230b9a302f6b03ca4729c7e229596d3449390e77110b898a02d304ad8bd0c8"
+  },
+  "viewportMode": "Chromium responsive browser, not native device",
+  "fontMode": "Bundled native fonts served in browser",
+  "screenshots": [
+    {
+      "file": "home-320-light-text200.png",
+      "route": "/",
+      "theme": "light",
+      "width": 320,
+      "largeTextStress": true,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 320,
+      "viewportWidth": 320,
+      "horizontalOverflow": false,
+      "heading": [
+        "Today",
+        "Your week"
+      ],
+      "undersizedTargets": [],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 319,
+      "pageErrors": []
+    },
+    {
+      "file": "study-320-dark-text200.png",
+      "route": "/study",
+      "theme": "dark",
+      "width": 320,
+      "largeTextStress": true,
+      "motion": "no-preference",
+      "title": "Hanzi Dojo — Learn to read Chinese free",
+      "pageWidth": 320,
+      "viewportWidth": 320,
+      "horizontalOverflow": false,
+      "heading": [
+        "Study session"
+      ],
+      "undersizedTargets": [],
+      "targetCount": 7,
+      "reducedMotion": false,
+      "frameworkOverlay": false,
+      "contentLength": 189,
+      "pageErrors": []
+    }
+  ],
+  "journeys": [],
+  "failures": [],
+  "finishedAt": "2026-09-28T11:32:10.440Z",
+  "sourceEnd": {
+    "algorithm": "sha256 of sorted tracked and unignored src path NUL then file bytes",
+    "fileCount": 614,
+    "sha256": "a0230b9a302f6b03ca4729c7e229596d3449390e77110b898a02d304ad8bd0c8"
+  },
+  "sourceStable": true
+}

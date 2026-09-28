@@ -1,7 +1,8 @@
+import { ink } from './languageTheme'
 import { ArrowLeft, Play } from 'lucide-react'
 
-const SAGE = '#6E8466'
-const ghost = { background: 'none', border: 'none', cursor: 'pointer', padding: '6px', display: 'flex', alignItems: 'center' }
+const SAGE = 'var(--reader-action)'
+const ghost = { background: 'none', border: 'none', cursor: 'pointer', minWidth: '44px', minHeight: '44px', justifyContent: 'center', padding: '6px', display: 'flex', alignItems: 'center' }
 const startBtn = { marginTop: '24px', width: '100%', border: 'none', borderRadius: '16px', background: SAGE, color: '#fff', fontSize: '15.5px', fontWeight: 750, fontFamily: 'Inter, sans-serif', padding: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '9px' }
 function pct(n, total) { return total ? Math.round((n / total) * 100) + '%' : '0%' }
 
@@ -19,9 +20,9 @@ function ReadingStyleToggle({ mode, onPick, accent }) {
           return (
             <button key={o.key} onClick={() => onPick(o.key)} aria-pressed={on}
               style={{
-                flex: 1, border: 'none', cursor: 'pointer', borderRadius: '9px', padding: '10px',
+                flex: 1, minHeight: '44px', border: 'none', cursor: 'pointer', borderRadius: '9px', padding: '10px',
                 fontSize: '13.5px', fontWeight: on ? 800 : 650, fontFamily: 'Inter, sans-serif',
-                background: on ? 'var(--surface)' : 'transparent', color: on ? accent : 'var(--text-muted)',
+                background: on ? 'var(--surface)' : 'transparent', color: on ? ink(accent) : 'var(--text-muted)',
                 boxShadow: on ? '0 1px 6px rgba(24,24,27,0.10)' : 'none', transition: 'background 140ms ease',
               }}>
               {o.label}
@@ -45,9 +46,9 @@ export default function ReaderLaunch({ story, isRead, levelLabel, accent, theme,
         <button onClick={onBack} aria-label="Back to library" style={ghost}><ArrowLeft size={18} color="var(--text-muted)" /></button>
       </div>
       <div style={{ flex: 1, maxWidth: '640px', width: '100%', margin: '0 auto', padding: '8px 24px 40px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-        <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: accent, marginBottom: '8px' }}>{levelLabel}</div>
-        <h1 style={{ fontFamily: theme.font, fontSize: '34px', fontWeight: 800, lineHeight: 1.15, textWrap: 'balance', marginBottom: '18px' }}>{story.title}</h1>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '9px' }}>
+        <div style={{ fontSize: '11px', fontWeight: 800, letterSpacing: '0.08em', textTransform: 'uppercase', color: ink(accent), marginBottom: '8px' }}>{levelLabel}</div>
+        <h1 style={{ fontFamily: theme.font, fontSize: '34px', fontWeight: 700, lineHeight: 1.45, overflowWrap: 'anywhere', textWrap: 'balance', marginBottom: '18px' }}>{story.title}</h1>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '9px' }}>
           <span style={{ fontSize: '13px', fontWeight: 700 }}>{knownPct}% known{isRead ? ' · Finished' : ''}</span>
           <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{knownCount} known · {learningCount} learning · {newCount} new</span>
         </div>
@@ -56,6 +57,7 @@ export default function ReaderLaunch({ story, isRead, levelLabel, accent, theme,
           <div style={{ width: pct(learningCount, totalUnique), background: '#CA8A04' }} />
           <div style={{ width: pct(newCount, totalUnique), background: accent + '55' }} />
         </div>
+        <p style={{ fontSize: '12px', lineHeight: 1.5, color: 'var(--text-muted)', marginTop: '12px' }}>Based on {totalUnique} unique course words matched in this story; names and unmatched words are not included.</p>
         <button onClick={onStart} style={startBtn}><Play size={18} color="#fff" /> Start reading</button>
         {/* Paged vs. classic scroll — an equal choice for paced stories. Fixed
             formats (chat, scene) ignore it, so the toggle is hidden there. */}

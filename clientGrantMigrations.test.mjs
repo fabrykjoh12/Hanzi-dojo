@@ -14,6 +14,7 @@ const DIR = 'supabase/migrations'
 const CAP = DIR + '/20260907010000_cap_dict_add_to_deck.sql'
 const REVOKE = DIR + '/20260907011000_revoke_anon_execute_on_private_rpcs.sql'
 const read = (p) => readFileSync(p, 'utf8')
+const REVOKE_FILE = REVOKE.slice(DIR.length + 1)
 
 // Negative and ordering assertions run over CODE, not over the file. These
 // migrations explain themselves at length and their headers quote the very
@@ -222,8 +223,9 @@ describe('revoking anon EXECUTE on the private RPCs (finding 7)', () => {
     // migration and asserted them back at it: it could only fail if someone
     // edited one and forgot the other, and it would have passed on a migration
     // that revoked nothing. This derives the expected set from the rest of the
-    // repository instead, so adding a definer RPC in a later migration and
-    // forgetting it here fails HERE.
+    // repository at this migration's chronological boundary. A later correct
+    // revoke must not retroactively remove a name from this historical list.
+    // The separate forward-looking gate below covers subsequent migrations.
     //
     // The rule, which matches the live catalog: Supabase's default privileges
     // grant EXECUTE on a new function in `public` to anon, so a definer
@@ -243,7 +245,7 @@ describe('revoking anon EXECUTE on the private RPCs (finding 7)', () => {
     // misclassified. None of these shapes exists in the tree today (the only
     // drop is 20260825120000's), and all would be caught by deriving from the
     // catalog instead — which no spec here can do.
-    const files = readdirSync(DIR).filter(n => n.endsWith('.sql')).sort()
+    const files = readdirSync(DIR).filter(n => n.endsWith('.sql') && n <= REVOKE_FILE).sort()
     const definer = new Set()
     const revokedFromAnon = new Set()
     const droppedFunctions = new Set()
@@ -282,6 +284,76 @@ describe('revoking anon EXECUTE on the private RPCs (finding 7)', () => {
 
     expect(expected.length, 'the derivation itself must find something').toBeGreaterThan(10)
     expect(actual).toEqual(expected)
+  })
+})
+
+// A later private SECURITY DEFINER declaration must keep both PUBLIC and anon
+// revoked. Check its own header (not the next 1,200 characters, which can reach
+// an unrelated function) and retain statement order so a re-grant is visible.
+// This is deliberately a migration-text guard; executable role checks live in
+// verify-review-sql.mjs, and a live catalog check remains a deployment gate.
+function laterPrivateExposure(migrations) {
+  const functions = new Map()
+  for (const sql of migrations) {
+    const events = []
+    const created = /create\s+(?:or\s+replace\s+)?function\s+public\.([a-z0-9_]+)\s*\([\s\S]*?\bas\s+\$[a-z0-9_]*\$/gi
+    const parsedStarts = new Set()
+    for (const match of sql.matchAll(created)) {
+      parsedStarts.add(match.index)
+      events.push({ at: match.index, kind: 'create', name: match[1], definer: /security\s+definer/i.test(match[0]) })
+    }
+    // Fail closed when a future declaration uses syntax this limited scanner
+    // cannot parse. Silent omission would let an unsupported new RPC bypass it.
+    for (const match of sql.matchAll(/create\s+(?:or\s+replace\s+)?function\s+public\.([a-z0-9_]+)\s*\(/gi)) {
+      if (!parsedStarts.has(match.index)) throw new Error('Unsupported function declaration: ' + match[1])
+    }
+    const dropped = /drop\s+function\s+(?:if\s+exists\s+)?public\.([a-z0-9_]+)\s*\(/gi
+    for (const match of sql.matchAll(dropped)) events.push({ at: match.index, kind: 'drop', name: match[1] })
+    const grants = /\b(grant|revoke)\s+(?:all(?:\s+privileges)?|execute)\s+on\s+function\s+public\.([a-z0-9_]+)\s*\([^)]*\)\s+(?:to|from)\s+([^;]+);/gi
+    for (const match of sql.matchAll(grants)) {
+      events.push({ at: match.index, kind: match[1].toLowerCase(), name: match[2], roles: match[3].toLowerCase().split(',').map(r => r.trim()) })
+    }
+    for (const event of events.sort((a, b) => a.at - b.at)) {
+      if (event.kind === 'drop') { functions.delete(event.name); continue }
+      if (event.kind === 'create') {
+        const previous = functions.get(event.name)
+        functions.set(event.name, { ...(previous || { public: true, anon: true }), definer: event.definer })
+        continue
+      }
+      // A later grant can expose an older private RPC without replacing its
+      // definition. Do not lose that event just because CREATE predates this scan.
+      if (!functions.has(event.name) && event.kind === 'grant' && event.roles.some(r => ['public', 'anon'].includes(r))) {
+        functions.set(event.name, { public: false, anon: false, definer: true })
+      }
+      const state = functions.get(event.name)
+      if (state) for (const role of ['public', 'anon']) {
+        if (event.roles.includes(role)) state[role] = event.kind === 'grant'
+      }
+    }
+  }
+  const intentionallyPublic = new Set(['public_story', 'public_assessment_vocab'])
+  return [...functions].filter(([name, state]) => state.definer && !intentionallyPublic.has(name) && (state.public || state.anon)).map(([name]) => name).sort()
+}
+
+describe('private definer RPC grants after the historical revoke migration', () => {
+  it('keeps PUBLIC and anon revoked on every later private declaration', () => {
+    const files = readdirSync(DIR).filter(n => n.endsWith('.sql') && n > REVOKE_FILE).sort()
+    expect(laterPrivateExposure(files.map(f => codeOf(DIR + '/' + f)))).toEqual([])
+  })
+
+  it('catches missing explicit anon revokes, later re-grants, and drop/recreate', () => {
+    const create = 'create function public.private_probe() returns void language plpgsql security definer as $$ begin return; end $$;'
+    const revoked = 'revoke all on function public.private_probe() from public, anon;'
+    expect(laterPrivateExposure([create])).toEqual(['private_probe'])
+    expect(laterPrivateExposure(['grant execute on function public.preexisting_private() to anon;'])).toEqual(['preexisting_private'])
+    expect(() => laterPrivateExposure(["create function public.unsupported() returns void language sql security definer as 'select 1';"])).toThrow('Unsupported function declaration')
+    expect(laterPrivateExposure([create + ' revoke all on function public.private_probe() from public;'])).toEqual(['private_probe'])
+    expect(laterPrivateExposure([create + revoked])).toEqual([])
+    expect(laterPrivateExposure([create + revoked, 'grant execute on function public.private_probe() to anon;'])).toEqual(['private_probe'])
+    expect(laterPrivateExposure([create + revoked, 'grant execute on function public.private_probe() to public;'])).toEqual(['private_probe'])
+    expect(laterPrivateExposure([create + revoked, 'drop function public.private_probe();' + create])).toEqual(['private_probe'])
+    const invoker = 'create function public.invoker_probe() returns void language plpgsql as $$ begin return; end $$;'
+    expect(laterPrivateExposure([invoker + create + revoked])).toEqual([])
   })
 })
 

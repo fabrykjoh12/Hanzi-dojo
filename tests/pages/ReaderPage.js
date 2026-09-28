@@ -25,6 +25,7 @@ export class ReaderPage {
     const card = this.page.getByTestId('story-shelf-rail')
       .getByRole('button', { name: new RegExp(title) }).first();
     await card.click();
+    await this.page.getByRole('button', { name: /Back to (library|stories)/ }).waitFor();
   }
 
   // Serial chapters live behind their series poster: open the series page,

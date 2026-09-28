@@ -1,10 +1,8 @@
 // Page Object for the authenticated Home screen.
 //
-// Home's one lit block is the flashcard queue: how many cards are waiting, the
-// New/Learning/Review composition, the day's goal, and a single button that
-// starts the session. The story you have unlocked is a quiet hand-off beneath
-// it — the next step in the loop, not a rival call to action — and the week's
-// rhythm and level progress share one flat panel below.
+// Home exposes one whole-button study action, a directly available story
+// hand-off and weekly activity. Select by behavior and stable tour hooks,
+// leaving typography and surface treatment free to evolve.
 export class HomePage {
   constructor(page) {
     this.page = page;

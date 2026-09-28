@@ -59,13 +59,13 @@ function grammarDrill(count) {
 // doesn't; otherwise it opens on Listening, the lightest way back in.
 //
 // Copy stays observational — a count and what it means, never a warning.
-function pickPrimary(weakCount, grammarDueCount) {
+function pickPrimary(weakCount, grammarDueCount, learnedCount) {
   if (weakCount > 0) {
     return {
       key: 'weak',
       title: 'Weak words',
       eyebrow: 'Waiting for you',
-      reason: plural(weakCount, 'word') + ' keep slipping. A short pass puts them back in the queue.',
+      reason: plural(weakCount, 'word') + (weakCount === 1 ? ' needs' : ' need') + ' another look. Review the words you have missed most often.',
       cta: 'Practise these',
       tone: 'signal',
     }
@@ -75,16 +75,21 @@ function pickPrimary(weakCount, grammarDueCount) {
       key: 'grammarpractice',
       title: 'Grammar review',
       eyebrow: 'Waiting for you',
-      reason: plural(grammarDueCount, 'pattern') + ' are due. Ten quiet minutes keeps them.',
+      reason: plural(grammarDueCount, 'pattern') + (grammarDueCount === 1 ? ' is due.' : ' are due.') + ' Recall each pattern in context.',
       cta: 'Review patterns',
       tone: 'signal',
     }
+  }
+  if (learnedCount === 0) return {
+    key: 'study', title: 'Start with a few words', eyebrow: 'Build your foundation',
+    reason: 'Learn a few words with flashcards, then practise recalling them here.',
+    cta: 'Start flashcards', tone: 'accent',
   }
   return {
     key: 'listen',
     title: 'Listening',
     eyebrow: 'Start here',
-    reason: 'Nothing is overdue. Hear a word and pick it out — the fastest way to make reading words into words you know.',
+    reason: 'Hear a word you have learned and choose its meaning. A short session connects its sound to what you know.',
     cta: 'Start listening',
     tone: 'accent',
   }
@@ -102,8 +107,8 @@ function pickPrimary(weakCount, grammarDueCount) {
 //             store apps' webviews (see speechSupport.js), where the Speaking
 //             drill can only show a "not available" screen — so the hub simply
 //             doesn't offer it rather than advertising a dead end.
-export function buildPracticePlan({ script, cjk = false, speech = true, weakCount = 0, grammarDueCount = 0 } = {}) {
-  const primary = pickPrimary(weakCount, grammarDueCount)
+export function buildPracticePlan({ script, cjk = false, speech = true, weakCount = 0, grammarDueCount = 0, learnedCount = null } = {}) {
+  const primary = pickPrimary(weakCount, grammarDueCount, learnedCount)
   const scriptDrill = SCRIPT_DRILLS[script] || null
 
   const drills = [

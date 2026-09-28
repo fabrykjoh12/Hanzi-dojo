@@ -100,3 +100,32 @@ describe('Home and Study agree', () => {
     expect(homeCount).toBe(4)
   })
 })
+
+describe('durable review availability and genuine introductions', () => {
+  it('never serves a pending card in due or weak pools', async () => {
+    const { dueLearningCards, dueReviewCards, weakCards } = await import('./studyAvailability')
+    const pending = { review_pending: true, due_at: '2000-01-01', lapses: 3, stability: 1 }
+    expect(dueLearningCards([{ ...pending, state: 'learning' }])).toEqual([])
+    expect(dueReviewCards([{ ...pending, state: 'review' }])).toEqual([])
+    expect(weakCards([{ ...pending, state: 'review' }])).toEqual([])
+  })
+  it('serves inert saved or undone new rows but excludes pending and prior claims', async () => {
+    const { isEligibleNewCard } = await import('./studyAvailability')
+    expect(isEligibleNewCard({ state: 'new', reps: 0, id: 'saved' })).toBe(true)
+    expect(isEligibleNewCard({ state: 'new', reps: 0, review_pending: true })).toBe(false)
+    expect(isEligibleNewCard({ state: 'new', reps: 0, prior_known_at: '2026-09-01' })).toBe(false)
+  })
+  it('uses first observed date, not the date an inert row was saved', async () => {
+    const { introducedTodayCards } = await import('./studyAvailability')
+    const today = new Date(2026, 8, 28, 12)
+    const start = new Date(2026, 8, 28, 9).toISOString()
+    const old = new Date(2026, 8, 20).toISOString()
+    const rows = [
+      { id: 'saved', reps: 0, created_at: start },
+      { id: 'observed', reps: 1, created_at: old, first_reviewed_at: start },
+      { id: 'claim', reps: 1, created_at: start, prior_known_at: old },
+      { id: 'tomorrow', reps: 1, created_at: new Date(2026, 8, 29).toISOString() },
+    ]
+    expect(introducedTodayCards(rows, today).map(row => row.id)).toEqual(['observed'])
+  })
+})

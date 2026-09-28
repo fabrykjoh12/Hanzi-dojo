@@ -2,13 +2,14 @@ import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { fetchPagedResult } from './supabasePaging'
 import { countMastery } from './mastery'
-import { isPriorKnown, isLearned, isMastered } from './knowledgeState'
+import { isLearned, isMastered } from './knowledgeState'
 import { studyFloorLevel } from './levelScope'
 import { endOfLocalDay } from './srs'
-import { dueLearningCards, dueReviewCards, weakCards } from './studyAvailability'
+import { dueLearningCards, dueReviewCards, weakCards, isEligibleNewCard, introducedTodayCards } from './studyAvailability'
 import { reviewForecast } from './reviewForecast'
 import { studyRhythm, dateKey } from './studyRhythm'
 import { countDueGrammar } from './grammarReview'
+import { pendingReviewVocabIds, pendingIntroductionCount } from './reviewJournal'
 
 export async function getHomeCounts(userId, track, dailyNewCards) {
   const now = new Date()
@@ -28,17 +29,18 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   //   grammar  — how many opted-in grammar patterns are due (returns 0 offline
   //              or before its migration).
   const weekAgo = new Date(now); weekAgo.setDate(weekAgo.getDate() - 6)
-  const [cards, actsResult, grammarDueCount] = await Promise.all([
+  const [cards, actsResult, grammarDueCount, pendingIds] = await Promise.all([
     getTrackCards(userId, track, {
-      columns: 'vocab_id, state, due_at, created_at, is_easy, learned, stability, lapses, reps, prior_known_at',
-    }),
+      columns: 'id, revision, vocab_id, state, due_at, created_at, first_reviewed_at, is_easy, learned, stability, lapses, reps, prior_known_at',
+    }).catch(() => null),
     supabase
       .from('daily_activity')
       .select('activity_date, studied_cards')
       .eq('user_id', userId)
       .gte('activity_date', dateKey(weekAgo))
-      .then(r => r, () => ({ data: null })),
+      .then(r => r, () => ({ data: null, error: true })),
     countDueGrammar({ userId, track, now }),
+    pendingReviewVocabIds(userId),
   ])
 
   // Cumulative deck: every level from the study floor up to the current level,
@@ -60,22 +62,20 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   // count below would come out zero and the UI would show "all caught up" for
   // a day that never loaded. The shape below stays intact (callers keep every
   // field); `failed` just tells the UI the numbers can't be trusted.
-  const failed = Boolean(vocabError) || !vocab
+  const failed = Boolean(vocabError) || !vocab || !cards
 
   const vocabIds = new Set((vocab || []).map(v => v.id))
 
-  const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
-  // Claims excluded: a placement claim writes hundreds of rows at once, and
-  // counting them here zeroed the learner's daily new-card allowance on day one.
-  const introducedToday = (cards || [])
-    .filter(c => !isPriorKnown(c) && new Date(c.created_at) >= startOfToday && vocabIds.has(c.vocab_id)).length
+  // Only a real first observation consumes the daily allowance. Explicitly
+  // saved rows remain eligible, including words outside the current window.
+  // Pending first grades reserve a place until their server receipt arrives.
+  const pendingNew = await pendingIntroductionCount(userId, dateKey(now), track, cards || [])
+  const introducedToday = introducedTodayCards(cards, now).length + pendingNew
   const remainingNew = Math.max(0, dailyNewCards - introducedToday)
-
   const startedVocabIds = new Set((cards || []).map(c => c.vocab_id))
-  const newCount = Math.min(
-    (vocab || []).filter(v => !startedVocabIds.has(v.id)).length,
-    remainingNew
-  )
+  const ownedNew = (cards || []).filter(c => isEligibleNewCard(c) && !pendingIds.has(c.vocab_id)).length
+  const absentNew = (vocab || []).filter(v => !startedVocabIds.has(v.id) && !pendingIds.has(v.id)).length
+  const newCount = Math.min(ownedNew + absentNew, remainingNew)
 
   // Two scopes, deliberately different, because they answer different questions:
   //
@@ -87,7 +87,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   //   levelCards — only the current level window. Level progress (learned /
   //                mastered / totalWords) is a statement ABOUT the level, so it
   //                keeps the narrow scope.
-  const deckCards = (cards || [])
+  const deckCards = (cards || []).map(c => pendingIds.has(c.vocab_id) ? { ...c, review_pending: true } : c)
   const levelCards = deckCards.filter(c => vocabIds.has(c.vocab_id))
 
   // Availability comes from studyAvailability.js — the same functions Study
@@ -109,7 +109,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const endOfTomorrow = new Date(); endOfTomorrow.setHours(23, 59, 59, 999)
   endOfTomorrow.setDate(endOfTomorrow.getDate() + 1)
   const dueTomorrow = deckCards.filter(c => {
-    if (c.state !== 'review') return false
+    if (c.review_pending || c.state !== 'review') return false
     const d = new Date(c.due_at)
     return d > eod && d <= endOfTomorrow
   }).length
@@ -117,7 +117,7 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   // A calm 7-day outlook: scheduled reviews bucketed by day (index 0 = today).
   // Learning cards are excluded (they can't be honestly forecast), so this is an
   // approximation the UI presents as "~N a day", never a hard promise.
-  const forecast7 = reviewForecast(deckCards, now, 7)
+  const forecast7 = reviewForecast(deckCards.filter(c => !c.review_pending), now, 7)
 
   // Study rhythm (last 7 days), from the activity rows fetched above.
   const studiedDates = ((actsResult && actsResult.data) || [])
@@ -144,6 +144,6 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
     learnedCount, masteredCount, masteredPct,
     newDoneToday, dueTomorrow, weakCount, forecast7, rhythm7,
     lifetimeLearned, lifetimeMastered, grammarDueCount,
-    failed,
+    failed, rhythmFailed: Boolean(actsResult?.error) || !actsResult?.data,
   }
 }

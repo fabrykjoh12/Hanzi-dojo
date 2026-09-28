@@ -294,7 +294,8 @@ body {
 .skip-link {
   position: absolute;
   left: 8px;
-  top: -48px;
+  top: 0;
+  transform: translateY(calc(-100% - 8px));
   z-index: 1000;
   padding: 8px 14px;
   border-radius: 8px;
@@ -303,10 +304,10 @@ body {
   border: 1px solid var(--border);
   font: 600 14px Inter, sans-serif;
   text-decoration: none;
-  transition: top 0.15s ease;
+  transition: transform 0.15s ease;
 }
 .skip-link:focus {
-  top: 8px;
+  transform: translateY(8px);
 }
 
 /* Keyboard users get a visible focus ring everywhere. Pointer interaction
@@ -475,3 +476,8 @@ body {
   @keyframes hd-home-rise { from { opacity: 0; } to { opacity: 1; } }
   .hd-breathe, .hd-skeleton { animation: none; }
 }
+
+/* Reading is content-first; these semantic tokens remain legible in both themes. */
+:root { --reading-ink: #925019; --reader-action: #4F674A; }
+:root[data-theme="dark"] { --reading-ink: #E8B97F; }
+:root[data-theme][data-quiet-bg] { --bg-image-opacity: 0; --bg-image-opacity-lit: 0; --reader-watermark: transparent; --watermark-pct: 0%; }

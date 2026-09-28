@@ -16,7 +16,7 @@ import StoryCover from './StoryCover'
 function PosterLock() {
   return (
     <div style={{
-      position: 'absolute', inset: 0, zIndex: 1, background: 'rgba(250,250,248,0.55)',
+      position: 'absolute', inset: 0, zIndex: 1, background: 'color-mix(in srgb, var(--surface) 65%, transparent)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
     }}>
       <div style={{
@@ -43,6 +43,7 @@ export default function StoryPoster({
   const pct = started ? Math.round((progress.readCount / progress.total) * 100) : 0
   const done = started && progress.readCount === progress.total
   return (
+    <article style={{ minWidth: 0 }}>
     <button
       onClick={locked ? () => {} : onClick}
       aria-disabled={locked}
@@ -61,11 +62,11 @@ export default function StoryPoster({
       }}
     >
       <StoryCover
-        story={story} path={story && story.image_path} accent={accentHex} radius={14}
+        story={story} path={story && story.image_path} accent={accentHex} radius={14} fit="contain"
         style={{
-          width: '100%', aspectRatio: '2 / 3',
+          width: '100%', aspectRatio: '3 / 2',
           border: '1px solid ' + (lift ? accentHex + '66' : 'var(--border)'),
-          boxShadow: lift ? '0 18px 34px rgba(24,24,27,0.18)' : '0 6px 16px rgba(24,24,27,0.08)',
+          boxShadow: 'none',
           transition: 'border-color 170ms ease, box-shadow 170ms ease',
         }}
       >
@@ -111,18 +112,22 @@ export default function StoryPoster({
       </StoryCover>
       <div title={title} style={{
         marginTop: '9px', fontSize: '14px', fontWeight: 750, fontFamily, color: 'var(--text)',
-        lineHeight: 1.32, display: '-webkit-box', WebkitBoxOrient: 'vertical', WebkitLineClamp: 2,
-        overflow: 'hidden', width: '100%',
+        lineHeight: 1.55, overflowWrap: 'anywhere', width: '100%',
       }}>
         {title}
       </div>
       <div style={{
         marginTop: '3px', fontSize: '11.5px', fontWeight: 650, width: '100%',
         color: locked ? 'var(--text-muted)' : done ? 'var(--success)' : 'var(--text-muted)',
-        whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+        lineHeight: 1.5, overflowWrap: 'anywhere',
       }}>
         {locked ? (lockLabel || 'Locked') : metaLine}
       </div>
     </button>
+    {!locked && knownPct != null && <details style={{ marginTop: '4px', color: 'var(--text-muted)', fontSize: '12px', lineHeight: 1.5 }}>
+      <summary style={{ minHeight: '44px', padding: '12px 0', cursor: 'pointer' }}>How is {knownPct}% known calculated?</summary>
+      <p>Known words among the unique course vocabulary matched in this story. Names and unmatched words are outside this percentage; it is not a comprehension score.</p>
+    </details>}
+    </article>
   )
 }

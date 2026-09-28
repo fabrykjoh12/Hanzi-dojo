@@ -4,8 +4,9 @@ import { supabase } from './supabase'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { cacheSet, cacheGet, prefsGet, prefsMerge } from './offline'
 import { toast } from './toast'
-import { languageTheme } from './languageTheme'
-import { HeroPanel, HeroAction, Eyebrow } from './panels'
+import { languageTheme, ink } from './languageTheme'
+import { Eyebrow } from './panels'
+import { storyRouteView } from './storyRouteView'
 import { tiersFor, learnedByLevel, readingGateCount, nextLockedTier } from './storyTiers'
 import { countsForReading } from './knowledgeState'
 import { useIsMobile } from './useIsMobile'
@@ -65,7 +66,7 @@ function isManhuaUnit(unit) {
 // Poster rail item width: ~2.4 posters visible on a phone, fixed on desktop.
 function posterItemStyle(isMobile) {
   return {
-    flex: isMobile ? '0 0 clamp(128px, 38vw, 168px)' : '0 0 176px',
+    flex: isMobile ? '0 0 clamp(200px, 68vw, 272px)' : '0 0 272px',
     scrollSnapAlign: 'start', minWidth: 0,
   }
 }
@@ -136,7 +137,7 @@ function FilterChips({ options, value, onChange, accentHex }) {
             aria-pressed={active}
             className="hd-press"
             style={{
-              flexShrink: 0, minHeight: '38px', padding: '0 15px', borderRadius: '999px',
+              flexShrink: 0, minHeight: '44px', padding: '0 15px', borderRadius: '999px',
               border: '1px solid ' + (active ? 'transparent' : 'var(--border)'),
               background: active ? accentHex : 'var(--surface)',
               color: active ? '#fff' : 'var(--text-muted)',
@@ -189,61 +190,27 @@ function EmptyPanel({ icon: Icon, title, text, actionIcon: ActionIcon, actionLab
 // "read now", everything open → "continue"), and a featured pick otherwise.
 function StoriesHero({ hero, accentHex, fontFamily, isMobile, levelLabelOf }) {
   const coverStory = hero.cover
+  const ActionIcon = hero.actionIcon || ArrowRight
   return (
-    <HeroPanel
-      accentHex={accentHex}
-      seed={hero.seed}
-      padding="0"
-      compact={isMobile}
-      onClick={hero.onAction}
-      style={{ margin: '0 0 26px', minHeight: isMobile ? '280px' : '340px' }}
-      dataTour="stories-hero"
-    >
-      {({ hovered }) => (
-        <div style={{ position: 'relative', minHeight: isMobile ? '280px' : '340px', display: 'flex', alignItems: 'end' }}>
-          <StoryCover
-            story={coverStory} path={coverStory && coverStory.image_path} accent={accentHex} radius={0} loading="eager"
-            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none' }}
-          />
-          <div aria-hidden="true" style={{
-            position: 'absolute', inset: 0,
-            background: isMobile
-              ? 'linear-gradient(0deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.58) 58%, rgba(13,13,15,0.16) 100%)'
-              : 'linear-gradient(90deg, rgba(13,13,15,0.94) 0%, rgba(13,13,15,0.70) 42%, rgba(13,13,15,0.14) 76%)',
-          }} />
-          <div style={{ position: 'relative', zIndex: 1, padding: isMobile ? '22px 20px' : '34px 38px', maxWidth: isMobile ? '100%' : '620px' }}>
-            <Eyebrow onHero>{hero.eyebrow}</Eyebrow>
-            {hero.kicker && (
-              <div style={{
-                display: 'inline-flex', alignItems: 'center', gap: '7px', marginTop: '12px',
-                fontSize: '12px', fontWeight: 800, letterSpacing: '0.04em',
-                color: '#fff', background: 'rgba(255,255,255,0.14)', border: '1px solid rgba(255,255,255,0.22)',
-                borderRadius: '999px', padding: '6px 12px',
-              }}>
-                {hero.kickerIcon}
-                {hero.kicker}
-              </div>
-            )}
-            <div style={{
-              fontFamily: fontFamily + ', Inter, sans-serif', color: '#fff',
-              fontSize: isMobile ? '26px' : '36px', fontWeight: 700, lineHeight: 1.18,
-              letterSpacing: '-0.02em', margin: '10px 0 8px',
-            }}>
-              {hero.title}
-            </div>
-            {hero.subtitle && (
-              <div style={{ fontSize: isMobile ? '13px' : '14px', color: 'rgba(255,255,255,0.82)', lineHeight: 1.55, maxWidth: '52ch' }}>
-                {hero.subtitle}
-              </div>
-            )}
-            <div style={{ marginTop: '10px', color: 'rgba(255,255,255,0.64)', fontSize: '12px', fontWeight: 700 }}>
-              {hero.metaStory ? levelLabelOf(hero.metaStory) + ' · ' + formatLabel(hero.metaStory) : hero.meta}
-            </div>
-            <HeroAction label={hero.actionLabel} hovered={hovered} icon={hero.actionIcon || ArrowRight} accentHex={accentHex} />
-          </div>
+    <button type="button" onClick={hero.onAction} data-tour="stories-hero"
+      style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 1.1fr) minmax(0, 1fr)',
+        width: '100%', textAlign: 'left', padding: 0, margin: '0 0 32px', gap: isMobile ? '20px' : '32px',
+        border: 'none', background: 'transparent', color: 'var(--text)', cursor: 'pointer', fontFamily: 'Inter, sans-serif' }}>
+      <StoryCover story={coverStory} path={coverStory?.image_path} accent={accentHex} loading="eager" fit="contain"
+        style={{ width: '100%', aspectRatio: '3 / 2' }} />
+      <div style={{ alignSelf: 'center', padding: '4px 0' }}>
+        <div style={{ color: 'var(--text-muted)', fontSize: '12px', fontWeight: 600, marginBottom: '12px' }}>{hero.eyebrow}</div>
+        <div style={{ fontFamily, fontSize: isMobile ? '28px' : '34px', fontWeight: 700, lineHeight: 1.4, overflowWrap: 'anywhere' }}>{hero.title}</div>
+        {hero.subtitle && <p style={{ fontSize: '14px', lineHeight: 1.6, color: 'var(--text-muted)', marginTop: '10px' }}>{hero.subtitle}</p>}
+        {hero.kicker && <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginTop: '10px' }}>{hero.kicker}</p>}
+        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '12px' }}>
+          {hero.metaStory ? levelLabelOf(hero.metaStory) + ' · ' + formatLabel(hero.metaStory) : hero.meta}
         </div>
-      )}
-    </HeroPanel>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', minHeight: '44px', color: ink(accentHex), fontSize: '14px', fontWeight: 700, marginTop: '12px' }}>
+          {hero.actionLabel}<ActionIcon size={18} aria-hidden="true" />
+        </span>
+      </div>
+    </button>
   )
 }
 
@@ -252,16 +219,9 @@ function StoriesHero({ hero, accentHex, fontFamily, isMobile, levelLabelOf }) {
 export default function Stories({
   session, profile, track, onBack, onNavigate, initialStoryId, initialStoryWords,
   initialStoryFirstMission, onInitialStoryConsumed, routeKind = 'browse',
-  routeStoryId = null, routeSeriesKey = null, onStoryRoute, onSeriesRoute, onBrowseRoute,
+  routeStoryId = null, routeSeriesKey = null, readerSeriesKey = null, onStoryRoute, onSeriesRoute, onBrowseRoute,
 }) {
-  const [view, setView] = useState('browse')
   const [nextLevelStories, setNextLevelStories] = useState([])
-  const [selectedCategory, setSelectedCategory] = useState(null)
-  const [selectedStory, setSelectedStory] = useState(null)
-  // The open series, and whether the reader was entered from inside one — so
-  // Back out of a chapter returns to its series rather than the shelf.
-  const [selectedArc, setSelectedArc] = useState(null)
-  const [readerFromSeries, setReaderFromSeries] = useState(false)
   const [stories, setStories] = useState([])
   const [readIds, setReadIds] = useState(new Set())
   const [reads, setReads] = useState([])
@@ -277,7 +237,6 @@ export default function Stories({
   const [loading, setLoading] = useState(true)
   const [loadFailed, setLoadFailed] = useState(false)
   const [filter, setFilter] = useState('all')
-  const missingStoryNotified = useRef(null)
   const redeemAttempted = useRef(false)
   const isMobile = useIsMobile()
 
@@ -329,6 +288,11 @@ export default function Stories({
       }),
     }
   }, [stories, nextLevelStories, vocabMap, userCards, readIds, learnedPerLevel, track.language, track.current_level])
+
+  const destination = storyRouteView({ kind: routeKind, storyId: routeStoryId, seriesKey: routeSeriesKey,
+    readerSeriesKey, stories, sections })
+  const { view, story: selectedStory, series: selectedArc } = destination
+  const selectedCategory = categoryForStory(selectedStory, track)
 
   // Series units for the reward loop (cross-section, reward rules only —
   // independent of tier gating so the pointer never dangles).
@@ -483,9 +447,6 @@ export default function Stories({
     if (initialStoryId) {
       const target = (storiesData || []).find(s => s.id === initialStoryId)
       if (target) {
-        setSelectedCategory(categoryForStory(target, track))
-        setSelectedStory(target)
-        setView('reader')
         if (initialStoryWords && initialStoryWords.length) setTodayWords(initialStoryWords)
         if (initialStoryFirstMission) setFirstMission(true)
       }
@@ -495,9 +456,9 @@ export default function Stories({
     setLoading(false)
   }
 
-  /* eslint-disable react-hooks/set-state-in-effect */
+  const initialLoad = useRef(loadData)
   useEffect(() => {
-    const timer = setTimeout(loadData, 0)
+    const timer = setTimeout(() => initialLoad.current(), 0)
     return () => clearTimeout(timer)
   }, [])
 
@@ -520,41 +481,6 @@ export default function Stories({
     })
   }, [loading, rewardState, session.user.id, track, activeUnit, accentHex])
 
-  useEffect(() => {
-    if (loading) return
-    if (routeKind === 'browse') {
-      setView('browse')
-      setSelectedStory(null)
-      setSelectedArc(null)
-      setReaderFromSeries(false)
-      return
-    }
-    if (routeKind === 'story' && routeStoryId) {
-      const target = stories.find(s => s.id === routeStoryId)
-      if (!target) {
-        if (!loadFailed && missingStoryNotified.current !== routeStoryId) {
-          missingStoryNotified.current = routeStoryId
-          toast({ title: "That story isn't available", accent: accentHex })
-          if (onBrowseRoute) onBrowseRoute()
-        }
-        return
-      }
-      if (view === 'reader' && selectedStory?.id === target.id) return
-      setSelectedCategory(categoryForStory(target, track))
-      setSelectedStory(target)
-      setReaderFromSeries(false)
-      setView('reader')
-      return
-    }
-    if (routeKind === 'series' && routeSeriesKey) {
-      const unit = sections.flatMap(s => s.units).find(u => u.kind === 'series' && u.key === routeSeriesKey)
-      if (!unit || (view === 'series' && selectedArc?.key === unit.key)) return
-      setSelectedArc(unit)
-      setSelectedStory(null)
-      setView('series')
-    }
-  }, [loading, loadFailed, routeKind, routeStoryId, routeSeriesKey, stories, sections, selectedStory?.id, selectedArc?.key, view, track, accentHex, onBrowseRoute])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   // First-visit tour of the library — browse view only, never over the reader
   // or a series page, and only once (rules in tour.js). The delay lets the
@@ -576,16 +502,10 @@ export default function Stories({
   const levelLabelFor = (story) => getLevelLabel(track.language, track.system, story.level == null ? track.current_level : story.level)
 
   const openStory = (story, fromSeries = false) => {
-    setSelectedCategory(categoryForStory(story, track))
-    setSelectedStory(story)
-    setReaderFromSeries(fromSeries)
-    setView('reader')
-    if (onStoryRoute) onStoryRoute(story.id)
+    if (onStoryRoute) onStoryRoute(story.id, fromSeries ? selectedArc?.key : null)
   }
 
   const openSeries = (arc) => {
-    setSelectedArc(arc)
-    setView('series')
     if (onSeriesRoute) onSeriesRoute(arc.key)
   }
 
@@ -692,11 +612,9 @@ export default function Stories({
         profile={profile}
         track={track}
         onBack={() => {
-          if (readerFromSeries && selectedArc) {
-            setView('series')
+          if (selectedArc) {
             if (onSeriesRoute) onSeriesRoute(selectedArc.key)
           } else {
-            setView('browse')
             if (onBrowseRoute) onBrowseRoute()
           }
         }}
@@ -710,8 +628,7 @@ export default function Stories({
         nextTierUnlock={nextTierUnlock}
         onNextStory={() => {
           if (!nextStory) return
-          setSelectedStory(nextStory)
-          if (onStoryRoute) onStoryRoute(nextStory.id)
+          if (onStoryRoute) onStoryRoute(nextStory.id, selectedArc?.key || null)
         }}
         isRead={readIds.has(selectedStory.id)}
         onMarkRead={handleMarkRead}
@@ -749,14 +666,21 @@ export default function Stories({
             onOpenChapter={(story) => openStory(story, true)}
             onStudy={onNavigate ? () => onNavigate('study') : null}
             onBack={() => {
-              setView('browse')
-              setSelectedArc(null)
               if (onBrowseRoute) onBrowseRoute()
             }}
           />
         </div>
       </div>
     )
+  }
+
+  if (view === 'missing') {
+    return <div style={{ padding: '32px 16px' }}><EmptyPanel icon={BookOpen}
+      title={loadFailed ? 'Stories could not load' : "That story isn't available"}
+      text={loadFailed ? 'Check your connection and try again.' : 'It may have moved or is outside your current level.'}
+      actionIcon={loadFailed ? RefreshCw : ChevronLeft}
+      actionLabel={loadFailed ? 'Try again' : 'Back to stories'}
+      onAction={loadFailed ? loadData : onBrowseRoute} /></div>
   }
 
   // ── Browse view ──────────────────────────────────────────────────────────
@@ -825,7 +749,7 @@ export default function Stories({
     const unit = unitOfStory(daily)
     return {
       seed: track.language + '-stories',
-      eyebrow: rewardState.state === 'series-complete' ? 'Choose your next story' : 'Featured for you',
+      eyebrow: rewardState.state === 'series-complete' ? 'Choose your next story' : 'Featured story',
       kicker: rewardState.state === 'series-complete' ? 'Series complete — pick what’s next' : null,
       title: unit && unit.parts.length > 1 ? unit.title : daily.title,
       subtitle: daily.english_summary || null,

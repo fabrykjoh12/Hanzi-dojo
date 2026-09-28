@@ -4,7 +4,7 @@
 // are testable: the typed confirmation gate, and the device cleanup that runs
 // after the server says yes.
 
-import { clearDownloads, outboxClear } from './offline'
+import { clearDownloads, outboxClear, reviewClear } from './offline'
 
 // The word the learner must type before the delete button arms. Deliberately a
 // word, not a checkbox — deletion is total (account + every card, review and
@@ -26,6 +26,7 @@ export function canConfirmDeletion(armed, input) {
 // grades for a deleted account would fail on every replay forever. Best-effort:
 // storage may be blocked (§6.5), and a leftover cache on a dead session is
 // harmless next to a failed deletion UX.
-export function forgetDeviceData() {
-  return Promise.all([clearDownloads(), outboxClear()]).catch(() => null)
+export function forgetDeviceData(userId) {
+  if (!userId) return Promise.resolve(null)
+  return Promise.all([clearDownloads(), outboxClear(userId), reviewClear(userId)]).catch(() => null)
 }

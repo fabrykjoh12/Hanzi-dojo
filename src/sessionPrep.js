@@ -23,15 +23,17 @@ import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { cacheGet, cacheSet } from './offline'
 import { fetchPaged, fetchChunkedIn } from './supabasePaging'
-import { hasGenuineObservation, isPriorKnown } from './knowledgeState'
+import { hasGenuineObservation } from './knowledgeState'
 import { pickCalibrationChecks, pendingCalibrationCount } from './calibration'
 import { studyFloorLevel } from './levelScope'
 import { missingVocabIds, mergeVocab } from './deckVocab'
-import { dueLearningCards, dueReviewCards } from './studyAvailability'
+import { dueLearningCards, dueReviewCards, isEligibleNewCard, introducedTodayCards } from './studyAvailability'
 import { buildStudyQueue, queueSeed } from './studyQueue'
 import { isFirstRunSession, firstRunNewTarget } from './firstRun'
 import { isReturningFromBreak, gentleReviewTarget } from './gentleReturn'
 import { loadTtsAudio } from './ttsAudio'
+import { recoverReviews, pendingReviewVocabIds, pendingIntroductionCount, subscribeReviewChanges } from './reviewJournal'
+import { isOnline } from './useOnline'
 import { todayStr } from './streak'
 
 // A prepared session older than this is stale: due dates roll at midnight and
@@ -52,6 +54,8 @@ export function prepKey({ userId, track, day = todayStr() }) {
 //   firstRun   — brand-new-learner detection (gentle first session)
 //   calibrationPending — how many prior-knowledge claims are still unchecked
 export async function buildStudySession({ userId, profile, track, mode = 'review' }) {
+  if (isOnline()) await recoverReviews(supabase, userId)
+  const pendingIds = await pendingReviewVocabIds(userId)
   // Cumulative deck: the user's cards first (they set the study floor), then
   // every level's vocabulary from that floor up. A card exists because the
   // learner chose to study that word, so it belongs in the queue even when the
@@ -102,13 +106,7 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
     } catch { /* offline — those cards stay out of this session, as before */ }
   }
 
-  const startOfToday = new Date()
-  startOfToday.setHours(0, 0, 0, 0)
-  // Prior-knowledge claims are excluded: a placement claim writes hundreds of
-  // rows in one moment, and counting them as "words introduced today" zeroed
-  // the learner's entire daily new-card allowance on the day they signed up.
-  const introducedToday = (cards || [])
-    .filter(c => !isPriorKnown(c) && new Date(c.created_at) >= startOfToday && vocabById[c.vocab_id]).length
+  const introducedToday = introducedTodayCards(cards).length + await pendingIntroductionCount(userId, todayStr(), track, cards)
   const remainingNew = Math.max(0, profile.daily_new_cards - introducedToday)
 
   const now = new Date()
@@ -116,6 +114,7 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
   const levelCards = (cards || [])
     .map(c => ({ ...c, vocab: vocabById[c.vocab_id] }))
     .filter(c => c.vocab)
+    .map(c => pendingIds.has(c.vocab_id) ? { ...c, review_pending: true } : c)
   levelCards.forEach(c => startedVocab.add(c.vocab_id))
   const knownWords = levelCards.map(c => c.vocab.word)
 
@@ -142,29 +141,31 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
   let firstRun = false
   if (!(cards || []).some(hasGenuineObservation)) {
     try {
-      const { count } = await supabase
+      const { count, error } = await supabase
         .from('cards').select('id', { count: 'exact', head: true })
         .eq('user_id', userId)
         .gte('reps', 1)
-      firstRun = isFirstRunSession({ mode, accountCardCount: count || 0 })
+      if (!error && count != null) firstRun = isFirstRunSession({ mode, accountCardCount: count })
     } catch { /* offline / error — treat as a normal session (no cap) */ }
   }
   const newTarget = firstRunNewTarget(firstRun, remainingNew)
 
-  const newItems = (vocab || [])
-    .filter(v => !startedVocab.has(v.id))
-    .slice(0, newTarget)
+  const savedNew = levelCards.filter(isEligibleNewCard)
+  const absentNew = (vocab || [])
+    .filter(v => !startedVocab.has(v.id) && !pendingIds.has(v.id))
     .map(v => ({
       id: null, vocab_id: v.id, vocab: v,
       state: 'new', interval_days: 0, learning_step: 0,
     }))
+
+  const newItems = [...savedNew, ...absentNew].slice(0, newTarget)
 
   // Prior-knowledge checks. A claim is inert — never due, and never offered as
   // a new card because its row already exists — so this is the ONLY way a
   // claimed word can ever be observed. Weak mode stays a pure drill on real
   // lapses, so it takes no checks.
   const calibrationChecks = mode === 'review'
-    ? pickCalibrationChecks(levelCards, { now }).map(c => ({ ...c, isCalibration: true }))
+    ? pickCalibrationChecks(levelCards.filter(c => !c.review_pending), { now }).map(c => ({ ...c, isCalibration: true }))
     : []
   const calibrationPending = pendingCalibrationCount(levelCards)
 
@@ -243,3 +244,6 @@ export function takePreparedSession({ userId, track }, now = Date.now) {
 export function clearPreparedSession() {
   slot = null
 }
+
+// A committed review in this tab or another tab invalidates the one-shot deck.
+subscribeReviewChanges(() => clearPreparedSession())

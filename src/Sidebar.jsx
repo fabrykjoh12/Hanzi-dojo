@@ -19,12 +19,7 @@ import { BRAND_NAME, wordmarkStyle } from './brand'
 //   · One active treatment, not two. The row that's active gets a solid bar on
 //     the rail's own edge and accent-coloured type — no pill fill underneath it
 //     as well. Doubling the signal reads as indecision.
-//   · The empty middle is not filled with widgets. It carries the language's
-//     character at watermark strength, the same motif the hero panels use, so
-//     the space is quiet on purpose instead of merely unused.
-//
-// Collapsed (64px) the seal keeps only its character and the watermark drops —
-// there is no room for it to be atmosphere rather than clutter.
+//   · Space remains space; the learner's Chinese content carries identity.
 
 const EXPANDED_WIDTH = 236
 const COLLAPSED_WIDTH = 64
@@ -120,7 +115,7 @@ function Tip({ children }) {
     <span style={{
       position: 'absolute', left: 'calc(100% + 12px)', top: '50%',
       transform: 'translateY(-50%)',
-      background: '#27272A', color: '#fff',
+      background: 'var(--text)', color: 'var(--surface)',
       fontSize: '12px', fontWeight: 550,
       padding: '6px 10px', borderRadius: '8px',
       whiteSpace: 'nowrap', pointerEvents: 'none',
@@ -149,7 +144,7 @@ function IconControl({ icon: Icon, label, danger, onClick }) {
       className="hd-press"
       style={{
         position: 'relative',
-        width: '32px', height: '32px', flexShrink: 0,
+        width: '44px', height: '44px', flexShrink: 0,
         display: 'grid', placeItems: 'center',
         border: 'none', borderRadius: '8px', cursor: 'pointer',
         background: hovered
@@ -200,11 +195,11 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, hasIntern
     <nav aria-label="Main" data-tour="nav" style={{
       width: collapsed ? `${COLLAPSED_WIDTH}px` : `${EXPANDED_WIDTH}px`,
       flexShrink: 0,
-      height: '100vh', position: 'sticky', top: 0,
+      height: '100dvh', position: 'sticky', top: 0,
       background: 'var(--surface-glass)', borderRight: '1px solid var(--border)',
       backdropFilter: 'blur(10px)',
       display: 'flex', flexDirection: 'column',
-      padding: '20px 14px 14px',
+      padding: collapsed ? '16px 10px 12px' : '16px 14px 12px',
       overflow: 'hidden',
       transition: 'width 240ms cubic-bezier(0.22, 1, 0.36, 1)',
     }}>
@@ -224,20 +219,20 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, hasIntern
             src={logo}
             alt={BRAND_NAME + ' logo'}
             style={{
-              width: collapsed ? '46px' : '38px', height: collapsed ? '46px' : '38px',
+              width: '32px', height: '32px',
               objectFit: 'contain', flexShrink: 0,
               transform: logoHovered ? 'rotate(-7deg) scale(1.05)' : 'none',
               transition: 'transform 400ms cubic-bezier(0.22, 1, 0.36, 1), width 240ms ease, height 240ms ease',
             }}
           />
-          {!collapsed && <span style={{ ...wordmarkStyle('17px'), overflow: 'hidden' }}>{BRAND_NAME}</span>}
+          {!collapsed && <span style={{ ...wordmarkStyle('15px'), overflow: 'hidden' }}>{BRAND_NAME}</span>}
         </div>
         {!collapsed && (
           <button
             onClick={() => setCollapsed(true)}
             aria-label="Collapse sidebar"
             className="hd-press"
-            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', borderRadius: '8px', display: 'flex', flexShrink: 0 }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', width: '44px', minHeight: '44px', alignItems: 'center', justifyContent: 'center', padding: '6px', borderRadius: '8px', display: 'flex', flexShrink: 0 }}
           >
             <ChevronsLeft size={17} strokeWidth={1.8} color="var(--text-faint)" />
           </button>
@@ -249,7 +244,7 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, hasIntern
           onClick={() => setCollapsed(false)}
           aria-label="Expand sidebar"
           className="hd-press"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', padding: '6px', borderRadius: '8px', display: 'flex', margin: '0 auto 10px' }}
+          style={{ background: 'none', border: 'none', cursor: 'pointer', width: '44px', minHeight: '44px', alignItems: 'center', justifyContent: 'center', padding: '6px', borderRadius: '8px', display: 'flex', margin: '0 auto 10px' }}
         >
           <ChevronsRight size={17} strokeWidth={1.8} color="var(--text-faint)" />
         </button>
@@ -271,7 +266,7 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, hasIntern
         style={{
           position: 'relative',
           display: 'flex', alignItems: 'center', gap: '10px',
-          width: '100%', cursor: 'pointer',
+          width: '100%', minHeight: '44px', cursor: 'pointer',
           padding: collapsed ? '0' : '0 2px 0 0',
           justifyContent: collapsed ? 'center' : 'flex-start',
           background: 'none', border: 'none', textAlign: 'left',
@@ -363,24 +358,7 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, hasIntern
         </div>
       )}
 
-      {/* ── The quiet middle. The same watermark motif the hero panels carry,
-          at a strength you notice only once — it makes the empty space read as
-          material rather than as a gap nobody got to. ── */}
-      <div style={{ flex: 1, minHeight: '20px', position: 'relative', overflow: 'hidden' }}>
-        {/* Bleeds off the rail's left edge only — a stamp pressed at the margin,
-            not a glyph parked in the middle of a gap. */}
-        {!collapsed && (
-          <span aria-hidden style={{
-            position: 'absolute', left: '-38px', top: '50%',
-            transform: 'translateY(-50%)',
-            fontFamily: lang.font, fontSize: '164px', lineHeight: 0.78, fontWeight: 700,
-            color: `color-mix(in srgb, ${accentHex} var(--watermark-pct), transparent)`,
-            pointerEvents: 'none', userSelect: 'none', whiteSpace: 'nowrap',
-          }}>
-            {lang.nativeName.slice(0, 1)}
-          </span>
-        )}
-      </div>
+      <div style={{ flex: 1, minHeight: '20px' }} />
 
       <div style={{ ...hairline, marginBottom: '10px' }} />
 
@@ -394,7 +372,7 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, hasIntern
         className="hd-press"
         style={{
           position: 'relative',
-          display: 'flex', alignItems: 'center', gap: '10px', width: '100%',
+          display: 'flex', alignItems: 'center', gap: '10px', width: '100%', minHeight: '44px',
           padding: collapsed ? '6px 0' : '7px 8px',
           justifyContent: collapsed ? 'center' : 'flex-start',
           border: 'none', borderRadius: '10px', cursor: 'pointer', textAlign: 'left',

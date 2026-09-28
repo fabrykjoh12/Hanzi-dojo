@@ -26,6 +26,7 @@
 // derived from vocabulary rather than from cards.
 
 import { isCardDue } from './srs'
+import { hasGenuineObservation, hasPriorClaim, isPriorKnown } from './knowledgeState'
 
 // Lapsed at least twice and not yet mastered — the cleanup-drill pool.
 const WEAK_MIN_LAPSES = 2
@@ -33,17 +34,36 @@ const WEAK_MAX_STABILITY = 21
 
 // Time-sensitive re-tries: learning and relearning cards scheduled for today.
 export function dueLearningCards(deck, now) {
-  return (deck || []).filter(c => (c.state === 'learning' || c.state === 'relearning') && isCardDue(c, now))
+  return (deck || []).filter(c => !c.review_pending && (c.state === 'learning' || c.state === 'relearning') && isCardDue(c, now))
 }
 
 // The backbone of a session: review cards scheduled for today. Day-based, so
 // every review for today is served from the local 00:00 rollover.
 export function dueReviewCards(deck, now) {
-  return (deck || []).filter(c => c.state === 'review' && isCardDue(c, now))
+  return (deck || []).filter(c => !c.review_pending && c.state === 'review' && isCardDue(c, now))
 }
 
 // Cards the learner keeps lapsing on. Not due-gated — the weak drill is
 // deliberately available regardless of schedule.
 export function weakCards(deck) {
-  return (deck || []).filter(c => (c.lapses || 0) >= WEAK_MIN_LAPSES && (c.stability || 0) < WEAK_MAX_STABILITY)
+  return (deck || []).filter(c => !c.review_pending && (c.lapses || 0) >= WEAK_MIN_LAPSES && (c.stability || 0) < WEAK_MAX_STABILITY)
+}
+
+
+// Explicitly saved, ungraded cards belong to the deck too. Undo of a first
+// review leaves such an inert row, so treating every existing row as started
+// would make the word disappear permanently.
+export function isEligibleNewCard(card) {
+  return !!card && card.state === 'new' && !card.review_pending && !hasGenuineObservation(card) && !isPriorKnown(card)
+}
+
+export function introducedTodayCards(deck, now = new Date()) {
+  const start = new Date(now)
+  start.setHours(0, 0, 0, 0)
+  const end = new Date(start)
+  end.setDate(end.getDate() + 1)
+  return (deck || []).filter(card => {
+    const introduced = new Date(card.first_reviewed_at || card.created_at)
+    return hasGenuineObservation(card) && !hasPriorClaim(card) && introduced >= start && introduced < end
+  })
 }

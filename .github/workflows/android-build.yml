@@ -53,10 +53,35 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # The web build the app actually ships. NOT `npm run build` — that one
-      # emits the internal HQ page (see vite.config.js).
-      - name: Build the web app
-        run: npm run build:public
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      # Verify the exact native artifact before copying it or loading signing
+      # material. Vite needs the publishable config at build time; the verifier
+      # checks credentials/internal tooling and proves fonts stay local.
+      - name: Build and verify the native web app
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+        run: |
+          set -euo pipefail
+          missing=""
+          [ -z "$VITE_SUPABASE_URL" ] && missing="$missing VITE_SUPABASE_URL"
+          [ -z "$VITE_SUPABASE_ANON_KEY" ] && missing="$missing VITE_SUPABASE_ANON_KEY"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secret(s):$missing — the app would launch to 'Site can't start'."
+            exit 1
+          fi
+          npm run verify:native
+          if ! grep -rqF -- "$VITE_SUPABASE_URL" dist/client/assets; then
+            echo "::error::Built bundle does not contain the Supabase URL."
+            exit 1
+          fi
+          if ! grep -rqF -- "$VITE_SUPABASE_ANON_KEY" dist/client/assets; then
+            echo "::error::Built bundle does not contain the Supabase publishable key."
+            exit 1
+          fi
+          echo "Native bundle verified with its Supabase configuration."
 
       - name: Sync into the Android project
         run: npx cap sync android

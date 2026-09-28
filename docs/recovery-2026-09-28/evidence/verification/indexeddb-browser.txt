@@ -1,0 +1,15 @@
+[WebServer] (node:18) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+[WebServer] (Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 6 tests using 1 worker
+
+(node:54) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ✓  1 tests/e2e/review-journal.spec.js:7:1 › review transactions commit, reject concurrent words, and preserve Undo CAS (4.2s)
+  ✓  2 tests/e2e/review-journal.spec.js:29:1 › retirement and compaction recheck row versions within the transaction (2.1s)
+  ✓  3 tests/e2e/review-journal.spec.js:50:1 › deleting one account preserves another account’s pending reviews and outbox (1.9s)
+  ✓  4 tests/e2e/review-journal.spec.js:67:1 › an offline tab cannot accept a stale absent or replaced card once a newer receipt is known (2.1s)
+  ✓  5 tests/e2e/review-journal.spec.js:84:1 › known conflicts prevent offline acceptance until authoritative refresh (2.0s)
+  ✓  6 tests/e2e/review-journal.spec.js:107:1 › an uncertain next grade cannot reuse the previous Undo queue snapshot (4.1s)
+
+  6 passed (21.8s)

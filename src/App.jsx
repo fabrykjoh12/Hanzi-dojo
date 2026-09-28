@@ -12,6 +12,7 @@ import { startSession, endSession, setAnalyticsContext, trackOnce, EVENTS } from
 import { isBootstrapFailure } from './supabaseErrors'
 import { ensureLanguageFont } from './fontLoader'
 import { shouldRefreshHome } from './homeRefresh'
+import { clearPreparedSession } from './sessionPrep'
 import { useIsMobile } from './useIsMobile'
 import { ThemeContext } from './ThemeContext'
 // Eager: the app shell + first-paint screens.
@@ -168,6 +169,7 @@ export default function App() {
   // Apply the theme to the document so the CSS variables (index.css) switch.
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme)
+    document.documentElement.setAttribute('data-quiet-bg', 'true')
   }, [theme])
 
   // Fetch the active language's web font if the base stylesheet doesn't
@@ -689,7 +691,10 @@ export default function App() {
         routeKind={storyRouteState?.kind || 'browse'}
         routeStoryId={storyRouteState?.kind === 'story' ? storyRouteState.id : null}
         routeSeriesKey={storyRouteState?.kind === 'series' ? storyRouteState.key : null}
-        onStoryRoute={(id) => routerNavigate(storyPath(id))}
+        readerSeriesKey={location.state?.readerSeriesKey || null}
+        onStoryRoute={(id, key = null) => routerNavigate(storyPath(id), {
+          state: key ? { readerSeriesKey: key } : null,
+        })}
         onSeriesRoute={(key) => routerNavigate(seriesPath(key))}
         onBrowseRoute={() => routerNavigate(viewToPath('stories'))}
         onInitialStoryConsumed={() => { setPendingStoryId(null); setPendingStoryWords(null); setPendingStoryFirstMission(false) }}
@@ -705,6 +710,10 @@ export default function App() {
         onNavigate={navigate}
         hasInternalTooling={Boolean(DojoHQ)}
         onUpdate={(updates) => setProfile(prev => ({ ...prev, ...updates }))}
+        onProgressReset={async () => {
+          clearPreparedSession()
+          await loadProfile(session.user.id)
+        }}
       />
     )
   } else if (view === 'languages') {
@@ -836,7 +845,7 @@ export default function App() {
             row in Profile (see Profile.jsx), which is where an established app
             keeps "contact us" and where it cannot collide with anything. */}
         <Toasts />
-        <OfflineBar session={session} navVisible={navVisible} />
+        <OfflineBar session={session} navVisible={navVisible} hidden={view === 'study' || view === 'weak'} />
       </div>
     </ThemeContext.Provider>
   )

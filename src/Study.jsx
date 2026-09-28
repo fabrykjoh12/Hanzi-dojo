@@ -1,8 +1,9 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { isOnline } from './useOnline'
-import { enqueueGrade, gradeCardWrite, nextActivityCounts, newOpId } from './syncQueue'
-import { outboxDelete } from './offline'
+import { nextActivityCounts } from './syncQueue'
+import { submitReview, undoReview } from './reviewJournal'
+import { createStudyGradeIntent, advanceStudyGrade } from './studyGradeIntent'
 import { getTrackCards } from './data'
 import { studyFloorLevel } from './levelScope'
 import { schedule, previewLabels, endOfLocalDay } from './srs'
@@ -13,7 +14,7 @@ import { flipTransform, takeDeskHandoff } from './deskTransition'
 import { todayStr } from './streak'
 import { evaluateAchievements } from './achievements'
 import { toast } from './toast'
-import { languageTheme } from './languageTheme'
+import { languageTheme, ink } from './languageTheme'
 import { checkTypedAnswer } from './typedAnswer'
 import { useIsMobile } from './useIsMobile'
 import { useReadingFont } from './useReadingFont'
@@ -22,7 +23,6 @@ import { pickRecapStory } from './storyMatch'
 import { qualifiesForReward } from './storyReward'
 import { claimSessionReward } from './storyRewardData'
 import { tiersFor, learnedByLevel, readingGateCount } from './storyTiers'
-import { reinsertSoon } from './studyQueue'
 import { firstMissionCardHint } from './firstMission'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import SessionRecap from './SessionRecap'
@@ -56,10 +56,10 @@ const GRADE_COLORS = ['#DC2626', '#D97706', '#3E63DD', '#2F9E6D']
 // Fixed positions + text labels carry the meaning; color is a second signal,
 // never the only one (kept in sync with the icon/label per button below).
 const GRADE_STYLES = [
-  { bg: '#FBEDEA', border: '#E9C9C0', text: '#9B3521' }, // Again
-  { bg: '#FBF1E4', border: '#EBD7B8', text: '#8A5F1E' }, // Hard
-  { bg: '#E9F2EA', border: '#C4DCC7', text: '#35603C' }, // Good
-  { bg: '#E7EFF3', border: '#C2D6DF', text: '#2F5A6B' }, // Easy
+  { bg: 'color-mix(in srgb, #DC2626 7%, var(--surface))', border: 'var(--border)', text: 'var(--text)' }, // Again
+  { bg: 'color-mix(in srgb, #D97706 7%, var(--surface))', border: 'var(--border)', text: 'var(--text)' }, // Hard
+  { bg: 'color-mix(in srgb, #35603C 7%, var(--surface))', border: 'var(--border)', text: 'var(--text)' }, // Good
+  { bg: 'color-mix(in srgb, #2F5A6B 7%, var(--surface))', border: 'var(--border)', text: 'var(--text)' }, // Easy
 ]
 
 function hasKanji(text) {
@@ -123,7 +123,7 @@ function IconButton({ icon: Icon, label, onClick, color, background, border }) {
         border: border || '1px solid var(--border)',
         background: hovered ? 'var(--surface-2)' : (background || 'var(--surface)'),
         color: color || 'var(--text-muted)',
-        height: '40px', padding: '0 14px', borderRadius: '12px',
+        minHeight: '44px', padding: '0 14px', borderRadius: '12px',
         fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
         cursor: 'pointer', transition: 'background 160ms ease, transform 160ms ease',
         transform: hovered ? 'translateY(-1px)' : 'translateY(0)',
@@ -149,7 +149,7 @@ function HeaderIconButton({ icon: Icon, label, onClick, disabled }) {
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
-        width: '38px', height: '38px', borderRadius: '12px', flexShrink: 0,
+        width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
         border: '1px solid var(--border)',
         background: hovered && !disabled ? 'var(--surface-2)' : 'var(--surface)',
         cursor: disabled ? 'default' : 'pointer',
@@ -183,7 +183,7 @@ function GradeButton({
       onMouseLeave={() => setHovered(false)}
       style={{
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: minHeight >= 68 ? '6px' : '3px',
+        gap: minHeight >= 68 ? '6px' : '3px', minWidth: 0, width: '100%',
         minHeight: minHeight + 'px', padding: minHeight >= 68 ? '12px 8px' : '8px 4px',
         borderRadius: '16px',
         border: (suggested ? '2px solid ' : '1.5px solid ') + border,
@@ -194,10 +194,10 @@ function GradeButton({
         boxShadow: hovered ? '0 10px 22px rgba(24,24,27,0.08)' : 'none',
       }}
     >
-      <span style={{ fontSize: labelSize + 'px', fontWeight: 750 }}>
+      <span style={{ fontSize: labelSize + 'px', fontWeight: 750, maxWidth: '100%', overflowWrap: 'normal', whiteSpace: 'normal', lineHeight: 1.3 }}>
         {label}
       </span>
-      <span style={{ fontSize: intervalSize + 'px', fontWeight: 650, color: 'var(--text-muted)' }}>
+      <span style={{ fontSize: intervalSize + 'px', fontWeight: 650, color: 'var(--text-muted)', maxWidth: '100%', overflowWrap: 'anywhere', lineHeight: 1.3 }}>
         {interval}
       </span>
     </button>
@@ -220,6 +220,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const [done, setDone] = useState(false)
   const [showFurigana, setShowFurigana] = useState(profile.furigana_default !== false)
   const [saveError, setSaveError] = useState(null)
+  const [loadError, setLoadError] = useState(null)
+  const [retryAvailable, setRetryAvailable] = useState(false)
   const [typedValue, setTypedValue] = useState('')
   const [typedResult, setTypedResult] = useState(null)   // null | 'correct' | 'wrong'
   const [gradeColor, setGradeColor] = useState(null)     // feedback ring color
@@ -228,6 +230,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   // twice while the first save is still in flight (which would double-schedule
   // it and, for new cards, attempt a duplicate insert).
   const gradingRef = useRef(false)
+  const pendingGradeRef = useRef(null)
   // Snapshot of everything the last grade mutated, so a misclicked "Easy" can
   // be undone — a persistent header button now, not a timed toast, so it's
   // available for as long as it's still valid (cleared the moment a new grade
@@ -342,7 +345,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   const theme = languageTheme(profile.active_language)
   const accentHex = theme.accentHex
-  const accent = theme.accentVar
+  const accent = ink(accentHex)
   const isJapanese = profile.active_language === 'japanese'
   const langFont = theme.font
   const langChars = theme.languageName
@@ -382,10 +385,17 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   async function loadQueue() {
     setLoading(true)
+    setLoadError(null)
     sessionVocabRef.current = []
     againCountRef.current = {}
 
-    const data = await buildStudySession({ userId: session.user.id, profile, track, mode })
+    let data
+    try { data = await buildStudySession({ userId: session.user.id, profile, track, mode }) }
+    catch {
+      setLoadError('Your session could not be loaded. Please reconnect and try again.')
+      setLoading(false)
+      return
+    }
 
     // Weak-words drill: focus the cards the user keeps lapsing on, regardless
     // of their due date. No new cards; grading still feeds FSRS normally.
@@ -595,7 +605,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     // Guards (!forecast / !storyUnlock / a ref) keep them one-shot.
     if (done && recap && recap.graded > 0 && !forecast) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      loadForecast()
+      loadForecast().catch(() => {})
     }
     if (done && recap && recap.graded > 0 && !storyUnlock) {
       loadStoryUnlock()
@@ -631,20 +641,36 @@ export default function Study({ session, profile, track, mode = 'review', onBack
 
   const applyGrade = async (grade) => {
     const card = queue[0]
-    // The learner's retention dial lives on the profile, so pass it explicitly:
-    // that makes the account the source of truth and reduces srs.js's
-    // device-local mirror to a fallback for when the column isn't loaded yet
-    // (e.g. the migration is still unapplied). Without this a fresh device would
-    // schedule at the default until Settings was opened once.
-    // A calibration check is this word's FIRST real review: srs.buildFsrsCard
-    // returns a fresh createEmptyCard() for any row in state 'new', so there is
-    // no seeded stability to inherit. calibrationUpdates adds verified_at.
-    const res = card.isCalibration
-      ? calibrationUpdates(card, grade >= 2, { targetRetention: profile.target_retention })
-      : schedule(card, grade, { targetRetention: profile.target_retention })
+    if (!card) return
     const online = isOnline()
-
-    // A new grade invalidates any pending undo — its snapshot predates this one.
+    // Schedule once. An interrupted request retries the original operation,
+    // even if the learner presses a different rating button or midnight passes.
+    let attempt = pendingGradeRef.current
+    if (!attempt) {
+      // A new action invalidates the previous Undo snapshot before any request.
+      // Otherwise an uncertain next grade could be paired with an older queue
+      // restored by Undo, and its retry would advance the wrong visible word.
+      undoRef.current = null
+      setUndoVisible(false)
+      const res = card.isCalibration
+        ? calibrationUpdates(card, grade >= 2, { targetRetention: profile.target_retention })
+        : schedule(card, grade, { targetRetention: profile.target_retention })
+      attempt = { grade, res, intent: createStudyGradeIntent({ card, result: res, grade,
+        userId: session.user.id, track, generation: profile.review_generation || 0, day: todayStr() }) }
+      pendingGradeRef.current = attempt
+    }
+    const { res, intent } = attempt
+    grade = attempt.grade
+    const saved = await submitReview(supabase, intent, { online })
+    if (!saved.ok || !['applied', 'pending'].includes(saved.status)) {
+      setRetryAvailable(saved.status !== 'conflict')
+      setSaveError(saved.status === 'conflict' ? 'This word changed elsewhere. Return Home to refresh your session.' :
+        saved.durable ? 'Your answer is saved on this device. Retry to confirm it when connected.' : 'This answer could not be saved on this device. Please try again.')
+      return
+    }
+    pendingGradeRef.current = null
+    setRetryAvailable(false)
+    setSaveError(null)
     undoRef.current = null
     setUndoVisible(false)
 
@@ -713,84 +739,14 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       }
     }
 
-    // The review log for this grade — written inside the same transaction as
-    // the card row, so history can never disagree with scheduling.
-    const log = {
-      grade,
-      previous_state: card.state,
-      next_state: res.updates.state,
-      previous_interval_days: card.interval_days || 0,
-      next_interval_days: res.updates.interval_days,
-    }
-    // Today's running counts AFTER this card. Committed to the ref only once
-    // the write lands, so a failed grade never inflates the day's activity.
     const nextCounts = nextActivityCounts(activityRef.current, card.state)
-
-    let cardId = card.id
-    let outboxId = null
-    if (online) {
-      // One transaction: card row + review log + today's activity. Falls back
-      // to the previous separate writes if the RPC isn't deployed yet.
-      const write = await gradeCardWrite(supabase, {
-        userId: session.user.id,
-        cardId: card.id || null,
-        vocabId: card.vocab_id,
-        updates: res.updates,
-        log,
-        activity: {
-          mode: 'set',
-          date: todayStr(),
-          studied: nextCounts.studied,
-          new: nextCounts.newC,
-          learning: nextCounts.learn,
-          review: nextCounts.review,
-        },
-        opId: newOpId(),
-      })
-      if (!write.ok) {
-        console.error('[Study] grade write failed', write.error)
-        setSaveError(write.error && write.error.message)
-        return
-      }
-      cardId = write.cardId
-      // Captured so undo can remove the log entry. On the fallback path the
-      // insert is still non-blocking, so the id arrives a moment later.
-      snapshot.logId = write.logId
-      if (write.pendingLogId) write.pendingLogId.then(id => { if (id) snapshot.logId = id })
-      // The row may already have existed (another device started this word
-      // between load and grade). The RPC upserts rather than failing, so undo
-      // must restore that row instead of deleting someone else's progress.
-      if (write.viaRpc && !card.id && write.inserted === false) snapshot.wasNew = false
-    } else {
-      // Offline: grade locally (FSRS already ran above) and queue the write.
-      // A brand-new card gets a throwaway local id for this session only; the
-      // outbox op carries cardId:null so replay inserts it (de-duped by vocab)
-      // and assigns the real server id then.
-      if (!cardId) cardId = 'local-' + Date.now() + '-' + card.vocab_id
-      outboxId = await enqueueGrade({
-        userId: session.user.id,
-        vocabId: card.vocab_id,
-        cardId: card.id || null,
-        updates: res.updates,
-        log,
-        day: todayStr(),
-        state: card.state,
-      })
-    }
-
-    // Offer undo — a persistent header button now, not a timed toast — except
-    // when this grade completes the session (the recap snapshot has already
-    // been taken by then).
-    snapshot.cardId = cardId
-    snapshot.outboxId = outboxId
-    const willComplete = !res.stay && queue.length === 1
-    if (!willComplete) {
+    snapshot.opId = intent.opId
+    snapshot.cardId = saved.cardId
+    const nextQueue = advanceStudyGrade(queue, card, res, saved, intent)
+    if (!saved.pending && nextQueue.length > 0) {
       undoRef.current = snapshot
       setUndoVisible(true)
     }
-    // The write landed (or was queued) — this card now counts toward today.
-    // Offline these counts also ride along in the queued op and are folded into
-    // the server row when the outbox flushes.
     activityRef.current = nextCounts
 
     setFlipped(false)
@@ -799,13 +755,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     resetAudioBroken()
 
     setQueue(prev => {
-      let rest = prev.slice(1)
-      if (res.stay) {
-        // Reinsert an "Again"-graded card soon (SRS gap), but not as the very
-        // next card unless the queue is too short to allow it.
-        const item = { ...card, ...res.updates, id: cardId }
-        rest = reinsertSoon(rest, item, res.gap)
-      }
+      const rest = advanceStudyGrade(prev, card, res, saved, intent)
       if (rest.length === 0) {
         setRecap({ ...sessionRef.current })
         // Snapshot the session's words into a chat-mission offer (buckets +
@@ -829,65 +779,28 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     const u = undoRef.current
     if (!u || gradingRef.current) return
     gradingRef.current = true
-    undoRef.current = null
-    setUndoVisible(false)
     setStuckOffer(null)
     try {
-      if (u.outboxId != null) {
-        // The grade was only queued offline and never reached the server — just
-        // drop it from the outbox. Local session state is restored below.
-        outboxDelete(u.outboxId)
-      } else if (u.wasNew) {
-        // This grade created the row; the user's explicit undo removes it again
-        // (the card returns to the queue as a brand-new item).
-        if (u.cardId) {
-          await supabase.from('cards').delete().eq('id', u.cardId).eq('user_id', session.user.id)
-        }
-      } else {
-        const c = u.card
-        await supabase.from('cards').update({
-          state: c.state,
-          interval_days: c.interval_days,
-          due_at: c.due_at,
-          is_easy: c.is_easy,
-          learned: c.learned,
-          stability: c.stability,
-          difficulty: c.difficulty,
-          reps: c.reps,
-          lapses: c.lapses,
-          last_review: c.last_review,
-          scheduled_days: c.scheduled_days,
-          elapsed_days: c.elapsed_days,
-          learning_step: c.learning_step,
-          // Undoing a calibration check un-verifies the claim: the snapshot
-          // holds verified_at as it was BEFORE the grade (null for a first
-          // check), so the word returns to the calibration queue instead of
-          // being left marked verified with the review taken back.
-          verified_at: c.verified_at ?? null,
-        }).eq('id', u.cardId)
+      const undone = await undoReview(supabase, session.user.id, u.opId, { online: isOnline() })
+      if (!undone.ok || undone.status !== 'undone') {
+        setSaveError(undone.status === 'conflict' ? 'This word changed elsewhere. Return Home to refresh.' :
+          'Undo is not confirmed yet. Reconnect and retry Undo.')
+        return
       }
-      const serverPersisted = u.outboxId == null && isOnline()
-      if (serverPersisted && u.logId) supabase.from('review_logs').delete().eq('id', u.logId).then(() => {})
-
+      undoRef.current = null
+      setUndoVisible(false)
+      setSaveError(null)
       sessionRef.current = u.session
       activityRef.current = u.activity
-      if (serverPersisted) {
-        supabase.from('daily_activity').upsert({
-          user_id: session.user.id,
-          activity_date: todayStr(),
-          studied_cards: u.activity.studied,
-          new_cards: u.activity.newC,
-          learning_cards: u.activity.learn,
-          review_cards: u.activity.review,
-        }, { onConflict: 'user_id,activity_date' }).then(() => {})
-      }
+      sessionVocabRef.current.pop()
+      const restoredQueue = u.prevQueue.map(item => item.vocab_id === u.card.vocab_id ? { ...item, ...undone.card } : item)
 
       setFlipped(false)
       setTypedValue('')
       setTypedResult(null)
       resetAudioBroken()
       setStudied(n => Math.max(0, n - 1))
-      setQueue(u.prevQueue)
+      setQueue(restoredQueue)
     } finally {
       gradingRef.current = false
     }
@@ -940,9 +853,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
   const studyShell = layout.fixed
     ? {
       height: layout.shellHeight,
-      maxHeight: layout.shellHeight,
       position: 'relative',
-      overflow: 'hidden',
+      overflowY: 'auto', overflowX: 'hidden',
       padding: layout.shellPadding,
       display: 'flex',
       flexDirection: 'column',
@@ -969,7 +881,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             {/* "Exit", the same name the loaded header's control carries — one
                 control must not rename itself across the load boundary. */}
-            <button type="button" onClick={onBack} aria-label="Exit" className="hd-press" style={{ width: '40px', height: '40px', flexShrink: 0, borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', display: 'grid', placeItems: 'center', cursor: 'pointer' }}>
+            <button type="button" onClick={onBack} aria-label="Exit" className="hd-press" style={{ width: '44px', height: '44px', flexShrink: 0, borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)', display: 'grid', placeItems: 'center', cursor: 'pointer' }}>
               <X size={18} strokeWidth={2.2} />
             </button>
             <div aria-hidden="true" style={{ flex: 1, display: 'flex', gap: '5px' }}>
@@ -990,6 +902,15 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       </div>
     )
   }
+
+  if (loadError) return (
+    <div style={pageShell}>
+      <h1 style={{ color: 'var(--text)', fontSize: '24px' }}>Session unavailable</h1>
+      <p role="alert" style={{ color: 'var(--text-muted)', margin: '16px 0' }}>{loadError}</p>
+      <button onClick={loadQueue} style={{ minHeight: '44px', padding: '10px 18px', color: 'var(--text)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }}>Try again</button>
+      <button onClick={onBack} style={{ minHeight: '44px', padding: '10px 18px', color: 'var(--text)', background: 'transparent', border: 'none' }}>Return Home</button>
+    </div>
+  )
 
   if (done || queue.length === 0) {
     // Word-to-World chat mission offer (snapshotted at completion, above).
@@ -1064,16 +985,16 @@ export default function Study({ session, profile, track, mode = 'review', onBack
     const exFuri = isJapanese ? furiganaParts(word, reading) : null
     const wordEl = exFuri
       ? (
-        <span style={{ color: accentHex }}>
+        <span style={{ color: accent }}>
           {exFuri.lead}
           <ruby>
             {exFuri.core}
-            <rt style={{ fontSize: '0.65em', fontWeight: 500, color: accentHex }}>{exFuri.coreReading}</rt>
+            <rt style={{ fontSize: '0.65em', fontWeight: 500, color: accent }}>{exFuri.coreReading}</rt>
           </ruby>
           {exFuri.trail}
         </span>
       )
-      : <span style={{ color: accentHex, borderBottom: '1px solid ' + accentHex + '88' }}>{word}</span>
+      : <span style={{ color: accent, borderBottom: '1px solid ' + accentHex + '88' }}>{word}</span>
     return (
       <span>
         {before}
@@ -1135,8 +1056,14 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       last_review: null, scheduled_days: 0, elapsed_days: 0,
     }
     if (card.id) {
-      await supabase.from('cards').update(fresh).eq('id', card.id).eq('user_id', session.user.id)
+      const { data, error } = await supabase.from('cards').update(fresh).eq('id', card.id)
+        .eq('user_id', session.user.id).eq('revision', card.revision || 0).select('*').single()
+      if (error || !data || data.revision <= (card.revision || 0)) { setSaveError('This card could not be reset. Return Home to refresh.'); return }
+      Object.assign(fresh, data)
     }
+    pendingGradeRef.current = null
+    undoRef.current = null
+    setUndoVisible(false)
     setStuckOffer(null)
     setFlipped(false)
     setQueue(prev => [{ ...prev[0], ...fresh }, ...prev.slice(1)])
@@ -1150,8 +1077,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           background: 'var(--danger-bg)', border: '1px solid var(--danger-border)', color: '#DC2626',
           padding: '14px 18px', borderRadius: '16px', fontSize: '13px', lineHeight: 1.5,
         }}>
-          <strong>Card save failed</strong> - your progress is not being saved. Database error: {saveError}
-          <br />Run the migration SQL in your Supabase SQL Editor, then refresh.
+          <strong>Review needs attention</strong><br />{saveError}
+          <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+            {retryAvailable && <button onClick={() => { if (pendingGradeRef.current) handleGrade(pendingGradeRef.current.grade) }} style={{ minHeight: '44px', padding: '8px 16px', color: 'var(--text)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px' }}>Retry answer</button>}
+            <button onClick={onBack} style={{ minHeight: '44px', padding: '8px 16px', color: 'var(--text)', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '10px' }}>Return Home</button>
+          </div>
         </div>
       )}
 
@@ -1242,10 +1172,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             display: 'flex', alignItems: 'center', gap: '9px',
             padding: '11px 15px', borderRadius: '14px',
             background: accentHex + '10', border: '1px solid ' + accentHex + '2A',
-            color: accentHex, fontSize: '13.5px', fontWeight: 650, lineHeight: 1.45,
+            color: accent, fontSize: '13.5px', fontWeight: 650, lineHeight: 1.45,
           }}
         >
-          <Sparkles size={16} strokeWidth={2} color={accentHex} style={{ flexShrink: 0 }} />
+          <Sparkles size={16} strokeWidth={2} color={accent} style={{ flexShrink: 0 }} />
           <span>{firstMissionHint}</span>
         </div>
       )}
@@ -1275,7 +1205,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             width: '100%', maxWidth: '680px',
             // Desktop keeps its fixed 420px card; on mobile the card shrinks to
             // whatever is left over instead of forcing the page to overflow.
-            minHeight: layout.cardMinHeight + 'px',
+            minHeight: layout.fixed ? 'min-content' : layout.cardMinHeight + 'px',
             ...(layout.cardFlex ? { flex: layout.cardFlex } : {}),
             background: 'var(--surface)',
             border: '1px solid var(--border)', borderRadius: '26px',
@@ -1318,7 +1248,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                     title="This word's audio file couldn't be loaded"
                     style={{
                       display: 'inline-flex', alignItems: 'center', gap: '7px',
-                      height: '40px', padding: '0 14px', borderRadius: '13px',
+                      minHeight: '44px', padding: '0 14px', borderRadius: '13px',
                       background: 'var(--surface-2)', border: '1px solid var(--border)',
                       color: 'var(--text-faint)', fontSize: '13px', fontWeight: 650, fontFamily: 'Inter, sans-serif',
                     }}
@@ -1331,9 +1261,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                   onClick={e => { e.stopPropagation(); playAudio() }}
                   style={{
                     display: 'inline-flex', alignItems: 'center', gap: '7px',
-                    height: '40px', padding: '0 14px', borderRadius: '13px',
+                    minHeight: '44px', padding: '0 14px', borderRadius: '13px',
                     background: accentHex + '10', border: '1px solid ' + accentHex + '2A', cursor: 'pointer',
-                    color: accentHex, fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
+                    color: accent, fontSize: '13px', fontWeight: 750, fontFamily: 'Inter, sans-serif',
                     boxShadow: '0 10px 24px rgba(24,24,27,0.07)',
                   }}
                   title="Replay audio"
@@ -1360,7 +1290,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                 <button
                   onClick={e => { e.stopPropagation(); cycleSpeed() }}
                   style={{
-                    width: '48px', height: '40px', borderRadius: '13px',
+                    width: '48px', minHeight: '44px', borderRadius: '13px',
                     background: 'var(--surface)', border: '1px solid var(--border)', cursor: 'pointer',
                     color: 'var(--text-muted)', fontSize: '12px', fontWeight: 800, fontFamily: 'Inter, sans-serif',
                     display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
@@ -1378,9 +1308,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
           <div
             key={flipped ? 'back' : 'front'}
             style={{
-              flex: 1, minHeight: 0, overflowY: 'auto',
+              flex: 1, minHeight: 'min(140px, 24dvh)', overflowY: 'auto', overflowX: 'hidden',
               display: 'flex', flexDirection: 'column',
-              alignItems: 'center', justifyContent: 'center',
+              alignItems: 'center', justifyContent: 'safe center',
               textAlign: 'center', padding: layout.contentPadding,
               transformOrigin: 'center', willChange: 'transform',
               animation: 'hd-flip-in 260ms ease',
@@ -1389,7 +1319,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             {wordFuri ? (
               <div style={{
                 fontSize: charFontSize, fontWeight: 400, color: 'var(--text)',
-                fontFamily: charFont, lineHeight: 1.25,
+                fontFamily: charFont, lineHeight: 1.25, width: '100%', maxWidth: '100%', minWidth: 0, flexShrink: 0, overflowWrap: 'anywhere',
               }}>
                 {wordFuri.lead}
                 <ruby>
@@ -1401,7 +1331,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             ) : (
               <div style={{
                 fontSize: charFontSize, fontWeight: 400, color: 'var(--text)',
-                fontFamily: charFont, lineHeight: 1.08,
+                fontFamily: charFont, lineHeight: 1.2, width: '100%', maxWidth: '100%', minWidth: 0, flexShrink: 0,
                 overflowWrap: 'anywhere',
               }}>
                 {v.word}
@@ -1409,7 +1339,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
             )}
 
             {flipped && (
-              <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+              <div style={{ width: '100%', flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                 {showReadingLine && (
                   <div style={{ fontSize: '21px', color: accent, marginTop: '18px', fontWeight: 650 }}>
                     {v.reading}
@@ -1449,7 +1379,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                           </div>
                         )}
                         {!isJapanese && v.example_reading && (
-                          <div style={{ fontSize: '13px', color: accentHex, marginTop: '7px', lineHeight: 1.45, fontWeight: 550 }}>
+                          <div style={{ fontSize: '13px', color: accent, marginTop: '7px', lineHeight: 1.45, fontWeight: 550 }}>
                             {v.example_reading}
                           </div>
                         )}
@@ -1516,7 +1446,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                       <button
                         onClick={e => { e.stopPropagation(); findStoryForWord() }}
                         style={{
-                          padding: '7px 12px', borderRadius: '10px', cursor: 'pointer',
+                          minHeight: '44px', padding: '7px 12px', borderRadius: '10px', cursor: 'pointer',
                           background: 'var(--surface)', border: '1px solid #EEDCCB',
                           color: '#8A5F1E', fontSize: '12.5px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
                         }}
@@ -1526,7 +1456,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                       <button
                         onClick={e => { e.stopPropagation(); resetCard() }}
                         style={{
-                          padding: '7px 12px', borderRadius: '10px', cursor: 'pointer',
+                          minHeight: '44px', padding: '7px 12px', borderRadius: '10px', cursor: 'pointer',
                           background: 'none', border: '1px solid #EEDCCB',
                           color: '#8A5F1E', fontSize: '12.5px', fontWeight: 700, fontFamily: 'Inter, sans-serif',
                         }}
@@ -1593,7 +1523,7 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                 <button
                   onClick={() => setFlipped(true)}
                   style={{
-                    marginTop: '12px', width: '100%', background: 'none', border: 'none',
+                    marginTop: '12px', width: '100%', minHeight: '44px', background: 'none', border: 'none',
                     color: 'var(--text-faint)', cursor: 'pointer', fontSize: '13px',
                     fontWeight: 650, fontFamily: 'Inter, sans-serif',
                   }}
@@ -1601,7 +1531,9 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                   Skip — reveal answer
                 </button>
               </div>
-            ) : null
+            ) : (
+              <button onClick={() => setFlipped(true)} style={{ width: '100%', minHeight: '48px', padding: '12px 16px', borderRadius: '12px', border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text)', fontSize: '15px', fontWeight: 650 }}>Show answer</button>
+            )
           ) : (
             <div>
               {typedResult && (
@@ -1624,9 +1556,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                   studyLayout shrinks the buttons instead, never past 44px. */}
               <div style={{
                 display: 'grid',
-                gridTemplateColumns: card.isCalibration
-                  ? 'repeat(2, minmax(0, 1fr))'
-                  : 'repeat(4, minmax(0, 1fr))',
+                // Four positions at ordinary text size; larger text wraps
+                // whole rating words onto another row instead of splitting them.
+                fontSize: layout.gradeLabelSize + 'px',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 4.25em), 1fr))',
                 gap: layout.gradeGap + 'px',
               }}>
                 {(card.isCalibration
@@ -1676,11 +1609,11 @@ export default function Study({ session, profile, track, mode = 'review', onBack
                   display: 'inline-flex', alignItems: 'center', gap: '8px',
                   padding: '10px 16px', borderRadius: '999px',
                   background: accentHex + '10', border: '1px solid ' + accentHex + '33',
-                  color: accentHex, fontSize: '13px', fontWeight: 700,
+                  color: accent, fontSize: '13px', fontWeight: 700,
                   fontFamily: 'Inter, sans-serif', cursor: 'pointer',
                 }}
               >
-                <Sparkles size={15} strokeWidth={2} color={accentHex} />
+                <Sparkles size={15} strokeWidth={2} color={accent} />
                 Struggling? See it a different way
               </button>
             </div>

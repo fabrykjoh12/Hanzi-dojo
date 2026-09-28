@@ -1,0 +1,9 @@
+
+ RUN  v4.1.9 /workspace/scratch/bb2a1954cdbf/hanzi-dojo-recovery
+
+
+ Test Files  1 passed (1)
+      Tests  16 passed (16)
+   Start at  14:45:40
+   Duration  1.41s (transform 229ms, setup 0ms, import 343ms, tests 80ms, environment 0ms)
+

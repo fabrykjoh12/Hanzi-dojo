@@ -6,7 +6,7 @@ import { ensureAudio } from './audioCache'
 import { PrimaryButton, PopoverArrow } from './ui'
 import { useAnchoredPopover } from './useAnchoredPopover'
 import { getLevelLabel, getAudioUrl, playAudioEl } from './utils'
-import { languageTheme } from './languageTheme'
+import { languageTheme, ink } from './languageTheme'
 import { cleanMeaning } from './cleanMeaning'
 import { wordStatus, todayWordsInStory, calculateStoryReadability, splitSpeaker, JP_PARTICLES, readingVisibleFor, isDueSoon, buildVocabMatcher, isPlaceWord, segmentLine, storyNamesFor, isNameKey, isWordlikeToken } from './storyReading'
 import { minDwellMs } from './readAlong'
@@ -39,7 +39,7 @@ import { floatingBottom } from './bottomBar'
 const PANEL = 'var(--surface)'
 const TEXT = 'var(--text)'
 const MUTED = 'var(--text-muted)'
-const GOLD = '#B45309'
+const GOLD = 'var(--reading-ink)'
 const HILITE = 'rgba(217, 164, 62, 0.32)'
 // Proper nouns (character names + curated place names) get this green text
 // color everywhere, so they read as "a name", not vocabulary to learn.
@@ -352,7 +352,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
   useEffect(() => {
     if (!settingsOpen) return undefined
     const onDown = (e) => {
-      if (settingsAnchorRef.current && !settingsAnchorRef.current.contains(e.target)) setSettingsOpen(false)
+      if (settingsAnchorRef.current && !settingsAnchorRef.current.contains(e.target) && !settingsSheetRef.current?.contains(e.target)) setSettingsOpen(false)
     }
     document.addEventListener('mousedown', onDown)
     return () => document.removeEventListener('mousedown', onDown)
@@ -924,7 +924,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         <header style={{ marginBottom: '22px' }}>
           <div style={{
             fontSize: '11px', fontWeight: 800, letterSpacing: '0.8px', textTransform: 'uppercase',
-            color: accent, marginBottom: '8px',
+            color: ink(accent), marginBottom: '8px',
           }}>
             {levelLabel}
           </div>
@@ -1021,7 +1021,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                   } : undefined}
                   style={{
                     fontSize: '12.5px', fontWeight: 800, letterSpacing: '0.4px',
-                    color: speakerColors[speaker], marginBottom: '5px',
+                    color: ink(speakerColors[speaker]), marginBottom: '5px',
                     fontFamily: font, display: 'inline-block',
                     paddingLeft: isMobile ? '12px' : '16px',
                     cursor: isNameKey(names, speaker) ? 'pointer' : 'default',
@@ -1161,7 +1161,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               <span style={{ fontSize: '17px', fontWeight: 800, color: TEXT }}>Story finished</span>
             </div>
             {firstMission && (
-              <div style={{ fontSize: '15px', fontWeight: 750, color: accent, lineHeight: 1.5, marginBottom: '10px' }}>
+              <div style={{ fontSize: '15px', fontWeight: 750, color: ink(accent), lineHeight: 1.5, marginBottom: '10px' }}>
                 {firstMissionCompletion(theme.languageName)}
               </div>
             )}
@@ -1179,7 +1179,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               disabled={sharing}
               style={{
                 width: '100%', minHeight: '46px', marginBottom: '12px', borderRadius: '14px',
-                border: '1px solid ' + accent + '55', background: accent + '0D', color: accent,
+                border: '1px solid ' + accent + '55', background: accent + '0D', color: ink(accent),
                 cursor: sharing ? 'default' : 'pointer', fontSize: '14px', fontWeight: 750,
                 fontFamily: 'Inter, sans-serif', opacity: sharing ? 0.7 : 1,
                 display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
@@ -1295,7 +1295,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
               <div style={{ minWidth: 0, flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: '10px', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: '26px', fontWeight: 800, color: accent, fontFamily: font, lineHeight: 1.15, overflowWrap: 'anywhere' }}>
+                  <span style={{ fontSize: '26px', fontWeight: 800, color: ink(accent), fontFamily: font, lineHeight: 1.15, overflowWrap: 'anywhere' }}>
                     {selWord}
                   </span>
                   {(() => {
@@ -1359,7 +1359,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
                 {sel.vocab && (
                   <button onClick={() => !selInDeck && addToDeck(sel.vocab)} aria-label={selInDeck ? 'In your deck' : 'Add to deck'} title={selInDeck ? 'In your deck' : 'Add to deck'}
-                    style={{ background: 'none', border: 'none', cursor: selInDeck ? 'default' : 'pointer', minWidth: '40px', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    style={{ background: 'none', border: 'none', cursor: selInDeck ? 'default' : 'pointer', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Bookmark size={21} strokeWidth={2} color={selInDeck ? accent : MUTED} fill={selInDeck ? accent : 'none'} />
                   </button>
                 )}
@@ -1367,7 +1367,7 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                     "tap a word, keep a word" holds for every word in the story. */}
                 {!sel.vocab && dictEntry && (
                   <button onClick={addDictToDeck} disabled={dictInDeck || dictSaving} aria-label={dictInDeck ? 'In your deck' : 'Add to deck'} title={dictInDeck ? 'In your deck' : 'Add to deck'}
-                    style={{ background: 'none', border: 'none', cursor: (dictInDeck || dictSaving) ? 'default' : 'pointer', opacity: dictSaving ? 0.5 : 1, minWidth: '40px', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    style={{ background: 'none', border: 'none', cursor: (dictInDeck || dictSaving) ? 'default' : 'pointer', opacity: dictSaving ? 0.5 : 1, minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <Bookmark size={21} strokeWidth={2} color={dictInDeck ? accent : MUTED} fill={dictInDeck ? accent : 'none'} />
                   </button>
                 )}
@@ -1375,11 +1375,11 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
                 <button
                   onClick={() => (sel.vocab && sel.vocab.audio_path ? playWord(sel.vocab.audio_path) : speakWord(selWord))}
                   aria-label="Play audio"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', minWidth: '40px', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   <Volume2 size={21} strokeWidth={2} color={MUTED} />
                 </button>
                 <button onClick={clearReading} aria-label="Close"
-                  style={{ background: 'none', border: 'none', cursor: 'pointer', minWidth: '40px', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED }}>
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', minWidth: '44px', minHeight: '44px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: MUTED }}>
                   <X size={20} strokeWidth={2.2} color={MUTED} />
                 </button>
               </div>
@@ -1635,7 +1635,7 @@ function TopToggle({ active, onClick, icon: Icon, label, accent, isMobile, ...re
       display: 'flex', alignItems: 'center', gap: label ? '6px' : 0,
       background: active ? accent + '1A' : 'transparent',
       border: '1px solid ' + (active ? accent + '66' : 'var(--border)'),
-      color: active ? accent : MUTED, borderRadius: '999px',
+      color: active ? ink(accent) : MUTED, borderRadius: '999px',
       minHeight: '44px', minWidth: '44px', padding: isMobile ? (label ? '6px 12px' : '6px 9px') : (label ? '7px 13px' : '7px 10px'),
       cursor: 'pointer', fontSize: '13px', fontWeight: 600,
     }}>
@@ -1696,10 +1696,10 @@ function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, fontChoi
             // rows do the same job and should sound the same.
             <button key={opt.value} onClick={() => setFuriganaMode(opt.value)} aria-pressed={on}
               style={{
-                minHeight: '42px', borderRadius: '11px', cursor: 'pointer',
+                minHeight: '44px', borderRadius: '11px', cursor: 'pointer',
                 fontSize: '13.5px', fontWeight: on ? 750 : 600, fontFamily: 'Inter, sans-serif',
-                color: on ? accent : 'var(--text)',
-                background: on ? accent + '14' : 'var(--surface-2)',
+                color: on ? ink(accent) : 'var(--text)',
+                background: on ? 'color-mix(in srgb, ' + accent + ' 8%, var(--surface))' : 'var(--surface-2)',
                 border: '1px solid ' + (on ? accent + '66' : 'var(--border)'),
               }}>
               {opt.label}
@@ -1723,13 +1723,13 @@ function ReaderSettings({ furiganaMode, setFuriganaMode, lens, setLens, fontChoi
           return (
             <button key={opt.value} onClick={() => setFontChoice(opt.value)} aria-pressed={on}
               style={{
-                minHeight: '42px', padding: '7px 4px', borderRadius: '11px', cursor: 'pointer',
+                minHeight: '44px', padding: '7px 4px', borderRadius: '11px', cursor: 'pointer',
                 fontSize: '12.5px', fontWeight: on ? 750 : 600,
                 // Drawn in its own face, so the shapes are visible before the
                 // choice is made — the whole point of the setting.
                 fontFamily: opt.stack,
-                color: on ? accent : 'var(--text)',
-                background: on ? accent + '14' : 'var(--surface-2)',
+                color: on ? ink(accent) : 'var(--text)',
+                background: on ? 'color-mix(in srgb, ' + accent + ' 8%, var(--surface))' : 'var(--surface-2)',
                 border: '1px solid ' + (on ? accent + '66' : 'var(--border)'),
               }}>
               {opt.sample && (

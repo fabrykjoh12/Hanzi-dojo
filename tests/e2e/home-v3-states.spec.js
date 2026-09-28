@@ -12,7 +12,7 @@ const CORS = {
   'content-range': '0-0/*',
 };
 
-const VOCAB = [{ id: 'v1', word: '我们', reading: 'wǒmen', meaning: 'we', level: 1 }];
+const VOCAB = [{ id: 'v1', word: '我们', reading: 'wǒmen', meaning: 'we', level: 1 }, { id: 'v2', word: '朋友', reading: 'péngyou', meaning: 'friend', level: 1 }].map(row => ({ ...row, language: 'chinese', system: 'hsk', is_active: true }));
 
 // Production shape: a cover is `image_path`, a path inside the public `audio`
 // bucket, which the app resolves through getAudioUrl(). It is NOT a ready-made
@@ -46,14 +46,14 @@ async function installHomeState(page, state) {
     id: 'c1', user_id: '00000000-0000-4000-8000-000000000001', vocab_id: 'v1',
     state: 'review', due_at: queueWaiting ? '2020-01-01T00:00:00.000Z' : '2099-01-01T00:00:00.000Z',
     created_at: '2020-01-01T00:00:00.000Z', learned: true, is_easy: false,
-    stability: 20, lapses: 0,
+    stability: 20, lapses: 0, reps: 3,
   }, {
     // A second review lands tomorrow, so the cleared hero has a real number
-    // to preview. Same vocab row — it must not create a phantom "new" card.
-    id: 'c2', user_id: '00000000-0000-4000-8000-000000000001', vocab_id: 'v1',
+    // to preview. A distinct vocabulary row respects the real unique-card constraint.
+    id: 'c2', user_id: '00000000-0000-4000-8000-000000000001', vocab_id: 'v2',
     state: 'review', due_at: tomorrow.toISOString(),
     created_at: '2020-01-01T00:00:00.000Z', learned: true, is_easy: false,
-    stability: 20, lapses: 0,
+    stability: 20, lapses: 0, reps: 3,
   }];
   const reads = storyComplete ? [{ story_id: STORY[0].id, read_at: new Date().toISOString() }] : [];
   const grammar = state === 'practice' ? [{ topic_id: 'grammar-review', state: 'new', due_at: new Date().toISOString() }] : [];
@@ -101,12 +101,11 @@ for (const state of STATES) {
       // The hero shows the real queue — one due review — and starts it.
       await expect(page.getByRole('button', { name: /Start reviewing — 1 card waiting/ })).toBeEnabled();
       await expect(hero.getByText('Ready to review')).toBeVisible();
-      await expect(hero.getByText('1', { exact: true }).first()).toBeVisible();
-      await expect(hero.getByText('card waiting')).toBeVisible();
+      await expect(hero.getByText('1 card waiting')).toBeVisible();
       // The story is the locked next step, named beneath the hero — with its
       // own cover leading the row.
       await expect(handoff.getByText('Then read')).toBeVisible();
-      await expect(handoff.getByText('Finish cards to unlock')).toBeVisible();
+      await expect(handoff).toBeEnabled();
       await expect(handoff.getByText('我们的歌')).toBeVisible();
       // The cover resolved from image_path through the audio bucket, and did
       // not fall back — a stale column would have left the painted tile here.
@@ -117,17 +116,17 @@ for (const state of STATES) {
       // The queue is clear: the ✓ replaces the number and the one action is
       // reading — no reviewing button remains.
       await expect(hero.getByText('Queue clear')).toBeVisible();
-      await expect(hero.getByText('all caught up')).toBeVisible();
+      await expect(hero.getByText('All caught up')).toBeVisible();
       // The done state previews tomorrow's real load inside the hero.
-      await expect(hero.getByText('About 1 waiting tomorrow')).toBeVisible();
+      await expect(page.locator('[data-tour=home-week]').getByText(/1.*waiting tomorrow/)).toBeVisible();
       await expect(page.getByRole('button', { name: /Read a story/ })).toBeEnabled();
       await expect(page.getByRole('button', { name: /Start reviewing/ })).toHaveCount(0);
     }
     if (state === 'story') {
-      await expect(handoff.getByText('Ready to read')).toBeVisible();
+      await expect(handoff.getByText('Then read')).toBeVisible();
     }
     if (state === 'practice' || state === 'complete') {
-      await expect(handoff.getByText('Story complete')).toBeVisible();
+      await expect(handoff.getByText('Read again')).toBeVisible();
     }
     if (state === 'caught-up') {
       // No story unlocked — the hand-off does not invent one.
@@ -147,6 +146,6 @@ test('the hand-off opens today’s story directly once the queue is clear', asyn
   await page.setViewportSize({ width: 390, height: 844 });
   await installHomeState(page, 'story');
   await page.goto('/');
-  await page.locator('[data-tour="home-then-read"]').getByRole('button').click();
+  await page.locator('[data-tour="home-then-read"]').click();
   await expect(page).toHaveURL(/\/stories/);
 });
