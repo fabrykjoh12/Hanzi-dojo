@@ -206,5 +206,10 @@ Each step is verifiable before the next begins.
   is a separate, deliberate decision.
 - `20260724170000_harden_policies_and_vocab_index.sql` declares
   `vocabulary_dict_word_uniq` and **is not applied in production** — the race it
-  guards is still open. Applying it is its own change.
+  guards is still open. **Do not apply it on its own any more:**
+  `20260907010000_cap_dict_add_to_deck.sql` (FAB-26 finding 3, also unapplied)
+  supersedes it with the same key plus an `is_active` limb, and drops it by name
+  before creating the replacement. Applying the older one alone leaves the
+  weaker index; applying it *after* the newer one puts both back, and a word
+  deactivated by the §7.1 cleanup then cannot be re-added at all.
 - Rewriting any published story.
