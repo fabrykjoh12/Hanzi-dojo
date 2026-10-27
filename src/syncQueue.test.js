@@ -477,7 +477,7 @@ describe('a refused (stale) grade', () => {
     resetGradeRpcProbe()
     await enqueueGrade({ userId: 'u1', vocabId: 'v1', cardId: 'card-1', updates: UPDATES })
     const sb = fakeSupabase({ rpc: staleRpc })
-    const { flushed } = await flushOutbox(sb)
+    const { flushed } = await flushOutbox(sb, 'u1')
     expect(flushed).toBe(1)
     expect(store.rows).toHaveLength(0)
   })
@@ -513,7 +513,7 @@ describe('an op naming a card that no longer exists', () => {
     resetGradeRpcProbe()
     await enqueueGrade({ userId: 'u1', vocabId: 'v1', cardId: 'deleted-card', updates: UPDATES })
     const sb = fakeSupabase({ rpc: () => ({ data: null, error: gone }) })
-    const { flushed } = await flushOutbox(sb)
+    const { flushed } = await flushOutbox(sb, 'u1')
     expect(flushed, 'a refused op is not a flushed one').toBe(0)
     expect(store.rows, 'the op would be replayed on every flush, forever').toHaveLength(0)
   })
@@ -524,8 +524,11 @@ describe('an op naming a card that no longer exists', () => {
     resetGradeRpcProbe()
     await enqueueGrade({ userId: 'u1', vocabId: 'v1', cardId: 'card-1', updates: UPDATES })
     const sb = fakeSupabase({ rpc: () => ({ data: null, error: { code: '40001', message: 'could not serialize access' } }) })
-    await flushOutbox(sb)
+    await flushOutbox(sb, 'u1')
     expect(store.rows, 'a transient failure discarded the grade').toHaveLength(1)
+  })
+})
+
 // ---------------------------------------------------------------------------
 // FAB-28 finding 4: a reset must not leave queued writes for deleted rows.
 // ---------------------------------------------------------------------------
