@@ -3,6 +3,7 @@ import {
   aheadLine, heroAriaLabel, homeAction, homeHeaderMeta, queueBreakdown,
   queueHeadline, storyHandoffSub, storyStatus, tomorrowLine, weekLine,
 } from './homeModel'
+import { homeQueueSummary } from './homePresentation'
 
 describe('homeHeaderMeta', () => {
   it('prints the level and the weekday', () => {
@@ -145,5 +146,33 @@ describe('aheadLine', () => {
   it('keeps the free day even when later days carry reviews', () => {
     expect(aheadLine({ dueTomorrow: 0, forecastTotal: 12, perDay: 2 }))
       .toBe('Nothing due tomorrow — a free day · ~2/day this week')
+  })
+})
+
+describe('the breakdown adds up to what the hero promises', () => {
+  // The invariant, not an example. Home shows "N cards waiting" from
+  // homeQueueSummary and three category rows from queueBreakdown; if a category
+  // the hero counts is missing from the rows, the learner reads two different
+  // numbers for the same queue on one screen. That is how calibration checks
+  // went unnoticed — counted in neither, then counted in only one.
+  const cases = [
+    { newCount: 0, learnCount: 0, dueCount: 0, calibrationCount: 0 },
+    { newCount: 5, learnCount: 3, dueCount: 7, calibrationCount: 0 },
+    { newCount: 0, learnCount: 0, dueCount: 0, calibrationCount: 20 },
+    { newCount: 2, learnCount: 1, dueCount: 15, calibrationCount: 20 },
+    { newCount: 10, learnCount: 0, dueCount: 0, calibrationCount: 4 },
+  ]
+  for (const counts of cases) {
+    it('sums for ' + JSON.stringify(counts), () => {
+      const rows = queueBreakdown(counts)
+      const summed = rows.reduce((n, r) => n + r.value, 0)
+      expect(summed).toBe(homeQueueSummary(counts).totalReady)
+    })
+  }
+
+  it('shows calibration checks in the Review row, where the session puts them', () => {
+    const rows = queueBreakdown({ dueCount: 15, calibrationCount: 20 })
+    expect(rows.find(r => r.label === 'Review').value).toBe(35)
+    expect(rows.map(r => r.label)).toEqual(['New', 'Learning', 'Review'])
   })
 })
