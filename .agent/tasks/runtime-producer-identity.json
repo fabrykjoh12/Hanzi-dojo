@@ -1,0 +1,65 @@
+{
+  "id": "runtime-producer-identity",
+  "goal": "Correct the merged runtime task-scope policy so that task-contract binding and scope enforcement apply to the designated task-producer agent rather than to every subagent. Registering the guard as it stands would deny writes from ordinary helper subagents across the whole repository. This task changes only the protected policy module and its proofs; it registers nothing and changes no runtime behaviour on merge.",
+  "owner_role": "workflow-authority",
+  "risk": "r3",
+  "allowed_paths": [
+    "runtime-scope.test.mjs",
+    "docs/AUTOMATION-AUTHORITY.md"
+  ],
+  "forbidden_paths": [],
+  "control_plane": {
+    "grant": "runtime-hook-maintenance",
+    "protected_paths": [
+      ".claude/hooks/task-scope-policy.mjs"
+    ],
+    "justification": "The producer-identification branch is part of the runtime authorization path and must stay where an ordinary task cannot rewrite it. One exact file rather than the subtree: the adapter needs no change under this task, and the session-start hook is unrelated."
+  },
+  "non_goals": [
+    "Registering the guard in .claude/settings.json, adding static deny rules, or any other activation — that is the separate task under runtime-policy-maintenance",
+    "Editing .claude/hooks/task-scope-guard.mjs or .claude/hooks/session-start.sh",
+    "Editing .claude/agents/task-producer.md — its declared name is pinned by a spec, not changed",
+    "Claiming the producer definition is protected, since .claude/agents/** is still Tier 2",
+    "Claiming runtime enforcement is active, which it is not until registration",
+    "Moving .claude/agents/** into Tier 1, or any contract-lifecycle migration — that is FAB-54",
+    "Changing the contract-verification grammar or the review driver — that is FAB-57",
+    "Changing PROTECTED_CONTROL_PLANE, ALWAYS_FORBIDDEN, CONTROL_PLANE_GRANTS, the path grammar, the risk taxonomy, the production_effect taxonomy or the role model",
+    "Editing tools/verify-task-contracts.mjs or any other Tier 2 module the runtime decision path must not depend on",
+    "Re-sealing any existing contract, or changing any existing contract digest",
+    "Any story, product, database, Supabase or production-resource change",
+    "Merging anything"
+  ],
+  "acceptance_criteria": [
+    "The policy enforces task-contract binding and scope when a binding is present, or when the calling agent_type is not on a closed exemption list; an agent_type absent from the event remains the trusted driver and is unaffected",
+    "The designated producer agent_type is pinned as an exported constant of the protected policy, and a spec asserts it equals the frontmatter name declared by .claude/agents/task-producer.md, so a Tier 2 rename fails CI rather than silently disabling enforcement",
+    "The exemption list is a closed exported constant covering the built-in helper agent types, so an unknown or renamed agent_type is enforced rather than exempt, and the fail-closed direction is proven by a spec over an agent_type that appears nowhere in the list",
+    "A real producer with a valid binding writing inside the effective scope is allowed, so the change is not deny-all",
+    "A real producer with no binding is denied, and a real producer writing outside the effective scope is denied",
+    "An exempt helper agent with no binding is unaffected, asserted separately for more than one exempt type",
+    "An exempt helper agent inside a bound session is enforced, pinning the deliberate decision that a session binding governs every subagent in it",
+    "The producer cannot reach an exempt agent_type by spawning one, asserted against the closed tool list declared by the producer definition",
+    "Every new decision branch is mutation-verified: deleting it fails a spec, and the failure names the intended reason rather than passing for an adjacent one",
+    "The runtime decision path still imports nothing outside .claude/hooks/ and Node builtins, and the existing parity specs against the canonical validator still hold",
+    "docs/AUTOMATION-AUTHORITY.md states the enforcement scope exactly: which callers are enforced, that the guard remains unregistered, that agent_type originates in a Tier 2 file and what that residual means, and that disableAllHooks remains a trusted-launcher residual",
+    ".claude/settings.json is not modified, and the guard remains registered nowhere",
+    "npm run verify:pr passes"
+  ],
+  "verification": [
+    "npm run verify:pr",
+    "npx vitest run runtime-scope.test.mjs",
+    "npm run verify:tasks"
+  ],
+  "production_effect": "none",
+  "dependencies": [
+    "runtime-task-scope-guard"
+  ],
+  "stop_conditions": [
+    "The producer agent_type cannot be established from the hook event without trusting producer-writable state — stop, because a guard that identifies its subject from mutable input identifies nothing",
+    "Scoping enforcement to the producer cannot be done without a fail-open direction on a Tier 2 rename — stop and report rather than shipping a guard that a rename disables",
+    "The work turns out to require editing .claude/settings.json, the adapter, .agent/roles.json or .agent/tasks/** — stop and report the governance conflict rather than widening the grant",
+    "A second protected path or a second grant turns out to be needed — stop, because the single-grant schema means that is a separate authority step",
+    "The work turns out not to fit workflow-authority / r3 / none — report before implementing"
+  ],
+  "notes": "Prerequisite to the settings-registration task, split out of it exactly as the runtime-hook-maintenance grant preceded the guard itself: the fix belongs to the hook authority, the activation belongs to the settings authority, and the single-grant control_plane schema cannot express both at once. Recon on Claude Code 2.1.259 established the load-bearing facts empirically rather than carrying them over from 2.1.258. A real producer emits agent_type \"task-producer\" alongside an agent_id; the trusted driver omits the key entirely rather than sending null, which the existing isNonEmptyString check already handles; file_path arrives absolute; and the producer holds no Task or Agent tool, so it cannot reach another agent_type by spawning one. The decisive fact is that agent_type is sourced from the agent definition frontmatter name rather than the filename, proven by a definition in renamed-file.md declaring name inner-declared-name and emitting exactly that. That is why enforcement is not pinned to the producer name alone: the name lives in a Tier 2 file, so a pin would be fail-open on a rename. Enforcement therefore applies unless the caller is on a closed exemption list, which makes an unknown or renamed agent_type enforced rather than exempt. The residual that agent_type originates in Tier 2 is documented rather than claimed closed; it is the same residual already recorded for that tier, since a task able to edit the producer definition can equally give it Bash and defeat the guard outright. Classification: workflow-authority because this is control-plane machinery; r3 because control_plane requires at least r3 and this is harness authority, not production authority; production_effect none because the guard is still registered nowhere, so merging changes no runtime behaviour.",
+  "contract_digest": "6fc4db6d854be79e5e42338f272cd8a2fa66216e8f4258e563b54c575e0a5c4d"
+}

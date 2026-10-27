@@ -11,6 +11,104 @@ Active milestone, task assignments, ownership boundaries and merge order live in
 [`docs/PM-BOARD.md`](PM-BOARD.md) (not Discord-synced). This file stays the
 long-lived engineering backlog; the board holds short-lived execution state.
 
+### The task-contract floor covers a pattern's own root (FAB-60)
+
+A `dir/**` entry does not cover its own root — `covers('.git/**', '.git')` is false and so is the reverse — so a contract naming `.git`, `.agent/tasks` or `.claude/hooks` in ordinary `allowed_paths` used to be refused by nothing: not `npm run verify:tasks`, not `contractSecurityViolations`, not the resolved floor loop, and the scope test then matched it exactly and **allowed the write**. In a git worktree `.git` is a regular file holding a gitdir pointer, and `/parallel` uses worktrees, so it was a real write rather than a curiosity.
+
+Closed in one change across the three modules that refuse a tier — `tools/verify-task-contracts.mjs`, `.claude/hooks/task-scope-policy.mjs` and `tools/review-protocol.mjs` — through `isSubtreeRoot`, asked directly where a concrete path is judged and folded into `reachesTier` where a contract entry is. `covers()` itself is unchanged: its semantics are right, it is at parity between the two modules, and widening it would grant more rather than less.
+
+A second shape went the same way: a path hanging BELOW an exact floor file (`.agent/roles.json/sub`, or the same path spelled `.../sub/**`) is related to `.agent/roles.json` by neither predicate, so a contract could name it and the guard said allow — the write failed only with ENOTDIR from the kernel, which is the tree refusing rather than the floor. `hangsBelow` asks it structurally now, in `reachesTier` and as its own branch in each of the four `decide()` loops.
+
+**Still nameable, deliberately:** an entry naming an *ancestor* of a tier root (`.agent`, above `.agent/tasks/**`). It buys one directory path and nothing beneath it — pinned by a spec that drives a non-floor descendant, since a floor one would be refused by the tier before the scope test is reached and would prove nothing. Whether writing that directory then fails is an observation about the tree, not something the guard enforces, and `docs/AUTOMATION-AUTHORITY.md` records it on that footing.
+
+### The vocabulary integrity gate (FAB-36)
+
+`check-vocabulary-integrity.mjs` + `vocabularyIntegrity.mjs` + `data/vocabulary-integrity-baseline.json`, dispatched as **Actions → Content utilities → `vocab-integrity`** (compare-only) and **`vocab-integrity-accept`** (writes the baseline, refuses to run on `main`). Read-only against the database; it repairs nothing.
+
+**THE CORPUS IS THE CURRICULUM.** `vocabulary` is not a curated table: `dict_add_to_deck` (`20260719130000`) inserts a row for any dictionary word a learner saves — `level null, sort_order 0`, no `audio_path`, and a meaning that falls back to the headword when CC-CEDICT has no definition — and Dictionary, the story reader and the reader core all call it. Measuring those as curriculum debt would red the gate on ordinary use (one save grows `no-audio`) and could red the HARD tier on CC-CEDICT content nobody here can fix. So every content check reads rows **with a level**, and the level-null rows get one check of their own. All three level-null rows in production today have the SHAPE of a dictionary save (`sort_order 0`), which is what the check tests and all it can establish. It is not their provenance: `docs/VOCAB-INGESTION.md` calls the same three ingestion orphans, and two of them carry ready `tts_audio` rows that `dict_add_to_deck` never writes.
+
+**Ten HARD checks** — all clean in production as of 2026-09-07, measured before the tier was assigned. Any violation fails the run: blank or untrimmed `word`/`reading`/`reading_plain`/`meaning`; a placeholder gloss or one that just repeats the word; two curriculum rows sharing a `word`; a level-null row shadowing a curriculum row for the same word (a learner cannot cause it — `dict_add_to_deck` reuses an existing active row, `order by level nulls last` — but `seed-vocab.mjs` dedupes with `.eq('level', level)` and cannot see a level-null row, so a reseed can); a `level` outside 1-9; a level-null row whose shape is not that of a dictionary save (`sort_order <> 0`), which is how a curriculum row that lost its level is caught rather than silently dropping out of the corpus; `u:` or `v` in `reading` (the ASCII transliteration `20260724120000` removed); a syllable count that does not match the character count, allowing erhua; a card pointing at no vocabulary row at all; a `tts_audio` row marked `ready` with no `storage_path`.
+
+Two of those ten cannot currently fire, and it is worth knowing which: `card-orphan` is a tautology while `cards.vocab_id` keeps its foreign key, and `level-range` is one while `vocabulary_level_check` holds. They stay because a floor that rests on a constraint should notice the constraint going away.
+
+**Five DIRECTIONAL checks** — real debt, counted against the committed baseline. Shrinking is free, growing fails: stale `reading_plain` (`20260907030000` repairs them, and it is on the `claude/fab-36-reading-plain-drift` branch rather than in this one), words with no playable audio (the great majority of HSK 3-6 — a paid TTS run; see the 🟡 白 data-defect entry further down for why that number contradicts two older statements and which one is right), `tts_audio` rows whose word is gone, glosses carrying a truncated cross-reference (needs a Chinese reader), and numeric tones in `reading`. The counts are whatever `data/vocabulary-integrity-baseline.json` holds; do not restate them here, because a restated number goes stale silently.
+
+**Before the reseed, deactivate the level-null 白 — otherwise it is excluded from the curriculum forever.** `data/hsk-curriculum-bands.json` puts 白 at HSK 5, no built word list carries it, and production holds it only as a level-null row. It is tempting to read that as a collision waiting to happen; it is the opposite. `build-hsk-vocab.mjs`'s dedupe (`existingWords()`) selects `word` filtered by language, system and `is_active` and **not** by level, so the active level-null 白 is in the exclude set, `buildLevelRows` skips it, and the rebuild in `docs/VOCAB-INGESTION.md` step 2 leaves 白 out of `data/hsk5.json` — after which step 5 inserts nothing and 白 never becomes a curriculum row. That is precisely the failure the active-only filter was written to prevent ("so a deactivated word can be re-seeded rather than being excluded forever by a row the app no longer shows"), reappearing through a row that has no level rather than no `is_active`. So: `is_active = false` on the level-null row (§7.1 — never a delete) BEFORE the rebuild, not as part of the reseed and not after it — and only once step 1 has landed. 白 is one of the `forms[0]` casualties: its first form is *"surname Bai"*, which `isDegenerateMeaning` rejects, so a rebuild without the `hskEntryToRow` fix produces no 白 for a second, independent reason. Deactivate, rebuild without step 1, and the row simply does not appear — and its absence says nothing about whether the deactivation took, because the degenerate `forms[0]` alone is enough to keep it out. `docs/VOCAB-INGESTION.md` currently lists those three orphan rows as out of scope for the reseed; this is the one that is not.
+
+Two scoping decisions worth not re-deriving: **card-orphan and tts-orphan read every vocabulary id**, not the chinese/hsk_3 slice — a learner's other-track card is not a broken reference, and §7.1 deactivates rather than deletes, so scoping them to the active corpus would make the sanctioned repair (`is_active = false`) grow the count and red the gate. And the **`u:`/`v` check reads `reading` only**: two rows still carry `u:` in `reading_plain`, which the directional drift check already counts. Both are asserted, not left to the comment.
+
+The **answer-key comparison is deliberately stricter than the app's grader**: it ignores space, apostrophe and case, where `lenientPinyin` also ignores digits, `v`/`ü` and punctuation including `:`. Being stricter can only over-report drift, never miss it. It over-reports at least the two `hulu:e` rows, and by two further mechanisms the module's own comment sets out: `normalizePinyin` drops every combining mark (so it folds `ǹ`→`n` where the table does not) and folds `v` as well as `ü`. Which rows make up that count is not settled by that — it is settled by the dry run — so "at least", not "exactly".
+
+The script refuses to run at all if the corpus comes back empty. A checker that fetched nothing reports every check clean, which in a log is indistinguishable from a pass.
+
+### Two branches add the same two toast icons
+
+`src/Toasts.jsx` maps a toast's `kind` to an icon and falls back to `Award` for
+anything it does not know, so an unmapped kind arrives wearing an achievement
+medal. Two branches noticed this independently and added the identical
+`info: Info, warn: TriangleAlert` entries: `claude/fab-30-honest-import-results`
+(the "we couldn't add your earlier words" apology) and
+`claude/fab-26-narrow-client-grants` (the dictionary limit toasts). Whichever
+merges second will conflict on that one line, and either side of the conflict is
+the right resolution.
+
+Noted here rather than in a comment in `Toasts.jsx`: a branch name in shipped
+source is stale the moment either branch merges, and nobody deletes it.
+
+### A word-list import that fails halfway reports as if nothing landed
+
+`seedClaim` writes in batches of 500 and throws on the first failure, so a claim
+larger than one batch can leave rows written and still show "Could not save.
+Please try again." (`src/KnownWords.jsx`). Retrying is safe — the upsert ignores
+duplicates — but it then honestly reports those rows as already in the deck,
+which reads as if the first attempt did nothing.
+
+The error now carries `insertedBeforeFailure` so a caller can say something
+truer; nothing consumes it yet, because the useful message ("N of M saved, try
+again for the rest") is a copy decision rather than a code one. Recorded so the
+next person does not have to rediscover which half of the claim landed.
+
+### The client-bundle guards match text, so prose can trip them
+
+`src/tts/serverOnly.test.js` scans raw source for tokens that must not be
+imported into a browser-reachable file — `'node:'`, `migration/legacyClaim`, a
+credential name. It does not distinguish code from comments, so a file that
+merely *writes about* one of those paths fails a check about what the bundle
+contains. That happened once in this session: a comment in `knowledgeState.js`
+naming where the historical claim rows came from made that file a "violation".
+
+**Left as-is deliberately, and the comment was reworded instead.** Stripping
+comments first is only correct with a real lexer: a naive pass gets `/*` inside
+a line comment, or `//` inside a template or regex literal, wrong — and getting
+it wrong deletes real code from the scanned text, so a genuine violating import
+would pass. A guard about credentials reaching the bundle should not become an
+approximation to accommodate prose. If the false positives ever become common,
+the fix is a parser (the repo already has one — the Vite/OXC toolchain), not a
+regex.
+
+### Every roadmap item is cut at its first em-dash before it reaches Discord
+
+`.github/scripts/roadmap-render.mjs` does `item.replace(/ — [\s\S]*$/, '')` and
+explains it as "This is why ROADMAP.md items are written `**Title.** —
+description`: the em-dash is the cut point."
+
+**`ROADMAP.md` is not written that way and has not been for a long time.** Its
+items are paragraphs of prose that use em-dashes mid-sentence, so the renderer
+cuts most of them somewhere arbitrary. That is usually just a truncation; it is
+worse than that whenever the first half describes a problem and the second half
+describes the fix, because the pinned public `#roadmap` message then announces
+the bug and stops. Check what an item actually publishes as before merging one:
+
+```
+node -e "const l=require('fs').readFileSync('ROADMAP.md','utf8').split('\n').find(x=>x.startsWith('- [x] **Your title'));console.log(l.replace(/ — [\s\S]*$/,''))"
+```
+
+Two ways out, neither taken yet: rewrite the renderer to keep the whole item
+(the cap is on item count, not length, so length is not the reason), or move the
+cut to a marker that cannot occur mid-sentence. Until then, write anything
+load-bearing before the first em-dash.
+
+
 ### Reading a red check: CI is authoritative, a sandbox is not
 
 Three kinds of red look identical in a terminal and mean completely different
@@ -91,14 +189,69 @@ assumption before this was understood:
 Check the content type, not the status.
 
 ## Database
+- [x] **HSK 3-6 vocabulary audio was unreachable in production — `20260921000000_repair_hsk3_6_audio_paths.sql` APPLIED 2026-09-21, and 1,168 words got their audio back.** Before it, measured live: **4,491 of the 4,498** active HSK 3-6 words carry an `audio_path` pointing at an object that does not exist. Only 7 resolve. HSK 1 and 2 are fine — 497 of 497 resolve.
+
+  **The recordings exist.** 1,871 of them, across `level_3`..`level_6`, under the level directory and index of an OLDER word list: `audio_path` is written as `level_<current level>/<current sort_order>_<slug>.mp3`, so the re-seed and re-levelling (`docs/VOCAB-INGESTION.md`) left every path naming a file nobody ever wrote. The directories say it outright — `level_3` holds 457 files and only **72** of them belong to a word that is at level 3 today; `level_6` holds 465 and 259 do.
+
+  **It is worse than a silent speaker.** `src/Listen.jsx:19` builds its question pool with `pool.filter(v => v.audio_path)` — a NON-NULL test, not a reachable one — so the listening exercise keeps choosing these words and then plays nothing. `src/ttsAudio.js:105` falls back to the same column for every level with no `tts_audio` row, which is all of HSK 3-6 (25 rows between the four levels, against 4,498 words).
+
+  **The repair splits three ways, and only the first is safe to automate.** **1,168** words can be re-pointed by the pinyin slug in the filename, and the migration takes only those where the slug is unique on BOTH sides — one file in the whole tree, one active word in the whole course. **796** more have a candidate file whose slug is shared; they are left alone deliberately, because attaching another word's recording to a card is worse than attaching none — a learner cannot hear that a clip is the wrong word, so the card teaches the error with the app's authority behind it. Resolving those needs the word→file mapping from the original generation run (not in this repo) or regeneration. **2,502** have no candidate file at all and need a paid TTS run.
+
+  **Idempotent, and it cannot take working audio away**, by the same clause: it only writes a row whose current path resolves to nothing, so after it runs those rows resolve and a second run matches nothing. Levels 1-2 are excluded as targets but their FILES are candidates (the re-levelling moved words both ways), and their words count in the uniqueness test, so a level-5 word can never be handed the clip a level-1 homophone is using. `audioPathRepair.test.mjs` pins the two HAVINGs, the unscoped word side, and the dead-path guard; mutation-tested — each of the three plausible "simplifications" fails its own spec.
+
+  **Verified after applying, against the live bucket rather than the row count.** HSK 3-6 words whose `audio_path` resolves to a real object went from **7 to 1,175** — exactly the 1,168 predicted, no more and no less. Re-running the statement now changes **0** rows, which is the idempotence claim proved rather than asserted. HSK 1-2 are untouched and still resolve 497 of 497, so nothing was taken away to pay for this. Spot-checked end to end: 世界 → `level_3/012_shijie.mp3`, 了解 → `level_4/005_liaojie.mp3`, 兴趣 → `level_4/164_xingqu.mp3`, 冰箱 → `level_4/485_bingxiang.mp3`, 丢 → `level_5/055_diu.mp3` — note how many crossed a level boundary, which is the re-levelling this repair undoes.
+
+  **3,323 HSK 3-6 words are still silent**, and that number is the honest headline: 796 whose candidate clip's pinyin is shared and which must not be guessed at, and 2,502 with no recording at all. The second group needs a paid TTS run; the first needs the original generation run's word→file mapping, or regeneration alongside it.
+
+  **Not fixed here:** the missing guard. Nothing in `vocabularyIntegrity.mjs` checks that an `audio_path` resolves, which is why this survived a word-list re-seed unnoticed; and `Listen.jsx` should pick on reachability rather than non-null. Both are follow-ups, neither belongs in a data repair.
+
+- [ ] **NEEDS THE SUPABASE DASHBOARD — `pg_net` is reachable by `anon`, and no migration can close it (FAB-26 finding 1).** `pg_net`'s twelve `net.*` functions carry Postgres's default function ACL, which grants EXECUTE to **PUBLIC**, so `anon` and `authenticated` both have it. Verified live: `has_schema_privilege('anon','net','USAGE')` and `has_function_privilege('anon', net.http_post, 'EXECUTE')` are both **true**, and `proacl` on every `net.*` function is NULL. Anyone who reaches one makes *the database* issue arbitrary outbound HTTP — an SSRF primitive inside Supabase's network. The only thing stopping it today is that PostgREST does not expose the `net` schema, which is a **config value, not a grant**.
+
+  **A migration was written for this and then deleted, because it could not have worked.** The catalog settles it: `net`'s schema, all twelve functions and the `pg_net` extension are owned by **`supabase_admin`**; `net`'s `nspacl` is `{supabase_admin=UC/supabase_admin, =U/supabase_admin, postgres=U/supabase_admin, anon=U/supabase_admin, …}` — every grant made *by* `supabase_admin`, none carrying a grant option; and the `postgres` role a migration applies as is not a superuser and `pg_has_role('postgres','supabase_admin','MEMBER')` is **false**. A `REVOKE` issued by a role that is neither the grantor nor a member of it does not error in Postgres — it emits `WARNING: no privileges could be revoked` and returns success. The migration would have applied cleanly, been ticked off, and changed nothing: precisely the "no-op that looked like a fix" its own header warned about, arrived at by a different route.
+
+  **What actually closes it**, in order of preference: disable the `pg_net` extension from the Supabase dashboard (Database → Extensions), which runs as `supabase_admin` and removes the schema and functions outright — `pg_net` is unused here, `20260825120000` removed its only `public` consumer, no trigger on `feedback` remains, no `public` function references `net.http`, and there is no `supabase_functions` schema at all, so Database Webhooks are not enabled and nothing else reaches it through the PUBLIC grant. Failing that, a support request to revoke as `supabase_admin`. Either way, **also confirm from the dashboard that PostgREST's exposed-schema list excludes `net`** — that setting is the entire current mitigation and it is not visible from the MCP surface.
+
+- [x] **APPLIED 2026-09-14 — `20260907001000_scope_story_children_to_published.sql` (FAB-26 finding 2).** `stories` was correctly scoped to `is_published`; three sibling tables never joined back to it. `story_utterances` and `story_questions` were `USING (true)` for authenticated (115 utterances and 45 questions of unpublished stories, `correct_index` included), and `tts_audio` was readable by **anon** at `status = 'ready'` — so an unauthenticated caller holding the publishable key read the text of unreleased chapters via `source_text`. 33 of 295 stories are unpublished. An embargo boundary, not a privacy one, and it was live right up until this was applied.
+
+  **Verified as `anon` and as a non-admin `authenticated` role, not by reading the policy text back.** Anon now sees **0** `source_type = 'story_utterance'` rows in `tts_audio`, down from 230, and all 9,506 vocabulary clips — so the signed-out pronunciation surface is untouched. A non-admin signed-in user sees 5,931 of 6,046 utterances and 678 of 723 questions: exactly the published-only sets, with the 115 and the 45 gone. The policy enumeration this entry asks for below returns **eight** SELECT policies across the four tables — the predicted six plus this migration's two admin escapes, no strays.
+
+  **The storage half of the worry is answered, and the answer is better than feared.** `anon` cannot enumerate the public `audio` bucket: `storage.objects` carries no SELECT policy for `bucket_id = 'audio'` at all (its only three policies are for `dojo-attachments`), and a real `set local role anon` count over that bucket returns 0. So hiding the `tts_audio` row hides a path that cannot be discovered by listing. An exact, already-known path stays fetchable because the bucket is public by design — a different and much smaller problem than enumeration, and not one this migration claimed to solve.
+
+  **On staging, check the SIGNED-OUT path first.** The reader flows are the ones the analysis is most confident about: every client read of the child tables is `.eq('story_id', story.id)` where the story already came from an `is_published = true` query, `src/tts/**` runs under the service key which bypasses RLS, and `admins can read all tts_audio` is untouched — the migration now adds the same admin escape to `story_utterances` and `story_questions`, which had none. The anonymous path is still the one to watch, but not for that reason any more: the anon `tts_audio` policy is now `status = 'ready' and source_type = 'vocabulary'` with **no subquery at all**. An earlier draft gave it a published-story branch, which was dead by construction (anon holds no SELECT policy on `story_utterances` or `stories`) and made the anon read depend on `anon` keeping table-level SELECT on two tables — a plan-time dependency whose failure is silent. That branch is gone; the predicate is equivalent today and fails closed tomorrow. **After applying, enumerate the policies.** Permissive policies OR together, so a policy created outside this migration keeps the leak open silently and dropping by name cannot see it. `select tablename, policyname, roles, cmd from pg_policies where schemaname='public' and tablename in ('stories','story_utterances','story_questions','tts_audio')` should return exactly six SELECT policies — which is what it returns today (checked 2026-09-07): one on `stories`, one each on the two child tables, and three on `tts_audio` (anon, authenticated, admins). Anything else is a stray, and the count should be seven and eight as this migration's two admin escapes land. Related and worth knowing: `stories`' own policy is committed in `supabase/schema.sql` rather than in any migration, so `grep`ping `supabase/migrations/` for it finds nothing and it is easy to mistake for dashboard-created.
+
+  **So: signed out, confirm vocabulary audio still resolves through `tts_audio` and not the fallback.** And check the other anonymous route this does not touch: the clips themselves live in the **public** `audio` bucket (`20260808160000`), so hiding the `tts_audio` row hides the path, not the object — confirm `anon` cannot LIST `storage.objects` for that bucket, or an unreleased chapter's clips stay enumerable and the mitigation is partial. Vocabulary audio is excluded from the scoping by a whitelist (`source_type = 'vocabulary'`), not a blacklist, so a future third `source_type` fails closed.
+
+  **Nothing here has been run anywhere.** `anonSurfaceMigrations.test.mjs` is structural and says so: it holds the migration to re-creating every policy it drops, to keeping vocabulary audio readable through a whitelist, to giving each scoped table an admin escape, and to reaching `stories.is_published` in the **three** policies that should (the fourth, anon, is asserted to reach nothing). Mutation-tested. The rest of FAB-26's findings still need their own work — findings 3 and 7 are on `claude/fab-26-narrow-client-grants`; see the Linear issue.
+
+- [ ] **`tts_pronunciation_overrides` has the same shape of leak, deferred.** It is `authenticated … using (true)` (`20260722140000`), and its `source_text` is documented as "the context the correction came from". Whether that ever holds unpublished story text is **unverified**: every override this repo writes is word-level (`src/tts/sources.js`), so the leak is possible by the column's stated purpose rather than demonstrated. Worth checking the live rows before deciding it matters. Outside FAB-26 findings 1 and 2, and scoping it needs a join the table does not currently support (no `story_id`/`source_id`), so it was considered and left rather than half-fixed alongside the three tables above.
+
 - [x] **`20260730090000_manhua_presentation_rename.sql` — APPLIED (verified 2026-08-03: constraint is the final `('paced','chat','scene','manhua')` form, 8 rows on `manhua`, 0 on `manga`).** The `presentationOf` alias in `src/readerMode.js` and the `LEGACY_PROGRESS_PREFIX` fallback in `src/manhuaProgress.js` are now deletable per the plan below — though the IndexedDB fallback is cheap insurance for devices that saved positions under the old key and is fine to keep a while longer. Original entry: Retags the fourth presentation `'manga'` → `'manhua'` (Chinese word for the form; the Japanese one was a slip). Idempotent: it widens `stories_presentation_check` to accept both spellings, UPDATEs the one row, then narrows the constraint to `'manhua'` alone. **Order does not matter** — `presentationOf` in `src/readerMode.js` aliases the old tag to the new one, so the app deploy and this migration can land in either order without the live episode dropping to a plain paced story in between. Once it is applied everywhere, that alias and the `LEGACY_PROGRESS_PREFIX` fallback in `src/manhuaProgress.js` (which reads reading positions saved under the old `manga:` IndexedDB key) can both be deleted.
 - [x] **APPLIED 2026-07-28 — `20260728210000_fix_language_reset_missing_writing_stats.sql`.** "Reset HSK 3.0 progress" failed outright with `relation "public.writing_stats" does not exist`, so a language's progress could not be cleared. Root cause was the §10 classic: `20260605224500_add_writing_stats.sql` sat in the repo unapplied while the reset RPC that deletes from that table was applied. It cost more than the reset — `src/Writing.jsx` reads and upserts `writing_stats` on every writing answer, so writing practice was discarding its results. The fix creates the table idempotently AND guards the RPC's delete with `to_regclass`, so a missing optional table can never abort a reset again. Applied through the dashboard SQL editor (the sandbox's MCP write gate was unreachable that session). **Worth a check when convenient:** reset a language from Profile and confirm it completes, and that a writing answer now persists across a reload.
 
 - [ ] 🟡 **Data defect: the vocabulary row `白` (bái) has `level = null`.**
   `id 77d6738b-e7f8-4608-aad0-f16404bfb291`, language `chinese`, system `hsk_3`,
   `is_active = true` — with **no `audio_path`, no Azure `tts_audio` row, and no
-  `example_sentence`.** It is the only Chinese vocabulary row in the database
-  with no playable audio of any kind.
+  `example_sentence`.** ~~It is the only Chinese vocabulary row in the database
+  with no playable audio of any kind.~~ **That last sentence was wrong, and building the
+  vocabulary integrity gate is what caught it.** 4,471 of the 4,998 active
+  Chinese rows have no playable clip: only 504 have a file at their own
+  `audio_path`, and 23 more have a ready `tts_audio` row. That measurement is
+  over ALL active Chinese rows, which is wider than the gate's own corpus — the
+  gate reads the 4,995 with a level, so it excludes the three level-null rows,
+  among them 白 itself, this entry's subject. Only one of those three lacks a
+  clip (白; the other two have a ready `tts_audio` row), so on 2026-09-07 the
+  gate's `no-audio` came out one lower than the 4,471 here — not three lower.
+  The ACCEPTED count is whatever `data/vocabulary-integrity-baseline.json` holds; a compare-only run may measure fewer, which passes as `shrank` without anyone editing that file. HSK 1 and 2 are
+  complete (300/300 and 197/197); above them almost nothing resolves. The 2,369
+  objects that DO sit under `chinese/hsk_3/` are numbered for a superseded word
+  list — level 3 holds 457 files against 453 rows and exactly **2** of them are
+  at a path a current row points to. Spot-checked: `001_ba.mp3` and
+  `002_bei.mp3` exist, `003_wei.mp3` does not. What is special about 白 is that
+  it has no `audio_path` at all, which is a different defect from the 4,471.
+
+  This also settles `docs/TTS-RELICENSE-DRY-RUN.md`'s "4,473 rows whose ONLY
+  audio is legacy Google": that measured rows with no AZURE clip, and the legacy
+  Google files it assumed were behind them are not at the paths those rows name.
   Surfaced 2026-08-15 while scoping the Azure S0 re-licensing migration, and
   **deliberately kept out of it** — that migration re-renders existing audio
   under a paid tier; this row has none to re-render, so voicing it would be new
@@ -108,6 +261,69 @@ Check the content type, not the status.
   level (and then get audio + an example sentence) or be deactivated
   (`is_active = false` — never deleted, §7.1). **Do not repair as part of any
   audio run.**
+
+- [x] **`20260907030000_repair_reading_plain_drift.sql` — APPLIED 2026-09-12.** Verified after the run: the predicate matches zero rows, the ten repaired values are 胖 `pang`, 厂 `chang`, 约 `yue`, 合 `he`, 广 `guang`, 藏 `cang`, 追 `zhui`, 圈 `quan`, 忽略 `hulue`, 策略 `celue`, and the hand-curated HSK 1 keys (`ni hao`, `Zhongguo`, `nu'er`) are untouched. FAB-36. Repairs ten `reading_plain` values left behind when `20260724120000_fix_hsk3_6_readings.sql` (applied 2026-08-03, "All 54 rows corrected in prod" per the entry further down this file) corrected `reading` on 54 rows. `reading_plain` is an **answer key** — the flashcard's typed mode (`src/typedAnswer.js`) and the Writing screen (`src/writingMatch.js`) both grade against it — so until 2026-09-12 eight of the ten accepted the *wrong* pinyin: typing **"han"** for 厂, "yan" for 广, "dui" for 追, "yao" for 约, "ge" for 合, "juan" for 圈, "pan" for 胖, "zang" for 藏. The other two (忽略, 策略) carried the ASCII `hulu:e` form and never mis-graded, because `lenientPinyin` strips `:` from both sides.
+
+  **It is not a progression-gate hole, and an earlier version of this entry said it was.** The level test is four-option multiple choice over word and meaning (`src/Test.jsx`) and never reads `reading_plain`; `checkAnswer` in `src/testLogic.js`, which does, has no caller in the app today. The defect teaches wrong pronunciation on the words being practised — that is enough — but it unlocks nothing. The spec pins the level test's independence so the claim cannot drift back.
+
+  The other two (忽略 `hulu:e`, 策略 `celu:e`) do **not** mis-grade — `lenientPinyin` strips `:` along with its other punctuation, so they accept the same inputs either way. They are repaired for consistency and for a clean integrity check, and the distinction is asserted rather than glossed over.
+
+  **Order does not matter**; it depends on no other pending migration and no app change. Idempotent and self-limiting: it updates only rows that disagree, so re-running touches none. Verified against live data before writing and again after review — measured 2026-09-07, the predicate matches exactly ten rows, all of them active. Two of the 54 corrected readings look like they should qualify (转, 战略) and do not, for one reason only: **neither word is in `vocabulary` today** — queried by word 2026-09-07, both return no row in any language or system, so the predicate has nothing to match. *Why* they are absent is not established, and two drafts of this line got it wrong in opposite directions: "the corpus was reseeded" is denied by `docs/VOCAB-INGESTION.md`, and "never existed" is denied by `data/hsk3-vocab-snapshot.json`, which is a **production dump** (`docs/PM-BOARD.md`, 2026-07-24) and carries `["转","zhuǎi"]`. So that row existed in July and does not now. `src/authoredStories.test.js` records that only 50 of the snapshot's 457 older-HSK-3-draft words survive in the current level; reconciling that with §7.1 is provenance work and is out of scope for this migration, which touches neither word.
+
+  **The column has two conventions, and a first draft would have destroyed one.** Recomputing a canonical "lowercase, no spaces, no apostrophes" form would have rewritten **21** rows, eleven of them correct: the hand-curated HSK 1 rows keep spaces (你好 "ni hao", 打电话 "da dianhua"), capitals (中国 "Zhongguo", 汉语 "Hanyu") or an apostrophe (女儿 "nu'er"), while the bulk-imported rows carry the squashed form. Both are valid answer keys because `lenientPinyin` strips all three from both sides. The comparison ignores space, apostrophe and case — the three that never change an answer key — and no more: `lenientPinyin` also ignores `:`, and folding that here would drop 忽略 and 策略 out of scope. The value written takes `reading`'s own shape — its spacing and case, tones removed — which is a statement about `reading` and not about the row's previous `reading_plain`. Three guards keep it from writing a bad key: a NULL `reading` is skipped; so is any row whose fold comes out with a non-ASCII character still in it; and so is any row whose fold has no LETTER left in it, which covers the empty reading, the whitespace-only one and every value (`'`, `·`, `-`, `.`, a bare tone digit) that would leave a key both graders reduce to `''` and drop.
+
+- [ ] 🔴 **Vocabulary content defects above HSK 2 — see FAB-36 for the full audit.** Headline figures, measured live 2026-09-07: **4,471 of 4,998** active Chinese words have no playable audio at all (levels 1–2 complete, levels 3–6 essentially none — the bucket's objects for those levels belong to a superseded word list); roughly **36 rows** whose `meaning` still describes the reading `20260724120000_fix_hsk3_6_readings.sql` discarded (胖 glossed "healthy; at ease", 成功 glossed as a town in Taitung County, 现代 as "Hyundai"); **36** meanings carrying a Chinese cross-reference truncated to its last character, which is present verbatim in `data/hsk3.json`–`hsk6.json` and so happened upstream of this repo; **7,416** `tts_audio` rows pointing at vocabulary ids that no longer exist. Almost none of it is reachable through the level-gated study set today, because the whole user base is at HSK 1–2 and that band is clean — but the gate is the level, not the row: `dict_add_to_deck` reuses the existing curriculum row by word, so any of these rows a learner saves from the dictionary is theirs to study at once. On the ten `reading_plain` rows that was counted rather than assumed on 2026-09-07: no card points at any of them. A store release is what makes the rest of it real.
+
+- [ ] 🔵 **The production artifact's baked Supabase key is still a console check.** `tools/verify-public-bundle.mjs`'s `privileged-jwt` rule decodes every JWT in the bundle and fails on any role other than `anon`, and it runs in `verify:pr` and now in `verify:native` too — but it cannot answer "which key is baked into the PRODUCTION build". Two reasons, both structural: CI builds with **no `VITE_SUPABASE_*` set at all** (`.github/workflows/ci.yml` says so in its own comment), so the artifact scanned in CI carries no Supabase key and the rule iterates zero tokens; and the build that does carry the key is Vercel's, which runs `DOJO_PUBLIC_BUILD=1 npm run build` and never invokes the guard.
+
+  What the rule genuinely catches with no env at all is a privileged key **hardcoded in source** — pasted into a constant or a fallback, which is the leak that has actually happened here (the `devTools.js` email incident). A key arriving through a `VITE_`-named variable (CLAUDE.md §7.4's other prohibition) is caught only in a build that had that variable set, which by the paragraph above is not the CI build. That is worth having, and the guard's own comment now says this rather than implying the stronger claim.
+
+  Closing it properly means either giving CI a dummy `VITE_SUPABASE_ANON_KEY` (which proves nothing about production) or running the guard against the deployed artifact — a Vercel post-build step or a scheduled fetch-and-scan. Until then, decoding the production key remains a manual check before a release.
+
+- [ ] 🔵 **ESLint does not cover `tools/*.mjs`.** `eslint.config.js` matches `**/*.{js,jsx}`, `tools/**/*.js` and root-level `*.mjs` — none of which reach the eighteen `.mjs` files under `tools/`, including the four verifiers `verify:pr` and `verify:native` depend on. So "zero lint errors" says nothing about them, and each new one arrives unlinted. Adding `tools/**/*.mjs` to the Node-globals block is one line; the work is fixing whatever it then reports across files nobody has linted yet, which is why it is a task and not a drive-by.
+
+- [x] **One `ease_factor` write survived in SQL rather than in `src/` — FIXED AND APPLIED 2026-09-14.** `dict_add_to_deck` (`20260719130000_flashcard_anything.sql:89`, APPLIED) inserts the column explicitly, and it is reached from client code on every dictionary add-to-deck: `src/dictSearch.js:76` → `Dictionary.jsx`, `StoryReaderImmersive.jsx`, `useStoryReaderCore.js` and thence every story reader. So pressing "add to deck" still writes the dead column even though the literal is gone from the button's own file.
+
+  Effect is nil — 2.5 is the column's own default — so this is a truthfulness problem, not a data one. **Fixed by `20260907010000_cap_dict_add_to_deck.sql`, applied 2026-09-14**, which rewrote the function without it. Verified against the live catalog rather than the file: `pg_get_functiondef` for `dict_add_to_deck` contained `ease_factor` in the minute before applying and does not contain it now. No hand-written `ease_factor` write survives anywhere in SQL.
+
+  `legacyColumnGuard.test.mjs` scans `src/` only and says so in its header. Extending it to migrations needs the "last definition wins" treatment `knowledgeState.test.js` uses for `cards_prior_source_check`, and would fail until that migration merges — worth doing after it does, not before.
+
+- [x] **`20260907020000_bound_analytics_event_rows.sql` — APPLIED 2026-09-14.**
+  FAB-26 finding 5. Bounds every client-supplied column on `analytics_events`
+  (`name`, `session_id`, `language`, `app_version`, `level`, and `props` to a
+  jsonb object of at most 2 KB), and reinstates the insert policy with two added
+  clauses: an anonymous row must name a `session_id`, and no row may be dated
+  more than a day into the future. **Order does not matter** — it depends on no
+  other pending migration and nothing in the app changes with it.
+  Validated against live data before it was written: over all 6,157 rows the
+  longest `name` was 25 characters, the longest `props` 157, and there were zero
+  null `session_id`s, zero future-dated rows and zero non-object `props`.
+  **Re-measured immediately before applying, because this entry said to:** 6,532
+  rows by then, the same two maxima, and still zero rows violating any of the
+  six bounds — so it applied without rejecting or rewriting anything.
+  **Proved after applying by attempting the inserts, not by reading the policy
+  back.** As `anon`: a 100 KB `props` is refused by
+  `analytics_events_props_bounded` (23514); a row dated two years ahead and a row
+  carrying neither `user_id` nor `session_id` are both refused by the policy
+  (42501); and an ordinary `landing_viewed` with a session id and a past
+  timestamp is still accepted, which is the case that matters — the pre-signup
+  funnel keeps working. The table is unchanged at 6,532 rows; the one accepted
+  probe was rolled back.
+  **What it deliberately does NOT do:** close the `user_id is null` limb. That
+  limb is what makes the pre-signup funnel measurable, and 23 distinct event
+  names have arrived through it — including ones fired by signed-in clients in
+  the window before `setAnalyticsContext()` supplies the user id. Closing it, or
+  narrowing it to a name allowlist, would drop real events **in silence**,
+  because `track()` swallows every insert outcome by design. `docs/METRICS.md`
+  now names exactly which dashboard numbers an anonymous inserter can move and
+  which they cannot.
+  **Still open after it, and not fixable in SQL:** insert *volume*. A caller
+  rotating `session_id` cannot be rate-limited from inside RLS — session ids are
+  client-generated, so a per-session cap is theatre. The two real levers are
+  Supabase-side rate limiting on the REST endpoint (*dashboard*) and a retention
+  prune of old anonymous rows (a scheduled job, not a migration). Neither has
+  been set up.
+
 
 ## Auth / email / hosting
 - [ ] **Custom SMTP — LIVE TEST PENDING.** Configured 2026-07-18: Brevo is the sending provider; `hanzi-dojo.com` shows **Authenticated** in Brevo (DKIM `brevo1/brevo2._domainkey`, `brevo-code` TXT, DMARC `p=none` — all added in Cloudflare DNS, the authoritative nameserver; Vercel only hosts). Supabase custom SMTP wired to `smtp-relay.brevo.com:587`, sender `no-reply@hanzi-dojo.com`. **Still to verify:** send a real magic-link/sign-up to an external inbox and confirm it (a) arrives (not spam) and (b) shows From `no-reply@hanzi-dojo.com`. Brevo "Branding" (the `em`/`img.em`/`r.em` CNAMEs) shows *Not branded* — optional, tracking-link cosmetics only, doesn't block sending.
@@ -119,7 +335,39 @@ Check the content type, not the status.
 Already shipped (code side): `signUp` now sends `emailRedirectTo`; hardcoded github.io links replaced with `BRAND_URL`; app consolidated on Vercel (base `/`).
 
 ## Data safety
+- [ ] 🔴 **`20260822180000_scheduler_state_requires_observation.sql` is READY TO APPLY and is NOT APPLIED — and one admin tool will break when it is.** *(FAB-26 finding 6, measured live 2026-09-07.)*
+
+  The migration is the last step of the prior-knowledge rollout and its header says **apply this last**, because when it was written production held 594 rows in exactly the shape it forbids. **That blocker is gone.** Across all 1,899 cards today: **0** rows in `learning`/`relearning`/`review` with `reps < 1`, and **0** rows in `new` with `reps >= 1`. Confirmed absent from the database: `pg_constraint` on `public.cards` carries `cards_prior_claim_has_source`, `cards_prior_source_check`, `cards_state_check`, `cards_unverified_claim_is_inert` and `cards_verified_requires_claim`, and no `cards_scheduler_state_requires_observation`. It would apply cleanly now.
+
+  **Before applying it, fix `devTools.js`.** `learningCardRow` (`src/devTools.js:29`) writes `state: 'learning'` with **no `reps` key**, and the column defaults to 0 — so the admin "start all as learning" tool writes precisely the shape the constraint forbids and will start failing the moment it is applied. Its sibling `masteredCardRow` sets `reps` explicitly, which is why this reads as an oversight rather than intent. Deciding what it *should* write is a judgement about a tool that cannot be exercised outside an admin account: `state: 'new'` is honest but is no longer "learning", and a fabricated `reps` is a §7.3b violation. Not decided here.
+
+  **What applying it buys, stated exactly.** It enforces `state ∈ (learning, relearning, review) ⟹ reps >= 1`, which makes the legacy seed shape — weeks of asserted stability behind zero observations — unrepresentable, including for old store builds, which matters because there is no minimum-version gate anywhere. It does **not** stop a learner writing `state: 'review', reps: 50, stability: 999` straight through PostgREST: `reps >= 1`, so the constraint passes.
+
+- [ ] 🟡 **Mastery is client-honoured, not server-enforced — the full write surface, mapped.** *(FAB-26 finding 6.)* `users can update own cards` permits a direct PostgREST UPDATE of every scheduler column, so `grade_card` is a convenience rather than a gate. Closing that needs a `BEFORE UPDATE` trigger keyed on `current_user = 'authenticated'` — the pattern `profiles_guard_is_admin` already uses — and a trigger needs the legitimate direct-write surface to shrink first. It is smaller than it looks. A trigger permitting only `{is_easy, due_at}` would break exactly these and **nothing else in `src/`**:
+
+  - `src/Study.jsx:848` — undo of a grade. Writes the full 13-column bag plus `verified_at`. Always reachable; no RPC counterpart exists.
+  - `src/Study.jsx:1138` — the stuck-word "Reset this card". 13 columns including `reps: 0`.
+  - `src/Test.jsx:366` — level-test wrong answers: a real `schedule(card, 0)` written directly, with no `review_logs` row. **Already being fixed by PR #240**, which routes it through `gradeCardWrite`.
+  - `src/CreativeMode.jsx:213` and `src/Dev.jsx:117` — the admin sandboxes (UI-gated only; RLS permits the write for any authenticated user).
+  - `src/syncQueue.js:171/182/186` — the legacy fallback, reached only when `grade_card` is missing (`rpcUnavailable`, `syncQueue.js:110`).
+
+  Everything else that touches `cards` is an INSERT (add-to-deck in `Words.jsx`, `Dictionary.jsx`, `Analyzer.jsx`, `ChatMission.jsx`, `StoryReaderImmersive.jsx`, `useStoryReaderCore.js`; the inert claim in `priorKnowledgeSeed.js`) or writes only `is_easy` and `due_at` (`practiceSignal.js:14`, `Writing.jsx:454`).
+
+  **Order:** apply `20260822180000` → merge #240 → give Study's undo and reset RPCs of their own → then the trigger.
+
+- [ ] 🟡 **`creativeMode.js:178` writes `reps` by hand, which CLAUDE.md §7.3b forbids.** `reps: 3` or `reps: 9`, with no `srs.schedule()` anywhere, in a file whose own comment claims it produces "exactly the shape `schedule()` produces". It reaches the table through `src/CreativeMode.jsx:213` and, via `src/devTools.js:25`, `src/Dev.jsx:117`. It is the only hand-written `reps` left in the repo — every other `reps` write is either `schedule()`'s output, a restored undo snapshot, or a documented `reps: 0`. Admin-only in the UI, and it survives the constraint above (3 and 9 are both `>= 1`), so it is a rule violation rather than a live defect. Fixing it means deciding what an admin preview tool may fabricate, which is the same open question as the `devTools.js` item above.
 - [x] **Transactional grading — SHIPPED AND APPLIED (verified in prod 2026-08-07: `grade_card` function exists).** Collapsed the separate writes (card update, review log, daily activity) into the single security-definer RPC `public.grade_card()` (`20260722120000`, PR #116). The client falls back to separate writes only if the RPC is ever absent.
+- [x] **FAB-26 findings 3 and 7 — APPLIED 2026-09-14** (`20260907010000_cap_dict_add_to_deck.sql`, `20260907011000_revoke_anon_execute_on_private_rpcs.sql`, PR #247). ⚠️ **The ordering hazard below is now LIVE rather than hypothetical — `20260724170000` must never be applied from here on:** `20260907010000` drops `vocabulary_dict_word_uniq`, the unapplied index `20260724170000_harden_policies_and_vocab_index.sql` declares on the same key without an `is_active` limb. Applying `20260724170000` *after* it puts the weaker index back, and with both present a word deactivated by the §7.1 cleanup cannot be re-added at all — the older index is also a valid `ON CONFLICT` arbiter, `DO NOTHING` fires, the `is_active`-filtered re-select finds nothing, and the card insert then violates `vocab_id NOT NULL`. `docs/VOCAB-INGESTION.md` carries the same warning. Neither of these two depends on the other, or on the anon-surface migration on `claude/fab-26-close-anon-surface`.
+
+  **One client dependency worth knowing at merge time:** `src/Dictionary.jsx` also writes `ease_factor` directly from the client (`.from('cards').insert`), which CLAUDE.md §10 forbids. That is fixed on `claude/fab-28-no-ease-factor-writes`, not here — deliberately, so the two branches do not edit the same line — but until both land the §10 violation survives on the same screen this migration cleans up.
+
+  **Four of the seventeen revokes are a fix, not hardening.** `dict_search`, `dict_entry`, `dict_examples_for` and `dict_words_containing` are `language sql`, SECURITY DEFINER, and contain no `auth.uid()` — verified against the live catalog. They are unconditional reads of `dict_entries` and `dict_examples`, whose own policies are `for select to authenticated`, so the definer wrapper hands an anonymous caller with the publishable key the whole 122,981-entry dictionary and its examples, past the RLS on those tables. The data is open (CC-CEDICT, Tatoeba, both credited in the app), so this is not a confidentiality breach — it is an unauthenticated, unmetered bulk-read endpoint into the project's database and a boundary that says `to authenticated` while behaving otherwise. Do not file this migration as apply-whenever.
+
+  **Verified after applying, and the signed-out check was done as `anon` in the database rather than by eye on staging.** `anon` now holds EXECUTE on exactly two SECURITY DEFINER functions, `public_story` and `public_assessment_vocab`, down from nineteen; both still answer as `anon` (a published Chinese story returns its title, 341 characters of content and a 300-word pool; the assessment returns 4,998 words), and `dict_search` as `anon` now raises `42501 permission denied for function dict_search`. Supabase's own `anon_security_definer_function_executable` advisor agrees independently: 19 findings before, 2 after, and those 2 are the intended public surface. `assert_admin` is revoked from PUBLIC and from `authenticated` as designed. The cap migration's partial index built instantly — re-checked immediately before applying, there were still 0 duplicate *active* level-NULL rows (3 such rows exist in total), and `vocabulary_dict_word_uniq` was confirmed absent both before and after.
+- [ ] **A rate limit is not provenance: `vocabulary` cannot say who added a dictionary row.** `dict_add_to_deck` is braked twice in production as of 2026-09-14 — 200 adds per caller per 24h, and 500 new level-NULL `vocabulary` rows per 24h across everyone — which bounds the pollution *rate* but not its total, and §7.1 forbids deleting vocabulary, so cleanup after an abusive account is still "find the rows by hand and set `is_active = false`". The per-caller limb is also **resettable by the caller**: `cards` carries a delete policy the app itself uses, so 200 adds, one `DELETE`, repeat. That is why the second limb exists and why it counts `vocabulary` rows, which nobody can delete. The clean fix is attribution, and the reason it is not in that migration: a `created_by` column on `vocabulary` would publish "user X added word Y" to every reader of a world-readable table. Doing it properly means a separate provenance table with its own RLS, plus somewhere to review what was added — a schema decision rather than a patch.
+
+  **The global limb is a denial-of-service tradeoff, taken deliberately.** One abusive account can burn the day's budget and lock legitimate dictionary adds out until it rolls. A burned day is recoverable and visible; permanently polluted shared vocabulary is neither. With 3 level-NULL rows in existence today, no real learner comes near 500.
+- [ ] **Nothing stops the NEXT definer RPC arriving anon-executable.** `20260907011000` (applied 2026-09-14) revoked `anon` EXECUTE from the seventeen private RPCs by name, deliberately not via `alter default privileges in schema public revoke execute on functions from anon`. The default-privileges form would fix the recurring problem at the source — but it would also silently break the next legitimately public RPC, and the failure surfaces as a signed-out screen that returns nothing rather than as an error anyone connects to the migration. Worth deciding on its own; a CI check that diffs `proacl` against an allow-list is the other option. Now that the revoke is applied, the allow-list has a known-good value to assert against: `anon` should hold EXECUTE on `public_story` and `public_assessment_vocab` and on nothing else that is SECURITY DEFINER.
 - [ ] **Real-device verification pass** — offline grade replay, iOS/Safari flashcard + reader audio, and Web Push reminders end-to-end. All built and unit-tested but never exercised on a live device.
 
 ## Admin tooling

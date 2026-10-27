@@ -1,0 +1,10 @@
+{
+ "contract": "fab36-vocab-integrity@1",
+ "counts": {
+  "reading-plain-drift": 10,
+  "no-audio": 4470,
+  "tts-orphan": 7416,
+  "truncated-cross-reference": 35,
+  "reading-has-digit": 2
+ }
+}
