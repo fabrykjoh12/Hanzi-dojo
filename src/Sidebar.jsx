@@ -6,6 +6,7 @@ import { languageTheme, ink } from './languageTheme'
 import { getLevelLabel } from './utils'
 import { PRIMARY_NAV, NAV_GROUPS, adminNav } from './navConfig'
 import { BRAND_NAME, wordmarkStyle } from './brand'
+import { waitingBadgeCount } from './homePresentation'
 
 // ── Sidebar ───────────────────────────────────────────────────────────────
 // Top to bottom: brand, the seal (what you're studying), nav, then the person.
@@ -189,7 +190,13 @@ export default function Sidebar({ view, onNavigate, onLogout, isAdmin, hasIntern
   // The one live number in the rail. Same total the Home hero shows, so the two
   // never disagree; hidden at zero, because "0" is a nag and the product's
   // stance is that a cleared queue should look cleared, not scored.
-  const waiting = (counts?.newCount || 0) + (counts?.learnCount || 0) + (counts?.dueCount || 0)
+  //
+  // Taken from the same function the hero's total comes from, rather than
+  // re-added here. Re-adding is what broke it: calibration became a term in
+  // the hero and not in this sum, so with only claims ready the hero said
+  // "20 cards waiting" while this badge hid entirely — the same "all caught
+  // up" lie the hero had just been fixed for, one component over.
+  const waiting = waitingBadgeCount(counts)
   const badgeFor = (key) => (key === 'study' && waiting > 0 ? waiting : null)
 
   const hairline = { height: '1px', background: 'var(--border)', opacity: 0.7 }

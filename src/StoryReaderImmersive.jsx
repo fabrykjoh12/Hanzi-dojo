@@ -488,8 +488,13 @@ export default function StoryReaderImmersive({ story, vocabMap, userCards, setUs
         if (onMarkRead) onMarkRead(story.id)
       }
     } else {
-      // Offline: queue the read; it lands when the outbox flushes.
-      await enqueueStoryRead({ userId: session.user.id, storyId: story.id })
+      // Offline: queue the read; it lands when the outbox flushes. Tagged so a
+      // progress reset — which deletes story_reads — can drop exactly this
+      // track's queued reads without touching another's.
+      await enqueueStoryRead({
+        userId: session.user.id, storyId: story.id,
+        language: track.language, system: track.system,
+      })
       if (onMarkRead) onMarkRead(story.id)
     }
     trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: knownPct, story_id: story.id })

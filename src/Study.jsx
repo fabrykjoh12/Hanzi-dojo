@@ -769,6 +769,10 @@ export default function Study({ session, profile, track, mode = 'review', onBack
       if (!cardId) cardId = 'local-' + Date.now() + '-' + card.vocab_id
       outboxId = await enqueueGrade({
         userId: session.user.id,
+        // Stamped so a progress reset can drop exactly this track's queued
+        // writes without touching another language's.
+        language: track.language,
+        system: track.system,
         vocabId: card.vocab_id,
         cardId: card.id || null,
         updates: res.updates,
