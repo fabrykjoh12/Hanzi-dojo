@@ -173,7 +173,7 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
     if (!info || !info.vocabId || known[info.vocabId]) return
     const { error } = await supabase.from('cards').insert({
       user_id: session.user.id, vocab_id: info.vocabId,
-      state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
+      state: 'new', learning_step: 0, due_at: new Date().toISOString(),
     })
     if (!error) setKnown(prev => ({ ...prev, [info.vocabId]: true }))
   }
@@ -202,7 +202,7 @@ export default function ChatMission({ mission, vocab, session, track, dayBuckets
     if (toAdd.length > 0) {
       const rows = toAdd.map(id => ({
         user_id: session.user.id, vocab_id: id,
-        state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
+        state: 'new', learning_step: 0, due_at: new Date().toISOString(),
       }))
       const { error } = await supabase.from('cards').insert(rows)
       if (!error) setKnown(prev => { const nx = { ...prev }; toAdd.forEach(id => { nx[id] = true }); return nx })

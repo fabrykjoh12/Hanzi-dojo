@@ -14,7 +14,7 @@ import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import { setFeedbackStory } from './feedbackContext'
-import { addDictEntryToDeck } from './dictSearch'
+import { addDictEntryToDeck, dictAddToast } from './dictSearch'
 import { toast } from './toast'
 
 // READER_PREFS_KEY is the classic reader's prefs object, shared verbatim (from
@@ -404,7 +404,7 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     const ctx = sourceContextFor(vocab)
     const row = {
       user_id: session.user.id, vocab_id: vocab.id,
-      state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
+      state: 'new', learning_step: 0, due_at: new Date().toISOString(),
       source_sentence: ctx.sentence,
       source_story_id: ctx.storyId, source_story_title: ctx.storyTitle, source_translation: ctx.english,
     }
@@ -435,8 +435,8 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
       await addDictEntryToDeck(supabase, entry.id, track.language, track.system)
       setDictSaved(prev => new Set(prev).add(entry.id))
       toast({ title: 'Saved to your deck', body: entry.simplified || entry.word || null, accent: theme.accentHex })
-    } catch {
-      toast({ title: 'Couldn’t save that word', accent: theme.accentHex })
+    } catch (e) {
+      toast(dictAddToast(e, theme.accentHex))
     } finally {
       dictSavingRef.current = false
       setDictSaving(false)

@@ -147,7 +147,9 @@ story_questions                  -- migration 20260630010000; end-of-story compr
   options text[]                 -- 4 English answer choices
   correct_index int              -- 0-3, the correct option
   UNIQUE (story_id, question_number)
-  -- RLS: authenticated users can read; generator writes via the service key.
+  -- RLS: authenticated users can read a PUBLISHED story's questions, admins can
+  --      read all (20260907001000, committed and NOT YET APPLIED); generator
+  --      writes via the service key.
 
 story_unlocks                    -- migration 20260809090000; the chapter-reward loop
   user_id uuid REFERENCES profiles ON DELETE CASCADE

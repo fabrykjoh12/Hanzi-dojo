@@ -48,7 +48,28 @@ export const KNOWLEDGE = {
 }
 
 // The provenance values a claim may carry, mirroring the DB CHECK constraint.
+// Every value `cards.prior_source` may hold. Kept in step with the database's
+// own `cards_prior_source_check` constraint — this array is documentation, not
+// validation; nothing at runtime rejects a value that is missing from it.
+//
+// Only THREE of these are written by any current code path: 'placement'
+// (Onboarding), 'paste' and 'checklist' (KnownWords) — see
+// WRITTEN_PRIOR_SOURCES below, which a spec derives from those call sites
+// rather than from this comment. 'legacy_claim' is historical, written once by
+// the legacy-claim repair script under src/migration/. 'assumed_prerequisite'
+// is written by nothing at all: it was reserved for a path that was never
+// built, and it is listed because the constraint still permits it, not because
+// it occurs.
+//
+// (An earlier version of this comment added that 'legacy_claim' was the only
+// value present in production. That was true when it was measured and stops
+// being true the first time anybody completes onboarding above level 1 — a
+// fact about a moment, which is not what a source comment can hold.)
 export const PRIOR_SOURCES = ['placement', 'assumed_prerequisite', 'paste', 'checklist', 'legacy_claim']
+
+// The subset a current code path actually produces. Kept separate so a reader
+// asking "what can this column say about a live row?" gets the true answer.
+export const WRITTEN_PRIOR_SOURCES = ['placement', 'paste', 'checklist']
 
 // ── The structural facts ────────────────────────────────────────────────────
 

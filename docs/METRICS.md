@@ -18,6 +18,22 @@ All dashboard aggregates come from the `admin_*` RPCs
   state lives in `cards` / `story_reads` / `daily_activity` etc.
 - **Actor:** an account (`user_id`) when signed in, else the per-app-load
   `session_id` (client-generated; one per tab load, NOT a login session).
+- **Anonymous rows are world-insertable, so some of these numbers can be
+  moved by anyone.** `analytics_events` accepts inserts with `user_id = NULL`
+  because the top of the funnel is measured before an account exists, and the
+  publishable key that authorises them ships in every store build. RLS still
+  blocks forging somebody *else's* `user_id`, so the split is clean and worth
+  knowing by name:
+  **not steerable** (keyed on accounts) — DAU/WAU, Retention D1/D7/D30, and the
+  `onboarding` / `first_mission` / `first_story` / `returned` activation stages;
+  **steerable** (keyed on `session_id`, which the client generates) — Signups,
+  Sessions, Median session, the `landing` and `signup` activation stages,
+  Readers finishing, and Client errors.
+  This is a property of a public API key, not a bug to be fixed in a policy:
+  closing the anonymous limb would delete the pre-signup funnel outright. Treat
+  a sudden, unexplained jump in a steerable number as unverified until it also
+  shows up in an account-keyed one. What *is* bounded is the cost of a single
+  row — see `supabase/migrations/20260907020000_bound_analytics_event_rows.sql`.
 
 ## Dashboard metrics
 

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
-import { normalizeQuery, searchDict, getExamples, getWordsContaining, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHanChar, isHeadwordLookup } from './dictSearch'
+import { normalizeQuery, searchDict, getExamples, getWordsContaining, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHanChar, isHeadwordLookup, isDictAddLimit, dictAddToast, DICT_ADD_LIMIT_CODE } from './dictSearch'
+import * as feedback from './dictAddFeedback'
 
 describe('isHanChar', () => {
   it('recognises CJK ideographs across the common blocks', () => {
@@ -116,5 +117,17 @@ describe('addDictEntryToDeck', () => {
   it('throws on RPC error', async () => {
     const rpc = vi.fn().mockResolvedValue({ data: null, error: new Error('nope') })
     await expect(addDictEntryToDeck({ rpc }, 'd1', 'chinese', 'hsk_3')).rejects.toThrow('nope')
+  })
+})
+
+// isDictAddLimit and the rest of the failure copy live in dictAddFeedback.js
+// and are specified there (dictAddFeedback.test.js). This file keeps one
+// assertion: that the re-export is live, so a call site importing from either
+// module gets the same function.
+describe('the failure helpers are re-exported, not re-implemented', () => {
+  it('is the same function dictAddFeedback exports', () => {
+    expect(isDictAddLimit).toBe(feedback.isDictAddLimit)
+    expect(dictAddToast).toBe(feedback.dictAddToast)
+    expect(DICT_ADD_LIMIT_CODE).toBe(feedback.DICT_ADD_LIMIT_CODE)
   })
 })
