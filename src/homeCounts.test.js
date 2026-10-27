@@ -37,6 +37,7 @@ vi.mock('./data', () => ({ getTrackCards: vi.fn(async () => state.cards) }))
 vi.mock('./grammarReview', () => ({ countDueGrammar: vi.fn(async () => 0) }))
 
 import { getHomeCounts } from './homeCounts'
+import { CALIBRATION_SESSION_CAP } from './calibration'
 
 const TRACK = { language: 'chinese', system: 'hsk_3', current_level: 1 }
 
@@ -46,7 +47,7 @@ const SHAPE = [
   'newCount', 'learnCount', 'dueCount', 'easyCount', 'totalWords',
   'learnedCount', 'masteredCount', 'masteredPct',
   'newDoneToday', 'dueTomorrow', 'weakCount', 'forecast7', 'rhythm7',
-  'lifetimeLearned', 'lifetimeMastered', 'grammarDueCount',
+  'lifetimeLearned', 'lifetimeMastered', 'grammarDueCount', 'calibrationCount',
 ]
 
 beforeEach(() => {
@@ -159,5 +160,98 @@ describe('getHomeCounts — complete vocabulary past the 1000-row cap', () => {
     expect(counts.totalWords).toBe(1879)
     // 1,878 unstarted words exist; the daily allotment caps what Home offers.
     expect(counts.newCount).toBe(5)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// FAB-28: Home must count the calibration checks the session will serve.
+// ---------------------------------------------------------------------------
+// A prior-knowledge claim is inert — never due, never offered as new — so both
+// availability selectors return nothing for it and Home used to total 0 while
+// the session served up to CALIBRATION_SESSION_CAP of them. "All caught up",
+// with hundreds of claims waiting and calibration the only path that can ever
+// observe them.
+//
+// These drive getHomeCounts ITSELF. The specs that already existed for this
+// change computed the expected value with the same expression the production
+// code uses, so `calibrationCount: 0` plus deleting the two lines that produce
+// it left every one of them green.
+describe('getHomeCounts — calibration checks', () => {
+  const started = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+  const readyClaim = (i) => ({
+    vocab_id: 'claim-' + i,
+    state: 'new',
+    reps: 0,
+    lapses: 0,
+    stability: null,
+    learned: false,
+    prior_known_at: '2026-08-01T00:00:00Z',
+    verified_at: null,
+    // Calibration-ready date: inert to every queue, and today or earlier.
+    due_at: started,
+    created_at: started,
+    vocabulary: { id: 'claim-' + i, level: 1 },
+  })
+
+  it('counts a ready claim that no other count can see', async () => {
+    state.vocab = [{ id: 'claim-0', level: 1, sort_order: 1 }]
+    state.cards = [readyClaim(0)]
+
+    const counts = await getHomeCounts('u1', TRACK, 5)
+
+    expect(counts.calibrationCount).toBe(1)
+    // The point: every other queue count is blind to it.
+    expect(counts.dueCount).toBe(0)
+    expect(counts.learnCount).toBe(0)
+  })
+
+  it('counts a claim whose word sits outside the level window', async () => {
+    // Same scope rule as Due, and for the same reason: calibration is served
+    // from the deck (pickCalibrationChecks), so a claim on a word saved from a
+    // story or the dictionary is checked whether or not it is in the current
+    // level. Every other spec in this block uses level-1 words, so narrowing
+    // the source from the deck to the level window would leave them all green.
+    state.vocab = [{ id: 'claim-0', level: 1, sort_order: 1 }]
+    state.cards = [
+      readyClaim(0),
+      { ...readyClaim(1), vocabulary: { id: 'claim-1', level: 9 } },
+      { ...readyClaim(2), vocabulary: { id: 'claim-2', level: null } },
+    ]
+
+    expect((await getHomeCounts('u1', TRACK, 5)).calibrationCount).toBe(3)
+  })
+
+  it('caps at what one session will serve', async () => {
+    // 25 ready claims, cap 20. Counting all 25 would promise more than the
+    // session delivers, which is the mirror of the bug being fixed.
+    state.vocab = Array.from({ length: 25 }, (_, i) => ({ id: 'claim-' + i, level: 1, sort_order: i + 1 }))
+    state.cards = Array.from({ length: 25 }, (_, i) => readyClaim(i))
+
+    const counts = await getHomeCounts('u1', TRACK, 5)
+
+    expect(counts.calibrationCount).toBe(CALIBRATION_SESSION_CAP)
+    expect(counts.calibrationCount).toBeLessThan(25)
+  })
+
+  it('does not count a claim whose check is not due yet', async () => {
+    // The spread writes a future calibration date into due_at. Counting it
+    // would put a word on Home that the session refuses to serve today.
+    const later = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString()
+    state.vocab = [{ id: 'claim-0', level: 1, sort_order: 1 }]
+    state.cards = [{ ...readyClaim(0), due_at: later }]
+
+    expect((await getHomeCounts('u1', TRACK, 5)).calibrationCount).toBe(0)
+  })
+
+  it('does not count a verified card, which is an ordinary card again', async () => {
+    // Once calibrated the row carries real scheduler state and belongs to the
+    // due/learning counts; counting it here would double-count the word.
+    state.vocab = [{ id: 'claim-0', level: 1, sort_order: 1 }]
+    state.cards = [{
+      ...readyClaim(0),
+      verified_at: '2026-08-02T00:00:00Z', state: 'review', reps: 1, stability: 4, learned: true,
+    }]
+
+    expect((await getHomeCounts('u1', TRACK, 5)).calibrationCount).toBe(0)
   })
 })
