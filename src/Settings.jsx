@@ -426,7 +426,13 @@ function OfflineStorageCard({ accentHex }) {
   const rows = []
   if (mb) rows.push('About ' + mb + ' stored on this device')
   if (stats) rows.push(stats.clips + ' pronunciation clip' + (stats.clips === 1 ? '' : 's') + ' saved for offline')
-  if (stats && stats.pending > 0) rows.push(stats.pending + ' review' + (stats.pending === 1 ? '' : 's') + ' waiting to sync (kept when you clear)')
+  // Device-wide on purpose: this card is about what is stored HERE, and
+  // pendingWrites() with no account returns exactly that. It is deliberately
+  // not the sync bar's number, which counts only the signed-in learner's ops —
+  // another account that used this device can leave writes in the outbox that
+  // will never flush under this session, and "waiting to sync" would then be a
+  // count that never reaches zero.
+  if (stats && stats.pending > 0) rows.push(stats.pending + ' queued write' + (stats.pending === 1 ? '' : 's') + ' stored on this device (kept when you clear)')
 
   return (
     <Card

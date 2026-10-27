@@ -66,14 +66,23 @@ test.describe('Profile — month in review', () => {
   // The reset used to call the RPC without p_reset_streak, and that argument
   // defaulted to TRUE — so clearing one language also wiped daily_activity and
   // the account streak. These pin the scope.
-  test('reset names the language it clears and leaves the others alone', async ({ page }) => {
+  test('reset names the language it clears, and promises nothing about the others', async ({ page }) => {
     await page.goto('/profile');
     // Exact: the delete-account panel below also refers to "Reset a language"
     // (pointing people at the non-destructive option), so a substring match now
     // finds two nodes.
     await expect(page.getByText('Reset a language', { exact: true })).toBeVisible();
     await expect(page.getByText(/Clears flashcards, tests, story reads and unlocks for/i)).toBeVisible();
-    await expect(page.getByText(/Your other\s+languages are untouched/i)).toBeVisible();
+    // The panel makes no promise about the other tracks any more, and this
+    // pins that absence. It used to say "Your other languages are untouched",
+    // then briefly "keep their progress" — both untrue while the reset's
+    // untagged rule drops queued offline writes that carry no language tag,
+    // whichever track they came from (syncQueue.js), which is what the current
+    // production build queues. The sentence sat directly above an irreversible
+    // button, so it is gone rather than hedged; the line above already names
+    // the language and the scope.
+    await expect(page.getByText(/languages are untouched/i)).toHaveCount(0);
+    await expect(page.getByText(/languages keep their progress/i)).toHaveCount(0);
   });
 
   test('clearing study history is opt-in, and off by default', async ({ page }) => {

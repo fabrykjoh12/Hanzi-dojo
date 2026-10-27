@@ -6,6 +6,8 @@ import { getLevels, getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { buildLabel } from './version'
 import { toast } from './toast'
+import { dropQueuedWritesForTrack } from './syncQueue'
+import { clearPreparedSession } from './sessionPrep'
 import {
   ArrowLeft, FlaskConical, Gauge, BookOpen, Trash2, Zap, RefreshCw, ShieldCheck,
 } from 'lucide-react'
@@ -194,6 +196,10 @@ export default function Dev({ session, profile, track, onBack, onNavigate }) {
             p_language: track.language, p_system: track.system, p_reset_account_history: true,
           })
           if (error) throw new Error(error.message)
+          // The rows are gone; queued offline writes for them must not outlive
+          // them, or the next flush puts a deleted card or story read back.
+          await dropQueuedWritesForTrack(track, session.user.id, { activeLanguage: profile.active_language })
+          clearPreparedSession()
           toast({ kind: 'info', title: 'Progress reset — back to a fresh account for this language' })
           onNavigate('home')
         }} />
