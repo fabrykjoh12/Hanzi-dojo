@@ -132,7 +132,12 @@ grandfathered tracks kept visible.
 - 58 published non-Chinese stories remain reachable via direct `/read/<id>`
   links (no listing anywhere). Frozen-track policy says leave them; revisit
   only if share links circulate.
-- `assert_admin()` keeps implicit PUBLIC execute (returns void, leaks nothing).
+- ~~`assert_admin()` keeps implicit PUBLIC execute (returns void, leaks nothing).~~
+  Superseded: `20260907011000_revoke_anon_execute_on_private_rpcs.sql` (FAB-26 finding 7,
+  committed, NOT applied) revokes it from PUBLIC and from `authenticated`. It is only ever
+  called from inside other definer functions, which run as their owner, so nothing loses it.
+  "Leaks nothing" was true and was never the argument for leaving it — a bare `=X/` on a
+  definer function is a default nobody chose.
 
 ---
 
