@@ -62,6 +62,43 @@ Known instrumentation notes:
 - The manhua reader fires neither event today (its reads land in
   `story_reads` via its own progress flow); it is invisible to this metric.
 
+## Unsent work waiting on this device
+
+Two screens show a count of queued offline writes, and they are deliberately
+**not the same number**. Both come from `pendingWrites()` in `src/syncQueue.js`.
+
+| Where | Definition |
+|---|---|
+| **Sync pill** (`OfflineBar.jsx`) — "Syncing N saved reviews…" | `pendingWrites(userId)`: queued ops **this account** can replay. An op belonging to another account that has used this device is excluded, because it is not this learner's work and this session will never send it — a number that never reached zero would read as a stuck sync. |
+| **Settings** — "N queued writes stored on this device" | `pendingWrites()`: **every** row in the outbox, whoever queued it. The sentence is about the device, and the outbox is one IndexedDB store per origin shared by every account that has signed in on it. Under-reporting here would hide storage the learner is being told about. |
+
+So on a shared device the Settings number can exceed the sync pill's, and that
+is correct. Neither counts analytics events separately — an analytics op is a
+queued write like any other.
+
+## Review accuracy (Profile)
+
+`src/Profile.jsx` shows a **retention rate** and a 30-day **reviews per day**
+bar, both computed from `review_logs` for the active track. Retention =
+`count(grade > 0) / count(*)`; the bar counts rows per `reviewed_at` day. A
+learner with no logs gets an honest empty state, never 0%.
+
+**It is not only study reviews.** A wrong answer on the level test writes a
+`review_logs` row too, because it is a real observation graded through the same
+`grade_card` RPC (`src/testReschedule.js`) — that is what stops the level test
+fabricating `reps` with no history behind it. A *correct* level-test answer
+writes nothing, because nothing is rescheduled.
+
+So the signal is asymmetric: level tests can only push retention **down** and
+push that day's review count **up**. On a 30-question test that is up to 30
+rows, all of them `grade = 0`. Judge a dip after a test attempt accordingly.
+
+Closing it properly means a source tag on `review_logs` (test vs study) so each
+number can say which it counts — a migration plus a metric split, recorded in
+`docs/BACKLOG.md`. The asymmetry is documented rather than hidden because the
+alternative — dropping the log — reintroduces `reps` climbing with no history,
+which is the §7.3b invariant the whole change protects.
+
 ## Learner-facing progress terms
 
 Defined by `src/mastery.js`, `docs/ARCHITECTURE.md` §mastery:
@@ -70,8 +107,9 @@ Defined by `src/mastery.js`, `docs/ARCHITECTURE.md` §mastery:
 |---|---|
 | **Learned** | `cards.learned = true`, or FSRS state is `review`/`relearning`. Gates story tiers (the low bar, for early immersion). |
 | **Mastered** | FSRS `stability >= 21` days (`MASTERY_STABILITY_DAYS`). Gates the level test and the mastery display. `is_easy` gates nothing. |
-| **Due** | Day-based availability: everything scheduled for today is available from local midnight (Anki-style), not at the exact clock time last reviewed. **Scope: the deck** — every card started in the active track, every level, including words saved from a story or the dictionary that sit outside the current level window. Defined by `src/studyAvailability.js`, which is what both the Home counts and the Study queue are built from, so what Home promises is what the session delivers. |
-| **New** | Words at the current level window with no card yet, capped by the remaining daily allotment. **Scope: the current level window** — new words are only ever introduced from it. |
+| **Due** | Day-based availability: everything scheduled for today is available from local midnight (Anki-style), not at the exact clock time last reviewed. **Scope: the deck** — every card started in the active track, every level, including words saved from a story or the dictionary that sit outside the current level window. Defined by `src/studyAvailability.js`, which is what both the Home counts and the Study queue are built from. **It is not the whole of what Home's Review row shows:** that row is Due + Calibration checks (`src/homeModel.js`), because both are served by the same session, and neither selector in `studyAvailability.js` can see a claim. Two caveats on "what Home promises is what the session delivers", both pre-existing: a session drops a card whose vocabulary row could not be fetched, and `sessionPrep` gentle-caps due reviews for a learner returning after a gap while this count is the full due set. |
+| **Calibration checks** | Prior-knowledge claims ready to be checked: `prior_known_at` set, **`reps = 0`**, and the claim's spread date (in `due_at`) today or earlier. (`reps`, not `verified_at`: `isPriorKnown` in `src/knowledgeState.js` tests `reps < 1`, which is §7.3b's load-bearing invariant — the one fact that means a human graded the word. `grade_card` stamps `verified_at` in the same statement that increments `reps`, so the two agree in every reachable state; the code reads the one that cannot be faked, and this file should name the same one.) **Capped at `CALIBRATION_SESSION_CAP` (20), which is what one session serves** — so unlike Due this is not a backlog, it is the size of the next session's slice. Counted by `src/homeCounts.js` through `isCalibrationReady`, the same predicate and the same cap `pickCalibrationChecks` uses (`src/calibration.js`). A claim is inert — never Due, never New — so before this existed Home totalled 0 while the session served up to 20 of them. |
+| **New** | Words at the current level window with no card yet, capped by the remaining daily allotment. **The allotment is not only spent in Study:** a wrong level-test answer on a word with no card creates one (`src/testReschedule.js`), which raises `introducedToday` and so lowers this count — while writing no `daily_activity` row, so the day's *studied* counts do not move with it. A learner who fails several unstudied words therefore sees fewer new words offered that day than they have actually started. **Scope: the current level window** — new words are only ever introduced from it. |
 | **Level progress** | Learned words at the current level / active words at that level. Level labels always via `getLevelLabel()` — never hardcoded. |
 
 When adding a new number to any screen: name its scope (current level / all
