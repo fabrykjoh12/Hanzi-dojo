@@ -156,7 +156,7 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
     .slice(0, newTarget)
     .map(v => ({
       id: null, vocab_id: v.id, vocab: v,
-      state: 'new', ease_factor: 2.5, interval_days: 0, learning_step: 0,
+      state: 'new', interval_days: 0, learning_step: 0,
     }))
 
   // Prior-knowledge checks. A claim is inert — never due, and never offered as

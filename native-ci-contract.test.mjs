@@ -48,11 +48,19 @@ const REQUIRED_FILE_COVERAGE = [
   '^tools/verify-native-fonts\\.mjs$',
   '^tools/verify-native-shell\\.mjs$',
   '^tools/verify-app-icons\\.mjs$',
+  '^tools/verify-public-bundle\\.mjs$',
 ]
 
 const REQUIRED_NATIVE_STAGES = [
   'node tools/verify-native-shell.mjs',
   'npm run build:native',
+  // The store bundle is the artifact that actually reaches learners, and until
+  // now nothing inspected it. verify:pr already runs this same guard over the
+  // PUBLIC web build (package.json's verify:pr, pinned by
+  // verification-contract.test.mjs) — never over the Sites build, which emits
+  // hq.html and the cloud bridge and would trip the guard's own rules. So this
+  // is one guard over a second artifact, not a guard that had no artifact.
+  'npm run verify:public-bundle',
   'npm run verify:native-fonts',
 ]
 
@@ -61,10 +69,11 @@ describe('the verify:native script', () => {
     expect(PKG.scripts).toHaveProperty('verify:native')
   })
 
-  it('runs the shell check, the native build, and the font proof, in that order', () => {
+  it('runs the shell check, the native build, and both build inspections, in that order', () => {
     // Shell check first: it needs no build and fails in milliseconds, so a
     // mismatched bundle id does not cost a full native build to discover.
-    // The font proof last: it inspects whatever build:native just produced.
+    // The two inspections last: both read whatever build:native just produced,
+    // and both would pass vacuously if they ran before it.
     expect(stagesOf(PKG.scripts['verify:native'])).toEqual(REQUIRED_NATIVE_STAGES)
   })
 
@@ -79,13 +88,41 @@ describe('the verify:native script', () => {
   })
 })
 
+// The stages that exist because the tier is native. verify:public-bundle is
+// deliberately NOT one: it inspects a built artifact for credentials and
+// internal tooling, and both tiers produce an artifact worth inspecting. What
+// the rule below is really protecting is the fast gate's COST — a docs typo
+// must not pay for a native build — so a stage shared by both tiers is fine
+// and a stage that only the native tier needs is not.
+const NATIVE_ONLY_STAGES = REQUIRED_NATIVE_STAGES.filter(s => s !== 'npm run verify:public-bundle')
+
 describe('native stays out of the fast PR gate', () => {
-  it('verify:pr runs no native stage', () => {
+  it('verify:pr runs no native-only stage', () => {
     const pr = PKG.scripts['verify:pr']
-    for (const stage of REQUIRED_NATIVE_STAGES) {
+    expect(NATIVE_ONLY_STAGES.length, 'every native stage became shared — the tier boundary is gone')
+      .toBeGreaterThan(1)
+    for (const stage of NATIVE_ONLY_STAGES) {
       expect(pr, 'verify:pr absorbed a native stage: ' + stage).not.toContain(stage)
     }
     expect(pr).not.toContain('verify:native')
+  })
+
+  it('the shared inspection runs in BOTH tiers, over each tier\'s own build', () => {
+    // Not a restatement of the two order specs: this is the property that made
+    // adding it to verify:native worth doing. The store bundle is the artifact
+    // that reaches learners, and until now nothing scanned it for credentials.
+    for (const script of ['verify:pr', 'verify:native']) {
+      expect(PKG.scripts[script], script + ' stopped inspecting its build')
+        .toContain('npm run verify:public-bundle')
+    }
+    // And in each, after the build it inspects — before it, it would pass on
+    // whatever the previous run left behind.
+    for (const [script, build] of [['verify:pr', 'npm run build:public'], ['verify:native', 'npm run build:native']]) {
+      const s = PKG.scripts[script]
+      expect(s.indexOf(build), script + ' does not run ' + build).toBeGreaterThan(-1)
+      expect(s.indexOf('npm run verify:public-bundle'), script + ' inspects before it builds')
+        .toBeGreaterThan(s.indexOf(build))
+    }
   })
 
   it('ci.yml does not run the native tier', () => {
@@ -262,6 +299,39 @@ describe('coverage is conservative and cannot be narrowed', () => {
   it('covers the build, manifest and verifier inputs', () => {
     for (const file of REQUIRED_FILE_COVERAGE) {
       expect(NATIVE_YAML, 'detector lost coverage: ' + file).toContain(file)
+    }
+  })
+
+  it('covers every script the native verification actually runs, listed or not', () => {
+    // The list above is an allow-list, and an allow-list is exactly how a file
+    // goes uncovered: nobody adds it, nothing fails. This derives the
+    // requirement from verify:native itself instead — every `node <path>` stage
+    // it runs, plus the same for verify:pr, whose artifact this one also
+    // inspects. Add a verifier to either script and forget the detector, and
+    // this fails without anyone having to remember the list exists.
+    const scripts = [PKG.scripts['verify:native'], PKG.scripts['verify:pr']]
+    const paths = new Set()
+    for (const script of scripts) {
+      for (const stage of stagesOf(script)) {
+        const direct = stage.match(/^node (\S+)/)
+        if (direct) { paths.add(direct[1]); continue }
+        const named = stage.match(/^npm run ([\w:-]+)$/)
+        if (!named) continue
+        // One level of indirection: `npm run verify:public-bundle` is
+        // `node tools/verify-public-bundle.mjs`.
+        for (const inner of stagesOf(PKG.scripts[named[1]] || '')) {
+          const m = inner.match(/^node (\S+)/)
+          if (m) paths.add(m[1])
+        }
+      }
+    }
+    expect(paths.size, 'no verifier scripts found — this test stopped testing anything')
+      .toBeGreaterThan(2)
+    for (const path of paths) {
+      const pattern = '^' + path.replace(/\./g, '\\.') + '$'
+      expect(NATIVE_YAML, 'the native change detector does not cover ' + path
+        + ', so a PR touching only that verifier would skip native verification and still report green')
+        .toContain(pattern)
     }
   })
 
