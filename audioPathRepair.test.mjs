@@ -100,11 +100,14 @@ describe('it cannot take working audio away, and it can be re-run', () => {
 })
 
 describe('the defect the migration says it is fixing is real in the app', () => {
-  it('Listen builds its pool from a NON-NULL audio_path, not a reachable one', () => {
-    // This is why unreachable paths are not merely a silent speaker: the
-    // listening exercise keeps choosing these words as questions.
+  it('Listen no longer builds its pool from a non-null audio_path (fixed by FAB-64)', () => {
+    // This was why unreachable paths were not merely a silent speaker: the
+    // listening exercise kept choosing these words as questions. It now picks
+    // through listenQuiz.js on a resolved URL, which listenQuiz.test.js pins
+    // behaviourally; this only guards against the old filter coming back.
     const listen = readFileSync('src/Listen.jsx', 'utf8')
-    expect(listen).toMatch(/pool\.filter\(v\s*=>\s*v\.audio_path\)/)
+    expect(listen).not.toMatch(/pool\.filter\(v\s*=>\s*v\.audio_path\)/)
+    expect(listen).toMatch(/buildListenQuestions\(/)
   })
 
   it('ttsAudio falls back to the same column when a level has no generated row', () => {

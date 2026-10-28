@@ -206,6 +206,17 @@ describe('each hard check fires on the defect and only on the defect', () => {
     expect(fire([]).length).toBe(0)
   })
 
+  it('audio-path-resolves catches a path naming no stored file, and only that', () => {
+    const files = new Set(['level_4/005_liaojie.mp3'])
+    const at = (audio_path) => [row({ audio_path })]
+    expect(fires('audio-path-resolves', { vocabulary: at('level_4/999_gone.mp3'), audioObjects: files })).toBe(1)
+    expect(fires('audio-path-resolves', { vocabulary: at('level_4/005_liaojie.mp3'), audioObjects: files })).toBe(0)
+    // No recording yet is no-audio's business, not a broken reference.
+    expect(fires('audio-path-resolves', { vocabulary: at(null), audioObjects: files })).toBe(0)
+    // No listing, no verdict — the script refuses an empty fetch, the check stays quiet.
+    expect(fires('audio-path-resolves', { vocabulary: at('level_4/999_gone.mp3') })).toBe(0)
+  })
+
   it('ready-audio-has-path catches a vocabulary clip marked ready with no path', () => {
     const clip = (over) => [{ id: 't1', source_type: 'vocabulary', status: 'ready', storage_path: null, ...over }]
     expect(fires('ready-audio-has-path', { ttsAudio: clip() })).toBe(1)
