@@ -8,6 +8,8 @@ import { isMastered } from './mastery'
 import { cleanMeaning } from './cleanMeaning'
 import { evaluateAchievements } from './achievements'
 import { todayStr } from './streak'
+import { dropQueuedWritesForTrack } from './syncQueue'
+import { clearPreparedSession } from './sessionPrep'
 import { monthReview, monthHeadline, monthShareText } from './monthReview'
 import { knownWordMap, readableSummary, rowA11yLabel } from './knownWordMap'
 import { last30A11yLabel } from './reviewAccuracy'
@@ -293,6 +295,36 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       return
     }
 
+    // The cards and story rows this track had are gone. Any queued offline
+    // write for them would either recreate them at their pre-reset state or
+    // wedge the outbox forever on 'Card not found' — so they go too, and only
+    // they. The user id is not decoration: the outbox is one store per device,
+    // shared by every account that has signed in on it, and the reset RPC
+    // deletes only this account's rows.
+    //
+    // The dialog above used to end "Your other languages are untouched", then
+    // briefly "keep their progress". Both are gone, and the second was not an
+    // improvement — it changed the noun, not the truth conditions. An op that
+    // carries no language tag cannot be attributed, and untagged is what the
+    // CURRENT production build queues, so resetting the track you are ON can
+    // still discard an unsynced grade that came from another one. Redefining
+    // "progress" as "rows on the server" is not how a learner reads the word,
+    // and the sentence sat directly above an irreversible button.
+    //
+    // Narrower than it was: shouldDropUntaggedOps keeps untagged ops whenever
+    // the track being cleaned is not the active one, so resetting a track you
+    // are not studying no longer costs your current track's queued writes. The
+    // remaining case needs an old build, an offline session and a reset of the
+    // very track you are on.
+    //
+    // Nothing replaces the sentence. The line above already names the language
+    // and the scope; a hedge ("anything you graded offline and haven't synced
+    // may be cleared") would alarm every learner about that narrow case. The
+    // exact fix — attributing an untagged op through its vocab_id or story_id —
+    // is in docs/BACKLOG.md.
+    await dropQueuedWritesForTrack(targetTrack, session.user.id, { activeLanguage: profile.active_language })
+    clearPreparedSession()
+
     setResetting(false)
     setConfirmingReset(false)
     setClearHistory(false)
@@ -340,6 +372,18 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
       setRemoving(false)
       return
     }
+
+    // Same reason as the reset panel above: the rows are deleted, so their
+    // queued writes must not outlive them.
+    //
+    // The track being cleaned up here is by construction never the one the
+    // learner is on — this panel only lists tracks for a language nobody can
+    // start — so an op carrying no language tag is most likely the ACTIVE
+    // track's, and dropping it would destroy a write with nothing deleted
+    // behind it. shouldDropUntaggedOps reads active_language and keeps it.
+    // Tagged ops for this track are dropped exactly as before.
+    await dropQueuedWritesForTrack({ language: langCode, system: target.system }, session.user.id, { activeLanguage: profile.active_language })
+    clearPreparedSession()
 
     const { error } = await supabase
       .from('language_tracks')
@@ -667,8 +711,7 @@ export default function Profile({ session, profile, track, onBack, onNavigate, o
                 {languageTheme(targetTrack.language).languageName}
               </strong>{' '}
               and puts that track back to{' '}
-              {getLevelLabel(targetTrack.language, targetTrack.system, 1)}. Your other
-              languages are untouched.
+              {getLevelLabel(targetTrack.language, targetTrack.system, 1)}.
             </div>
           </div>
           <SmallButton onClick={resetProgress} danger filled={confirmingReset} disabled={resetting} icon={RotateCcw}>

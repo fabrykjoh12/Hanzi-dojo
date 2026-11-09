@@ -48,11 +48,19 @@ export function queueHeadline(counts = {}) {
 
 // The queue's composition, in session order. "Review" (not "Due") — the label
 // names what the learner does with the cards, matching Study's own voice.
+//
+// Calibration checks are counted INTO Review rather than given a row of their
+// own, for two reasons. They are the same act — a check is the claimed word's
+// first real review, through the same scheduler (calibration.js), and
+// sessionPrep puts them in the review pool for exactly that reason. And the
+// three rows here have to add up to the hero's "N cards waiting"; a fourth
+// category the hero counts and the breakdown omits is the same
+// promise-versus-delivery gap one screen further in.
 export function queueBreakdown(counts = {}) {
   return [
     { label: 'New', value: counts.newCount || 0 },
     { label: 'Learning', value: counts.learnCount || 0 },
-    { label: 'Review', value: counts.dueCount || 0 },
+    { label: 'Review', value: (counts.dueCount || 0) + (counts.calibrationCount || 0) },
   ]
 }
 

@@ -45,8 +45,11 @@ import {
   RISK_LEVELS,
   PRODUCTION_EFFECTS,
   ALWAYS_FORBIDDEN,
+  PROTECTED_CONTROL_PLANE,
+  grantedProtectedPaths,
   computeDigest,
   covers,
+  isSubtreeRoot,
   normalisePath,
   findContractViolations,
 } from './verify-task-contracts.mjs'
@@ -206,7 +209,17 @@ export function mechanicalFindings({ contract, changedPaths }) {
       'a review without a diff has nothing to inspect')]
   }
 
-  const allowed = Array.isArray(contract.allowed_paths) ? contract.allowed_paths : []
+  const declared = Array.isArray(contract.allowed_paths) ? contract.allowed_paths : []
+  // THE EFFECTIVE SCOPE. allowed_paths plus whatever the contract has VALIDLY
+  // been granted over the protected control plane.
+  //
+  // grantedProtectedPaths returns nothing unless the entire control_plane
+  // declaration checks out — role, risk floor, closed grant, grant/path
+  // compatibility, tier containment, grammar. So a malformed or half-understood
+  // grant widens nothing, and the paths it named are still reported out of
+  // scope. Fail closed, not fail partial.
+  const granted = grantedProtectedPaths(contract)
+  const allowed = [...declared, ...granted]
   const forbidden = Array.isArray(contract.forbidden_paths) ? contract.forbidden_paths : []
   const contractFile = TASKS_DIR + '/' + contract.id + '.json'
 
@@ -225,7 +238,17 @@ export function mechanicalFindings({ contract, changedPaths }) {
     }
 
     for (const floorPath of ALWAYS_FORBIDDEN) {
-      if (covers(floorPath, p) || p === floorPath) {
+      // `p === floorPath` catches an exact floor entry; isSubtreeRoot catches
+      // the bare root of a `dir/**` one, which is neither inside the pattern
+      // nor equal to it. Unreachable in practice — a changed path of `.git` or
+      // `.agent/tasks` cannot appear in a git diff, since they are directories
+      // and `.git` is excluded — though replacing a tracked directory with a
+      // symlink does make `.agent/tasks` or `.claude/hooks` a representable
+      // diff path, so "cannot" is too strong. Either way it is the same defect
+      // as FAB-60's, and a reader comparing the floor and Tier 1 tests here
+      // should find them saying the same thing — which is why the Tier 1 scan
+      // below asks isSubtreeRoot too.
+      if (covers(floorPath, p) || p === floorPath || isSubtreeRoot(floorPath, p)) {
         out.push(finding('blocker', 'hidden-authority-expansion',
           'The diff touches an always-forbidden path',
           'changed path: ' + p + ' falls under ' + floorPath,
@@ -242,10 +265,20 @@ export function mechanicalFindings({ contract, changedPaths }) {
     }
 
     if (!allowed.some(a => a === p || covers(a, p))) {
-      out.push(finding('blocker', 'path-compliance',
-        'The diff changes a path outside allowed_paths',
-        'changed path: ' + p + ' matches none of: ' + allowed.join(', '),
-        'allowed_paths'))
+      // Naming the tier explicitly, because "outside allowed_paths" would send
+      // the reader to fix the wrong field — adding a protected path there is
+      // rejected by the validator, and the grant is the only spelling.
+      const protectedHit = PROTECTED_CONTROL_PLANE.find(t => covers(t, p) || t === p || isSubtreeRoot(t, p))
+      out.push(protectedHit
+        ? finding('blocker', 'hidden-authority-expansion',
+          'The diff touches the protected control plane without a valid grant',
+          'changed path: ' + p + ' falls under ' + protectedHit +
+            ', which is reachable only through a valid control_plane grant',
+          'control_plane')
+        : finding('blocker', 'path-compliance',
+          'The diff changes a path outside allowed_paths',
+          'changed path: ' + p + ' matches none of: ' + allowed.join(', '),
+          'allowed_paths'))
     }
   }
 

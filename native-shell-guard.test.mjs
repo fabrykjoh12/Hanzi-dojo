@@ -235,9 +235,11 @@ describe('every first-party Capacitor package agrees with core', () => {
 describe('the native build must not become a Sites build', () => {
   it('catches build:native losing DOJO_PUBLIC_BUILD=1', () => {
     // This is the severe one. Without it the native bundle is a SITES build,
-    // which carries Dojo HQ and its localhost bridge into the App Store binary
-    // — and verify:public-bundle never inspects the native build, so nothing
-    // else would notice.
+    // which carries Dojo HQ and its localhost bridge into the App Store binary.
+    // verify:native now runs verify:public-bundle over dist/client after
+    // build:native, so that would be caught twice — but this check is the one
+    // that names the cause rather than the symptom, and it does not depend on
+    // the bundle guard's rule list staying complete.
     const shell = good()
     shell.packageJson.scripts['build:native'] = 'cross-env DOJO_NATIVE_BUILD=1 vite build'
     expect(findShellViolations(shell).join()).toMatch(/does not set DOJO_PUBLIC_BUILD=1 .* Dojo HQ/)

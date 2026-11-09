@@ -19,7 +19,10 @@ import {
   storyFromManhuaManifest,
 } from './manhuaManifest.js';
 
-const REF = 'mock';
+// Exported so a spec can stage a write the UI cannot produce on its own — see
+// known-words.spec.js, which claims a card from "another device" between the
+// check and the add.
+export const REF = 'mock';
 const USER_ID = '00000000-0000-4000-8000-000000000001';
 const past = '2026-01-01T08:00:00.000Z';
 const dueNow = '2026-01-10T06:00:00.000Z';
@@ -350,6 +353,23 @@ export async function mockSupabaseRoutes(page) {
     }
     if (url.pathname.startsWith('/rest/v1/')) {
       const table = url.pathname.replace('/rest/v1/', '').split('?')[0];
+      // A prior-knowledge claim upserts cards with ignoreDuplicates and then
+      // .select()s the result. PostgREST returns ONLY the rows it inserted, and
+      // that difference is the whole point of the confirmation the screen shows
+      // — so the mock has to model it rather than echoing every card. Rows
+      // whose vocab_id the fixture already has a card for are the duplicates.
+      if (req.method() === 'POST' && table === 'cards') {
+        const sent = req.postDataJSON();
+        const rows = Array.isArray(sent) ? sent : [sent];
+        const held = new Set(liveCards.map(card => card.vocab_id));
+        const fresh = rows.filter(row => !held.has(row.vocab_id));
+        fresh.forEach((row) => { liveCards.push({ ...row, id: `seeded-${row.vocab_id}` }); });
+        return route.fulfill({
+          status: 201,
+          headers: { ...CORS, 'content-type': 'application/json' },
+          body: JSON.stringify(fresh.map(row => ({ vocab_id: row.vocab_id }))),
+        });
+      }
       let body;
       if (table in TABLE_FIXTURES) {
         const f = table === 'cards' ? liveCards : TABLE_FIXTURES[table];

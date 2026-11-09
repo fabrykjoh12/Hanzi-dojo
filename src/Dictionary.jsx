@@ -17,7 +17,8 @@ import {
 import { buildVocabIndex, searchVocabIndex } from './vocabIndex'
 import { dictSearchReducer, dictSearchView, initialDictSearch } from './dictSearchState'
 import { splitExplicit, hiddenLabel } from './dictExplicit'
-import { searchDict, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHeadwordLookup } from './dictSearch'
+import { toast } from './toast'
+import { searchDict, getDictEntryById, getDictEntryByWord, addDictEntryToDeck, isHeadwordLookup, dictAddToast } from './dictSearch'
 import DictEntryView from './DictEntryView'
 import { sheetOverlayStyle, sheetShellStyle, sheetHeaderStyle, sheetHandleStyle, sheetBodyStyle } from './sheetLayout'
 import { ArrowLeft, Search, Clock, X, WifiOff, AlertCircle } from 'lucide-react'
@@ -192,7 +193,7 @@ export default function Dictionary({ session, profile, track, onBack }) {
     if (!v || !v.id || cardByVocab[v.id]) return
     const row = {
       user_id: session.user.id, vocab_id: v.id,
-      state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
+      state: 'new', learning_step: 0, due_at: new Date().toISOString(),
     }
     const { error } = await supabase.from('cards').insert(row)
     if (!error) setCardByVocab(prev => ({ ...prev, [v.id]: { vocab_id: v.id, state: 'new' } }))
@@ -203,7 +204,13 @@ export default function Dictionary({ session, profile, track, onBack }) {
     try {
       const res = await addDictEntryToDeck(supabase, entry.id, track.language, track.system)
       if (res) setDictInDeck(prev => new Set(prev).add(entry.id))
-    } catch { /* surfaced by the disabled→enabled state; no crash */ }
+    } catch (e) {
+      // Every failure says something now. The button not flipping to "in deck"
+      // was the only signal before, which reads as a dead button — and the
+      // three refusals dict_add_to_deck can raise are three different things to
+      // tell a learner (dictAddFeedback.js).
+      toast(dictAddToast(e, accentHex))
+    }
   }
 
   const systemLabel = getSystemLabel(track.system)

@@ -1,29 +1,21 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { fetchPagedSafe } from './supabasePaging'
-import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
+import { getLevelLabel, getSystemLabel, shuffle, playAudioEl } from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
 import { languageTheme, langAttr, UI_LANG } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
+import { loadTtsAudio, flashcardAudio } from './ttsAudio'
+import { buildListenQuestions } from './listenQuiz'
 import {
   ArrowLeft, Volume2, Headphones, Check, X, RotateCcw, CheckCircle2, Sparkles,
 } from 'lucide-react'
 
-const QUESTION_COUNT = 12
-
-// Build a quiz: each question is one word (with audio) plus 3 distractors drawn
-// from the same level's vocabulary.
-function buildQuestions(pool) {
-  const withAudio = pool.filter(v => v.audio_path)
-  if (withAudio.length < 4) return []
-  const picks = shuffle(withAudio).slice(0, Math.min(QUESTION_COUNT, withAudio.length))
-  return picks.map(correct => {
-    const distractors = shuffle(pool.filter(v => v.id !== correct.id)).slice(0, 3)
-    return { correct, options: shuffle([correct, ...distractors]) }
-  })
-}
+// What a word would play: a generated clip first, then the row's stored file —
+// the same answer the flashcards give. listenQuiz.js keeps silent words out.
+const wordAudioUrl = (v) => flashcardAudio(v).word
 
 export default function Listen({ session, profile, track, onBack }) {
   const isMobile = useIsMobile()
@@ -52,7 +44,11 @@ export default function Listen({ session, profile, track, onBack }) {
       .eq('level', track.current_level)
       .eq('is_active', true)
       .order('id', { ascending: true }))
-    setQuestions(buildQuestions(vocab || []))
+    const pool = vocab || []
+    // Generated clips are looked up first so a word voiced only through
+    // tts_audio still counts. A failure leaves the stored files, as in Study.
+    try { await loadTtsAudio('vocabulary', pool.map(v => v.id)) } catch { /* stored files still play */ }
+    setQuestions(buildListenQuestions(pool, wordAudioUrl, shuffle))
     setLoading(false)
   }
 
@@ -61,8 +57,7 @@ export default function Listen({ session, profile, track, onBack }) {
     return () => clearTimeout(t)
   }, [])
 
-  function playAudio(path) {
-    const url = getAudioUrl(path)
+  function playAudio(url) {
     if (!url) return
     // One reused element (required by playAudioEl's iOS replay caching).
     if (!audioRef.current) audioRef.current = new Audio()
@@ -74,7 +69,7 @@ export default function Listen({ session, profile, track, onBack }) {
 
   // Autoplay the prompt audio when a new question appears.
   useEffect(() => {
-    if (!loading && q && picked === null) playAudio(q.correct.audio_path)
+    if (!loading && q && picked === null) playAudio(q.audioUrl)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, loading])
 
@@ -220,7 +215,7 @@ export default function Listen({ session, profile, track, onBack }) {
         {/* Big play button */}
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', marginBottom: '26px' }}>
           <button
-            onClick={() => playAudio(q.correct.audio_path)}
+            onClick={() => playAudio(q.audioUrl)}
             aria-label="Play audio"
             style={{
               width: '108px', height: '108px', borderRadius: '34px', cursor: 'pointer',

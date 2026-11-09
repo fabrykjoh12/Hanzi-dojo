@@ -48,7 +48,46 @@ export const KNOWLEDGE = {
 }
 
 // The provenance values a claim may carry, mirroring the DB CHECK constraint.
+// Every value `cards.prior_source` may hold. Kept in step with the database's
+// own `cards_prior_source_check` constraint — this array is documentation, not
+// validation; nothing at runtime rejects a value that is missing from it.
+//
+// Only THREE of these are written by any current code path: 'placement'
+// (Onboarding), 'paste' and 'checklist' (KnownWords) — see
+// WRITTEN_PRIOR_SOURCES below, which a spec derives from those call sites
+// rather than from this comment. 'legacy_claim' is historical, written once by
+// the legacy-claim repair script under src/migration/. 'assumed_prerequisite'
+// is written by nothing at all: it was reserved for a path that was never
+// built, and it is listed because the constraint still permits it, not because
+// it occurs.
+//
+// (An earlier version of this comment added that 'legacy_claim' was the only
+// value present in production. That was true when it was measured and stops
+// being true the first time anybody completes onboarding above level 1 — a
+// fact about a moment, which is not what a source comment can hold.)
 export const PRIOR_SOURCES = ['placement', 'assumed_prerequisite', 'paste', 'checklist', 'legacy_claim']
+
+// The subset a current code path actually produces. Kept separate so a reader
+// asking "what can this column say about a live row?" gets the true answer.
+export const WRITTEN_PRIOR_SOURCES = ['placement', 'paste', 'checklist']
+
+// The negation of isPriorKnown, as a PostgREST `.or()` filter.
+//
+// Here rather than beside a caller because knowledgeState is the single answer
+// to "does the learner know this word?" (see the header), and a filter string
+// that means the same thing as a predicate in this file belongs where the
+// predicate does — a pair like that in two modules is exactly what drifts.
+//
+// Reads as: never claimed, OR observed at least once. A spec holds it to
+// isPriorKnown over the shapes a live row can take.
+export const NOT_AN_UNVERIFIED_CLAIM = 'prior_known_at.is.null,reps.gte.1'
+
+// The columns a client query must SELECT for isPriorKnown to give a true
+// answer. Owned here, where they are read, because the alternative has already
+// gone wrong twice in this repo: a caller's SELECT omitted prior_known_at, the
+// predicate read undefined, it was always false, and the branch it guarded was
+// dead code that looked present.
+export const PRIOR_KNOWLEDGE_COLUMNS = ['prior_known_at', 'reps']
 
 // ── The structural facts ────────────────────────────────────────────────────
 

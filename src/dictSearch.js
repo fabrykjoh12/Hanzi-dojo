@@ -72,6 +72,11 @@ export function isHeadwordLookup(value) {
   return chars.every(isHanChar)
 }
 
+// The failure copy for this RPC lives in dictAddFeedback.js — it has three
+// distinct refusals and they are three different things to tell a learner.
+// Re-exported here so the call sites keep one import.
+export { isDictAddLimit, dictAddToast, DICT_ADD_LIMIT_CODE } from './dictAddFeedback'
+
 export async function addDictEntryToDeck(supabase, dictEntryId, language, system) {
   const { data, error } = await supabase.rpc('dict_add_to_deck', {
     p_dict_entry_id: dictEntryId, p_language: language, p_system: system,

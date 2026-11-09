@@ -79,6 +79,19 @@ describe('prepare → peek → take', () => {
     expect(takePreparedSession(args)).toEqual(fresh)
   })
 
+  it('clearing the slot un-serves it — what a progress reset needs', () => {
+    // The four reset paths call this after the reset RPC succeeds. Without it
+    // the slot survives: prepKey covers learner, track, level and day, all
+    // unchanged by a reset, so takePreparedSession would still match and hand
+    // Study a queue of cards the reset had just deleted.
+    return prepareStudySession(args, fakeBuilder()).then(() => {
+      expect(peekPreparedSession(args)).toEqual(DATA)
+      clearPreparedSession()
+      expect(peekPreparedSession(args)).toBe(null)
+      expect(takePreparedSession(args)).toBe(null)
+    })
+  })
+
   it('a failed build resolves to null so callers fall back quietly', async () => {
     await prepareStudySession(args, () => Promise.reject(new Error('offline')))
     expect(takePreparedSession(args)).toBe(null)

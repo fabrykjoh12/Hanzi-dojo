@@ -79,7 +79,11 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
   // with the first real card already on screen. Kicks off strictly after the
   // window load event (chunk/data requests started before it would delay it),
   // and again whenever the queue counts move.
-  const queueSignature = (counts.dueCount || 0) + ':' + (counts.learnCount || 0) + ':' + (counts.newCount || 0)
+  // Calibration is a term because it is work the session serves: without it, a
+  // refresh in which only the claim count moved left the prepared slot built
+  // from the older queue.
+  const queueSignature = (counts.dueCount || 0) + ':' + (counts.learnCount || 0)
+    + ':' + (counts.newCount || 0) + ':' + (counts.calibrationCount || 0)
   useEffect(() => {
     let timer
     if (!userId) return undefined

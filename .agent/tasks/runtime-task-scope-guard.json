@@ -1,0 +1,68 @@
+{
+  "id": "runtime-task-scope-guard",
+  "goal": "Implement the protected runtime path guard: a PreToolUse policy module and its thin adapter, both under .claude/hooks/, that decide whether an untrusted producer subagent may write a given path, from the sealed task contract bound to the session by the launcher. Ship it INERT: this task installs the mechanism and proves it adversarially, but registers nothing in .claude/settings.json, so no runtime behaviour changes on merge.",
+  "owner_role": "workflow-authority",
+  "risk": "r3",
+  "allowed_paths": [
+    "runtime-scope.test.mjs",
+    ".claude/agents/task-producer.md",
+    "docs/AUTOMATION-AUTHORITY.md"
+  ],
+  "forbidden_paths": [],
+  "control_plane": {
+    "grant": "runtime-hook-maintenance",
+    "protected_paths": [
+      ".claude/hooks/task-scope-policy.mjs",
+      ".claude/hooks/task-scope-guard.mjs"
+    ],
+    "justification": "The guard is the runtime authorization path, so its decision logic must live where an ordinary task cannot rewrite it. Two exact files rather than the whole .claude/hooks/** subtree, so this task cannot touch the existing session-start hook."
+  },
+  "non_goals": [
+    "Registering the hook in .claude/settings.json, or any other activation — runtime activation and the static Tier-0 deny rules are a separate later task under runtime-policy-maintenance",
+    "Editing .claude/hooks/session-start.sh or any file under .claude/hooks/ other than the two named protected paths",
+    "Claiming Tier-0 enforcement is globally active or non-bypassable, which it is not until the hook is registered",
+    "Claiming the producer definition is protected, since .claude/agents/** is still Tier 2",
+    "Moving .claude/agents/** into Tier 1, or any contract-lifecycle migration — that is FAB-54",
+    "Changing the contract-verification grammar or the review driver — that is FAB-57",
+    "Changing PROTECTED_CONTROL_PLANE, ALWAYS_FORBIDDEN, CONTROL_PLANE_GRANTS, the path grammar, the risk taxonomy, the production_effect taxonomy or the role model",
+    "Editing tools/verify-task-contracts.mjs, tools/review-protocol.mjs or any other Tier 2 module the runtime decision path must not depend on",
+    "Re-sealing any existing contract, or changing any existing contract's digest",
+    "Supporting more than one bound task contract per launcher session",
+    "Any story, product, database, Supabase or production-resource change",
+    "Merging anything"
+  ],
+  "acceptance_criteria": [
+    "The runtime decision path imports nothing outside .claude/hooks/ and Node builtins, asserted by a spec that reads both protected files and fails on any other import specifier, so a Tier 2 dependency cannot be introduced silently",
+    "The policy module is pure and separately testable, and the guard is a thin adapter that reads the hook stdin JSON, calls the policy and emits a PreToolUse deny decision; the adapter contains no authorization logic of its own",
+    "The contract is bound by the launcher-set HANZI_TASK_BINDING environment variable carrying contract_id, contract_digest and a canonical contract path, and the path is required to equal .agent/tasks/<contract_id>.json exactly; the contract is re-read and its seal recomputed on every producer decision",
+    "There is no contract discovery of any kind: no directory scan, no newest-file selection, no prompt or cwd or branch inference, and no fallback when the binding is absent",
+    "Every security-relevant invalid state denies rather than allows, each covered by its own spec: missing or malformed binding, missing or malformed or unsealed contract, id/path/filename mismatch, digest mismatch, invalid path grammar, Tier-0 path, invalid control_plane grant, a path outside the effective contract scope, an unresolvable or ambiguous realpath, and a symlink whose resolved target escapes scope",
+    "Symlink escape is proven closed by a spec that builds a real symlink out of scope and asserts the deny, because the unresolved path is what the runtime hands the hook",
+    "A valid in-scope write is allowed, including a new file whose parent resolves inside scope, so the guard is demonstrably not deny-all",
+    "The producer is identified structurally by agent_type; a call with no agent_type is the trusted driver and is not subject to producer scope, and a producer call with no binding is denied",
+    "The effective scope is allowed_paths united with validly granted control_plane paths, matching the sealed contract semantics, and a granted protected path is in scope only when the whole grant validates",
+    "The duplicated security semantics are pinned against the canonical validator by parity specs over every contract in .agent/tasks and over generated path pairs, so drift between the protected runtime representation and tools/verify-task-contracts.mjs fails a test",
+    ".claude/agents/task-producer.md defines a producer with a closed minimal tool set containing no Bash, no shell or process tool, and no subagent spawning, asserted by a spec that parses the frontmatter",
+    "docs/AUTOMATION-AUTHORITY.md states the claims exactly: Tier 0 is the first branch of the protected hook logic and is unit- and probe-proven, the hook is intentionally inert until the separate settings-registration task, disableAllHooks remains a trusted-launcher residual, static Tier-0 deny arrives only with registration, .claude/agents/** is still Tier 2, and hook maintenance itself remains a trusted control-plane workflow that the guard does not self-govern",
+    ".claude/settings.json is not modified, and .claude/hooks/session-start.sh is not modified",
+    "npm run verify:pr passes"
+  ],
+  "verification": [
+    "npm run verify:pr",
+    "npx vitest run runtime-scope.test.mjs",
+    "npm run verify:tasks"
+  ],
+  "production_effect": "none",
+  "dependencies": [
+    "runtime-hook-maintenance-grant"
+  ],
+  "stop_conditions": [
+    "Realpath resolution cannot be made reliable for a path class the producer can reach — stop rather than ship a guard bypassable by symlink, which is the one escape already proven live",
+    "The protected policy cannot reproduce the canonical digest or path semantics without importing a Tier 2 module — stop and report rather than importing it, because that would put the runtime authorization path back under ordinary task authority",
+    "The work turns out to require editing .claude/settings.json, .agent/roles.json, .agent/tasks/** or any hook other than the two named — stop and report the governance conflict",
+    "A second protected path turns out to be needed — stop, because the collective-coverage rule means its grant must land in the same change",
+    "The work turns out not to fit workflow-authority / r3 / none — report before implementing"
+  ],
+  "notes": "PR B of the runtime-enforcement sequence, and the first task to exercise a control_plane grant. Empirical recon on Claude Code 2.1.258 (revalidating 2.1.257) established every load-bearing fact: a settings-level PreToolUse hook fires for a subagent's tool calls and can deny them; the hook stdin carries agent_id and agent_type, and a main-thread driver call carries neither, so producer and driver are distinguishable structurally rather than by trust in a name; a subagent's own permissionMode frontmatter is ignored in favour of the parent's, so the producer cannot escalate; tools/disallowedTools is platform-enforced, so a Bash-less producer really has no Bash; traversal spellings arrive already normalised; and a launcher-set environment variable reaches the hook process while the Bash-less producer cannot read or write process environment at all, which is what makes HANZI_TASK_BINDING a channel the producer cannot choose or mutate. Two facts constrain the design rather than enabling it. A symlink inside an in-scope directory pointing out of it still lets a write through, because the runtime hands the hook the UNRESOLVED path — so realpath resolution with fail-closed behaviour is load-bearing, not a nicety. And --settings disableAllHooks=true silences the hook entirely, with project settings unable to pin it back; that is a trusted-launcher residual to document, not to paper over, and it is out of the producer's reach because it is a process-launch flag. The decision logic lives under .claude/hooks/ rather than tools/ because the runtime authorization path must not depend on ordinary Tier 2 code that a task could itself be authorized to rewrite; the cost is a small duplicated representation of path and seal semantics, which parity specs hold to the canonical validator. Classification: workflow-authority because this is control-plane machinery; r3 because control_plane requires at least r3 and this is CI/harness authority, not production authority; production_effect none because the hook is registered nowhere, so merging changes no runtime behaviour and deploys nothing.",
+  "contract_digest": "84cf6fcfb57cfc5fcc2c3d929b359de7047483f8c55b29db67e6835e9878538d"
+}

@@ -127,6 +127,46 @@ export function toggleLevelOpen(open, level) {
   return next
 }
 
+// What the toast says after a claim is written.
+//
+// Pure and tested here rather than a template in JSX, because it is a claim
+// about what the app DID and the old version could be false. It printed the
+// number of rows SENT — "Added 40 words to review" — and the upsert uses
+// ignoreDuplicates, so a word already in the deck was counted as added. The
+// screen filters those out before building the claim, but from a snapshot taken
+// when it opened: a second device, a second tab, or a long-open page and the
+// number overstates.
+//
+// Calm and observational, per the product's voice: it says what happened, and
+// the skipped case says why rather than just being a smaller number.
+export function claimSummaryLine(result) {
+  // Destructured from a local rather than in the signature: a default parameter
+  // covers `undefined` and not `null`, and a spec named "never throws" should be
+  // true of both.
+  const { inserted = 0, skipped = 0 } = result || {}
+  const words = (n) => (n === 1 ? '1 word' : n + ' words')
+
+  if (inserted === 0 && skipped === 0) return 'Nothing to add'
+  if (inserted === 0) return words(skipped) + (skipped === 1 ? ' was' : ' were') + ' already in your deck'
+  if (skipped === 0) return 'Added ' + words(inserted) + ' to review'
+  return 'Added ' + words(inserted) + ' to review · ' + skipped + ' already in your deck'
+}
+
+// The whole toast, not just its sentence.
+//
+// The sentence being right was never the broken half: KnownWords passed the
+// STRING to toast(), which dispatches its argument verbatim, and <Toasts />
+// spreads it — so a string became {0:'A',1:'d',…}, `title` was undefined, and
+// the learner got an empty card. That had been true since the line was written,
+// so this screen's confirmation had never said anything at all. Returning the
+// payload from here is what makes the shape testable rather than a JSX detail.
+export function claimToast(result) {
+  // Destructured from a local, not in the signature: a default parameter covers
+  // undefined and not null, and claimSummaryLine already learned that lesson.
+  const { inserted = 0, skipped = 0, accent = null } = result || {}
+  return { kind: 'info', title: claimSummaryLine({ inserted, skipped }), accent }
+}
+
 function toSet(value) {
   if (value instanceof Set) return new Set(value)
   return new Set(value || [])

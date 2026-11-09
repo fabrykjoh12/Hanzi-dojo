@@ -14,7 +14,7 @@ import { isOnline } from './useOnline'
 import { enqueueStoryRead } from './syncQueue'
 import { track as trackEvent, trackOnce, EVENTS } from './analytics'
 import { setFeedbackStory } from './feedbackContext'
-import { addDictEntryToDeck } from './dictSearch'
+import { addDictEntryToDeck, dictAddToast } from './dictSearch'
 import { toast } from './toast'
 
 // READER_PREFS_KEY is the classic reader's prefs object, shared verbatim (from
@@ -156,13 +156,19 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
         const { error } = await supabase.from('story_reads').upsert({ user_id: session.user.id, story_id: story.id })
         if (!error) { if (onMarkRead) onMarkRead(story.id) }
       } else {
-        await enqueueStoryRead({ userId: session.user.id, storyId: story.id })
+        // Tagged so a progress reset — which deletes story_reads — can drop
+        // exactly this track's queued reads without touching another's.
+        await enqueueStoryRead({
+          userId: session.user.id, storyId: story.id,
+          language: track.language, system: track.system,
+        })
         if (onMarkRead) onMarkRead(story.id)
       }
       trackEvent(EVENTS.STORY_COMPLETED, { tier: story.tier, known_pct: readability.knownPct, story_id: story.id })
       if (firstMission) trackOnce(EVENTS.FIRST_STORY_COMPLETED, { known_pct: readability.knownPct })
     }
-  }, [isRead, session, story.id, story.tier, onMarkRead, stopPlay, firstMission, readability.knownPct])
+  }, [isRead, session, story.id, story.tier, onMarkRead, stopPlay, firstMission,
+    readability.knownPct, track.language, track.system])
 
   const advance = useCallback(() => { if (cur >= total - 1) finish(); else go(cur + 1) }, [cur, total, finish, go])
 
@@ -404,7 +410,7 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
     const ctx = sourceContextFor(vocab)
     const row = {
       user_id: session.user.id, vocab_id: vocab.id,
-      state: 'new', ease_factor: 2.5, learning_step: 0, due_at: new Date().toISOString(),
+      state: 'new', learning_step: 0, due_at: new Date().toISOString(),
       source_sentence: ctx.sentence,
       source_story_id: ctx.storyId, source_story_title: ctx.storyTitle, source_translation: ctx.english,
     }
@@ -435,8 +441,8 @@ export function useStoryReaderCore({ story, vocabMap, userCards, setUserCards, t
       await addDictEntryToDeck(supabase, entry.id, track.language, track.system)
       setDictSaved(prev => new Set(prev).add(entry.id))
       toast({ title: 'Saved to your deck', body: entry.simplified || entry.word || null, accent: theme.accentHex })
-    } catch {
-      toast({ title: 'Couldn’t save that word', accent: theme.accentHex })
+    } catch (e) {
+      toast(dictAddToast(e, theme.accentHex))
     } finally {
       dictSavingRef.current = false
       setDictSaving(false)

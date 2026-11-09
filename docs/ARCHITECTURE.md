@@ -147,7 +147,9 @@ story_questions                  -- migration 20260630010000; end-of-story compr
   options text[]                 -- 4 English answer choices
   correct_index int              -- 0-3, the correct option
   UNIQUE (story_id, question_number)
-  -- RLS: authenticated users can read; generator writes via the service key.
+  -- RLS: authenticated users can read a PUBLISHED story's questions, admins can
+  --      read all (20260907001000, committed and NOT YET APPLIED); generator
+  --      writes via the service key.
 
 story_unlocks                    -- migration 20260809090000; the chapter-reward loop
   user_id uuid REFERENCES profiles ON DELETE CASCADE
@@ -935,9 +937,16 @@ src/xp.js
   Used by Study (award), Home (Lv pill), Profile (account-level panel).
 
 src/homeCounts.js
-  getHomeCounts(userId, track, dailyNewCards) — loads vocabulary and cards for the
-  current level, computes newCount/learnCount/dueCount/easyCount/totalWords/
-  learnedCount/masteredCount/masteredPct. Called by App.jsx on every navigate().
+  getHomeCounts(userId, track, dailyNewCards) — computes newCount/learnCount/
+  dueCount/calibrationCount/easyCount/totalWords/learnedCount/masteredCount/
+  masteredPct. Called by App.jsx on every navigate().
+    Two scopes, deliberately. newCount and the level-progress numbers are the
+  CURRENT LEVEL's; dueCount and calibrationCount are the whole DECK's, because
+  that is what a session serves — a word saved from a story or the dictionary is
+  due even though it sits outside the level window.
+    calibrationCount is capped at CALIBRATION_SESSION_CAP (src/calibration.js),
+  so unlike dueCount it is the size of the next session's slice rather than a
+  backlog. See docs/METRICS.md.
 
 src/testLogic.js
   getTestStatus(userId, track) — returns masteredCount/totalWords/masteredPct/

@@ -4,6 +4,8 @@ import { fetchPagedResult } from './supabasePaging'
 import { getLevelLabel, getSystemLabel } from './utils'
 import { languageTheme } from './languageTheme'
 import { isWritingMatch, normalizeRomaji, hasKanji } from './writingMatch'
+import { shouldNudge } from './practiceSignal'
+import { NOT_AN_UNVERIFIED_CLAIM, PRIOR_KNOWLEDGE_COLUMNS } from './knowledgeState'
 import { useIsMobile } from './useIsMobile'
 import { toRomaji } from 'wanakana'
 import {
@@ -309,7 +311,10 @@ export default function Writing({ session, track, onBack }) {
           .order('id', { ascending: true })),
         fetchPagedResult(() => supabase
           .from('cards')
-          .select('vocab_id, is_easy, state, review_count')
+          // PRIOR_KNOWLEDGE_COLUMNS is not decoration: shouldNudge below reads
+          // prior_known_at and reps, and without them it read undefined, was
+          // always false, and the claim guard was dead code that looked present.
+          .select(['vocab_id', 'is_easy', 'state', 'review_count', ...PRIOR_KNOWLEDGE_COLUMNS].join(', '))
           .eq('user_id', session.user.id)
           .order('vocab_id', { ascending: true })),
         fetchPagedResult(() => supabase
@@ -449,12 +454,28 @@ export default function Writing({ session, track, onBack }) {
   // back into their real review queue (un-mastered + due now).
   const addToDueList = async () => {
     if (addedToDue || !current || !cardsByVocab[current.id]) return
+    // Not for an unverified prior-knowledge claim, and not silently either. A
+    // claim is never due, and its due_at holds the calibration-ready date
+    // priorKnowledge.spreadDueDates wrote — so "add to my due list" cannot be
+    // honoured for one: it would not queue a review, it would make the claim
+    // calibration-eligible months before the spread intended. Returning before
+    // setAddedToDue keeps the button from confirming something that did not
+    // happen — and that mattered more than it looks, because the server-side
+    // filter below makes the UPDATE affect zero rows and PostgREST answers a
+    // zero-row update with success, so nothing would have surfaced.
+    //
+    // Ideally the control would not be offered for a claim at all; that is a UI
+    // change and is left for one.
+    if (!shouldNudge(cardsByVocab[current.id])) return
     setAddedToDue(true)
     await supabase
       .from('cards')
       .update({ is_easy: false, due_at: new Date().toISOString() })
       .eq('user_id', session.user.id)
       .eq('vocab_id', current.id)
+      // Belt and braces: the local row decided above, but the query says the
+      // rule too, so a stale cardsByVocab cannot write to a claim.
+      .or(NOT_AN_UNVERIFIED_CLAIM)
   }
 
   const next = () => {

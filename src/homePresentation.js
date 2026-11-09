@@ -1,11 +1,33 @@
-export function homeQueueSummary(counts = {}) {
+export function homeQueueSummary(counts) {
+  // `counts = {}` would not have covered this: a default parameter applies to
+  // undefined and NOT to null, and the callers hand this straight through from
+  // state that starts out null on some screens.
+  counts = counts || {}
   const dueCount = counts.dueCount || 0
   const learnCount = counts.learnCount || 0
   const newCount = counts.newCount || 0
+  // Calibration checks are part of what a session serves, and they ride in the
+  // review pool (sessionPrep.js), so they belong in reviewCount rather than
+  // alongside it. Leaving them out is what let `clear` go true — "all caught
+  // up", primary action flipped to Read a story — while hundreds of claims
+  // waited, with calibration the only path that can ever observe them.
+  const calibrationCount = counts.calibrationCount || 0
   const failed = Boolean(counts.failed)
-  const reviewCount = dueCount + learnCount
+  const reviewCount = dueCount + learnCount + calibrationCount
   const totalReady = reviewCount + newCount
-  return { totalReady, reviewCount, newCount, clear: !failed && totalReady === 0, failed }
+  return { totalReady, reviewCount, newCount, calibrationCount, clear: !failed && totalReady === 0, failed }
+}
+
+// The number the desktop rail shows on Cards. It is the hero's total, and this
+// exists so it cannot be re-derived and drift: the rail used to add its own
+// three terms, calibration was added to the hero and not to it, and with only
+// claims ready the hero said "20 cards waiting" while the badge hid at zero —
+// the same "all caught up" lie, one component over.
+//
+// Hidden at zero is the rail's own rule, not this function's: "0" is a nag, and
+// a cleared queue should look cleared.
+export function waitingBadgeCount(counts) {
+  return homeQueueSummary(counts).totalReady
 }
 
 export function homeProgressPct(learned, totalWords) {

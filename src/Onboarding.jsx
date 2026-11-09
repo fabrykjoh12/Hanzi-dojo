@@ -8,6 +8,7 @@ import { PACING } from './priorKnowledge'
 import { seedClaim } from './priorKnowledgeSeed'
 import { fetchEarlierVocabIds } from './priorKnowledgeVocab'
 import { fetchPaged } from './supabasePaging'
+import { recordPriorSeedFailure } from './priorSeedNotice'
 import { readPreloginPrefs, clearPreloginPrefs, encouragementFor } from './prelogin'
 import { daysToWords } from './onboardingGoal'
 import { CATEGORIES_BY_LANGUAGE } from './storyTiers'
@@ -155,6 +156,13 @@ export default function Onboarding({ session, onComplete }) {
       // Best-effort: never block onboarding if the seed write fails. The fetch
       // is paged (priorKnowledgeVocab.js) — an HSK 6 placement covers 3,374
       // earlier words, far past PostgREST's 1000-row cap.
+      //
+      // Best-effort is not the same as silent, and it used to be. On failure
+      // the learner started at their placed level with NONE of the earlier
+      // words claimed, was never told, and had no way to know a retry existed —
+      // and the retry does exist: "Words you already know" can claim exactly
+      // the same set by hand. So the failure now says so, once, calmly, and
+      // says where to go. Still non-blocking: onboarding completes either way.
       if (level > 1) {
         try {
           const perDay = (PACING.find(p => p.key === claimPacing) || PACING[1]).perDay
@@ -164,6 +172,10 @@ export default function Onboarding({ session, onComplete }) {
           }
         } catch (seedErr) {
           console.error('prior-knowledge seed failed', seedErr)
+          // Recorded rather than announced: <Toasts /> is mounted in the app
+          // shell, which does not exist yet here, and a flag in React state
+          // would not survive a reload between this screen and that one.
+          await recordPriorSeedFailure()
         }
       }
 

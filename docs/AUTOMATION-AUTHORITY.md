@@ -187,6 +187,609 @@ request performs.
 Until that activation happens, treat "the required checks are green" as a
 statement about a commit, not about the merge result.
 
+## The fourth boundary: which paths a task contract may authorise
+
+Everything above is about a *branch*. This section is about a *task* — the
+sealed contracts in `.agent/tasks/`, and how much authority one of them may
+hand to the agent implementing it.
+
+A contract's `allowed_paths` is the scope of a piece of work. The danger is a
+task that quietly widens its own reach by naming a path that governs the
+harness itself: change `.claude/settings.json` and you change which tools run
+without a prompt, for every session afterwards. That is not a code change with
+a review; it is a change to who reviews.
+
+So paths fall into **three tiers**.
+
+### Tier 0 — the absolute floor
+
+`ALWAYS_FORBIDDEN` in `tools/verify-task-contracts.mjs`:
+
+```
+.agent/tasks/**   .agent/roles.json   .claude/settings.local.json   .git/**
+```
+
+No contract may name these, or anything inside them, or the bare root of one of
+the two subtrees, or anything hanging BELOW one of the two exact files
+(`.agent/roles.json/sub`, and the same path spelled `.../sub/**`), under any
+role, at any risk level, through any mechanism. One shape it may still name: an
+*ancestor of a tier root* (`.agent`, `.claude`), which authorises that one
+directory path and nothing beneath it — the paragraph below says exactly what
+that costs. There is no grant and no override
+— the validator rejects the contract, and mechanical review reports the diff
+independently of whatever the contract says. The two exact entries,
+`.agent/roles.json` and `.claude/settings.local.json`, are refused by name;
+verified against the validator rather than assumed.
+
+**The bare subtree root used to be an exception, and closing it is worth
+knowing about.** A `dir/**` entry does not cover its own root: `.git/**` does
+not match `.git`, and neither does the reverse. So a contract naming that bare
+subtree root — `.git`, `.agent/tasks` — was refused by nothing, at validation or
+at runtime, and in a git worktree `.git` is a regular file, so that was a real
+write rather than a curiosity. FAB-60 closed it in the canonical validator, in
+the runtime policy and in the review protocol at once, through one new question
+— `isSubtreeRoot` — asked directly where a concrete path is judged, and folded
+into `reachesTier` alongside the two containment tests where a contract entry
+is.
+
+**Below an exact floor file was the same defect one shape over**, and closing
+it needed a second question rather than the same one. `.agent/roles.json/sub`
+is related to `.agent/roles.json` by neither direction of `covers` and by
+neither direction of `isSubtreeRoot`, so a contract could name it and the guard
+would allow the write; only ENOTDIR from the kernel stopped it, because the
+parent is a regular file. That is the tree refusing, not the floor — the same
+footing this document declines to accept for the ancestor case — so
+`hangsBelow` now asks it structurally, in `reachesTier` where a contract entry
+is judged and as its own branch in each floor loop where a concrete path is.
+What remains open: an entry naming an ANCESTOR of a tier root, `.agent` above
+`.agent/tasks/**`. (At the level of the predicate the residual is any exact
+entry that is a strict ancestor of any tier entry, which for today's two lists
+denotes the same two paths — `.agent` and `.claude` — because every exact tier
+entry sits under a directory that also carries a `dir/**` sibling. Adding an
+exact tier entry somewhere new would separate the two descriptions, and this
+sentence is where to revisit them.) An exact entry authorises only itself, so the whole of the
+authority it adds is one directory path and nothing beneath it — that half is a
+property of the pattern semantics and is checkable. The other half, that writing
+a directory fails for being a directory, is an observation about the tree rather
+than something the guard enforces, and this document calls that "luck rather
+than containment" two sections down. It is recorded here on that footing: bounded
+by the first argument, not closed by the second.
+
+One naming rule falls out of the tests rather than the tiers: **`seal-guard` is
+a reserved filename prefix inside `.agent/tasks`**. The seal specs write a probe
+contract into the real directory and run the real CLI against it, and vitest
+runs spec files in parallel workers, so any spec that reads that directory can
+catch the probe mid-write. Both directory readers in `runtime-scope.test.mjs`
+exclude the prefix, because that file cannot know when the probe exists. Of the
+three `readdir` sites inside `task-contract.test.mjs`, one excludes it as well — it snapshots the committed
+set immediately before writing the probe, so a leftover from a crashed run would
+corrupt the snapshot — and the other two need not, since a file cannot race its
+own probe. A committed contract named `seal-guard-*.json` would drop out of the
+two parity sweeps in silence, and the count floor does not prevent it: the floor
+catches a contract renamed or deleted, not a new one added under the reserved
+name. Such a contract would still be VALIDATED — `task-contract.test.mjs` and
+the canonical CLI both read every `.json` in the directory — so what the
+reserved name costs is the runtime/validator parity check on that one contract,
+and the all-or-nothing seal snapshot that the filter at that third site also
+excludes it from; not its validation. This rule is what keeps the name free.
+
+These are the files that define what a task *is*
+(`.agent/tasks/**`, including its own `README.md`), who may own one
+(`.agent/roles.json`), the machine-local permission overlay
+(`.claude/settings.local.json`), and history itself (`.git/**`).
+
+The floor is why a task cannot re-seal itself: repairing a digest means writing
+`.agent/tasks/**`, and nothing authorises that.
+
+### Tier 1 — the protected control plane
+
+`PROTECTED_CONTROL_PLANE`:
+
+```
+.claude/settings.json   .claude/hooks/**
+```
+
+Two grants exist, and each reaches one part of the tier:
+
+| Grant | Reaches | Maintains |
+|---|---|---|
+| `runtime-policy-maintenance` | `.claude/settings.json` | the permission and hook *declarations* |
+| `runtime-hook-maintenance` | `.claude/hooks/**` | the hook *scripts* those declarations point at |
+
+Related work, but not the same authority. A task that writes a guard script has
+no business rewriting the permission allow-list, and a task that edits settings
+has no business rewriting the code a hook runs.
+
+**Between them the two grants cover the whole tier; neither covers it alone.**
+That distinction is the design, and it is what separates Tier 1 from Tier 0:
+every Tier 1 path is now authorizable by exactly one grant, so "protected" here
+means *governed*, not *unreachable* — while no single grant is a synonym for the
+tier, so a grant still has to name what it needs. Tier 0 remains the tier
+nothing can reach, including the bare roots of its own `dir/**` patterns since
+FAB-60 — the one shape still open is an *ancestor* of a tier root, `.agent`,
+recorded near the top of this document. When a third protected path arrives, it arrives with its own
+narrow grant; widening an existing grant to cover it would collapse that
+distinction and leave the grant/path check unable to fire.
+
+The alternative considered and rejected for the hook script: leave it in an
+ordinary Tier 2 file and point settings at it. That needs no grant — and it
+would let a task rewrite the very guard that constrains it.
+
+These *do* sometimes need to change — a runtime path guard has to be installed
+by somebody. But not by an ordinary task, and never by adding a line to
+`allowed_paths`. A Tier 1 path is unreachable through `allowed_paths` (the
+validator rejects it, including via a covering subtree like `.claude/**`) —
+including the bare root `.claude/hooks`, which `reachesTier` covers since
+FAB-60 even though neither direction of `covers` relates it to
+`.claude/hooks/**`, and excepting only an *ancestor* of a tier root — and
+reachable only through a dedicated, digest-covered `control_plane` declaration:
+
+```json
+"control_plane": {
+  "grant": "runtime-policy-maintenance",
+  "protected_paths": [".claude/settings.json"],
+  "justification": "installs the runtime path guard"
+}
+```
+
+A declaration is honoured only if **all** of it checks out:
+
+- `owner_role` is the role that owns the control plane — today `workflow-authority`,
+  and **derived** rather than hardcoded. `.agent/roles.json` is the one canonical
+  role source and the validator names no role id anywhere, so the holder is read
+  back out of the role model: the single role claiming the control plane in its
+  own `purpose` or `authority`. If that ever resolves to zero roles or to more
+  than one, no contract may hold a grant at all — could not establish is not
+  authorised.
+- `risk` is at least `r3`. This does not widen `r4`, which stays reserved for
+  direct production authority; the risk model already places control-plane
+  work at `r3`.
+- `grant` is one of a **closed** vocabulary — closed to the keys actually
+  written in the registry, checked with `hasOwnProperty` so `constructor` and
+  friends are not inherited grants — each mapping to its own part of the tier.
+  No single grant reaches every path in the tier, and a grant cannot authorise a
+  protected path outside its own mapping. That property is asserted by **reach**
+  rather than by counting paths: a grant mapping to one covering subtree could
+  list fewer paths than the tier holds and still reach all of them, so the spec
+  asks what each mapping *covers*.
+- Every protected path is inside Tier 1, outside Tier 0, and obeys the existing
+  decidable path grammar — an exact path or a `dir/**` subtree, never a
+  filename wildcard.
+- A `justification` is present, because a reviewer reading the contract should
+  not have to infer why the authority was needed.
+- No granted path is also in `forbidden_paths`. Mechanical review tests
+  forbidden paths before scope, so such a grant could never take effect — dead
+  authority is a mistake to correct, not to reconcile.
+
+The declaration is closed to exactly those three keys. A field the schema
+accepts but nothing reads would be sealed into the digest and invite its author
+to believe it constrained the grant.
+
+If any of that fails, the grant widens **nothing**. It is not partially
+honoured: `grantedProtectedPaths()` returns an empty list, the paths it named
+are still reported out of scope, and the contract itself is invalid. Fail
+closed, not fail partial — a grant nobody could validate is a grant nobody
+reviewed.
+
+### Tier 2 — everything else
+
+Ordinary paths, governed by `allowed_paths` and `forbidden_paths` exactly as
+before. Most work lives here, including `.claude/commands/**` and (today)
+`.claude/agents/**`.
+
+### The digest rule
+
+`control_plane` is an **optional binding field**, and that phrase is a general
+schema rule rather than a special case for this one field:
+
+- A **required** binding field is always folded into `contract_digest`.
+- An **optional** binding field is folded in **if and only if the key is
+  present** — by `hasOwnProperty`, so an explicit `null` counts as present and
+  moves the digest.
+
+This is what let the tier be added at all. Folding a new field in
+unconditionally would have re-sealed every contract already on disk, and
+repairing those digests means writing `.agent/tasks/**`, which is Tier 0. The
+schema would have been unextendable. A spec recomputes the digest of every
+contract in `.agent/tasks/` and asserts it is unchanged; a second one proves
+that adding, changing, widening or removing a grant does move it. So a grant
+cannot be added to a contract after it was sealed and reviewed.
+
+Any future optional binding field inherits this rule by being listed in
+`OPTIONAL_BINDING_FIELDS`. Nothing else needs to change.
+
+### What a grant still cannot do
+
+- **Reach Tier 0.** No grant maps there, and mechanical review reports a floor
+  path unconditionally, before scope is consulted.
+- **Edit its own contract.** Independently blocking, whatever the grant says.
+- **Escape its mapping.** The grant names a subset; the tier is not a keyword
+  that unlocks the rest of it.
+- **Take effect while the contract also forbids it.** A granted path that is
+  forbidden is rejected at validation, not silently ignored.
+- **Change anything at runtime.** This tier is a *rule*, checked when a contract
+  is validated and when a diff is reviewed. It is not a hook, a permission or a
+  sandbox, and it does not stop an agent from writing a file. See the honesty
+  note below.
+
+### What is deliberately not claimed here
+
+**`.claude/agents/**` is not in Tier 1 today.** Agent definitions carry real
+authority — a subagent's `tools:`/`disallowedTools:` list is platform-enforced
+and is currently the only enforcement primitive that was empirically found to
+hold — so they belong in this tier eventually. They are absent for a sequencing
+reason, not a safety judgment: `fresh-context-reviewer.json` is already sealed
+and merged with `.claude/agents/fresh-context-reviewer.md` legitimately in its
+`allowed_paths`, and adding the subtree to Tier 1 would retroactively invalidate
+that contract — which could only be repaired by writing `.agent/tasks/**`. Until
+that lifecycle question is settled, agent definitions are governed by the
+ordinary Tier 2 model, and nothing here should be read as protecting them.
+
+**The registry itself is an ordinary file.** `PROTECTED_CONTROL_PLANE` and the
+grant mapping live in `tools/verify-task-contracts.mjs`, which is Tier 2 — a
+task that owns the validator can, in one change, add a path to the tier *and*
+carry a grant naming it. `.agent/roles.json` is on the floor for the analogous
+reason one level up, and this residual is not closed the same way; what holds
+here is visibility rather than prevention. The tier, the mapping and the grant
+are all covered by `contract_digest` and all appear in the sealed diff, so the
+expansion is tamper-evident and a reviewer sees it as its own term. Treat a diff
+that widens the registry as a governance change, not a refactor.
+
+**`.agent/tasks/README.md` still lists `.claude/settings.json` under the
+always-forbidden floor.** It is stale as of this change, and it is inside Tier 0,
+so no task may correct it — the file can only move through root governance. The
+operational answer it gives is still right for `allowed_paths` (a task may never
+name that path there); what it now gets wrong is "never", since a grant can
+reach it. This document is the current source of truth for the tiers.
+
+**The tiers hold through validation and review, not through the runtime.** A
+cold fresh-session probe established that the tool-use guards declared in a
+project subagent's own frontmatter never execute in this managed runtime: zero
+guard events, zero registration, every path escape succeeded. Settings-level
+configuration is the remaining route, and `.claude/settings.json` is exactly
+why this tier exists —
+but that work is a separate, separately reviewed change. Today the tier tells
+you what a contract may *authorise*, and makes an unauthorised diff visible. It
+does not make one impossible.
+
+## The runtime guard: what exists, and what it does not yet do
+
+Everything above decides what a contract may *authorise*. This section is about
+a separate question — what an agent implementing a task can actually *do* while
+it works — and about being precise on how much of that is real today.
+
+### The arrangement
+
+Two trust domains. A **trusted driver** holds the shell, git, the test runner
+and the network. An **untrusted producer** — a subagent with a platform-enforced
+tool list containing no Bash, no process tool and no ability to spawn agents —
+does the implementing. A tool-use guard **will** run outside both and decide
+every producer write against the sealed contract bound to the session — once it
+is registered. It is written and proven but registered nowhere, so nothing in
+this section describes behaviour that happens today; the whole arrangement is
+described in the future tense deliberately, and "What is NOT claimed" below says
+so again where a reader is most likely to stop.
+
+The producer and the driver will be told apart structurally, not by trusting a
+name: a producer's tool call carries `agent_type`, and a driver's carries none.
+(Structurally in *that* sense only: producer-versus-driver is key-absence, which
+no name can forge. Which of the agent_type-carrying callers is then held to a
+contract *is* decided by name, against a list — see "Who the guard governs"
+below, and the Tier 2 residual that comes with it.)
+
+### Where the decision logic lives, and why
+
+```
+.claude/hooks/task-scope-guard.mjs    thin adapter: stdin -> policy -> deny
+        └── .claude/hooks/task-scope-policy.mjs    all the decisions
+                └── node: builtins only
+```
+
+Both files are **Tier 1**, reachable only through `runtime-hook-maintenance`.
+That placement is the point. An earlier draft put the decision module in
+`tools/` and imported it from the hook — which would have made the runtime
+authorization path depend on ordinary Tier 2 code that a task could itself be
+authorized to rewrite. That is the escalation the tier model exists to prevent,
+one layer down.
+
+The cost is a small duplicated copy of path, seal and grant semantics that
+`tools/verify-task-contracts.mjs` also implements. Parity specs hold the two to
+the same answer over every contract on disk and over generated path pairs, so
+drift fails a test rather than quietly producing two security models.
+
+### How a contract binds to a producer
+
+The launcher sets `HANZI_TASK_BINDING` on the process, carrying the contract id,
+its exact digest, and a path required to equal `.agent/tasks/<id>.json`. The
+guard re-reads that file and recomputes its seal on **every** decision, denying
+unless the recomputed digest matches both the file's own claim and the
+launcher's. As above, that is what the code does when it runs, not something
+happening in this repository today.
+
+There is no discovery of any kind — no directory scan, no newest-file
+heuristic, no inference from the prompt, cwd or branch, and no fallback when the
+binding is absent. Each of those would let the thing being governed influence
+which rules govern it.
+
+**Confidentiality is not the claim.** The binding may well be readable by
+anything that can read the environment. The property that matters is that the
+producer cannot *choose or mutate* it: it is set before the session exists, and
+a Bash-less producer has no tool that touches process environment. v1 is
+deliberately one bound contract per launcher session; running another task means
+starting another bound session.
+
+### Who the guard governs
+
+Not every subagent. The guard holds a caller to its contract when the session
+carries a binding, **or** when the caller is not one of a closed list of
+recognised helper agents — `general-purpose`, `Explore`, `Plan`, `claude`,
+`claude-code-guide`, `fresh-context-reviewer`, `statusline-setup`. A call with
+no `agent_type` at all is the trusted driver and is not held to any contract.
+
+The obvious rule — govern the agent named `task-producer` — is the one this
+deliberately avoids, because it fails in the wrong direction. `agent_type` is
+the frontmatter `name:` of the launched definition, not its filename: a
+definition in `renamed-file.md` declaring `name: inner-declared-name` emits
+exactly `inner-declared-name`, verified on Claude Code 2.1.259. Since
+`.claude/agents/**` is Tier 2, a name-equality rule would let a one-line edit to
+an ordinary file switch enforcement off silently. Stated as an exemption
+instead, an unrecognised name is governed rather than exempt, so that same
+rename produces *more* enforcement, not less.
+
+**What the exemption exempts, exactly.** One thing: the contract scope, which
+an unbound helper has no contract to be measured against. It exempts nothing
+from the tiers. Once the guard runs, a recognised helper in an unbound session
+would still be refused Tier 0 *and* Tier 1 **through the four write tools**, on
+the **resolved** path — so a symlink could not launder either.
+
+A second qualifier, smaller and easy to miss: resolution follows **symlinks**,
+because that is what `realpath` does. A **hard link** has nothing to resolve — a
+pre-existing hard link at an ordinary Tier 2 name, pointing at a protected
+inode, resolves to its own in-scope name and passes both tier checks. Making one
+needs a shell, so it is inside the concession below rather than beside it, but
+"reaches ordinary Tier 2 paths and nothing else" is false as an absolute and is
+hedged accordingly. The governed path has the same property.
+
+A third, and then the list is closed for what this repository can establish.
+**Path comparison is byte-exact and case-sensitive.** That is right on Linux,
+where CI runs and where `.GIT` and `.git` are different files. On a
+case-insensitive volume the tier checks would depend on whether `realpath`
+hands back the canonical on-disk spelling — which it does on some such
+filesystems and not others, and which nothing here establishes either way. So
+this is an untested platform assumption rather than a demonstrated escape, and
+it is recorded as one: the protected module states it too, and registration
+should either normalise case or restate the assumption for the platforms it
+covers.
+
+Those three qualifiers are the whole of the claim, and the hard-link one is the
+same the producer carries below. This guard is an allowlist over `Write`, `Edit`, `MultiEdit` and
+`NotebookEdit`; a shell goes straight past it. The producer is contained
+because its definition gives it no shell and a spec pins that. Of the exempted
+helpers, only `fresh-context-reviewer` has a definition in this repository at
+all — the rest are platform agents whose tool lists nothing here constrains,
+and at least one of them is dispatched with a shell by our own skills. **So a
+recognised helper can write `.claude/hooks/**` — this guard's own module —
+without this guard ever seeing the call.** The tier checks are worth the
+caller's tool list, exactly as the producer's case is.
+
+Do not read the tier checks as containment of helper agents, then. They are
+containment of one class of mistake: a helper reaching a protected path through
+the ordinary file tools, which is how it would happen by accident. A helper
+that means to get past them can.
+
+**A residual in the tier patterns, found while writing the above — since
+closed.** `.git/**` does not cover `.git` itself — the subtree test is a prefix
+match on `.git/` — and neither tier carries an exact entry for its own subtree
+roots. The exemption compensated for that in its own branch; the *governed* path
+did not, so a contract naming `.git` in ordinary `allowed_paths` was accepted by
+`npm run verify:tasks` and authorised the write. In a git worktree `.git` is a
+regular file, so it was not theoretical. FAB-60 closed it at every refusal site
+in both modules and in the review protocol's diff scan; what remains nameable is
+the ancestor case, set out at the top of this document.
+
+**It was not only the floor.** `.claude/hooks` behaved the same way — a Tier 1
+subtree root in ordinary `allowed_paths` raised no violation and was matched
+exactly by the scope test, with no grant anywhere. `.claude/hooks` is a
+directory in every checkout anyone has run, so the write failed for that reason
+rather than because the guard stopped it: luck rather than containment. It was a
+property of the pattern semantics rather than of the exemption, and the
+canonical validator had the same shape, so fixing it meant fixing both halves in
+one change. FAB-60 did that. Two spellings, because two different questions are being
+asked: `reachesTier` backs the CONTRACT tests — what an `allowed_paths` or
+`protected_paths` entry may name — in `tools/verify-task-contracts.mjs` and in
+`.claude/hooks/task-scope-policy.mjs`; and `isSubtreeRoot` is asked directly
+where a concrete path is being judged rather than a pattern: all three floor
+loops in `decide()` — lexical, the exempt branch's resolved loop, and the
+producer path's resolved loop — its Tier 1 loop, and both scans in
+`tools/review-protocol.mjs`. `hangsBelow` rides alongside it in `reachesTier`
+and in the four `decide()` loops, each as its own branch with its own sentence,
+because "below `.agent/roles.json`" and "the root of `.agent/tasks/**`" are two
+different facts about a path and one message cannot report both honestly. The
+review-protocol scans do not ask it, and the reason is not that the shape cannot
+appear there: a commit that replaces the blob `.agent/roles.json` with a tree
+makes `.agent/roles.json/sub` a perfectly ordinary added path in
+`git diff --name-only`. It is contained anyway, and for a reason worth stating
+rather than assuming — such a diff must also DELETE `.agent/roles.json`, and the
+exact-entry test (`p === floorPath`) catches that path. The Tier 1 shape
+(`.claude/settings.json/x`) is reported too, but as a plain `path-compliance`
+finding rather than `hidden-authority-expansion`, because none of the three
+questions that scan asks relates it to the tier. A parity spec drives
+the two copies of the predicate over the same pairs, so they cannot drift.
+
+**One more thing the exemption does not exempt, and it will be felt.** The
+resolution itself. A helper's target has to resolve inside the repository before
+either tier is checked, so an unresolvable one is denied — and that includes the
+ordinary case of writing a file into a directory that does not exist yet, which
+`Write` would otherwise create. `src/no/such/dir/file.js` is refused for a
+helper exactly as it is for a producer. That is the price of resolving before
+allowing, and resolving before allowing is what closes the symlink escape; the
+two cannot be separated. Registration should expect it rather than discover it.
+
+As everywhere in this section, that is also what the code decides when it runs
+rather than something in force today — nothing registers the guard, so today
+`.claude/hooks/**` is writable by anything at all.
+
+That resolution is done by the exemption itself rather than inherited. The
+lexical floor check upstream sees only the spelling it was handed, and the
+authoritative resolved check sits downstream of the exemption, where it never
+runs for this caller. An earlier draft of this change relied on the upstream
+check alone, and `src/door/config` with `src/door` symlinked to `.git` went
+through — caught in review, closed, and pinned by a spec that asserts the deny
+names the resolved path rather than the spelling.
+
+Two consequences worth stating plainly:
+
+- **A binding overrides the exemption.** Once a session is bound to a contract,
+  every subagent in it is held to that contract, helpers included — a helper
+  spawned inside a bound session is doing that task's work. This is a decision,
+  not a derivation; the opposite is defensible.
+- **A new helper agent is denied until it is listed.** That is the intended
+  direction: a loud, cheap failure rather than a silent exemption.
+
+One name on the list is not a platform built-in: `fresh-context-reviewer` is a
+repository-defined Tier 2 definition like the producer's. It holds no write
+tool, so it never reaches the branch the list guards.
+
+**An `agent_type` that is present but is not a usable name would be denied
+rather than read as the driver.** The driver is identified by the key being
+*absent*, which is what a real main-thread call sends; `null` is treated the
+same as absent, deliberately, because no observed runtime sends it and refusing
+the trusted driver on a runtime that did would be the worse failure. An array,
+object, number or empty string is a malformed event and denies — the guard does
+not guess at events it cannot read, and a hook event comes from the runtime, so
+this is robustness rather than a boundary the producer could push on.
+
+**The residual this does not close.** `agent_type` originates in a Tier 2 file,
+so an edit that renames the producer *to* one of the recognised helper names
+would exempt it — but only in an *unbound* session, since the exemption is
+conditional on no binding being present. How much comfort that is depends
+entirely on the launcher always binding a producer session, and no launcher
+exists in this repository yet to hold to it: nothing here sets
+`HANZI_TASK_BINDING`. Treat the mitigation as a property of a launcher still to
+be written, not one already in force. That is not a new weakness: the same edit could give the
+producer Bash, which defeats the guard outright — see the tool-list dependency
+below. A spec pins the policy's constant to the name the producer definition
+declares, so drift between them fails CI; the tier itself is what would have to
+change to close the residual, and that waits on the contract-lifecycle work.
+
+### What is proven, and what is merely written down
+
+Proven by unit and adversarial specs against a real temporary repository:
+
+- Tier 0 is checked **before the binding is parsed** — so a floor write is
+  refused even in a session with no binding at all. It is not the first gate,
+  though: four denies run ahead of it. Two are about the event and the caller —
+  an event that is not an object, and an `agent_type` present but not a usable
+  name — and two are about the path itself: a write carrying no path, and one
+  carrying a path that is not a string. Each denies on its own reason, so a
+  floor write by such a caller is refused for *that* reason rather than for the
+  floor. It is refused either way, which is the property that matters; the
+  ordering only decides which sentence the deny carries.
+- Every invalid state denies **for a governed caller** — a producer, or any
+  agent_type the exemption list does not recognise, or any caller *carrying an
+  agent_type* once a binding is present (never the driver on any of these —
+  except a malformed event, which is refused before the caller is even read, so
+  it denies for everyone): missing or malformed binding, a malformed hook event,
+  missing, malformed or unsealed contract, id/path/filename mismatch, stale
+  seal, digest mismatch, bad path grammar, invalid grant, out-of-scope path,
+  unresolvable realpath. The qualifier is load-bearing and new: a *recognised
+  helper in an unbound session* is allowed rather than denied on a missing
+  binding, which is the whole point of "Who the guard governs" above.
+- **A contract that fails any of the guard's checks authorises nothing at all**
+  — not "loses the grant and carries on with its ordinary paths". The sharpest
+  case is `.claude/settings.json` sitting in ordinary `allowed_paths`: that
+  would otherwise hand a producer the control plane with no grant whatsoever.
+  What the guard checks, before any scope is consulted: path shapes and grammar
+  for `allowed_paths` and `forbidden_paths`, no Tier 0 and no Tier 1 reachable
+  through `allowed_paths` — including a bare subtree root, which `reachesTier`
+  relates to its own `dir/**` pattern although `covers` does not — and for a
+  grant its closed key set, owning role, risk
+  floor, mapping and tier containment, and no overlap with `forbidden_paths`.
+  Any one of those denies the whole decision. "Invalid grant" is measured
+  against the canonical rules rather than a subset: the owning role and the `r3`
+  floor are checked as well as the shape, so a grant the validator refuses
+  grants nothing at runtime either. Specs assert that over deliberately invalid
+  contracts, because a parity check that only sees valid ones agrees on every
+  input it will ever get.
+
+  **That is narrower than the canonical validator, deliberately and stated so.**
+  `tools/verify-task-contracts.mjs` rejects a good deal more — **including**, and
+  not limited to, an unknown top-level field, a missing required field, a
+  malformed id, an unknown `owner_role`, `risk` or `production_effect`, an empty
+  required array, an allowed path lying entirely inside a forbidden one, an
+  unresolved dependency, and a verification command naming no npm script. That
+  list is illustrative, not a specification: the guard does not re-implement
+  those rules and does not track them, so treat the validator as the authority
+  on contract validity and this section as an account of what the *runtime*
+  checks.
+
+  What makes the gap safe is not the list but the shape of it: none of those
+  rules is a widening vector. Every route by which a contract could reach beyond
+  its own ordinary paths — Tier 0 or Tier 1 in `allowed_paths`, a bad path
+  spelling, any malformed or unauthorised grant — is checked above, the bare
+  subtree root included since FAB-60 — and the granted set is at exact parity with
+  the validator. A contract failing only a
+  validator-only rule is refused by `npm run verify:tasks` and by CI, and would
+  still authorise its own ordinary paths at runtime. That asymmetry is why the
+  parity specs assert containment rather than equality.
+- **The adapter fails closed before the policy exists.** The policy is loaded
+  inside the caught path, not as a top-level import: a static import throws
+  where no catch can reach it, Node exits non-zero, and only exit code 2 blocks
+  a tool call — so a missing or broken policy module would have failed *open*.
+  Proven by specs that spawn the real adapter and feed it real stdin, including
+  a missing policy, an unparseable one, and one that throws.
+
+- **The symlink escape is closed, in both its forms.** A real symlink inside an
+  in-scope directory pointing out of it is denied, because the guard resolves
+  the target with `realpath` before matching. So is the harder case: a symlink
+  whose target does **not** exist. `realpath` fails identically for that and for
+  an ordinary new file, and resolving through the parent — which is right for
+  the new file — would hand back the link's own in-scope path and allow a write
+  that follows the link anywhere, including into Tier 0. The guard `lstat`s the
+  final component to tell the two apart and denies the dangling link. This matters: a cold probe on Claude Code 2.1.257,
+  revalidated on 2.1.258, showed the runtime hands the hook the **unresolved**
+  path, so a textual prefix check is bypassable.
+- A valid in-scope write succeeds, including a new file whose parent resolves
+  inside scope — the guard is not deny-all.
+
+### What is NOT claimed
+
+**The hook is intentionally inert.** Nothing registers it in
+`.claude/settings.json`; that is a separate change under `runtime-policy-maintenance`.
+So Tier 0 is an early branch of *protected hook logic that has been proven in
+tests* — four event- and path-shape denies precede it, as above — it is **not** globally enforced at runtime, and this change does not
+make it so. The **static Tier-0 deny rules** arrive with registration too; note
+that only `Edit(path)` and `Read(path)` rules are consulted, since `Write(path)`
+rules are accepted and silently never checked.
+
+**`disableAllHooks` remains a trusted-launcher residual.** A launcher passing
+`--settings '{"disableAllHooks":true}'` silences the hook completely, and
+project settings **cannot** pin it back — verified empirically. It is out of the
+producer's reach only because it is a process-launch flag and the producer has
+no shell. Static deny rules survive it, which is why they are the Tier-0
+backstop once registered.
+
+**The guard only sees four write tools, so it rests on the producer's tool
+list.** It is an allowlist over `Write`, `Edit`, `MultiEdit` and `NotebookEdit`;
+everything else, Bash included, it passes through untouched as none of its
+business. That is correct given a producer with no shell — but it means editing
+the Tier 2 producer definition to add Bash or an MCP write tool does not merely
+falsify the "no Bash" sentence, it defeats the guard entirely. The two halves
+compose into one requirement: the guard is worth what the producer's tool list
+is worth.
+
+**The producer definition is not protected.** `.claude/agents/**` is Tier 2. The
+platform enforces the `tools:` list of whatever definition is launched, so a
+launched producer really has no Bash — but the definition file itself can be
+modified by any task authorized to write it. Moving it into Tier 1 waits on the
+contract-lifecycle work.
+
+**The guard does not self-govern hook maintenance.** A task holding
+`runtime-hook-maintenance` can rewrite the very guard that would constrain it, so
+running such a task under the guard proves nothing about that task. Hook and
+control-plane maintenance remain a **trusted control-plane workflow**, reviewed
+by people, not a case the mechanism secures.
+
 ## What each boundary actually holds
 
 So, precisely:
@@ -196,6 +799,19 @@ So, precisely:
 - A branch **can still merge a stale base into `main`**, because the required
   checks are enforced loosely. The integration protocol detects it; the strict
   policy is what will prevent it.
+- A task contract **can no longer authorise the control plane by accident,
+  with one exception.** Tier 0 is unauthorisable, Tier 1 needs an explicit
+  digest-covered grant that a reviewer can see, and a malformed grant widens
+  nothing. A *bare subtree root* (`.git`, `.agent/tasks`, `.claude/hooks`) used
+  to slip through both, because neither direction of the pattern test relates a
+  root to its own `dir/**`; FAB-60 closed that. What is still worth an eye when
+  reading a contract's `allowed_paths` is an *ancestor* of a tier root — `.agent`
+  — which authorises that one directory path and nothing under it. This is a rule
+  checked at validation and review time — it is not a runtime restraint.
+- An untrusted producer **is not yet constrained at runtime**, because the
+  guard that would constrain it is deliberately not registered. What exists is
+  proven decision logic in the protected tier, waiting on a separate activation
+  change.
 - A stale branch **can still mutate the roadmap Discord message**, because its
   old workflow reads `DISCORD_ROADMAP_WEBHOOK` and that secret is still
   repository-scoped. The `environment:` declaration does nothing until the
