@@ -201,7 +201,11 @@ describe('a wrong answer on the level test', () => {
     // the scheduler reads, a card created from the level test would be graded
     // from a different starting shape than the same word graded in Study.
     const prep = srcFile('./sessionPrep.js')
-    const block = prep.slice(prep.indexOf('const newItems'), prep.indexOf('// Prior-knowledge checks'))
+    // The curriculum new-card shape. (Saved words keep their real row, so
+    // they are not built here — see pendingSavedCards.)
+    const start = prep.indexOf('const curriculumNew')
+    expect(start, 'sessionPrep curriculum new-card block').toBeGreaterThan(-1)
+    const block = prep.slice(start, prep.indexOf('// Prior-knowledge checks'))
     // Names AND values. Comparing key names alone said only that the two
     // objects have the same shape — sessionPrep could change learning_step to 1
     // and a card created by the level test would still start from 0, which the

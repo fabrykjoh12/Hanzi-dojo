@@ -2,10 +2,10 @@ import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { fetchPagedResult } from './supabasePaging'
 import { countMastery } from './mastery'
-import { isPriorKnown, isLearned, isMastered } from './knowledgeState'
+import { isLearned, isMastered } from './knowledgeState'
 import { studyFloorLevel } from './levelScope'
 import { endOfLocalDay } from './srs'
-import { dueLearningCards, dueReviewCards, weakCards } from './studyAvailability'
+import { dueLearningCards, dueReviewCards, weakCards, pendingSavedCards, introducedOn } from './studyAvailability'
 import { reviewForecast } from './reviewForecast'
 import { studyRhythm, dateKey } from './studyRhythm'
 import { countDueGrammar } from './grammarReview'
@@ -68,13 +68,16 @@ export async function getHomeCounts(userId, track, dailyNewCards) {
   const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
   // Claims excluded: a placement claim writes hundreds of rows at once, and
   // counting them here zeroed the learner's daily new-card allowance on day one.
+  // Saved-but-unstudied rows don't count either — see introducedOn.
   const introducedToday = (cards || [])
-    .filter(c => !isPriorKnown(c) && new Date(c.created_at) >= startOfToday && vocabIds.has(c.vocab_id)).length
+    .filter(c => introducedOn(c, startOfToday) && vocabIds.has(c.vocab_id)).length
   const remainingNew = Math.max(0, dailyNewCards - introducedToday)
 
   const startedVocabIds = new Set((cards || []).map(c => c.vocab_id))
+  // Saved words are served first from the same slots (sessionPrep.js), so
+  // they are part of the promise too — deck-wide, like the session serves them.
   const newCount = Math.min(
-    (vocab || []).filter(v => !startedVocabIds.has(v.id)).length,
+    pendingSavedCards(cards).length + (vocab || []).filter(v => !startedVocabIds.has(v.id)).length,
     remainingNew
   )
 

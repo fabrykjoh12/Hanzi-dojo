@@ -26,6 +26,43 @@
 // derived from vocabulary rather than from cards.
 
 import { isCardDue } from './srs'
+import { isPriorKnown } from './knowledgeState'
+
+// Words the learner SAVED — from a story, the dictionary, the Words list, the
+// Analyzer, a chat mission — and has not studied yet: a `new` row that no
+// grade has ever touched, and not a prior-knowledge claim (claims are inert by
+// design and are worked off through calibration checks instead).
+//
+// These rows used to be stranded. A session introduces new words from
+// vocabulary the learner has NO card for, and only serves rows that are
+// learning/relearning/review — so a saved word was neither "new" (its row
+// exists) nor "due" (it isn't a review), and was never shown at all. Measured
+// on production 2026-11-09: 88 such cards across 6 learners, the oldest from
+// July. The save button said "In your deck"; the deck never dealt it.
+//
+// They now lead the session's new-card slots, oldest save first, inside the
+// same daily new-card allowance as curriculum words.
+export function pendingSavedCards(deck) {
+  return (deck || [])
+    .filter(c => c && c.state === 'new' && !(c.reps >= 1) && !isPriorKnown(c))
+    .slice()
+    .sort((a, b) => {
+      const ta = new Date(a.created_at || 0).getTime()
+      const tb = new Date(b.created_at || 0).getTime()
+      if (ta !== tb) return ta - tb
+      return String(a.vocab_id).localeCompare(String(b.vocab_id))
+    })
+}
+
+// Does this card use up one of TODAY's new-word slots? A word first studied
+// today does. A saved-but-unstudied row does not — it has not been introduced
+// yet, and counting it would let one "Add all" in the Analyzer empty the day's
+// allowance while the session served none of those words. Claims never do.
+export function introducedOn(card, startOfDay) {
+  if (!card || isPriorKnown(card)) return false
+  if (card.state === 'new' && !(card.reps >= 1)) return false
+  return new Date(card.created_at) >= startOfDay
+}
 
 // Lapsed at least twice and not yet mastered — the cleanup-drill pool.
 const WEAK_MIN_LAPSES = 2

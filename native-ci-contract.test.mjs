@@ -432,3 +432,30 @@ describe('the Android release build is ref-scoped', () => {
     expect(on).not.toContain('pull_request')
   })
 })
+
+// Audit HD-AUD-004 / HD-AUD-005 (2026-11-09). The store lanes built the
+// WEBSITE bundle (build:public), so the apps loaded Google Fonts on every
+// launch while /privacy said they never contact Google — and verify:native
+// proved a bundle that never shipped. The Android lane also had no Supabase
+// config, so its bundle would have opened on "Site can't start".
+describe('the store lanes ship the native bundle', () => {
+  const IOS = readFileSync('.github/workflows/ios-testflight.yml', 'utf8')
+  const lanes = [['ios-testflight.yml', IOS], ['android-build.yml', ANDROID]]
+
+  for (const [name, text] of lanes) {
+    it(name + ' builds with build:native, never build:public', () => {
+      expect(executable(text)).toContain('npm run build:native')
+      expect(executable(text)).not.toContain('npm run build:public')
+    })
+
+    it(name + ' refuses a bundle that still loads Google Fonts', () => {
+      expect(executable(text)).toMatch(/fonts\\\.\(googleapis\|gstatic\)\\\.com.*dist\/client\/index\.html/)
+    })
+
+    it(name + ' builds with the Supabase config and proves it reached the bundle', () => {
+      expect(executable(text)).toContain('VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}')
+      expect(executable(text)).toContain('VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}')
+      expect(executable(text)).toContain('grep -rqF "$VITE_SUPABASE_URL" dist/client/assets')
+    })
+  }
+})

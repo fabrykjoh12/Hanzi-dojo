@@ -1,7 +1,7 @@
 import { useState, useEffect, useLayoutEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { isOnline } from './useOnline'
-import { enqueueGrade, gradeCardWrite, nextActivityCounts, newOpId } from './syncQueue'
+import { enqueueGrade, gradeCardWrite, nextActivityCounts, newOpId, serverCardId } from './syncQueue'
 import { outboxDelete } from './offline'
 import { getTrackCards } from './data'
 import { studyFloorLevel } from './levelScope'
@@ -804,7 +804,8 @@ export default function Study({ session, profile, track, mode = 'review', onBack
         language: track.language,
         system: track.system,
         vocabId: card.vocab_id,
-        cardId: card.id || null,
+        // A local id (second offline grade of a new card) is device-only.
+        cardId: serverCardId(card.id),
         updates: res.updates,
         log,
         day: todayStr(),
