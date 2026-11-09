@@ -314,6 +314,24 @@ export const HARD_CHECKS = [
       .filter(t => t.source_type === 'vocabulary' && t.status === 'ready' && blank(t.storage_path))
       .map(t => ({ id: t.id, detail: 'tts_audio ' + t.id + ' ready with no storage_path' })),
   },
+  {
+    id: 'audio-path-resolves',
+    describe: 'every audio_path a curriculum row carries names a stored file',
+    // FAB-65. A word-list re-seed once left 4,491 of 4,498 HSK 3-6 paths naming
+    // files nobody wrote, and nothing noticed for months: every screen reads a
+    // non-null path as playable, so the words went silent without an error.
+    // 20261028090000 nulled the last 3,323, which is what lets this be HARD —
+    // the count is zero, so any dead path now is a new one.
+    //
+    // A NULL path is not a violation: that is a word with no recording yet,
+    // which is `no-audio`'s directional count, not a broken reference.
+    collect: ({ vocabulary, audioObjects }) => {
+      if (!vocabulary || !audioObjects) return []
+      return vocabulary
+        .filter(row => row.audio_path && !audioObjects.has(row.audio_path))
+        .map(row => ({ id: row.id, detail: 'L' + row.level + ' ' + row.word + ': ' + row.audio_path }))
+    },
+  },
 ]
 
 export const DIRECTIONAL_CHECKS = [

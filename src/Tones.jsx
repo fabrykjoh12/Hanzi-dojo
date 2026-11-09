@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from './supabase'
 import { fetchPagedSafe } from './supabasePaging'
-import { getLevelLabel, getSystemLabel, shuffle, getAudioUrl, playAudioEl } from './utils'
+import { getLevelLabel, getSystemLabel, shuffle, playAudioEl } from './utils'
 import { PrimaryButton, SecondaryButton } from './ui'
 import { useIsMobile } from './useIsMobile'
 import { cleanMeaning } from './cleanMeaning'
 import { markWordDue } from './practiceSignal'
+import { loadTtsAudio, flashcardAudio } from './ttsAudio'
+import { playableWords } from './listenQuiz'
 import {
   ArrowLeft, Volume2, Music2, Check, X, RotateCcw, CheckCircle2, Sparkles,
 } from 'lucide-react'
@@ -104,11 +106,18 @@ export default function Tones({ session, profile, track, onBack }) {
       .eq('level', track.current_level)
       .eq('is_active', true)
       .order('id', { ascending: true }))
-    const single = (vocab || [])
+    // A tone question is answered by ear, so a word the app cannot play is
+    // unanswerable, not hard. Same playability rule as Listen (listenQuiz.js):
+    // a generated clip first, then the stored file.
+    const rows = vocab || []
+    try { await loadTtsAudio('vocabulary', rows.map(v => v.id)) } catch { /* stored files still play */ }
+    const heard = playableWords(rows, v => flashcardAudio(v).word)
+      .map(v => ({ ...v, audioUrl: flashcardAudio(v).word }))
+    const single = heard
       .filter(v => isSingleHanzi(v.word) && v.reading)
       .map(v => ({ ...v, kind: 'single', answer: String(toneOf(v.reading)) }))
       .filter(v => v.answer !== '0')
-    const pairs = (vocab || [])
+    const pairs = heard
       .filter(v => isTwoHanzi(v.word) && v.reading)
       .map(v => ({ ...v, kind: 'pair', answer: pairTones(v.reading) }))
       .filter(v => v.answer)
@@ -142,8 +151,7 @@ export default function Tones({ session, profile, track, onBack }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  function playAudio(path) {
-    const url = getAudioUrl(path)
+  function playAudio(url) {
     if (!url) return
     // One reused element (required by playAudioEl's iOS replay caching).
     if (!audioRef.current) audioRef.current = new Audio()
@@ -154,7 +162,7 @@ export default function Tones({ session, profile, track, onBack }) {
   const q = questions[idx]
 
   useEffect(() => {
-    if (!loading && q && picked === null) playAudio(q.audio_path)
+    if (!loading && q && picked === null) playAudio(q.audioUrl)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [idx, loading])
 
@@ -223,7 +231,7 @@ export default function Tones({ session, profile, track, onBack }) {
             <Music2 size={30} strokeWidth={1.8} color={ACCENT} style={{ marginBottom: '14px' }} />
             <h1 style={{ fontSize: '22px', fontWeight: 750, color: 'var(--text)', marginBottom: '8px' }}>No tone-drill words here</h1>
             <p style={{ color: 'var(--text-muted)', fontSize: '14px', lineHeight: 1.6, marginBottom: '24px' }}>
-              This level has no suitable words to drill tones with yet.
+              This level has no words with audio to drill tones with yet.
             </p>
             <PrimaryButton onClick={onBack} icon={ArrowLeft}>Back home</PrimaryButton>
           </div>
@@ -325,7 +333,7 @@ export default function Tones({ session, profile, track, onBack }) {
           {answered && (
             <div style={{ fontSize: '20px', color: ACCENT, fontWeight: 650, marginTop: '6px' }}>{q.reading}</div>
           )}
-          <button onClick={() => playAudio(q.audio_path)} aria-label="Replay audio" style={{
+          <button onClick={() => playAudio(q.audioUrl)} aria-label="Replay audio" style={{
             marginTop: '14px', display: 'inline-flex', alignItems: 'center', gap: '8px',
             height: '42px', padding: '0 16px', borderRadius: '12px',
             border: '1px solid var(--border)', background: 'var(--surface)', color: 'var(--text-muted)',
