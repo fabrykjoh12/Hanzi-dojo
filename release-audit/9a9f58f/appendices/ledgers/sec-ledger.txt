@@ -1,0 +1,184 @@
+.env.e2e | reviewed-skim | none
+.env.example | reviewed-skim | none
+.env.test | reviewed-skim | none
+.github/needs-testing.ids.json | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+.github/roadmap-message.id | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+.github/scripts/asc-signing-assets.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+.github/scripts/asc-signing-check.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+.github/scripts/roadmap-render.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+.github/scripts/roadmap-sync.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+.github/workflows/android-build.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/authored-insert.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/ci.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/content-utils.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/discord-notify.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/e2e.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/gate3-apply.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/gate3-prepare.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/ios-signing-check.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/ios-testflight.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/llm-bench.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/native.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/needs-testing-sync.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/regen-content.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/roadmap-live-sync.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/send-reminders.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/story-batch.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/story-pilot.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/visual-baseline.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+.github/workflows/vocab-complete.yml | reviewed-skim (triggers/permissions/actions/${{}} interpolation grep) | SEC-13
+db/schema.ts | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+drizzle.config.ts | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+drizzle/0000_faulty_hitman.sql | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+drizzle/0001_serious_ravenous.sql | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+drizzle/0002_curious_alex_power.sql | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+drizzle/meta/0000_snapshot.json | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+drizzle/meta/0001_snapshot.json | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+drizzle/meta/0002_snapshot.json | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+drizzle/meta/_journal.json | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+ops/README-gate3-snapshot-key.md | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+ops/gate3-snapshot-recipient.asc | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+ops/leakGuard.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+ops/run-guarded.sh | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/App.jsx | reviewed-skim | SEC-03,SEC-08
+src/Auth.jsx | reviewed-skim | SEC-05
+src/CreativeMode.jsx | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/Dashboard.jsx | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/Dev.jsx | reviewed-skim | none
+src/DojoHQ.css | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/DojoHQ.jsx | reviewed-skim | SEC-01
+src/DojoHQ2.jsx | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/Feedback.jsx | reviewed-skim | SEC-06
+src/Landing.jsx | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/NativeShellBridge.jsx | reviewed-full | SEC-02
+src/PasswordReset.jsx | reviewed-skim | SEC-05
+src/Profile.jsx | reviewed-skim | SEC-03
+src/TrustPages.jsx | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/accountDeletion.js | reviewed-full | SEC-03
+src/accountDeletion.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/analytics.js | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/analytics.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/authValidation.js | reviewed-skim | SEC-05
+src/authValidation.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/authoredStories.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/creativeMode.js | reviewed-skim | SEC-08
+src/creativeMode.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/dashboardMetrics.js | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/dashboardMetrics.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/devTools.js | reviewed-full | SEC-08
+src/devTools.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/dojoHQ2Client.js | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/errorMonitor.js | reviewed-skim | none
+src/errorMonitor.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/externalLink.js | reviewed-full | none
+src/externalLink.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/feedbackContext.js | reviewed-skim | none
+src/feedbackContext.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/hq-main.jsx | reviewed-skim | none
+src/main.jsx | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/nativeAuth.js | reviewed-full | none
+src/nativeAuth.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/nativeShell.js | reviewed-full | SEC-02
+src/nativeShell.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/prelogin.js | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/prelogin.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/push.js | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/routes.js | reviewed-skim | SEC-02
+src/routes.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/supabase.js | reviewed-full | none
+src/supabaseErrors.js | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/supabaseErrors.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+src/supabasePaging.js | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+src/supabasePaging.test.js | excluded(test file; not security-relevant beyond module it covers) | none
+supabase/migrations/20260605213000_add_progress_reset_function.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260605224500_add_writing_stats.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260605225000_update_progress_reset_for_writing_stats.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260605230000_add_writing_streak_multiplier.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260605231000_add_vocabulary_examples.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260606120000_add_fsrs_columns.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260628190000_add_theme_to_profiles.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260630000000_add_xp_and_prefs.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260630010000_add_story_questions.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260701120000_add_russian_language.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260702090000_allow_review_log_delete.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260702120000_add_story_reads.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260702150000_add_audio_speed.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260702180000_add_feedback.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | SEC-06,SEC-07,SEC-08,SEC-10
+supabase/migrations/20260702200000_add_story_audio.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260702220000_add_push_reminders.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260704200000_add_story_image.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260713120000_add_analytics_events.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | SEC-06,SEC-07,SEC-08,SEC-10
+supabase/migrations/20260715000000_add_admin_analytics.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | SEC-06,SEC-07,SEC-08,SEC-10
+supabase/migrations/20260715230000_feedback_discord_webhook.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | SEC-06,SEC-07,SEC-08,SEC-10
+supabase/migrations/20260715234500_feedback_discord_hide_email.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | SEC-06,SEC-07,SEC-08,SEC-10
+supabase/migrations/20260716000000_add_public_story.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260716120000_guard_is_admin_flag.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260717120000_story_presentation.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260717130000_story_interactions.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260718150000_add_public_assessment_vocab.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260718160000_add_card_source_sentence.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260719120000_add_reference_dictionary.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260719130000_flashcard_anything.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | SEC-06,SEC-07,SEC-08,SEC-10
+supabase/migrations/20260722120000_transactional_grading.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260722140000_add_tts_audio.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260722150000_add_story_utterances.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260723120000_add_grammar_reviews.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260724120000_fix_hsk3_6_readings.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260724160000_add_profile_timezone.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260724170000_harden_policies_and_vocab_index.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260724180000_drop_dead_streak_xp_columns.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260724190000_add_retention_target.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260725120000_per_language_progress_reset.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260727120000_add_card_source_story.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260727140000_add_dojo_hq.sql | reviewed-skim | none
+supabase/migrations/20260727150000_enable_rls_on_reading_backup.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260727160000_dict_search_rank_useful_senses.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260728210000_fix_language_reset_missing_writing_stats.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260729120000_manga_presentation.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260730090000_manhua_presentation_rename.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260731160000_replace_story_questions_rpc.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260731170000_guard_profile_insert_and_track_activation.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260801090000_honest_admin_metrics.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260801100000_dict_search_english_ranking.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260801120000_add_feedback_context.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | SEC-06,SEC-07,SEC-08,SEC-10
+supabase/migrations/20260801150000_admin_client_errors.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260807130000_delete_my_account.sql | reviewed-skim | SEC-09
+supabase/migrations/20260808160000_anon_read_ready_tts_audio.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260808171500_function_search_path.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260809090000_story_chapter_rewards.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | SEC-06,SEC-07,SEC-08,SEC-10
+supabase/migrations/20260822160000_prior_knowledge_columns.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260822170000_grade_card_verifies_claims.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260822180000_scheduler_state_requires_observation.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260825120000_drop_feedback_discord_relay.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | SEC-06,SEC-07,SEC-08,SEC-10
+supabase/migrations/20260906120000_grade_card_rejects_stale_replay.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260907001000_scope_story_children_to_published.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260907010000_cap_dict_add_to_deck.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | SEC-06,SEC-07,SEC-08,SEC-10
+supabase/migrations/20260907011000_revoke_anon_execute_on_private_rpcs.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260907020000_bound_analytics_event_rows.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | SEC-06,SEC-07,SEC-08,SEC-10
+supabase/migrations/20260907030000_repair_reading_plain_drift.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20260921000000_repair_hsk3_6_audio_paths.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/migrations/20261028090000_null_unreachable_audio_paths.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/schema.sql | reviewed-skim (security effect validated against LIVE catalog: pg_policies, pg_proc secdef/search_path/grants, constraints, triggers — file text not read line by line) | none
+supabase/tests/feedback_relay_removal_verification.sql | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+supabase/tests/prior_knowledge_verification.sql | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/apple-client-secret.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/dojo-bridge.mjs | reviewed-skim | SEC-01,SEC-12
+tools/dojo-run.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/generate-app-icons.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/icon-v2-brush.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/icon-v2-concepts.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/icon-v2-device.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/icon-v2-rings.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/integration-gate.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/integration-protocol.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/legacyColumnGuard.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/manhua-contact-sheet.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/review-protocol.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/review-task.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/verify-app-icons.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/verify-native-fonts.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/verify-native-shell.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/verify-public-bundle.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+tools/verify-task-contracts.mjs | excluded(not reached in bounded security pass — no auth/data-flow surface identified by grep) | none
+vercel.json | reviewed-full | SEC-04
+worker/index.js | reviewed-skim | SEC-01
