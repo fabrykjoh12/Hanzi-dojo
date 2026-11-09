@@ -35,7 +35,7 @@ columns all exist — older "pending migration" doc entries were stale.
 - [x] **Add Capacitor — DONE 2026-08-07.** Capacitor 8: `@capacitor/core` +
       `app` + `status-bar` (deps), `cli` + `android` + `ios` (dev). App ID
       `com.hanzidojo.app`, `capacitor.config.json` webDir `dist/client`.
-      ⚠️ The app build is **`npm run build:public`** — plain `npm run build`
+      ⚠️ The app build is **`npm run build:native`** (corrected 2026-11-09 — it said `build:public`, the WEBSITE bundle, and both store lanes followed it, so the apps loaded Google Fonts; see audit HD-AUD-005). It was formerly documented as **`npm run build:public`** — plain `npm run build`
       produces the internal HQ page (vite.config.js `SITES_BUILD`). Scripts:
       `npm run cap:sync` (public build + sync), `cap:android`, `cap:ios`.
       Native projects committed; synced web assets gitignored on both

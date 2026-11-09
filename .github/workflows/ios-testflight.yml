@@ -89,8 +89,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # The web build the app actually ships. NOT `npm run build` — that one
-      # emits the internal HQ page (see vite.config.js).
+      # The web build the app actually ships: build:native. NOT `npm run build`
+      # (that emits the internal HQ page, see vite.config.js) and NOT
+      # build:public either — that is the WEBSITE bundle, which keeps the
+      # Google Fonts <link> tags. The store apps were built with it until
+      # 2026-11, so they fetched fonts from Google on every launch while
+      # /privacy told learners the apps never contact Google (audit
+      # HD-AUD-005). build:native strips those tags and bundles the fonts.
       #
       # Vite inlines VITE_* at BUILD time, so these have to be here. The web
       # deploy gets them from the hosting provider's environment; a runner has
@@ -113,7 +118,7 @@ jobs:
             echo "::error::Missing repository secret(s):$missing — the app would launch to 'Site can't start'."
             exit 1
           fi
-          npm run build:public
+          npm run build:native
           # Cheap proof the config actually made it into the bundle, rather
           # than finding out on a phone after a 15-minute round trip.
           if ! grep -rqF "$VITE_SUPABASE_URL" dist/client/assets; then
@@ -121,6 +126,13 @@ jobs:
             exit 1
           fi
           echo "Supabase configuration is in the bundle."
+          # And that this is the store bundle, not the website: the website's
+          # index.html loads Google Fonts, the store app's must not.
+          if grep -qE 'fonts\.(googleapis|gstatic)\.com' dist/client/index.html; then
+            echo "::error::index.html still loads Google Fonts — this is the web bundle, not build:native."
+            exit 1
+          fi
+          echo "Store bundle: no Google Fonts tags."
 
       - name: Sync into the iOS project
         run: npx cap sync ios
