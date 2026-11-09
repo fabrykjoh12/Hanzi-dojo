@@ -22,8 +22,8 @@ This is a technical and product recommendation. It is not a certification and no
 
 | Target | Verdict | Why (short) |
 |---|---|---|
-| **Next private beta** (TestFlight / Play internal) | **NO-GO** | Shown to fail: the iOS lane is blocked (HD-AUD-003), the Android build would start broken (004), and both store builds ship the wrong bundle while `/privacy` says otherwise (005). Two core-loop defects are confirmed: saved words are never studied (001), and an offline grade can be lost (002). Android Back exits mid-onboarding (012). |
-| **Public store release** (App Store + Play) | **NO-GO** | Everything in the beta row, plus wrong vocabulary senses taught at HSK 3–6 (006), an incomplete Play deletion page (017) and unshipped font licences (046). Also unverified: a demo account, a native-speaker editorial sign-off, real-device passes, and backup/restore. |
+| **Next private beta** (TestFlight / Play internal) | **NO-GO** | Shown to fail: the iOS lane is blocked (HD-AUD-003), the Android build would start broken (004), and both store builds ship the wrong bundle while `/privacy` says otherwise (005). Two core-loop defects are confirmed: saved words are never studied (001), and an offline grade can be lost (002). Android Back exits mid-onboarding (012, Play internal). Wrong-sense cards reach HSK 3 testers (006). |
+| **Public store release** (App Store + Play) | **NO-GO** | Everything in the beta row, plus wrong vocabulary senses across all of HSK 3–6 (006), an incomplete Play deletion page (017), unshipped font licences (046), no Sign in with Apple token revocation on deletion (063), and accessibility barriers on Study and the reader (014–016). Also unverified: a demo account, a native-speaker editorial sign-off, real-device passes, and backup/restore. |
 | **Web (hanzi-dojo.com)** as the legal/public surface | **UNDETERMINED** | This sandbox could not reach the site, so the deployed build and security headers were not observed. The code shows no security headers (025). |
 
 **What is shown to work** (the main strengths to keep):
@@ -39,9 +39,9 @@ This is a technical and product recommendation. It is not a certification and no
 - **Design:** calm and polished in portrait light mode; no horizontal overflow at any of the 200 tested renders.
 
 **Top risks:**
-1. **Saved words never reach review (001).** The "difficult word → review" loop is broken for 88 cards across 6 learners.
+1. **Saved words never reach review (001).** The "difficult word → review" loop is broken for 88 cards across 6 learners. Saved words also leave the curriculum queue and use up the daily new-word allowance; Analyzer "Add all" can exhaust it in one tap.
 2. **The store pipelines can't currently produce a correct beta build (003/004/005).**
-3. **Wrong-sense HSK 3–6 flashcards (006).** These teach errors, which is the product's core trust.
+3. **Wrong-sense HSK 3–6 flashcards (006; HSK 3 included, so beta-relevant).** These teach errors, which is the product's core trust.
 4. **Lost offline progress (002).**
 5. **Little verification:** no real-device, screen-reader or native-speaker checks were possible.
 
@@ -118,7 +118,7 @@ This is a technical and product recommendation. It is not a certification and no
 | **Not reviewed** (time budget, or outside each reviewer's lens; includes ~150 test files) | **635** |
 | No ledger line | 1 (`LICENSE`, since read by the lead) |
 
-   The not-reviewed files are listed one per file with a reason in `appendices/coverage-not-reviewed.txt`. **The file-level review is therefore incomplete.** The prompt's "inspect every first-party file" requirement is **not met**, and this is said plainly here.
+   The not-reviewed files are listed one per file with a reason in `appendices/coverage-not-reviewed.txt`. This list is a union across the five domain lenses: a file listed there may still have been traced for one specific finding (for example `StoryReaderImmersive.jsx` for 022). It was not reviewed as a whole. **The file-level review is therefore incomplete.** The prompt's "inspect every first-party file" requirement is **not met**, and this is said plainly here.
 2. **Test execution coverage:** every automated suite in the repo was run (§2 and `evidence/`). No code-coverage measurement was taken, so measured code coverage is **unknown**.
 3. **Journey coverage:** the table below.
 
@@ -225,15 +225,15 @@ Gates and criteria were fixed before scoring. Status values: Pass / Fail / Block
 | A1 | Public scope is Chinese-only; internal tools protected on the server | **Pass** | Live policies, `guard_track_language`, HQ stripped from the store bundle (`verify:public-bundle` passed) | — | — |
 | A2 | A store build can be produced from main | **Fail** | 003 (iOS licence agreement), 004 (Android environment/signing) | Account Holder; dev | Green iOS and Android lanes from main |
 | A3 | The store build is the intended native bundle | **Fail** | 005 | dev | Workflows use `build:native`; contract test |
-| A4 | Core loop works: study, read, save word, review | **Fail** | 001, 022 | dev | e2e: save in reader → Flashcards serves it |
+| A4 | Core loop works: study, read, save word, review | **Fail** | 001 (022 is tracked for public) | dev | e2e: save in reader → Flashcards serves it |
 | A5 | Learning data is durable, including offline | **Fail** | 002 (038 is Low) | dev | Offline harness and e2e drain the outbox |
 | A6 | No unresolved Critical/High security risk on included surfaces | **Pass** (static) | Security review: none at High or above | — | — |
-| A7 | Supported devices are usable | **Fail** / Not tested | 012, 013; no device run | dev; tester | iPhone portrait-only or iPad tested; Back fix; device smoke |
-| A8 | Chinese content fit for a declared beta scope | **Not tested** (Must verify) | 006 affects HSK 3–6 | owner/editor | Either declare the beta HSK 1–2 only, or fix 006 first |
+| A7 | Supported devices are usable | **Fail** / Not tested | 013 (both); 012 (Play internal only); no device run | dev; tester | iPhone portrait-only or iPad tested; Back fix before the Play track; device smoke |
+| A8 | Chinese content fit for a declared beta scope | **Fail** (known defect) | 006 includes HSK 3; onboarding and placement let testers start at HSK 3+ (Onboarding.jsx:126-171), so an "HSK 1–2 only" scope cannot be enforced | owner/editor | Fix the HSK 1–3 subset of 006 first, or brief testers explicitly and accept the risk |
 | A9 | Required checks green | **Pass** | lint, unit, builds, guards, e2e (CI) | — | — |
-| A10 | Testers can reach the app (internal tester list, sign-in works) | **Not tested** | Owner console | owner | Internal track invite |
+| A10 | Testers can reach the app (internal tester list, sign-in works; Beta App Review credentials if external TestFlight) | **Not tested** | Owner console; 007 | owner | Internal track invite; demo account if external |
 
-**Beta verdict: NO-GO.** A2–A5 and A7 are shown to fail. **Safe narrowing:** a beta declared as "HSK 1–2, iPhone portrait, online use" can drop A8. It still needs A2–A5 and the Back fix.
+**Beta verdict: NO-GO.** A2–A5, A7 and A8 are shown to fail. **Narrowing that does help:** an iPhone-only internal TestFlight round (iPhone portrait) can go before the Android work (004, 012). It still needs A2 (iOS), A3, A4, A5, and either the HSK 1–3 fixes for 006 or briefed testers. The challenge pass showed that an "HSK 1–2 only" scope can't be enforced in the product, so it is not offered as a narrowing. Strongly recommended before beta: `npm audit fix` for react-router (023).
 
 ### Gate B — Public store release (adds to Gate A)
 
@@ -241,15 +241,15 @@ Gates and criteria were fixed before scoring. Status values: Pass / Fail / Block
 |---|---|---|---|---|
 | B1 | Chinese editorial sign-off for published stories and grammar | **Blocked** | HD-P9; 006, 010, 041 | Native-speaker editor |
 | B2 | Vocabulary senses correct | **Fail** | 006 | dev + editor |
-| B3 | Disclosures accurate (privacy, deletion page, generated content, licences) | **Fail** | 005, 017, 046, 047, 030 | owner + dev |
+| B3 | Disclosures and deletion obligations (privacy, deletion page, Apple token revocation, generated content, licences) | **Fail** | 005, 017, 063, 046, 047, 030 | owner + dev |
 | B4 | Store review access (demo account, notes) | **Not tested** | 007 | owner |
-| B5 | Store paperwork (privacy labels, Data safety, age rating, iPad screenshots) | **Not tested** | Docs drafted (`STORE-LISTING.md`); consoles not visible | owner |
-| B6 | Essential accessibility | **Fail** | 014, 015, 016 (no assistive-technology pass) | dev; tester |
+| B5 | Store paperwork (privacy labels, Data safety, age rating; iPad screenshots and an iPad test pass if iPad stays) | **Not tested** | Docs drafted (`STORE-LISTING.md`); consoles not visible; 013 | owner |
+| B6 | Essential accessibility | **Fail** | 014, 015, 016 (promoted to Must fix: barriers on Study and the reader); no assistive-technology pass | dev; tester |
 | B7 | Backup, restore and rollback proven | **Not tested** | 019 | owner/dev |
 | B8 | Release-cut discipline and versioning | **Fail** | 018 | dev |
 | B9 | Monitoring and support ownership | **Not tested** | `errorMonitor` exists; no crash reporting (052); support via Discord | owner |
 | B10 | Real-device passes (`docs/TESTING.md`), audio in WKWebView, magic-link deep links | **Blocked** | No devices | tester |
-| B11 | Security hardening | **Fail** (Low items) | 023, 025, 026 | dev/owner |
+| B11 | Security hardening | **Pass with known Low issues** | 023, 025, 026 (no Critical/High/Medium learner-facing security finding) | dev/owner |
 
 **Public verdict: NO-GO.** B2, B3, B6 and B8 are shown to fail. B1, B4, B5, B7, B9 and B10 remain unverified.
 
@@ -263,12 +263,12 @@ Effort is relative and uncertain: XS < half a day · S 1–2 days · M up to a w
 1. **Owner:** accept the Apple licence agreement (003). XS. Unblocks every iOS build.
 2. **Dev:** store workflows use `build:native` and pin it in a contract test (005). XS.
 3. **Dev and owner:** Android lane gets the Supabase environment, a signed AAB and a keystore secret (004). S, plus owner keystore. Depends on 2.
-4. **Dev:** serve saved new cards in Study, with regression specs (001). S. Highest learner value.
+4. **Dev:** serve saved new cards in Study, with regression specs, covering every inserter including Analyzer "Add all" (001). S. Highest learner value.
 5. **Dev:** fix offline local-id replay and the 22P02 handling (002). S–M.
-6. **Dev:** Android Back consumes in-screen state (012). S.
+6. **Dev:** Android Back consumes in-screen state (012). S. Needed before the Play internal track only.
 7. **Dev:** make iPhone portrait-only for the beta, or test iPad (013, config). XS.
 8. **Dev:** deep-link backslash rejection and react-router upgrade (023). XS.
-9. **Owner:** decide the beta's HSK scope (A8). Run an internal-track smoke on one iPhone and one Android device (A7, A10).
+9. **Owner and editor:** fix the HSK 1–3 subset of 006, or brief testers (A8). Run an internal-track smoke on one iPhone and one Android device (A7, A10).
 
 ### 7.2 Required for public release
 - **Content:**
@@ -276,10 +276,11 @@ Effort is relative and uncertain: XS < half a day · S 1–2 days · M up to a w
   - Editorial review (041, 010).
 - **Disclosures:**
   - Deletion page with the retention period (017).
+  - Sign in with Apple token revocation on deletion (063).
   - Generated-content and licence notices (046, 047).
   - BodyOS decision (030).
-- **Accessibility:** 014, 015, 016, 056, 057, then a VoiceOver/TalkBack pass.
-- **Data integrity:** 008, 038, 039, 037.
+- **Accessibility:** 014, 015, 016 (Must fix), then 054, 056, 057, 059, then a VoiceOver/TalkBack pass.
+- **Data integrity and honest numbers:** 008, 038, 039, 037, 042 (define story % known in METRICS.md), 035 (grade-button labels), 053 (Home vs Stories lock state).
 - **Hardening:** 025, 026, 024, 048, 027.
 - **Operations:**
   - Release-cut gate and versioning (018).
@@ -300,6 +301,8 @@ Effort is relative and uncertain: XS < half a day · S 1–2 days · M up to a w
 - Dynamic Type (060).
 - Rate limits (028, 031).
 - Internal bridge hardening (021, 032).
+- Level-test attempt reset in local time (036); shared mastery rule in achievements (040).
+- Client-trusted progression: record as accepted risk, owner decision (029).
 - CI pinning (033).
 - DB hygiene (034).
 - Native push.
@@ -324,7 +327,7 @@ Effort is relative and uncertain: XS < half a day · S 1–2 days · M up to a w
 | Device tester | A7, B10, 043, 060 |
 
 **Missing tasks not already tracked:**
-- 001, 002, 005 (BACKLOG and PRIVACY-AUDIT call this "fixed"), 004, 012, 013 (iPad), 022, 024, 030 (the shared-pool decision is contradictory in the docs), and 046.
+- 001, 002, 005 (BACKLOG and PRIVACY-AUDIT call this "fixed"), 004, 012, 013 (iPad), 022, 024, 030 (the shared-pool decision is contradictory in the docs), 046 and 063.
 
 Already tracked elsewhere:
 - 003 is new; the doc assumes the lane works.
@@ -346,7 +349,7 @@ Already tracked elsewhere:
 - **The 25 older stories not in the repo:** hand-sampled only (041).
 
 ### Owner decisions needed
-1. **Beta scope:** HSK 1–2 only, or wait for 006? iPhone-only, or iPad too?
+1. **Beta scope:** fix the HSK 1–3 part of 006 first, or ship with briefed testers? iPhone-only first, or iPad too?
 2. **BodyOS:** remove it from this project, or disclose the shared account pool?
 3. **Mastery wording:** what may the app call "Mastered"? (009)
 4. **"Still hard" from the reader:** should a word already in the deck be pulled forward? (022)
@@ -418,22 +421,22 @@ npm audit --omit=dev
 
 ## 10. Report reconciliation
 
-- **Findings:** 62 in total: **7 High, 15 Medium, 40 Low.** By priority:
+- **Findings:** 63 in total: **6 High, 16 Medium, 41 Low.** After the challenge pass, 007 went from High to Medium, 009 from Medium to Low, and 063 (Sign in with Apple revocation) was added. By priority:
 
 | Priority | Count |
 |---|---|
-| Must fix | 10 |
+| Must fix | 14 |
 | Must verify | 6 |
-| Should improve | 31 |
+| Should improve | 28 |
 | Optional | 13 |
 | No action (dispositioned) | 2 |
 
-  Every ID appears in §7 or has an explicit disposition (061 environment; 062 latent and already tracked). No Critical findings; see `appendices/challenge.md` for the challenge on 001's severity.
+  Every ID appears in §7 or has an explicit disposition (061 environment; 062 latent and already tracked). No Critical findings. The challenge pass argued against making 001 Critical (no data loss, and the fix heals the stranded rows), and every challenge is resolved in `appendices/challenge.md`.
 - **Executed checks:** lint, unit, two builds, two guards, npm audit (fails on the react-router advisory, HD-AUD-023), and Playwright (173 pass / 1 env-fail / 6 skipped).
 - **Domain harnesses:** SRS (4 specs, 3 timezones) and content (5 scripts).
 - **UX:** 200 renders, 40 axe scans, keyboard, lang scan.
 - **Live database:** read-only checks.
 - **Open gates:**
-  - Beta: 5 Fail, 2 Not tested.
-  - Public: 5 Fail, 6 Not tested or Blocked.
+  - Beta: 6 Fail (A2, A3, A4, A5, A7, A8), 1 Not tested (A10).
+  - Public: 4 Fail (B2, B3, B6, B8), 6 Not tested or Blocked (B1, B4, B5, B7, B9, B10), 1 Pass with known Low issues (B11).
 - **Evidence:** all paths are under this directory. Screenshots are a curated set of 14 (the full 299 were left in the session scratchpad and are not committed).

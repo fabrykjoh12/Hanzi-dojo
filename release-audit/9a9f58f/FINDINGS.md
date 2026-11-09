@@ -1,19 +1,19 @@
 # Findings register — HanziDojo @ 9a9f58f (2026-11-09)
 
-One entry per finding, deduplicated across the five domain reviews. `source_ids` point to the domain appendix that holds the full reasoning and details. Severity and confidence are rated separately. Evidence types: reproduced-runtime, reproduced-automated, static-complete-path, suspected, prod SQL/catalog (read-only).
+One entry per finding, deduplicated across the five domain reviews and the challenge pass. `source_ids` point to the domain appendix that holds the full reasoning (prefixes SEC/SRS/CNT/UX/ENG/CH; LEAD means the lead's own trace). Severity and confidence are rated separately. Changes made after the challenge pass are listed in `appendices/challenge.md`.
 
 Machine-readable copies: `findings.json` and `findings.csv`. They use the same IDs and the same priorities.
 
 ## HD-AUD-001 — Words saved from reader, dictionary or Words list are never served in Study (88 stranded cards, 6 learners, since 2026-07-02)
 - **Severity:** High · **Confidence:** H · **Evidence:** reproduced-automated + prod aggregate · **Source:** SRS-01
 - **Category / platform:** Scheduling / core loop / all
-- **Evidence refs:** src/sessionPrep.js:116-160 (state 'new' rows enter startedVocab, excluded from newItems); src/studyAvailability.js:35-43 (only learning/relearning/review are due); src/srs.js:175-177; inserters useStoryReaderCore.js:408, StoryReaderImmersive.jsx:546, Dictionary.jsx:193, Words.jsx:59, dict_add_to_deck
+- **Evidence refs:** src/sessionPrep.js:110-112,126-129,155-160 (saved rows count as introduced today, enter startedVocab, excluded from newItems — a saved current-level word also leaves the curriculum new queue); src/studyAvailability.js:35-43; src/srs.js:175-177; inserters useStoryReaderCore.js:408-413, StoryReaderImmersive.jsx:546, Dictionary.jsx:193, Words.jsx:59, Analyzer.jsx:88-104 ('Add all' bulk — can exhaust the daily allowance) and :113, ChatMission.jsx:176, dict_add_to_deck
 - **Milestone / priority:** beta — Must fix
 - **Fix direction:** Serve saved 'new' cards (reps 0, no prior claim) as new items ahead of curriculum vocab, within the daily new allowance; stop counting them as 'introduced today' until first graded.
 - **Acceptance:** Unit spec: a saved card appears in the next session; e2e: save word in reader → Flashcards shows it; prod count of stranded cards trends to 0 after release.
 - **Effort (relative, uncertain):** S (1-2 days incl. tests)
 
-## HD-AUD-002 — Offline: grading a brand-new card twice queues a write with a 'local-…' card id that fails uuid cast forever; graduation lost, outbox never drains
+## HD-AUD-002 — Offline: grading a brand-new card twice queues a write with a 'local-…' card id that fails the uuid cast on every replay; that op stays queued forever (other ops still flush) and the graduation is lost
 - **Severity:** High · **Confidence:** H · **Evidence:** reproduced-automated (grade_card modelled in JS) · **Source:** SRS-02
 - **Category / platform:** Data integrity / offline / all (offline)
 - **Evidence refs:** src/Study.jsx:799,807,857; src/syncQueue.js:333,580
@@ -35,7 +35,7 @@ Machine-readable copies: `findings.json` and `findings.csv`. They use the same I
 - **Severity:** High · **Confidence:** H · **Evidence:** static-complete-path + CI history · **Source:** ENG-02
 - **Category / platform:** Distribution / Android
 - **Evidence refs:** .github/workflows/android-build.yml:58-59 vs ios-testflight.yml:95-123; src/supabase.js:4-28; build.gradle:45
-- **Milestone / priority:** beta (Android) — Must fix
+- **Milestone / priority:** beta (Play internal) — Must fix
 - **Fix direction:** Mirror the iOS env + bundle-contains-URL guard; wire the upload keystore secret; fail when unsigned.
 - **Acceptance:** android-build run produces a signed AAB whose bundle contains the Supabase URL; app signs in on a device.
 - **Effort (relative, uncertain):** S + owner keystore
@@ -49,20 +49,20 @@ Machine-readable copies: `findings.json` and `findings.csv`. They use the same I
 - **Acceptance:** Store workflow logs show build:native; verify-native-fonts passes on the shipped dist; contract test fails if reverted.
 - **Effort (relative, uncertain):** XS
 
-## HD-AUD-006 — HSK 3-6 flashcards teach wrong/proper-noun senses (页 'xié head', 孙子 'Sun Tzu', 成功 'Chenggong town', 联想 'Lenovo', 友好 'Youhao district', …); ~32 capitalised readings + ~15 proper-noun-only meanings
+## HD-AUD-006 — HSK 3-6 flashcards (heuristic hits from HSK 1) teach wrong/proper-noun senses (页 'xié head', 孙子 'Sun Tzu', 成功 'Chenggong town', 联想 'Lenovo', 友好 'Youhao district'; seed data also 中 'Zhōng China', 加 'Canada' at HSK 3). Prod heuristic: capitalised readings L1 4 / L3 8 / L4 10 / L5 12 / L6 10; proper-noun glosses L3 9 / L4 10 / L5 10 / L6 22 (needs curation)
 - **Severity:** High · **Confidence:** H · **Evidence:** reproduced (prod SQL, lead re-checked) · **Source:** CNT-01
 - **Category / platform:** Chinese content / all
 - **Evidence refs:** public.vocabulary (prod); docs/BACKLOG.md:448 (marked applied: readings only); src/tts/sources.js:16-34
-- **Milestone / priority:** public (Must verify for beta at HSK3+) — Must fix
+- **Milestone / priority:** beta (HSK 1-3 subset or briefed testers) / public (all) — Must fix
 - **Fix direction:** Scripted detection (capitalised readings, district/county/city/proper-noun glosses) → curated corrections committed as a migration → Chinese reviewer sign-off → only then regenerate affected audio.
 - **Acceptance:** Detector query returns 0 rows; reviewer signs the changed list; spot list above correct in prod.
 - **Effort (relative, uncertain):** M (+ editor)
 
 ## HD-AUD-007 — No evidence an App Review demo account with a reachable story and review session exists
-- **Severity:** High · **Confidence:** M · **Evidence:** suspected (cannot verify without reading auth rows) · **Source:** ENG-05
+- **Severity:** Medium · **Confidence:** M · **Evidence:** suspected (cannot verify without reading auth rows) · **Source:** ENG-05
 - **Category / platform:** Store readiness / iOS (and external TestFlight)
 - **Evidence refs:** docs/RELEASE-BLOCKER-REMEDIATION.md:28,327; docs/STORE-LISTING.md
-- **Milestone / priority:** public (also external TestFlight) — Must verify
+- **Milestone / priority:** public (gate B4); beta if external TestFlight (gate A10) — Must verify
 - **Fix direction:** Owner creates a dedicated reviewer account seeded (Creative Mode) so a story and due reviews are reachable; record in review notes.
 - **Acceptance:** Fresh install → sign in with reviewer creds → reach a story and a review in <2 min.
 - **Effort (relative, uncertain):** S (owner)
@@ -77,7 +77,7 @@ Machine-readable copies: `findings.json` and `findings.csv`. They use the same I
 - **Effort (relative, uncertain):** S
 
 ## HD-AUD-009 — 'Mastered' reachable after two self-rated Easy presses (day 6); recap 'You learned your first N words' counts Again and calibration grades
-- **Severity:** Medium · **Confidence:** M · **Evidence:** reproduced-automated + static · **Source:** SRS-04
+- **Severity:** Low · **Confidence:** M · **Evidence:** reproduced-automated + static · **Source:** SRS-04
 - **Category / platform:** Learning honesty / all
 - **Evidence refs:** src/knowledgeState.js isMastered; src/Words.jsx:29; src/studyTally.js newLearned; src/SessionRecap.jsx:281
 - **Milestone / priority:** public — Should improve
@@ -88,7 +88,7 @@ Machine-readable copies: `findings.json` and `findings.csv`. They use the same I
 ## HD-AUD-010 — Reader shows each word's single stored reading regardless of context (地 ground→'de' ~40×, 长 zhǎng→cháng ~8×, 行 xíng→háng ~4×); screen pinyin can disagree with narration
 - **Severity:** Medium · **Confidence:** H · **Evidence:** reproduced-automated (179 stories) · **Source:** CNT-02
 - **Category / platform:** Reader / Chinese / all
-- **Evidence refs:** src/storyReading.js:742-756, 808-849
+- **Evidence refs:** src/storyReading.js:808-849 (segmentLine/token building); no per-token reading override anywhere in src/
 - **Milestone / priority:** public — Should improve
 - **Fix direction:** Per-token reading overrides from the authored/utterance pipeline (which already has context fixes) with fallback to vocab reading; at minimum a polyphone override table for the listed cases.
 - **Acceptance:** Re-run harnesses/poly-audit.mjs → 0 known polyphone mismatches; reviewer spot check.
@@ -107,7 +107,7 @@ Machine-readable copies: `findings.json` and `findings.csv`. They use the same I
 - **Severity:** Medium · **Confidence:** H · **Evidence:** static-complete-path (device not tested) · **Source:** UX-04
 - **Category / platform:** Native shell / Android
 - **Evidence refs:** src/nativeShell.js:75-80; src/NativeShellBridge.jsx:85-90
-- **Milestone / priority:** beta — Must fix
+- **Milestone / priority:** beta (Play internal only) — Must fix
 - **Fix direction:** Let in-screen state (onboarding step, open dialog/sheet) consume Back first via a registered handler stack; exit only from Home idle.
 - **Acceptance:** Unit spec for backAction with overlay/step state; device: Back steps through onboarding.
 - **Effort (relative, uncertain):** S
@@ -125,7 +125,7 @@ Machine-readable copies: `findings.json` and `findings.csv`. They use the same I
 - **Severity:** Medium · **Confidence:** H · **Evidence:** reproduced-automated · **Source:** UX-01
 - **Category / platform:** Visual / a11y / all (dark mode)
 - **Evidence refs:** src/Study.jsx:58-63,1475,1712-1714
-- **Milestone / priority:** public — Should improve
+- **Milestone / priority:** public — Must fix
 - **Fix direction:** Token-ise the grade palette with dark variants; wrap accent text in ink().
 - **Acceptance:** axe color-contrast passes on Study back in dark mode.
 - **Effort (relative, uncertain):** S
@@ -134,7 +134,7 @@ Machine-readable copies: `findings.json` and `findings.csv`. They use the same I
 - **Severity:** Medium · **Confidence:** H · **Evidence:** reproduced-automated · **Source:** UX-03
 - **Category / platform:** Accessibility / all
 - **Evidence refs:** src/Study.jsx:1328-1334,1493,1507; src/Words.jsx:230 (good: Home.jsx:374)
-- **Milestone / priority:** public — Should improve
+- **Milestone / priority:** public — Must fix
 - **Fix direction:** Apply langAttr() wrapper on every CJK text node; drop overriding aria-label.
 - **Acceptance:** lang scan script (evidence/ux/scripts/langscan.mjs) reports 0 untagged CJK runs on main screens.
 - **Effort (relative, uncertain):** S
@@ -143,7 +143,7 @@ Machine-readable copies: `findings.json` and `findings.csv`. They use the same I
 - **Severity:** Medium · **Confidence:** M · **Evidence:** reproduced-automated · **Source:** UX-05
 - **Category / platform:** Accessibility / reader / all
 - **Evidence refs:** src/WordLookupSheet.jsx:81-90,125,163
-- **Milestone / priority:** public — Should improve
+- **Milestone / priority:** public — Must fix
 - **Fix direction:** Focus after visibility toggles (rAF/after layout); dialog semantics; restore focus to token on close.
 - **Acceptance:** evidence/ux/scripts/sheetfocus.mjs: focus lands in sheet; Escape returns to token.
 - **Effort (relative, uncertain):** S
@@ -561,3 +561,12 @@ Machine-readable copies: `findings.json` and `findings.csv`. They use the same I
 - **Fix direction:** None.
 - **Acceptance:** —
 - **Effort (relative, uncertain):** —
+
+## HD-AUD-063 — Account deletion never revokes Sign in with Apple tokens (no Apple REST revoke call in src/, supabase/ or worker/); delete_my_account only deletes auth.users
+- **Severity:** Medium · **Confidence:** M · **Evidence:** static (absence confirmed by lead grep) · **Source:** CH-01
+- **Category / platform:** Store / privacy / iOS
+- **Evidence refs:** supabase/migrations/20260807130000_delete_my_account.sql; src/accountDeletion.js; src/nativeAuth.js
+- **Milestone / priority:** public (iOS) — Must fix
+- **Fix direction:** Store the SIWA authorization code/refresh token at sign-in (server side) and call Apple's revoke endpoint from a server function during deletion; re-check Apple's current account-deletion guidance.
+- **Acceptance:** Deleting a SIWA test account removes the app from the Apple ID's 'Sign in with Apple' list.
+- **Effort (relative, uncertain):** M (needs server function + Apple key)

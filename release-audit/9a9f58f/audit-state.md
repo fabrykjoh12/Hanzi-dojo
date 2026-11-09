@@ -16,8 +16,14 @@
 - [x] Read-only prod DB boundary review (RLS, policies, triggers, FKs, SECURITY DEFINER bodies)
 - [x] CI state on main + TestFlight lane log
 - [x] Domain reviews (security, SRS/data, content, UI/a11y, engineering/native/store) — appendices/
-- [x] Independent challenge pass — appendices/challenge.md
+- [x] Independent challenge pass — appendices/challenge.md (all challenges resolved; register regenerated: 63 findings)
 - [x] Report, findings register, JSON export, backlog, gates
 
 ## Next actions for a resuming context
 See `REPORT.md` §9 (continuation/retest plan).
+
+## Final state (2026-11-09)
+- Verdicts: private beta NO-GO, public release NO-GO, web surface UNDETERMINED (site unreachable from sandbox).
+- Findings: 63 (6 High, 16 Medium, 41 Low). Regenerate the register with `appendices/harnesses/gen.py` (it reads `findings.py`).
+- Known incomplete scope: 635 files not reviewed as a whole (`appendices/coverage-not-reviewed.txt`); device, assistive-technology,
+  native-speaker, deployed-web and Supabase Auth-config checks blocked. See REPORT.md §9.
