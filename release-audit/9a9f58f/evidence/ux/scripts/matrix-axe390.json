@@ -1,0 +1,1575 @@
+[
+ {
+  "name": "landing",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "79x42 BUTTON \"Log in\"",
+   "349x41 A \"Or find out how much Chinese\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 6,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div:nth-child(4) > button ::   Element has insufficient color contrast of 4.07 (foreground color: #ffffff, background color: #6e8466, font size: 12.0pt (16px), font weig",
+     "div:nth-child(1) > div:nth-child(5) > div:nth-child(1) ::   Element has insufficient color contrast of 4.46 (foreground color: #dc2626, background color: #fdf4f4, font size: 9.0pt (12px), font weigh",
+     "div:nth-child(1) > div:nth-child(5) > div:nth-child(2) ::   Element has insufficient color contrast of 3.01 (foreground color: #d97706, background color: #fdf8f3, font size: 9.0pt (12px), font weigh",
+     "div:nth-child(5) > div:nth-child(4) ::   Element has insufficient color contrast of 3.19 (foreground color: #2f9e6d, background color: #f5faf8, font size: 9.0pt (12px), font weigh"
+    ]
+   },
+   {
+    "id": "landmark-one-main",
+    "impact": "moderate",
+    "n": 1,
+    "help": "Document should have one main landmark",
+    "targets": [
+     "html ::   Document does not have a main landmark"
+    ]
+   },
+   {
+    "id": "region",
+    "impact": "moderate",
+    "n": 22,
+    "help": "All page content should be contained by landmarks",
+    "targets": [
+     "div:nth-child(2) > div:nth-child(1) > div ::   Some page content is not contained by landmarks",
+     "#root > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) ::   Some page content is not contained by landmarks",
+     "h1 ::   Some page content is not contained by landmarks",
+     "div:nth-child(2) > p ::   Some page content is not contained by landmarks"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "assess",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [],
+  "lang": "en",
+  "title": "How much can you read? · Hanzi Dojo",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "landmark-one-main",
+    "impact": "moderate",
+    "n": 1,
+    "help": "Document should have one main landmark",
+    "targets": [
+     "html ::   Document does not have a main landmark"
+    ]
+   },
+   {
+    "id": "region",
+    "impact": "moderate",
+    "n": 4,
+    "help": "All page content should be contained by landmarks",
+    "targets": [
+     "#root > div > div > div:nth-child(1) ::   Some page content is not contained by landmarks",
+     "div:nth-child(2) ::   Some page content is not contained by landmarks",
+     "h1 ::   Some page content is not contained by landmarks",
+     "p ::   Some page content is not contained by landmarks"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "privacy",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "96x33 BUTTON \"Hanzi Dojo\"",
+   "51x16 A \"Support\"",
+   "180x17 A \"support@hanzi-dojo.com\"",
+   "56x17 A \"Support\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div:nth-child(4) ::   Element has insufficient color contrast of 4.39 (foreground color: #71717a, background color: #f4f4f5, font size: 9.8pt (13px), font weigh"
+    ]
+   },
+   {
+    "id": "landmark-one-main",
+    "impact": "moderate",
+    "n": 1,
+    "help": "Document should have one main landmark",
+    "targets": [
+     "html ::   Document does not have a main landmark"
+    ]
+   },
+   {
+    "id": "region",
+    "impact": "moderate",
+    "n": 51,
+    "help": "All page content should be contained by landmarks",
+    "targets": [
+     "h1 ::   Some page content is not contained by landmarks",
+     "p:nth-child(3) ::   Some page content is not contained by landmarks",
+     "div:nth-child(4) ::   Some page content is not contained by landmarks",
+     "p:nth-child(5) ::   Some page content is not contained by landmarks"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "auth",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "40x40 BUTTON \"Back\"",
+   "151x43 BUTTON \"Log in\"",
+   "151x43 BUTTON \"Sign up\"",
+   "40x40 BUTTON \"Show password\"",
+   "302x20 BUTTON \"Forgot password?\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "landmark-one-main",
+    "impact": "moderate",
+    "n": 1,
+    "help": "Document should have one main landmark",
+    "targets": [
+     "html ::   Document does not have a main landmark"
+    ]
+   },
+   {
+    "id": "region",
+    "impact": "moderate",
+    "n": 4,
+    "help": "All page content should be contained by landmarks",
+    "targets": [
+     "div:nth-child(3) > div:nth-child(1) ::   Some page content is not contained by landmarks",
+     "input[placeholder=\"Email\"] ::   Some page content is not contained by landmarks",
+     "input[placeholder=\"Password\"] ::   Some page content is not contained by landmarks",
+     "div:nth-child(6) ::   Some page content is not contained by landmarks"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "home",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "34x34 BUTTON \"Open profile\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "label-content-name-mismatch",
+    "impact": "serious",
+    "n": 2,
+    "help": "Elements must have their visible text as part of their accessible name",
+    "targets": [
+     ".hd-press-deep ::   Text inside the element is not included in the accessible name",
+     "div[role=\"button\"] ::   Text inside the element is not included in the accessible name"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "study-front",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "38x38 BUTTON \"Exit\"",
+   "38x38 BUTTON \"Undo last grade\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div:nth-child(1) > span ::   Element has insufficient color contrast of 4.39 (foreground color: #71717a, background color: #f4f4f5, font size: 8.3pt (11px), font weigh"
+    ]
+   },
+   {
+    "id": "label-content-name-mismatch",
+    "impact": "serious",
+    "n": 1,
+    "help": "Elements must have their visible text as part of their accessible name",
+    "targets": [
+     "div[role=\"button\"] ::   Text inside the element is not included in the accessible name"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "study-back",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "38x38 BUTTON \"Exit\"",
+   "38x38 BUTTON \"Undo last grade\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 5,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div:nth-child(1) > span ::   Element has insufficient color contrast of 4.39 (foreground color: #71717a, background color: #f4f4f5, font size: 8.3pt (11px), font weigh",
+     "div > button:nth-child(1) > span:nth-child(2) ::   Element has insufficient color contrast of 4.23 (foreground color: #71717a, background color: #fbedea, font size: 8.3pt (11px), font weigh",
+     "div > button:nth-child(2) > span:nth-child(2) ::   Element has insufficient color contrast of 4.32 (foreground color: #71717a, background color: #fbf1e4, font size: 8.3pt (11px), font weigh",
+     "div > button:nth-child(3) > span:nth-child(2) ::   Element has insufficient color contrast of 4.22 (foreground color: #71717a, background color: #e9f2ea, font size: 8.3pt (11px), font weigh"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "stories",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "49x38 BUTTON \"All\"",
+   "71x38 BUTTON \"HSK 2\"",
+   "68x38 BUTTON \"HSK 1\"",
+   "84x38 BUTTON \"Manhua\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "label-content-name-mismatch",
+    "impact": "serious",
+    "n": 13,
+    "help": "Elements must have their visible text as part of their accessible name",
+    "targets": [
+     "button[aria-label=\"公园里的下午 · HSK 2 · Story · 1 min\"] ::   Text inside the element is not included in the accessible name",
+     "div[data-shelf=\"top-picks\"] > div:nth-child(2) > .hd-press ::   Text inside the element is not included in the accessible name",
+     "div[data-shelf=\"top-picks\"] > div:nth-child(3) > .hd-press ::   Text inside the element is not included in the accessible name",
+     "button[aria-label=\"月下的朋友 · HSK 1 · 3 chapters\"] ::   Text inside the element is not included in the accessible name"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "story-detail",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "30x30 BUTTON \"Back to library\"",
+   "163x40 BUTTON \"Paged\"",
+   "163x40 BUTTON \"Scroll\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 2,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div[lang=\"zh-Hans\"] > div > div:nth-child(2) > button ::   Element has insufficient color contrast of 4.07 (foreground color: #ffffff, background color: #6e8466, font size: 11.6pt (15.5px), font we",
+     "div[role=\"group\"] > button:nth-child(2) ::   Element has insufficient color contrast of 4.39 (foreground color: #71717a, background color: #f4f4f5, font size: 10.1pt (13.5px), font we"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "reader-paced",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "62x33 SPAN \"今天\"",
+   "62x33 SPAN \"天气\"",
+   "32x33 SPAN \"很\"",
+   "32x33 SPAN \"好\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 2,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div[aria-hidden=\"true\"]:nth-child(2) > div:nth-child(1) ::   Element has insufficient color contrast of 2.24 (foreground color: #d99a8e, background color: #fafaf8, font size: 9.4pt (12.5px), font wei",
+     "div[aria-hidden=\"true\"]:nth-child(3) > div:nth-child(1) ::   Element has insufficient color contrast of 1.39 (foreground color: #ebd0c9, background color: #fafaf8, font size: 9.4pt (12.5px), font wei"
+    ]
+   },
+   {
+    "id": "page-has-heading-one",
+    "impact": "moderate",
+    "n": 1,
+    "help": "Page should contain a level-one heading",
+    "targets": [
+     "html ::   Page must have a level-one heading"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "reader-sheet",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "62x33 SPAN \"今天\"",
+   "62x33 SPAN \"天气\"",
+   "32x33 SPAN \"很\"",
+   "32x33 SPAN \"好\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 2,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div[aria-hidden=\"true\"]:nth-child(2) > div:nth-child(1) ::   Element has insufficient color contrast of 2.24 (foreground color: #d99a8e, background color: #fafaf8, font size: 9.4pt (12.5px), font wei",
+     "div[aria-hidden=\"true\"]:nth-child(3) > div:nth-child(1) ::   Element has insufficient color contrast of 1.39 (foreground color: #ebd0c9, background color: #fafaf8, font size: 9.4pt (12.5px), font wei"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "reader-chat",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "page-has-heading-one",
+    "impact": "moderate",
+    "n": 1,
+    "help": "Page should contain a level-one heading",
+    "targets": [
+     "html ::   Page must have a level-one heading"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "reader-manhua",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "20x20 SPAN \"我\"",
+   "20x20 SPAN \"来\"",
+   "38x20 SPAN \"学校\"",
+   "20x20 SPAN \"了\"",
+   "23x23 SPAN \"这\"",
+   "23x23 SPAN \"是\"",
+   "44x23 SPAN \"学校\"",
+   "23x23 SPAN \"吗\"",
+   "44x23 SPAN \"你好\"",
+   "44x23 SPAN \"你是\"",
+   "23x23 SPAN \"新\"",
+   "55x23 SPAN \"学生\"",
+   "23x23 SPAN \"吗\"",
+   "23x23 SPAN \"是\"",
+   "23x23 SPAN \"我\"",
+   "23x23 SPAN \"是\"",
+   "23x23 SPAN \"新\"",
+   "55x23 SPAN \"学生\"",
+   "23x23 SPAN \"我\"",
+   "23x23 SPAN \"来\"",
+   "23x23 SPAN \"学\"",
+   "23x23 SPAN \"写\"",
+   "23x23 SPAN \"字\"",
+   "65x23 SPAN \"太好了\"",
+   "23x23 SPAN \"我\"",
+   "23x23 SPAN \"叫\"",
+   "45x23 SPAN \"小雨\"",
+   "23x23 SPAN \"你\"",
+   "23x23 SPAN \"叫\"",
+   "45x23 SPAN \"什么\"",
+   "44x23 SPAN \"名字\"",
+   "23x23 SPAN \"来\"",
+   "23x23 SPAN \"吧\"",
+   "44x23 SPAN \"我们\"",
+   "23x23 SPAN \"去\"",
+   "44x23 SPAN \"那边\"",
+   "38x20 SPAN \"学校\"",
+   "20x20 SPAN \"很\"",
+   "20x20 SPAN \"大\"",
+   "23x23 SPAN \"这\"",
+   "23x23 SPAN \"是\"",
+   "44x23 SPAN \"我们\"",
+   "23x23 SPAN \"的\"",
+   "44x23 SPAN \"学校\"",
+   "23x23 SPAN \"我\"",
+   "23x23 SPAN \"是\"",
+   "65x23 SPAN \"林老师\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 6,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     ".hd-manhua-caption[data-manhua-bubble-kind=\"narration\"][data-manhua-text-layout=\"caption\"] > div > div[lang=\"zh-Hans\"] > span:nth-child(1) > .hd-manhua-word[aria-label=\"我\"][role=\"button\"] > ruby > rt ::   Element has insufficient color contrast of 4.17 (foreground color: #ba601c, background color: #fbf9f4, font size: 7.6pt (10.08px), font we",
+     ".hd-manhua-caption[data-manhua-bubble-kind=\"narration\"][data-manhua-text-layout=\"caption\"] > div > div[lang=\"zh-Hans\"] > span:nth-child(2) > .hd-manhua-word[aria-label=\"来\"][role=\"button\"] > ruby > rt ::   Element has insufficient color contrast of 4.17 (foreground color: #ba601c, background color: #fbf9f4, font size: 7.6pt (10.08px), font we",
+     ".hd-manhua-caption[data-manhua-bubble-kind=\"narration\"][data-manhua-text-layout=\"caption\"] > div > div[lang=\"zh-Hans\"] > span:nth-child(3) > .hd-manhua-word[aria-label=\"学校\"][role=\"button\"] > ruby > rt ::   Element has insufficient color contrast of 4.17 (foreground color: #ba601c, background color: #fbf9f4, font size: 7.6pt (10.08px), font we",
+     "span[aria-label=\"了\"] > ruby > rt ::   Element has insufficient color contrast of 4.17 (foreground color: #ba601c, background color: #fbf9f4, font size: 7.6pt (10.08px), font we"
+    ]
+   },
+   {
+    "id": "label-content-name-mismatch",
+    "impact": "serious",
+    "n": 24,
+    "help": "Elements must have their visible text as part of their accessible name",
+    "targets": [
+     ".hd-manhua-caption[data-manhua-bubble-kind=\"narration\"][data-manhua-text-layout=\"caption\"] > div > div[lang=\"zh-Hans\"] > span:nth-child(3) > .hd-manhua-word[aria-label=\"学校\"][role=\"button\"] ::   Text inside the element is not included in the accessible name",
+     ".hd-manhua-bubble[data-manhua-bubble-kind=\"thought\"][data-manhua-text-layout=\"overlay\"] > div > div[lang=\"zh-Hans\"] > span:nth-child(3) > .hd-manhua-word[aria-label=\"学校\"][role=\"button\"] ::   Text inside the element is not included in the accessible name",
+     "span[aria-label=\"你好\"] ::   Text inside the element is not included in the accessible name",
+     "span:nth-child(5) > .hd-manhua-word[aria-label=\"学生\"][role=\"button\"] ::   Text inside the element is not included in the accessible name"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "practice",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "dictionary",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "32x41 BUTTON \"Play audio\"",
+   "41x41 BUTTON \"Stroke order\"",
+   "22x41 BUTTON \"Add to deck\"",
+   "111x33 BUTTON \"Meaning\"",
+   "111x33 BUTTON \"Chars\"",
+   "111x33 BUTTON \"Examples\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "label-content-name-mismatch",
+    "impact": "serious",
+    "n": 1,
+    "help": "Elements must have their visible text as part of their accessible name",
+    "targets": [
+     "button[aria-label=\"Stroke order\"] ::   Text inside the element is not included in the accessible name"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "profile",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "86x40 BUTTON \"Back\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 36,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div[title=\"Learn 50 words\"] > div:nth-child(2) ::   Element has insufficient color contrast of 2.36 (foreground color: #a3a3a9, background color: #f8f8f9, font size: 9.8pt (13px), font weigh",
+     "div[title=\"Learn 50 words\"] > div:nth-child(3) ::   Element has insufficient color contrast of 2.48 (foreground color: #9f9fa3, background color: #f8f8f9, font size: 8.3pt (11px), font weigh",
+     "div[title=\"Learn 100 words\"] > div:nth-child(2) ::   Element has insufficient color contrast of 2.36 (foreground color: #a3a3a9, background color: #f8f8f9, font size: 9.8pt (13px), font weigh",
+     "div[title=\"Learn 100 words\"] > div:nth-child(3) ::   Element has insufficient color contrast of 2.48 (foreground color: #9f9fa3, background color: #f8f8f9, font size: 8.3pt (11px), font weigh"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "settings",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "92x40 BUTTON \"Home\"",
+   "89x38 BUTTON \"Light\"",
+   "87x38 BUTTON \"Dark\"",
+   "80x38 BUTTON \"Flip\"",
+   "97x38 BUTTON \"Typed\"",
+   "50x28 BUTTON \"Audio on flip\"",
+   "71x38 BUTTON \"1×\"",
+   "94x38 BUTTON \"0.75×\"",
+   "87x38 BUTTON \"0.5×\"",
+   "16x16 INPUT \"\"",
+   "16x16 INPUT \"\"",
+   "16x16 INPUT \"\"",
+   "50x28 BUTTON \"Daily review reminder\"",
+   "205x40 BUTTON \"Clear downloaded data\"",
+   "181x40 BUTTON \"Replay the app tour\"",
+   "185x40 A \"Join our Discord\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 7,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div[aria-label=\"Theme\"] > button:nth-child(2) ::   Element has insufficient color contrast of 4.39 (foreground color: #71717a, background color: #f4f4f5, font size: 9.8pt (13px), font weigh",
+     "div[aria-label=\"Flashcard recall\"] > button:nth-child(2) ::   Element has insufficient color contrast of 4.39 (foreground color: #71717a, background color: #f4f4f5, font size: 9.8pt (13px), font weigh",
+     "div[aria-label=\"Audio speed\"] > button:nth-child(2) ::   Element has insufficient color contrast of 4.39 (foreground color: #71717a, background color: #f4f4f5, font size: 9.8pt (13px), font weigh",
+     "div[aria-label=\"Audio speed\"] > button:nth-child(3) ::   Element has insufficient color contrast of 4.39 (foreground color: #71717a, background color: #f4f4f5, font size: 9.8pt (13px), font weigh"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "test",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "86x40 BUTTON \"Back\"",
+   "18x18 BUTTON \"More information: A word is \""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "words",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "71x38 BUTTON \"All44\"",
+   "81x38 BUTTON \"New37\"",
+   "101x38 BUTTON \"Learning2\"",
+   "97x38 BUTTON \"Learned5\"",
+   "158x38 BUTTON \"Previously known0\"",
+   "106x38 BUTTON \"Mastered0\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 40,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div[role=\"group\"] > button:nth-child(2) > span ::   Element has insufficient color contrast of 2.97 (foreground color: #95959b, background color: #ffffff, font size: 9.8pt (13px), font weigh",
+     "button[type=\"button\"]:nth-child(6) > span ::   Element has insufficient color contrast of 2.92 (foreground color: #d97706, background color: #fcf4eb, font size: 8.6pt (11.5px), font wei",
+     "button[type=\"button\"]:nth-child(7) > span ::   Element has insufficient color contrast of 2.92 (foreground color: #d97706, background color: #fcf4eb, font size: 8.6pt (11.5px), font wei",
+     "button[type=\"button\"]:nth-child(8) > span ::   Element has insufficient color contrast of 4.39 (foreground color: #71717a, background color: #f4f4f4, font size: 8.6pt (11.5px), font wei"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "writing",
+  "vp": "390x844",
+  "th": "light",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "landing",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "79x42 BUTTON \"Log in\"",
+   "349x41 A \"Or find out how much Chinese\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 6,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div:nth-child(4) > button ::   Element has insufficient color contrast of 4.07 (foreground color: #ffffff, background color: #6e8466, font size: 12.0pt (16px), font weig",
+     "div:nth-child(1) > div:nth-child(5) > div:nth-child(1) ::   Element has insufficient color contrast of 4.46 (foreground color: #dc2626, background color: #fdf4f4, font size: 9.0pt (12px), font weigh",
+     "div:nth-child(1) > div:nth-child(5) > div:nth-child(2) ::   Element has insufficient color contrast of 3.01 (foreground color: #d97706, background color: #fdf8f3, font size: 9.0pt (12px), font weigh",
+     "div:nth-child(5) > div:nth-child(4) ::   Element has insufficient color contrast of 3.19 (foreground color: #2f9e6d, background color: #f5faf8, font size: 9.0pt (12px), font weigh"
+    ]
+   },
+   {
+    "id": "landmark-one-main",
+    "impact": "moderate",
+    "n": 1,
+    "help": "Document should have one main landmark",
+    "targets": [
+     "html ::   Document does not have a main landmark"
+    ]
+   },
+   {
+    "id": "region",
+    "impact": "moderate",
+    "n": 22,
+    "help": "All page content should be contained by landmarks",
+    "targets": [
+     "div:nth-child(2) > div:nth-child(1) > div ::   Some page content is not contained by landmarks",
+     "#root > div > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) ::   Some page content is not contained by landmarks",
+     "h1 ::   Some page content is not contained by landmarks",
+     "div:nth-child(2) > p ::   Some page content is not contained by landmarks"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "assess",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [],
+  "lang": "en",
+  "title": "How much can you read? · Hanzi Dojo",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "landmark-one-main",
+    "impact": "moderate",
+    "n": 1,
+    "help": "Document should have one main landmark",
+    "targets": [
+     "html ::   Document does not have a main landmark"
+    ]
+   },
+   {
+    "id": "region",
+    "impact": "moderate",
+    "n": 4,
+    "help": "All page content should be contained by landmarks",
+    "targets": [
+     "#root > div > div > div:nth-child(1) ::   Some page content is not contained by landmarks",
+     "div:nth-child(2) ::   Some page content is not contained by landmarks",
+     "h1 ::   Some page content is not contained by landmarks",
+     "p ::   Some page content is not contained by landmarks"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "privacy",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "96x33 BUTTON \"Hanzi Dojo\"",
+   "51x16 A \"Support\"",
+   "180x17 A \"support@hanzi-dojo.com\"",
+   "56x17 A \"Support\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div:nth-child(4) ::   Element has insufficient color contrast of 4.39 (foreground color: #71717a, background color: #f4f4f5, font size: 9.8pt (13px), font weigh"
+    ]
+   },
+   {
+    "id": "landmark-one-main",
+    "impact": "moderate",
+    "n": 1,
+    "help": "Document should have one main landmark",
+    "targets": [
+     "html ::   Document does not have a main landmark"
+    ]
+   },
+   {
+    "id": "region",
+    "impact": "moderate",
+    "n": 51,
+    "help": "All page content should be contained by landmarks",
+    "targets": [
+     "h1 ::   Some page content is not contained by landmarks",
+     "p:nth-child(3) ::   Some page content is not contained by landmarks",
+     "div:nth-child(4) ::   Some page content is not contained by landmarks",
+     "p:nth-child(5) ::   Some page content is not contained by landmarks"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "auth",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "40x40 BUTTON \"Back\"",
+   "151x43 BUTTON \"Log in\"",
+   "151x43 BUTTON \"Sign up\"",
+   "40x40 BUTTON \"Show password\"",
+   "302x20 BUTTON \"Forgot password?\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "axe": [
+   {
+    "id": "landmark-one-main",
+    "impact": "moderate",
+    "n": 1,
+    "help": "Document should have one main landmark",
+    "targets": [
+     "html ::   Document does not have a main landmark"
+    ]
+   },
+   {
+    "id": "region",
+    "impact": "moderate",
+    "n": 4,
+    "help": "All page content should be contained by landmarks",
+    "targets": [
+     "div:nth-child(3) > div:nth-child(1) ::   Some page content is not contained by landmarks",
+     "input[placeholder=\"Email\"] ::   Some page content is not contained by landmarks",
+     "input[placeholder=\"Password\"] ::   Some page content is not contained by landmarks",
+     "div:nth-child(6) ::   Some page content is not contained by landmarks"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "home",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "34x34 BUTTON \"Open profile\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "label-content-name-mismatch",
+    "impact": "serious",
+    "n": 2,
+    "help": "Elements must have their visible text as part of their accessible name",
+    "targets": [
+     ".hd-press-deep ::   Text inside the element is not included in the accessible name",
+     "div[role=\"button\"] ::   Text inside the element is not included in the accessible name"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "study-front",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "38x38 BUTTON \"Exit\"",
+   "38x38 BUTTON \"Undo last grade\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "label-content-name-mismatch",
+    "impact": "serious",
+    "n": 1,
+    "help": "Elements must have their visible text as part of their accessible name",
+    "targets": [
+     "div[role=\"button\"] ::   Text inside the element is not included in the accessible name"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "study-back",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "38x38 BUTTON \"Exit\"",
+   "38x38 BUTTON \"Undo last grade\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 5,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div[aria-live=\"polite\"] > div:nth-child(2) > div:nth-child(2) > div:nth-child(1) ::   Element has insufficient color contrast of 2.94 (foreground color: #b83a24, background color: #1a1d24, font size: 15.8pt (21px), font weig",
+     "div > button:nth-child(1) > span:nth-child(2) ::   Element has insufficient color contrast of 2.3 (foreground color: #9aa0a8, background color: #fbedea, font size: 8.3pt (11px), font weight",
+     "div > button:nth-child(2) > span:nth-child(2) ::   Element has insufficient color contrast of 2.36 (foreground color: #9aa0a8, background color: #fbf1e4, font size: 8.3pt (11px), font weigh",
+     "div > button:nth-child(3) > span:nth-child(2) ::   Element has insufficient color contrast of 2.3 (foreground color: #9aa0a8, background color: #e9f2ea, font size: 8.3pt (11px), font weight"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "stories",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "49x38 BUTTON \"All\"",
+   "71x38 BUTTON \"HSK 2\"",
+   "68x38 BUTTON \"HSK 1\"",
+   "84x38 BUTTON \"Manhua\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "label-content-name-mismatch",
+    "impact": "serious",
+    "n": 13,
+    "help": "Elements must have their visible text as part of their accessible name",
+    "targets": [
+     "button[aria-label=\"公园里的下午 · HSK 2 · Story · 1 min\"] ::   Text inside the element is not included in the accessible name",
+     "div[data-shelf=\"top-picks\"] > div:nth-child(2) > .hd-press ::   Text inside the element is not included in the accessible name",
+     "div[data-shelf=\"top-picks\"] > div:nth-child(3) > .hd-press ::   Text inside the element is not included in the accessible name",
+     "button[aria-label=\"月下的朋友 · HSK 1 · 3 chapters\"] ::   Text inside the element is not included in the accessible name"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "story-detail",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "30x30 BUTTON \"Back to library\"",
+   "163x40 BUTTON \"Paged\"",
+   "163x40 BUTTON \"Scroll\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 3,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div:nth-child(2) > div:nth-child(1) ::   Element has insufficient color contrast of 3.3 (foreground color: #b83a24, background color: #0f1115, font size: 8.3pt (11px), font weight",
+     "div[lang=\"zh-Hans\"] > div > div:nth-child(2) > button ::   Element has insufficient color contrast of 4.07 (foreground color: #ffffff, background color: #6e8466, font size: 11.6pt (15.5px), font we",
+     "div[role=\"group\"] > button:nth-child(1) ::   Element has insufficient color contrast of 2.94 (foreground color: #b83a24, background color: #1a1d24, font size: 10.1pt (13.5px), font we"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "reader-paced",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "62x33 SPAN \"今天\"",
+   "62x33 SPAN \"天气\"",
+   "32x33 SPAN \"很\"",
+   "32x33 SPAN \"好\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 2,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div[aria-hidden=\"true\"]:nth-child(2) > div:nth-child(1) ::   Element has insufficient color contrast of 1.65 (foreground color: #64261d, background color: #0f1115, font size: 9.4pt (12.5px), font wei",
+     "div[aria-hidden=\"true\"]:nth-child(3) > div:nth-child(1) ::   Element has insufficient color contrast of 1.17 (foreground color: #341a18, background color: #0f1115, font size: 9.4pt (12.5px), font wei"
+    ]
+   },
+   {
+    "id": "page-has-heading-one",
+    "impact": "moderate",
+    "n": 1,
+    "help": "Page should contain a level-one heading",
+    "targets": [
+     "html ::   Page must have a level-one heading"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "reader-sheet",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "62x33 SPAN \"今天\"",
+   "62x33 SPAN \"天气\"",
+   "32x33 SPAN \"很\"",
+   "32x33 SPAN \"好\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 5,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div[aria-hidden=\"true\"]:nth-child(2) > div:nth-child(1) ::   Element has insufficient color contrast of 1.65 (foreground color: #64261d, background color: #0f1115, font size: 9.4pt (12.5px), font wei",
+     "div[aria-hidden=\"true\"]:nth-child(3) > div:nth-child(1) ::   Element has insufficient color contrast of 1.17 (foreground color: #341a18, background color: #0f1115, font size: 9.4pt (12.5px), font wei",
+     "div:nth-child(1) > div[lang=\"zh-Hans\"] ::   Element has insufficient color contrast of 2.94 (foreground color: #b83a24, background color: #1a1d24, font size: 19.5pt (26px), font weig",
+     "div[role=\"dialog\"] > div:nth-child(1) > div:nth-child(1) > div:nth-child(2) ::   Element has insufficient color contrast of 3.35 (foreground color: #b45309, background color: #1a1d24, font size: 12.0pt (16px), font weig"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "reader-chat",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "page-has-heading-one",
+    "impact": "moderate",
+    "n": 1,
+    "help": "Page should contain a level-one heading",
+    "targets": [
+     "html ::   Page must have a level-one heading"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "reader-manhua",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "20x20 SPAN \"我\"",
+   "20x20 SPAN \"来\"",
+   "38x20 SPAN \"学校\"",
+   "20x20 SPAN \"了\"",
+   "23x23 SPAN \"这\"",
+   "23x23 SPAN \"是\"",
+   "44x23 SPAN \"学校\"",
+   "23x23 SPAN \"吗\"",
+   "44x23 SPAN \"你好\"",
+   "44x23 SPAN \"你是\"",
+   "23x23 SPAN \"新\"",
+   "55x23 SPAN \"学生\"",
+   "23x23 SPAN \"吗\"",
+   "23x23 SPAN \"是\"",
+   "23x23 SPAN \"我\"",
+   "23x23 SPAN \"是\"",
+   "23x23 SPAN \"新\"",
+   "55x23 SPAN \"学生\"",
+   "23x23 SPAN \"我\"",
+   "23x23 SPAN \"来\"",
+   "23x23 SPAN \"学\"",
+   "23x23 SPAN \"写\"",
+   "23x23 SPAN \"字\"",
+   "65x23 SPAN \"太好了\"",
+   "23x23 SPAN \"我\"",
+   "23x23 SPAN \"叫\"",
+   "45x23 SPAN \"小雨\"",
+   "23x23 SPAN \"你\"",
+   "23x23 SPAN \"叫\"",
+   "45x23 SPAN \"什么\"",
+   "44x23 SPAN \"名字\"",
+   "23x23 SPAN \"来\"",
+   "23x23 SPAN \"吧\"",
+   "44x23 SPAN \"我们\"",
+   "23x23 SPAN \"去\"",
+   "44x23 SPAN \"那边\"",
+   "38x20 SPAN \"学校\"",
+   "20x20 SPAN \"很\"",
+   "20x20 SPAN \"大\"",
+   "23x23 SPAN \"这\"",
+   "23x23 SPAN \"是\"",
+   "44x23 SPAN \"我们\"",
+   "23x23 SPAN \"的\"",
+   "44x23 SPAN \"学校\"",
+   "23x23 SPAN \"我\"",
+   "23x23 SPAN \"是\"",
+   "65x23 SPAN \"林老师\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 6,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     ".hd-manhua-caption[data-manhua-bubble-kind=\"narration\"][data-manhua-text-layout=\"caption\"] > div > div[lang=\"zh-Hans\"] > span:nth-child(1) > .hd-manhua-word[aria-label=\"我\"][role=\"button\"] > ruby > rt ::   Element has insufficient color contrast of 4.17 (foreground color: #ba601c, background color: #fbf9f4, font size: 7.6pt (10.08px), font we",
+     ".hd-manhua-caption[data-manhua-bubble-kind=\"narration\"][data-manhua-text-layout=\"caption\"] > div > div[lang=\"zh-Hans\"] > span:nth-child(2) > .hd-manhua-word[aria-label=\"来\"][role=\"button\"] > ruby > rt ::   Element has insufficient color contrast of 4.17 (foreground color: #ba601c, background color: #fbf9f4, font size: 7.6pt (10.08px), font we",
+     ".hd-manhua-caption[data-manhua-bubble-kind=\"narration\"][data-manhua-text-layout=\"caption\"] > div > div[lang=\"zh-Hans\"] > span:nth-child(3) > .hd-manhua-word[aria-label=\"学校\"][role=\"button\"] > ruby > rt ::   Element has insufficient color contrast of 4.17 (foreground color: #ba601c, background color: #fbf9f4, font size: 7.6pt (10.08px), font we",
+     "span[aria-label=\"了\"] > ruby > rt ::   Element has insufficient color contrast of 4.17 (foreground color: #ba601c, background color: #fbf9f4, font size: 7.6pt (10.08px), font we"
+    ]
+   },
+   {
+    "id": "label-content-name-mismatch",
+    "impact": "serious",
+    "n": 24,
+    "help": "Elements must have their visible text as part of their accessible name",
+    "targets": [
+     ".hd-manhua-caption[data-manhua-bubble-kind=\"narration\"][data-manhua-text-layout=\"caption\"] > div > div[lang=\"zh-Hans\"] > span:nth-child(3) > .hd-manhua-word[aria-label=\"学校\"][role=\"button\"] ::   Text inside the element is not included in the accessible name",
+     ".hd-manhua-bubble[data-manhua-bubble-kind=\"thought\"][data-manhua-text-layout=\"overlay\"] > div > div[lang=\"zh-Hans\"] > span:nth-child(3) > .hd-manhua-word[aria-label=\"学校\"][role=\"button\"] ::   Text inside the element is not included in the accessible name",
+     "span[aria-label=\"你好\"] ::   Text inside the element is not included in the accessible name",
+     "span:nth-child(5) > .hd-manhua-word[aria-label=\"学生\"][role=\"button\"] ::   Text inside the element is not included in the accessible name"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "practice",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "dictionary",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "32x41 BUTTON \"Play audio\"",
+   "41x41 BUTTON \"Stroke order\"",
+   "22x41 BUTTON \"Add to deck\"",
+   "111x33 BUTTON \"Meaning\"",
+   "111x33 BUTTON \"Chars\"",
+   "111x33 BUTTON \"Examples\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     ".dict-pill ::   Element has insufficient color contrast of 2.73 (foreground color: #b83a24, background color: #2d2024, font size: 7.9pt (10.5px), font wei"
+    ]
+   },
+   {
+    "id": "label-content-name-mismatch",
+    "impact": "serious",
+    "n": 1,
+    "help": "Elements must have their visible text as part of their accessible name",
+    "targets": [
+     "button[aria-label=\"Stroke order\"] ::   Text inside the element is not included in the accessible name"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "profile",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "86x40 BUTTON \"Back\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 38,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div[title=\"Learn 50 words\"] > div:nth-child(2) ::   Element has insufficient color contrast of 3.21 (foreground color: #6d727a, background color: #20242b, font size: 9.8pt (13px), font weigh",
+     "div[title=\"Learn 50 words\"] > div:nth-child(3) ::   Element has insufficient color contrast of 2.82 (foreground color: #646972, background color: #20242b, font size: 8.3pt (11px), font weigh",
+     "div[title=\"Learn 100 words\"] > div:nth-child(2) ::   Element has insufficient color contrast of 3.21 (foreground color: #6d727a, background color: #20242b, font size: 9.8pt (13px), font weigh",
+     "div[title=\"Learn 100 words\"] > div:nth-child(3) ::   Element has insufficient color contrast of 2.82 (foreground color: #646972, background color: #20242b, font size: 8.3pt (11px), font weigh"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "settings",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "92x40 BUTTON \"Home\"",
+   "89x38 BUTTON \"Light\"",
+   "87x38 BUTTON \"Dark\"",
+   "80x38 BUTTON \"Flip\"",
+   "97x38 BUTTON \"Typed\"",
+   "50x28 BUTTON \"Audio on flip\"",
+   "71x38 BUTTON \"1×\"",
+   "94x38 BUTTON \"0.75×\"",
+   "87x38 BUTTON \"0.5×\"",
+   "16x16 INPUT \"\"",
+   "16x16 INPUT \"\"",
+   "16x16 INPUT \"\"",
+   "50x28 BUTTON \"Daily review reminder\"",
+   "205x40 BUTTON \"Clear downloaded data\"",
+   "181x40 BUTTON \"Replay the app tour\"",
+   "185x40 A \"Join our Discord\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "a[href$=\"GhWDpgZY9N\"] ::   Element has insufficient color contrast of 2.82 (foreground color: #b83a24, background color: #241f24, font size: 9.8pt (13px), font weigh"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "test",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "86x40 BUTTON \"Back\"",
+   "18x18 BUTTON \"More information: A word is \""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 1,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div:nth-child(4) > div:nth-child(1) > div ::   Element has insufficient color contrast of 2.94 (foreground color: #b83a24, background color: #1a1d24, font size: 25.5pt (34px), font weig"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "words",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "71x38 BUTTON \"All44\"",
+   "81x38 BUTTON \"New37\"",
+   "101x38 BUTTON \"Learning2\"",
+   "97x38 BUTTON \"Learned5\"",
+   "158x38 BUTTON \"Previously known0\"",
+   "106x38 BUTTON \"Mastered0\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 87,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "div[role=\"group\"] > button:nth-child(2) > span ::   Element has insufficient color contrast of 4.18 (foreground color: #7a7f87, background color: #1a1d24, font size: 9.8pt (13px), font weigh",
+     "button[type=\"button\"]:nth-child(1) > div > span:nth-child(2) ::   Element has insufficient color contrast of 2.94 (foreground color: #b83a24, background color: #1a1d24, font size: 9.8pt (13px), font weigh",
+     "div:nth-child(5) > button[type=\"button\"]:nth-child(1) > span ::   Element has insufficient color contrast of 3 (foreground color: #3e63dd, background color: #1d2333, font size: 8.6pt (11.5px), font weight",
+     "button[type=\"button\"]:nth-child(2) > div > span:nth-child(2) ::   Element has insufficient color contrast of 2.94 (foreground color: #b83a24, background color: #1a1d24, font size: 9.8pt (13px), font weigh"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ },
+ {
+  "name": "writing",
+  "vp": "390x844",
+  "th": "dark",
+  "scrollW": 390,
+  "innerW": 390,
+  "overflowX": false,
+  "wide": [],
+  "small": [],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "dark",
+  "axe": [
+   {
+    "id": "color-contrast",
+    "impact": "serious",
+    "n": 2,
+    "help": "Elements must meet minimum color contrast ratio thresholds",
+    "targets": [
+     "button:nth-child(1) > div:nth-child(1) ::   Element has insufficient color contrast of 2.82 (foreground color: #b83a24, background color: #241f24, font size: 11.3pt (15px), font weig",
+     "button:nth-child(1) > div:nth-child(2) ::   Element has insufficient color contrast of 2.82 (foreground color: #b83a24, background color: #241f24, font size: 8.3pt (11px), font weigh"
+    ]
+   }
+  ],
+  "pageerrors": [],
+  "console": [
+   "warning: Couldn't load preload assets:  ProgressEvent"
+  ]
+ }
+]

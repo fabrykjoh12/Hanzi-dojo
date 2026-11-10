@@ -1,0 +1,233 @@
+src/Background.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | none
+src/Cyrillic.jsx | excluded(frozen-track surface; not exercised) | none
+src/EncounterComplete.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | UX-06
+src/ErrorBoundary.jsx | excluded(component not reached in walkthrough: native-only/edge state) | none
+src/FinishOverlay.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | none
+src/FirstMissionWelcome.jsx | excluded(component not reached in walkthrough: native-only/edge state) | none
+src/FlashcardIntro.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | UX-06
+src/HowMuchCanYouRead.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | UX-07
+src/InfoTip.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | UX-10
+src/InkWash.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | none
+src/InteractiveChatReader.jsx | excluded(component not reached in walkthrough: native-only/edge state) | none
+src/Kana.jsx | excluded(frozen-track surface; not exercised) | none
+src/LanguageSwitcher.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | none
+src/MicroStory.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | UX-06
+src/MobileNav.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | UX-11
+src/NativeWelcome.jsx | excluded(component not reached in walkthrough: native-only/edge state) | none
+src/NotFound.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | none
+src/PacedReader.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) ; line 240 read | UX-05
+src/PathBuilding.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | UX-06
+src/PlacementTest.jsx | excluded(component not reached in walkthrough: native-only/edge state) | none
+src/Practice.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | none
+src/PublicStory.jsx | excluded(component not reached in walkthrough: native-only/edge state) | none
+src/ReadingScaffold.jsx | excluded(component not reached in walkthrough: native-only/edge state) | none
+src/Settings.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | UX-09,UX-10
+src/Sidebar.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | none
+src/SplashIntro.jsx | excluded(component not reached in walkthrough: native-only/edge state) | none
+src/StuckWordCoach.jsx | excluded(component not reached in walkthrough: native-only/edge state) | none
+src/ThemeContext.jsx | reviewed-full (5 lines) | UX-08
+src/Toasts.jsx | reviewed-skim (live-region lines 55-64 read) | none
+src/TourOverlay.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | none
+src/WordLookupSheet.jsx | reviewed-skim (runtime + lines 78-175 read) | UX-05
+src/achievements.js | excluded(pure logic module not read; UX runtime lens) | none
+src/achievements.test.js | excluded(test file not read; UX runtime lens) | none
+src/anchoredPopover.js | excluded(pure logic module not read; UX runtime lens) | none
+src/anchoredPopover.test.js | excluded(test file not read; UX runtime lens) | none
+src/assets/webfonts/OFL-inter.txt | excluded(font licence/asset; out of UX lens) | none
+src/assets/webfonts/OFL-noto-sans-sc.txt | excluded(font licence/asset; out of UX lens) | none
+src/assets/webfonts/OFL-poppins.txt | excluded(font licence/asset; out of UX lens) | none
+src/bottomBar.js | excluded(pure logic module not read; UX runtime lens) | none
+src/bottomBar.test.js | excluded(test file not read; UX runtime lens) | none
+src/brand.js | excluded(pure logic module not read; UX runtime lens) | none
+src/cardMarker.js | excluded(pure logic module not read; UX runtime lens) | none
+src/cardMarker.test.js | excluded(test file not read; UX runtime lens) | none
+src/characterNames.js | excluded(pure logic module not read; UX runtime lens) | none
+src/cleanMeaning.js | excluded(pure logic module not read; UX runtime lens) | none
+src/community.js | excluded(pure logic module not read; UX runtime lens) | none
+src/data.js | excluded(pure logic module not read; UX runtime lens) | none
+src/data.test.js | excluded(test file not read; UX runtime lens) | none
+src/designTokens.js | excluded(pure logic module not read; UX runtime lens) | none
+src/deskTransition.js | excluded(pure logic module not read; UX runtime lens) | none
+src/deskTransition.test.js | excluded(test file not read; UX runtime lens) | none
+src/dialogFocus.js | excluded(not read; trap behaviour verified at runtime on FinishOverlay) | none
+src/dialogFocus.test.js | excluded(test file not read; UX runtime lens) | none
+src/dojoBoard.js | excluded(admin/HQ or migration logic; not a learner UI surface) | none
+src/dojoBoard.test.js | excluded(test file not read; UX runtime lens) | none
+src/dojoBridge.test.js | excluded(test file not read; UX runtime lens) | none
+src/dojoClaudeBridge.js | excluded(admin/HQ or migration logic; not a learner UI surface) | none
+src/dojoClient.js | excluded(admin/HQ or migration logic; not a learner UI surface) | none
+src/dojoLocalClient.js | excluded(admin/HQ or migration logic; not a learner UI surface) | none
+src/dojoLocalClient.test.js | excluded(test file not read; UX runtime lens) | none
+src/dojoRemoteClient.js | excluded(admin/HQ or migration logic; not a learner UI surface) | none
+src/dojoRemoteClient.test.js | excluded(test file not read; UX runtime lens) | none
+src/dojoSupabaseClient.js | excluded(admin/HQ or migration logic; not a learner UI surface) | none
+src/drillMemory.js | excluded(pure logic module not read; UX runtime lens) | none
+src/drillMemory.test.js | excluded(test file not read; UX runtime lens) | none
+src/fakePostgrest.js | excluded(admin/HQ or migration logic; not a learner UI surface) | none
+src/fakePostgrest.test.js | excluded(test file not read; UX runtime lens) | none
+src/firstEncounter.js | excluded(pure logic module not read; UX runtime lens) | none
+src/firstEncounter.test.js | excluded(test file not read; UX runtime lens) | none
+src/firstMission.js | excluded(pure logic module not read; UX runtime lens) | none
+src/firstMission.test.js | excluded(test file not read; UX runtime lens) | none
+src/firstRun.js | excluded(pure logic module not read; UX runtime lens) | none
+src/firstRun.test.js | excluded(test file not read; UX runtime lens) | none
+src/flags.js | excluded(pure logic module not read; UX runtime lens) | none
+src/fluency.js | excluded(pure logic module not read; UX runtime lens) | none
+src/fluency.test.js | excluded(test file not read; UX runtime lens) | none
+src/fontLoader.js | excluded(pure logic module not read; UX runtime lens) | none
+src/fontLoader.test.js | excluded(test file not read; UX runtime lens) | none
+src/gentleReturn.js | excluded(pure logic module not read; UX runtime lens) | none
+src/gentleReturn.test.js | excluded(test file not read; UX runtime lens) | none
+src/haptics.js | excluded(pure logic module not read; UX runtime lens) | none
+src/highlightWord.js | excluded(pure logic module not read; UX runtime lens) | none
+src/highlightWord.test.js | excluded(test file not read; UX runtime lens) | none
+src/hskBuild.js | excluded(pure logic module not read; UX runtime lens) | none
+src/hskBuild.test.js | excluded(test file not read; UX runtime lens) | none
+src/index.css | reviewed-skim (grep: data-theme, reduced-motion blocks) | UX-08
+src/inkWash.js | excluded(pure logic module not read; UX runtime lens) | none
+src/inkWash.test.js | excluded(test file not read; UX runtime lens) | none
+src/interactiveChat.js | excluded(pure logic module not read; UX runtime lens) | none
+src/interactiveChat.test.js | excluded(test file not read; UX runtime lens) | none
+src/languageTheme.js | reviewed-skim (grep langTag/ink) | UX-03,UX-07
+src/languageTheme.test.js | excluded(test file not read; UX runtime lens) | none
+src/legalLinks.js | excluded(pure logic module not read; UX runtime lens) | none
+src/legalLinks.test.js | excluded(test file not read; UX runtime lens) | none
+src/mcq.js | excluded(pure logic module not read; UX runtime lens) | none
+src/mcq.test.js | excluded(test file not read; UX runtime lens) | none
+src/migration/legacyClaimManifest.js | excluded(admin/HQ or migration logic; not a learner UI surface) | none
+src/migration/legacyClaimManifest.test.js | excluded(test file not read; UX runtime lens) | none
+src/migration/legacyClaimMigration.js | excluded(admin/HQ or migration logic; not a learner UI surface) | none
+src/migration/legacyClaimMigration.test.js | excluded(test file not read; UX runtime lens) | none
+src/migration/legacyClaimReplay.js | excluded(admin/HQ or migration logic; not a learner UI surface) | none
+src/migration/legacyProvenance.test.js | excluded(test file not read; UX runtime lens) | none
+src/migration/reviewLogContract.js | excluded(admin/HQ or migration logic; not a learner UI surface) | none
+src/migration/reviewLogContract.test.js | excluded(test file not read; UX runtime lens) | none
+src/migration/snapshotContract.js | excluded(admin/HQ or migration logic; not a learner UI surface) | none
+src/migration/snapshotContract.test.js | excluded(test file not read; UX runtime lens) | none
+src/missionOffer.js | excluded(pure logic module not read; UX runtime lens) | none
+src/missionOffer.test.js | excluded(test file not read; UX runtime lens) | none
+src/mobileNavState.js | excluded(pure logic module not read; UX runtime lens) | none
+src/mobileNavState.test.js | excluded(test file not read; UX runtime lens) | none
+src/moduleNames.test.js | excluded(test file not read; UX runtime lens) | none
+src/monthReview.js | excluded(pure logic module not read; UX runtime lens) | none
+src/monthReview.test.js | excluded(test file not read; UX runtime lens) | none
+src/navConfig.js | reviewed-full | UX-11
+src/navConfig.test.js | excluded(test file not read; UX runtime lens) | none
+src/navFocus.js | excluded(pure logic module not read; UX runtime lens) | none
+src/navFocus.test.js | excluded(test file not read; UX runtime lens) | none
+src/needsTesting.test.js | excluded(test file not read; UX runtime lens) | none
+src/normalizeReadings.test.js | excluded(test file not read; UX runtime lens) | none
+src/panels.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | none
+src/practicePlan.js | excluded(pure logic module not read; UX runtime lens) | none
+src/practicePlan.test.js | excluded(test file not read; UX runtime lens) | none
+src/practiceSignal.js | excluded(pure logic module not read; UX runtime lens) | none
+src/practiceSignal.test.js | excluded(test file not read; UX runtime lens) | none
+src/prefetch.js | excluded(pure logic module not read; UX runtime lens) | none
+src/priorKnowledge.js | excluded(pure logic module not read; UX runtime lens) | none
+src/priorKnowledge.test.js | excluded(test file not read; UX runtime lens) | none
+src/priorKnowledgeCallSites.test.js | excluded(test file not read; UX runtime lens) | none
+src/priorKnowledgeImport.js | excluded(pure logic module not read; UX runtime lens) | none
+src/priorKnowledgeImport.test.js | excluded(test file not read; UX runtime lens) | none
+src/priorKnowledgeSeed.js | excluded(pure logic module not read; UX runtime lens) | none
+src/priorKnowledgeSeed.test.js | excluded(test file not read; UX runtime lens) | none
+src/priorKnowledgeVocab.js | excluded(pure logic module not read; UX runtime lens) | none
+src/priorKnowledgeVocab.test.js | excluded(test file not read; UX runtime lens) | none
+src/priorSeedNotice.js | excluded(pure logic module not read; UX runtime lens) | none
+src/priorSeedNotice.test.js | excluded(test file not read; UX runtime lens) | none
+src/privacyDisclosures.test.js | excluded(test file not read; UX runtime lens) | none
+src/publicStoryHelpers.js | excluded(pure logic module not read; UX runtime lens) | none
+src/publicStoryHelpers.test.js | excluded(test file not read; UX runtime lens) | none
+src/readAlong.js | excluded(pure logic module not read; UX runtime lens) | none
+src/readAlong.test.js | excluded(test file not read; UX runtime lens) | none
+src/readingFonts.js | excluded(pure logic module not read; UX runtime lens) | none
+src/readingFonts.test.js | excluded(test file not read; UX runtime lens) | none
+src/readingLadder.js | excluded(pure logic module not read; UX runtime lens) | none
+src/readingLadder.test.js | excluded(test file not read; UX runtime lens) | none
+src/recentLookups.js | excluded(pure logic module not read; UX runtime lens) | none
+src/recentLookups.test.js | excluded(test file not read; UX runtime lens) | none
+src/reminderSchedule.js | excluded(pure logic module not read; UX runtime lens) | none
+src/reminderSchedule.test.js | excluded(test file not read; UX runtime lens) | none
+src/searchFold.js | excluded(pure logic module not read; UX runtime lens) | none
+src/searchFold.test.js | excluded(test file not read; UX runtime lens) | none
+src/serviceWorkerCache.test.js | excluded(test file not read; UX runtime lens) | none
+src/shareCard.js | excluded(pure logic module not read; UX runtime lens) | none
+src/shareCard.test.js | excluded(test file not read; UX runtime lens) | none
+src/sheetLayout.js | excluded(pure logic module not read; UX runtime lens) | none
+src/sheetLayout.test.js | excluded(test file not read; UX runtime lens) | none
+src/speechScore.js | excluded(pure logic module not read; UX runtime lens) | none
+src/speechScore.test.js | excluded(test file not read; UX runtime lens) | none
+src/speechSupport.js | excluded(pure logic module not read; UX runtime lens) | none
+src/speechSupport.test.js | excluded(test file not read; UX runtime lens) | none
+src/splashIntro.js | excluded(pure logic module not read; UX runtime lens) | none
+src/splashIntro.test.js | excluded(test file not read; UX runtime lens) | none
+src/starterAudio.js | excluded(pure logic module not read; UX runtime lens) | none
+src/streak.js | excluded(pure logic module not read; UX runtime lens) | none
+src/streak.test.js | excluded(test file not read; UX runtime lens) | none
+src/stuckWord.js | excluded(pure logic module not read; UX runtime lens) | none
+src/stuckWord.test.js | excluded(test file not read; UX runtime lens) | none
+src/tatoeba.js | excluded(pure logic module not read; UX runtime lens) | none
+src/tatoeba.test.js | excluded(test file not read; UX runtime lens) | none
+src/tiers.js | excluded(pure logic module not read; UX runtime lens) | none
+src/tiers.test.js | excluded(test file not read; UX runtime lens) | none
+src/toast.js | excluded(pure logic module not read; UX runtime lens) | none
+src/toast.test.js | excluded(test file not read; UX runtime lens) | none
+src/tokenMark.js | excluded(pure logic module not read; UX runtime lens) | none
+src/tokenMark.test.js | excluded(test file not read; UX runtime lens) | none
+src/tour.js | excluded(pure logic module not read; UX runtime lens) | none
+src/tour.test.js | excluded(test file not read; UX runtime lens) | none
+src/typedAnswer.js | excluded(pure logic module not read; UX runtime lens) | none
+src/typedAnswer.test.js | excluded(test file not read; UX runtime lens) | none
+src/ui.jsx | reviewed-skim (runtime-exercised in browser; source only partly read) | none
+src/useAnchoredPopover.js | reviewed-skim (grep focus) | UX-05
+src/useDictEntry.js | excluded(pure logic module not read; UX runtime lens) | none
+src/useIsMobile.js | excluded(pure logic module not read; UX runtime lens) | none
+src/useOnline.js | excluded(pure logic module not read; UX runtime lens) | none
+src/useReadingFont.js | excluded(pure logic module not read; UX runtime lens) | none
+src/useStoryReaderCore.js | excluded(not read; behaviour observed through readers) | none
+src/utils.js | excluded(pure logic module not read; UX runtime lens) | none
+src/utils.test.js | excluded(test file not read; UX runtime lens) | none
+src/version.js | excluded(pure logic module not read; UX runtime lens) | none
+src/vocabIndex.js | excluded(pure logic module not read; UX runtime lens) | none
+src/vocabIndex.test.js | excluded(test file not read; UX runtime lens) | none
+src/vocabKanji.test.js | excluded(test file not read; UX runtime lens) | none
+src/webfonts.css | excluded(font licence/asset; out of UX lens) | none
+src/wordLookup.js | excluded(pure logic module not read; UX runtime lens) | none
+src/wordLookup.test.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/analyzer.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/assessment.spec.js | reviewed-skim (route only) | none
+tests/e2e/daily-story.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/dictionary-sheet-scroll.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/dictionary.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/grammar.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/home-v3-geometry.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/home-v3-motion.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/home-v3-states.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/home.spec.js | reviewed-skim (goto lines) | none
+tests/e2e/hq-gate.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/inkbound-balloon-composition.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/known-words.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/landing.spec.js | reviewed-skim (goto lines) | none
+tests/e2e/manhua.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/nav-dock.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/noodleshop-manhua.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/offline-start.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/password-reset.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/practice.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/profile.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/reader.spec.js | reviewed-skim (selectors) | none
+tests/e2e/store-screenshots.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/stories-shelf.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/study-mobile-fit.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/study.spec.js | reviewed-full | none
+tests/e2e/tour.spec.js | reviewed-skim | none
+tests/e2e/train-manhua.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/trust-pages.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/upstairs-manhua.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/visual.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/e2e/words.spec.js | excluded(test file not read; UX runtime lens) | none
+tests/fixtures/manhuaManifest.js | reviewed-skim | none
+tests/fixtures/mockSupabase.js | reviewed-full | none (fixture limits noted in report §Method)
+tests/pages/HomePage.js | excluded(test file not read; UX runtime lens) | none
+tests/pages/PracticePage.js | excluded(test file not read; UX runtime lens) | none
+tests/pages/ReaderPage.js | excluded(test file not read; UX runtime lens) | none
+tests/pages/StudyPage.js | reviewed-full | none

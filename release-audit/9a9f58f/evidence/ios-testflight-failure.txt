@@ -1,0 +1,11 @@
+Source: GitHub Actions run 42549643275 (iOS build → TestFlight, main @ b0d2aae, 2026-11-09T02:12Z), job "build", failed step
+(retrieved read-only via GitHub MCP get_job_logs; personal name redacted). Run 42547830386 (01:52Z) failed the same way.
+
+Error: GET certificates?limit=200 → HTTP 403: Unable to process request - PLA Update available — You currently don't have
+access to this membership resource. To resolve this issue, your team's Account Holder, [REDACTED], must agree to the latest
+Program License Agreement.
+    at api (.github/scripts/asc-signing-assets.mjs:81:11)
+    at async .github/scripts/asc-signing-assets.mjs:89:18
+
+Prior iOS TestFlight runs: last success 31963026026 (main @ 97c9f3a, 2026-08-16).
+Main @ 9a9f58f push runs: CI success, E2E success, Native success (2026-11-09T02:24Z).

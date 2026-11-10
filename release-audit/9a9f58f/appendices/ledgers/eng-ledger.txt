@@ -1,0 +1,737 @@
+.agent/roles.json | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.agent/tasks/README.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.agent/tasks/control-plane-grant-model.json | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.agent/tasks/dynamic-ref-writers.json | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.agent/tasks/fresh-context-reviewer.json | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.agent/tasks/integration-identity-gate.json | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.agent/tasks/required-check-name-uniqueness.json | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.agent/tasks/runtime-hook-maintenance-grant.json | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.agent/tasks/runtime-producer-identity.json | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.agent/tasks/runtime-task-scope-guard.json | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/agents/fresh-context-reviewer.md | not-reviewed(time-box; outside native/store critical path) | none
+.claude/agents/task-producer.md | not-reviewed(time-box; outside native/store critical path) | none
+.claude/commands/audio.md | not-reviewed(time-box; outside native/store critical path) | none
+.claude/commands/make-admin.md | not-reviewed(time-box; outside native/store critical path) | none
+.claude/commands/parallel.md | not-reviewed(time-box; outside native/store critical path) | none
+.claude/commands/reset.md | not-reviewed(time-box; outside native/store critical path) | none
+.claude/commands/ship.md | not-reviewed(time-box; outside native/store critical path) | none
+.claude/commands/unlock.md | reviewed-skim | none
+.claude/hooks/session-start.sh | reviewed-skim | none
+.claude/hooks/task-scope-guard.mjs | not-reviewed(time-box; outside native/store critical path) | none
+.claude/hooks/task-scope-policy.mjs | not-reviewed(time-box; outside native/store critical path) | none
+.claude/settings.json | reviewed-skim | none
+.claude/skills/VENDORED.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/brainstorming/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/brainstorming/scripts/frame-template.html | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/brainstorming/scripts/helper.js | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/brainstorming/scripts/server.cjs | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/brainstorming/scripts/start-server.sh | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/brainstorming/scripts/stop-server.sh | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/brainstorming/spec-document-reviewer-prompt.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/brainstorming/visual-companion.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/browser-qa/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/database-migrations/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/deployment-patterns/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/design-system/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/dispatching-parallel-agents/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/documentation-lookup/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/e2e-testing/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/error-handling/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/executing-plans/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/finishing-a-development-branch/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/frontend-a11y/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/frontend-patterns/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/github-ops/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/postgres-patterns/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/react-patterns/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/react-performance/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/react-testing/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/receiving-code-review/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/requesting-code-review/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/requesting-code-review/code-reviewer.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/security-review/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/security-review/cloud-infrastructure-security.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/security-scan/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/subagent-driven-development/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/subagent-driven-development/implementer-prompt.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/subagent-driven-development/scripts/review-package | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/subagent-driven-development/scripts/sdd-workspace | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/subagent-driven-development/scripts/task-brief | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/subagent-driven-development/task-reviewer-prompt.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/systematic-debugging/CREATION-LOG.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/systematic-debugging/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/systematic-debugging/condition-based-waiting-example.ts | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/systematic-debugging/condition-based-waiting.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/systematic-debugging/defense-in-depth.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/systematic-debugging/find-polluter.sh | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/systematic-debugging/root-cause-tracing.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/systematic-debugging/test-academic.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/systematic-debugging/test-pressure-1.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/systematic-debugging/test-pressure-2.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/systematic-debugging/test-pressure-3.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/test-driven-development/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/test-driven-development/testing-anti-patterns.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/using-git-worktrees/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/using-superpowers/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/verification-before-completion/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/vite-patterns/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/writing-plans/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/writing-plans/plan-document-reviewer-prompt.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/writing-skills/SKILL.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/writing-skills/anthropic-best-practices.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/writing-skills/examples/CLAUDE_MD_TESTING.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/writing-skills/graphviz-conventions.dot | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/writing-skills/persuasion-principles.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/writing-skills/render-graphs.js | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claude/skills/writing-skills/testing-skills-with-subagents.md | excluded(vendored skill / agent-tooling metadata, not shipped; not opened) | none
+.claudeignore | not-reviewed(time-box; outside native/store critical path) | none
+.gitignore | reviewed-full | none
+.openai/hosting.json | not-reviewed(time-box; outside native/store critical path) | none
+CLAUDE.md | reviewed-full | none
+LICENSE | not-reviewed(time-box; outside native/store critical path) | none
+NOTICE.md | not-reviewed(time-box; outside native/store critical path) | none
+README.md | not-reviewed(time-box; outside native/store critical path) | none
+ROADMAP.md | not-reviewed(time-box; outside native/store critical path) | none
+TASKS.md | not-reviewed(time-box; outside native/store critical path) | none
+analyticsEventBounds.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+android/.gitignore | reviewed-skim | none
+android/app/.gitignore | not-reviewed(time-box; outside native/store critical path) | none
+android/app/build.gradle | reviewed-full | ENG-08
+android/app/capacitor.build.gradle | not-reviewed(time-box; outside native/store critical path) | none
+android/app/proguard-rules.pro | not-reviewed(time-box; outside native/store critical path) | none
+android/app/src/androidTest/java/com/getcapacitor/myapp/ExampleInstrumentedTest.java | not-reviewed(time-box; outside native/store critical path) | none
+android/app/src/main/AndroidManifest.xml | reviewed-full | ENG-07
+android/app/src/main/java/com/hanzidojo/app/MainActivity.java | reviewed-full | none
+android/app/src/main/res/layout/activity_main.xml | not-reviewed(time-box; outside native/store critical path) | none
+android/app/src/main/res/mipmap-anydpi-v26/ic_launcher.xml | reviewed-full | none
+android/app/src/main/res/mipmap-anydpi-v26/ic_launcher_round.xml | reviewed-full | none
+android/app/src/main/res/values/strings.xml | reviewed-full | none
+android/app/src/main/res/values/styles.xml | reviewed-full | none
+android/app/src/main/res/xml/file_paths.xml | reviewed-full | none
+android/app/src/test/java/com/getcapacitor/myapp/ExampleUnitTest.java | not-reviewed(time-box; outside native/store critical path) | none
+android/build.gradle | not-reviewed(time-box; outside native/store critical path) | none
+android/capacitor.settings.gradle | not-reviewed(time-box; outside native/store critical path) | none
+android/gradle.properties | not-reviewed(time-box; outside native/store critical path) | none
+android/gradle/wrapper/gradle-wrapper.properties | reviewed-full | none
+android/gradlew | not-reviewed(time-box; outside native/store critical path) | none
+android/gradlew.bat | not-reviewed(time-box; outside native/store critical path) | none
+android/settings.gradle | not-reviewed(time-box; outside native/store critical path) | none
+android/variables.gradle | reviewed-full | none
+anonSurfaceMigrations.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+artProvenance.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+audioPathNull.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+audioPathRepair.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+capacitor.config.json | reviewed-full | ENG-07
+clientGrantMigrations.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+design-system/hanzi-dojo-hq/MASTER.md | not-reviewed(time-box; outside native/store critical path) | none
+design-system/hanzi-dojo-hq/pages/collaboration-hq.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/APPLE-SETUP.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/ARCHITECTURE.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/AUTOMATION-AUTHORITY.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/BACKLOG.md | reviewed-skim | ENG-11
+docs/CHANGELOG.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/CONTENT-LICENSING.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/CONTENT-PROVENANCE-AUDIT.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/DATABASE.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/DEPLOY.md | reviewed-skim | ENG-09
+docs/DESIGN-BIBLE.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/DISCORD.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/DOJO-BRIDGE.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/INTEGRATION-PROTOCOL.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/METRICS.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/P14-APP-ICON-V2-AUDIT.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/P14-APP-ICON-V2-BRUSH.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/P14-APP-ICON-V2-CONCEPTS.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/P14-APP-ICON-V2-DEVICE-GATE.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/P14-APP-ICON-V2-IMPLEMENTATION.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/P14-APP-ICON-V2-RINGS.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/PM-BOARD.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/PRE-RELEASE-CHECKLIST.md | reviewed-skim | ENG-01,ENG-11
+docs/PRE-RELEASE-READINESS-AUDIT.md | reviewed-skim | ENG-08
+docs/PRIOR-KNOWLEDGE-DEPLOY.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/PRIVACY-AUDIT.md | reviewed-skim | ENG-01
+docs/RELEASE-BLOCKER-REMEDIATION.md | reviewed-skim | ENG-04,ENG-05
+docs/RELEASE-CHECKLIST.md | reviewed-skim | ENG-08
+docs/REVIEWER-PROTOCOL.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/STORE-LISTING.md | reviewed-skim | ENG-04,ENG-05,ENG-06
+docs/STORY-BIBLE.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/STORY_EXPERIENCE_AUDIT.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/TESTERS.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/TESTING.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/TTS-RELICENSE-DRY-RUN.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/TTS.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/VOCAB-INGESTION.md | not-reviewed(time-box; outside native/store critical path) | none
+docs/audits/story-coverage-baseline.json | not-reviewed(time-box; outside native/store critical path) | none
+docs/research/2026-07-18-competitive-analysis.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/research/2026-08-08-deep-competitive-analysis.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/README.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/plans/2026-07-15-analytics-dashboard.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/plans/2026-07-16-public-story-links.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/plans/2026-07-17-chat-stories.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/plans/2026-07-17-interactive-chat-stories.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/plans/2026-07-17-paced-reveal-reader.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/plans/2026-07-17-scene-stories.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/plans/2026-07-18-how-much-can-you-read-assessment.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/plans/2026-07-19-flashcard-anything.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/plans/2026-07-19-reference-dictionary.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/plans/2026-07-21-onboarding-wow-moment.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/plans/2026-07-23-prior-knowledge.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/plans/2026-07-23-word-read-along.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/plans/2026-08-15-home-v3-release-gate.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-07-15-analytics-dashboard-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-07-16-public-story-links-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-07-17-chat-stories-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-07-17-interactive-chat-stories-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-07-17-paced-reveal-reader-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-07-17-scene-stories-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-07-18-how-much-can-you-read-assessment-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-07-19-pleco-style-dictionary-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-07-21-onboarding-wow-moment-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-07-23-grammar-spaced-practice-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-07-23-prior-knowledge-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-07-23-stuck-word-help-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-07-23-word-read-along-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+docs/superpowers/specs/2026-08-01-stories-flat-shelf-design.md | excluded(historical spec/research per CLAUDE.md hierarchy; not opened) | none
+eslint.config.js | not-reviewed(time-box; outside native/store critical path) | none
+gate3-workflows.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+gradeCardStaleReplay.test.mjs | reviewed-full | ENG-10
+hq.html | not-reviewed(time-box; outside native/store critical path) | none
+index.html | reviewed-skim | ENG-01
+integration-protocol.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+ios/.gitignore | not-reviewed(time-box; outside native/store critical path) | none
+ios/App/App.xcodeproj/project.pbxproj | reviewed-skim | ENG-06,ENG-12
+ios/App/App.xcodeproj/project.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist | not-reviewed(time-box; outside native/store critical path) | none
+ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme | not-reviewed(time-box; outside native/store critical path) | none
+ios/App/App/App.entitlements | reviewed-full | ENG-12
+ios/App/App/AppDelegate.swift | reviewed-full | none
+ios/App/App/Assets.xcassets/AppIcon.appiconset/Contents.json | reviewed-full | none
+ios/App/App/Assets.xcassets/Contents.json | not-reviewed(time-box; outside native/store critical path) | none
+ios/App/App/Assets.xcassets/Splash.imageset/Contents.json | reviewed-skim | ENG-13
+ios/App/App/Base.lproj/LaunchScreen.storyboard | not-reviewed(time-box; outside native/store critical path) | none
+ios/App/App/Base.lproj/Main.storyboard | not-reviewed(time-box; outside native/store critical path) | none
+ios/App/App/Info.plist | reviewed-full | ENG-06
+ios/App/App/PrivacyInfo.xcprivacy | reviewed-full | none
+ios/App/App/SceneDelegate.swift | reviewed-full | none
+ios/App/CapApp-SPM/.gitignore | not-reviewed(time-box; outside native/store critical path) | none
+ios/App/CapApp-SPM/Package.swift | not-reviewed(time-box; outside native/store critical path) | none
+ios/App/CapApp-SPM/README.md | not-reviewed(time-box; outside native/store critical path) | none
+ios/App/CapApp-SPM/Sources/CapApp-SPM/CapApp-SPM.swift | not-reviewed(time-box; outside native/store critical path) | none
+ios/debug.xcconfig | not-reviewed(time-box; outside native/store critical path) | none
+leak-guard.test.mjs | reviewed-skim | none
+legacyColumnGuard.test.mjs | reviewed-skim | none
+llmProviders.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+native-ci-contract.test.mjs | reviewed-skim | ENG-01
+native-shell-guard.test.mjs | reviewed-skim | none
+nativeFonts.test.mjs | reviewed-skim | none
+needs-testing-state.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+package-lock.json | not-reviewed(time-box; outside native/store critical path) | none
+package.json | reviewed-skim | ENG-01
+playwright.config.js | not-reviewed(time-box; outside native/store critical path) | none
+postcss.config.js | not-reviewed(time-box; outside native/store critical path) | none
+public-bundle-guard.test.mjs | reviewed-skim | none
+public/manifest.webmanifest | not-reviewed(time-box; outside native/store critical path) | none
+public/sw.js | not-reviewed(time-box; outside native/store critical path) | none
+readingPlainRepair.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+redacted-output.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+review-protocol.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+roadmap-render.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+roadmap-sync.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+role-model.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+runtime-scope.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+scripts/needs-testing-discord.mjs | not-reviewed(time-box; outside native/store critical path) | none
+scripts/needs-testing-state.mjs | not-reviewed(time-box; outside native/store critical path) | none
+scripts/setup-discord.mjs | not-reviewed(time-box; outside native/store critical path) | none
+scripts/style-discord.mjs | not-reviewed(time-box; outside native/store critical path) | none
+scripts/testing-discord.mjs | not-reviewed(time-box; outside native/store critical path) | none
+storyContentDebt.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+storyCoverage.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+storyCurriculumAuthority.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+storyCurriculumAuthorityLoader.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+storyLevels.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+storyValidation.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+storyVocabAudit.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+tailwind.config.js | not-reviewed(time-box; outside native/store critical path) | none
+task-contract.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+verification-contract.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+vite.config.js | reviewed-skim | ENG-01
+vitest.config.js | not-reviewed(time-box; outside native/store critical path) | none
+vocabularyIntegrity.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+workflow-authority.test.mjs | not-reviewed(time-box; outside native/store critical path) | none
+android/app/src/main/res/drawable-land-hdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-land-ldpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-land-mdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-land-night-hdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-land-night-ldpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-land-night-mdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-land-night-xhdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-land-night-xxhdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-land-night-xxxhdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-land-xhdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-land-xxhdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-land-xxxhdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-night/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-port-hdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-port-ldpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-port-mdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-port-night-hdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-port-night-ldpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-port-night-mdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-port-night-xhdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-port-night-xxhdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-port-night-xxxhdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-port-xhdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-port-xxhdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable-port-xxxhdpi/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/drawable/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+android/app/src/main/res/mipmap-hdpi/ic_launcher.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-hdpi/ic_launcher_background.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-hdpi/ic_launcher_foreground.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-hdpi/ic_launcher_monochrome.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-hdpi/ic_launcher_round.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-ldpi/ic_launcher.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-ldpi/ic_launcher_background.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-ldpi/ic_launcher_foreground.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-ldpi/ic_launcher_monochrome.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-ldpi/ic_launcher_round.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-mdpi/ic_launcher.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-mdpi/ic_launcher_background.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-mdpi/ic_launcher_foreground.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-mdpi/ic_launcher_monochrome.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-mdpi/ic_launcher_round.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xhdpi/ic_launcher.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xhdpi/ic_launcher_background.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xhdpi/ic_launcher_foreground.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xhdpi/ic_launcher_monochrome.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xhdpi/ic_launcher_round.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xxhdpi/ic_launcher.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xxhdpi/ic_launcher_background.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xxhdpi/ic_launcher_foreground.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xxhdpi/ic_launcher_monochrome.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xxhdpi/ic_launcher_round.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_background.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_foreground.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_monochrome.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/app/src/main/res/mipmap-xxxhdpi/ic_launcher_round.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+android/gradle/wrapper/gradle-wrapper.jar | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+assets/icon-background.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+assets/icon-composer/layer1-field-flat.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+assets/icon-composer/layer2-mark.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+assets/icon-composer/layer3-inlay.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+assets/icon-composer/layer4-grain.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+assets/icon-foreground.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+assets/icon-only.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+assets/splash-dark.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+assets/splash.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+data/covers/jlpt1/season-cat.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+data/covers/jlpt1/season-train2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+data/covers/jlpt1/season1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+data/covers/jlpt1/season2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+data/covers/jlpt1/season3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+data/covers/jlpt2/l2-season1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+data/covers/jlpt2/l2-season2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+data/covers/jlpt2/l2-season3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+data/manhua/bible/linlaoshi-model-sheet.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+data/manhua/bible/mama-and-the-man-model-sheet.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+data/manhua/bible/xiaobai-model-sheet.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+data/manhua/bible/xiaomei-huahua-model-sheet.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+data/manhua/bible/xiaoyu-model-sheet.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+data/manhua/references/upstairs-hsk3-cast.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/masters/mark-CURRENT.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/masters/mark-V1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/masters/mark-V2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/masters/mark-V3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/masters/mark-V3.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/masters/mask-CURRENT.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/masters/mask-V1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/masters/mask-V2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/masters/mask-V3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/masters/mono-approved.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/B-01-marks-180.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/B-02-marks-40.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/B-03-marks-ladder.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/B-04-materials-1024.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/B-05-materials-ladder.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/B-06-ios.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/B-07-android.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/B-08-layers.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/mark180-CURRENT.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/mark180-V1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/mark180-V2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/mark180-V3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/mark40-CURRENT.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/mark40-V1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/mark40-V2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/mark40-V3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/true120-E1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/true120-E2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/true120-E3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/true120-E4.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/true180-E1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/true180-E2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/true180-E3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/true180-E4.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/true40-E1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/true40-E2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/true40-E3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/brush/previews/true40-E4.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/device/previews/D-01-ladder.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/device/previews/D-02-home-light.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/device/previews/D-03-home-dark.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/device/previews/D-04-ios.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/device/previews/D-05-android.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/device/previews/true120-E1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/device/previews/true120-E2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/device/previews/true180-E1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/device/previews/true180-E2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/device/previews/true40-E1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/device/previews/true40-E2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/device/previews/true60-E1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/device/previews/true60-E2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/impl/V-01-ios-sizes.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/impl/V-02-android.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/impl/V-03-fullbleed-check.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/impl/V-04-corner-2x.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/masters/layer1-body.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/masters/layer2-mark-A1.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/masters/layer2-mark-A2.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/masters/layer2-mark-A3-fold.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/masters/layer2-mark-A3.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/masters/layer3-material.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/masters/mono-A1.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/masters/mono-A2.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/masters/mono-A3.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/01-candidates-1024.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/02-size-gate.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/02b-40px.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/03-ios-appearances.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/04-android-masks.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/05-android-themed.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/06-layers.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/07-a2-mitigation.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/true120-A1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/true120-A2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/true120-A3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/true40-A1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/true40-A2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/true40-A3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/true60-A1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/true60-A2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/previews/true60-A3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/masters/body.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/masters/mark-R1.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/masters/mark-R2.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/masters/mark-R3.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/masters/mark-R4.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/masters/material.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/masters/mono-R1.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/masters/mono-R2.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/masters/mono-R3.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/masters/mono-R4.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/R-01-candidates.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/R-02-sizes.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/R-03-ios.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/R-04-android.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/R-05-marks.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true120-R1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true120-R2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true120-R3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true120-R4.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true180-R1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true180-R2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true180-R3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true180-R4.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true40-R1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true40-R2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true40-R3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true40-R4.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true60-R1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true60-R2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true60-R3.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+docs/icon-v2/rings/previews/true60-R4.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-512@2x.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Dark.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+ios/App/App/Assets.xcassets/AppIcon.appiconset/AppIcon-Tinted.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+ios/App/App/Assets.xcassets/Splash.imageset/Default@1x~universal~anyany-dark.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+ios/App/App/Assets.xcassets/Splash.imageset/Default@1x~universal~anyany.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+ios/App/App/Assets.xcassets/Splash.imageset/Default@2x~universal~anyany-dark.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+ios/App/App/Assets.xcassets/Splash.imageset/Default@2x~universal~anyany.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+ios/App/App/Assets.xcassets/Splash.imageset/Default@3x~universal~anyany-dark.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+ios/App/App/Assets.xcassets/Splash.imageset/Default@3x~universal~anyany.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-1.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732-2.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+ios/App/App/Assets.xcassets/Splash.imageset/splash-2732x2732.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | ENG-13
+public/apple-touch-icon.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/favicon.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/icon-192.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/icon-512.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/maskable-512.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/monochrome-512.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk1/ep01/panel-01-arrival.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk1/ep01/panel-02-gate.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk1/ep01/panel-03-xiaoyu.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk1/ep01/panel-05-introduce.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk1/ep01/panel-06-walkway.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk1/ep01/panel-07-hall.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk1/ep01/panel-08-teacher.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk1/ep01/panel-09-seated.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk1/ep01/panel-11-stroke.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk1/ep01/panel-12-delight.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk1/ep01/panel-13-watcher.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk1/ep01/panel-14-hook.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-01-morning.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-02-empty-hall.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-03-stroke-waiting.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-04-my-shadow.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-05-xiaoyu-doorway.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-07-xiaoyu-insists.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-08-teacher-arrives.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-09-assignment.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-10-writing.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-11-again.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-12-hand.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-13-xiaobai.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-14-blot.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-16-draw.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-17-bird.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-18-teacher-takes.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-19-alone.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-20-warning.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk2/ep02/panel-21-hook.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-01-night-gate.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-02-open-door.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-03-waiting.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-04-he-speaks.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-05-listen.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-07-was-a-word.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-08-too-long.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-09-they-move.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-10-coming-down.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-11-room-full.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-12-all-talk.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-14-they-remember.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-15-door.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-16-teacher-night.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-17-did-she-tell.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-18-not-writing.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-19-i-said-nothing.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/inkbound/hsk3/ep03/panel-20-the-bird.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-01-rain.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-02-inside.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-03-mum.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-04-xiaomei.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-05-cat.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-06-small-cold.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-08-no-answer.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-09-milk.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-10-drank.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-11-man.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-12-ten.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-13-nine.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-15-eat.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-16-watching.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-17-egg.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep01/panel-18-quiet.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-01-dry.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-02-asleep.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-03-lives-here.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-04-what-name.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-06-every-cat.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-07-unimpressed.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-08-he-returns.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-09-her-name.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-10-my-cat.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-11-your-cat.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-12-stopped.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-13-went-over.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-14-huahua.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk1/ep02/panel-15-come-eat.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-01-every-day.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-02-only-noodles.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-03-waiting.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-04-where.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-05-late.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-07-i-know.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-08-long-road.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-09-the-room.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-10-cat-goes-in.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-11-he-gets-up.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-12-came-for-you.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-13-mum-sent-us.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-14-he-smiled.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-15-back-together.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/noodleshop/hsk2/ep03/panel-16-rain-again.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-01-closing-time.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-02-phone-on-table.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-03-eight-thirty.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-04-grandma-waits.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-06-into-the-rain.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-07-phone-sings.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-08-beijing-hospital.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-09-running.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-10-eight-twenty-six.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-11-too-many-people.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-13-there-he-is.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-14-phone-returned.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-15-water-in-his-eyes.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-16-train-leaves.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-17-walking-home.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-18-what-favour.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/train/hsk2/ep01/panel-19-tomorrow-night.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-01-new-place.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-02-song-upstairs.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-03-not-good.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-04-every-night.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-06-open-door.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-08-photo-room.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-09-girl-photo.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-10-song-memory.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-11-nine-quiet.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-12-listening.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-14-five-minutes.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-15-door-open.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-16-help.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-17-home-again.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-18-sing-together.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/stories/upstairs/hsk3/ep01/panel-19-good-silence.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/story-covers/generated/hsk1-08-work-and-school.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/story-covers/generated/hsk1-10-li-ming-sings.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+public/story-covers/generated/hsk1-12-our-song.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/86055582-d1d3-4cb7-a460-6c907025fe15.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/Hanzi-logo.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/bg-chinese.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/bg-chinese.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/bg-japanese.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/bg-japanese.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/bg-login.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/bg-login.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/bg-russian.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/bg-russian.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/fonts/mona-sans-latin-ext-wght-normal.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/fonts/mona-sans-latin-wght-normal.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/hero.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/home-hero-r2-2.webp | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/logo.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/react.svg | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/inter-05cf802c73.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/inter-2b2f25a453.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/inter-467acc7aa7.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/inter-6e85163c68.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/inter-7048add3bf.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/inter-9be0371ef5.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/inter-a28b7e3190.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-04aa38cb80.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-050d78410a.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-057418c7b3.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-072d36479f.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-093f26ab88.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-0adc570512.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-0c9e6a5d6f.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-13165c43ad.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-13b0f92ab9.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-154926857a.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-17b2ac0f52.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-186330c8a7.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-20e853115d.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-2267451c07.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-235ccff398.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-23a6fc2580.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-28e6e8e8c2.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-2a28099a3d.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-2c18a05bc5.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-2ed489c0bd.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-2edd0473d8.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-2ef1c878f1.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-2fddfaf623.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-30afae9633.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-321141e311.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-32dede4322.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-343461934e.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-34844983ea.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-34c6c529e5.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-34eeed360b.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-3786617bb9.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-39aaf07c0e.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-3c64597080.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-40c8aa0b60.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-4112c254b9.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-4307752116.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-453be6c4ff.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-4ac2bef1ef.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-4d99f883fe.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-4e8291877f.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-4f3bef34c3.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-535f8f3669.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-586029c1e1.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-58cf8d88ab.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-5cfecd786c.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-5d646aaa21.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-608d9f9988.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-60b09b02f3.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-639fe3e73c.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-65d836fdc7.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-68665523fc.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-6f469af992.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-6fafcffec0.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-7011a51753.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-745928fa4a.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-75c32f33cb.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-7943c4ff4c.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-80310dd28b.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-82ebce78d3.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-8681bd0778.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-8cfe7e8c2b.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-8e93c152de.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-90a46a3436.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-987fd8642d.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-9a7093109c.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-9ce373d800.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-9d5110be62.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-9e11ba89aa.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-a043acb2bc.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-a2c4a5e8ca.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-a3a952c2c7.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-a4ff6d8a9e.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-a972f317ee.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-aadbc97bb3.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-ab659a1e22.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-ab6e1b1348.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-adfc9f4da8.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-b538834076.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-b85a32aa87.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-bc6ac610ea.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-c4c6952f58.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-c5b8f16db7.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-c8a2936597.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-d51523ea3d.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-d6be2a77a3.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-d8badfe17d.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-d98749a6b4.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-d9a0de51e4.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-dc74ad6baf.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-eb0ec2d79a.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-ec266b5d26.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-ec51a7aad3.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-f07d5e2bc5.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-f3c8f1699d.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-f683a011f4.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-f87807ddd1.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-fb2fc19632.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-fb4e4997c9.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-fc03fb5c93.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-fe684ef9f2.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/noto-sans-sc-ffb6754681.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/poppins-054df55a41.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/poppins-0ee5dc9af3.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/poppins-1db57cd9fd.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/poppins-2cf2a90222.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/poppins-39e7f079fc.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/poppins-9607042d62.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/poppins-9a88fc1fa6.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/poppins-b8f4f75278.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+src/assets/webfonts/poppins-f5e57db433.woff2 | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+tests/e2e/visual.spec.js-snapshots/landing-desktop-chromium-linux.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+tests/e2e/visual.spec.js-snapshots/landing-mobile-chromium-linux.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+tests/e2e/visual.spec.js-snapshots/privacy-desktop-chromium-linux.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+tests/e2e/visual.spec.js-snapshots/stories-shelf-desktop-chromium-linux.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none
+tests/e2e/visual.spec.js-snapshots/stories-shelf-mobile-chromium-linux.png | excluded(binary; validated by script: exists, magic bytes match extension, no SVG scripts; dimensions checked for native icons/splash) | none

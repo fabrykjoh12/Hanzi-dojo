@@ -1,0 +1,383 @@
+[
+ {
+  "name": "landing",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "79x42 BUTTON \"Log in\"",
+   "509x17 A \"Or find out how much Chinese\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "assess",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [],
+  "lang": "en",
+  "title": "How much can you read? · Hanzi Dojo",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "privacy",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "96x33 BUTTON \"Hanzi Dojo\"",
+   "51x16 A \"Support\"",
+   "180x17 A \"support@hanzi-dojo.com\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "auth",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "40x40 BUTTON \"Back\"",
+   "210x43 BUTTON \"Log in\"",
+   "210x43 BUTTON \"Sign up\"",
+   "40x40 BUTTON \"Show password\"",
+   "420x20 BUTTON \"Forgot password?\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "home",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "34x34 BUTTON \"Open profile\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "study-front",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "38x38 BUTTON \"Exit\"",
+   "38x38 BUTTON \"Undo last grade\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "study-back",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "38x38 BUTTON \"Exit\"",
+   "38x38 BUTTON \"Undo last grade\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "stories",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "49x38 BUTTON \"All\"",
+   "71x38 BUTTON \"HSK 2\"",
+   "68x38 BUTTON \"HSK 1\"",
+   "84x38 BUTTON \"Manhua\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "story-detail",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "30x30 BUTTON \"Back to library\"",
+   "288x40 BUTTON \"Paged\"",
+   "288x40 BUTTON \"Scroll\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "reader-paced",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "62x33 SPAN \"今天\"",
+   "62x33 SPAN \"天气\"",
+   "32x33 SPAN \"很\"",
+   "32x33 SPAN \"好\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "reader-sheet",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "62x33 SPAN \"今天\"",
+   "62x33 SPAN \"天气\"",
+   "32x33 SPAN \"很\"",
+   "32x33 SPAN \"好\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "reader-chat",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "reader-manhua",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "20x20 SPAN \"我\"",
+   "20x20 SPAN \"来\"",
+   "38x20 SPAN \"学校\"",
+   "20x20 SPAN \"了\"",
+   "23x23 SPAN \"这\"",
+   "23x23 SPAN \"是\"",
+   "44x23 SPAN \"学校\"",
+   "23x23 SPAN \"吗\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "practice",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "dictionary",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "32x41 BUTTON \"Play audio\"",
+   "41x41 BUTTON \"Stroke order\"",
+   "22x41 BUTTON \"Add to deck\"",
+   "168x33 BUTTON \"Meaning\"",
+   "168x33 BUTTON \"Chars\"",
+   "168x33 BUTTON \"Examples\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "profile",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "86x40 BUTTON \"Back\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "settings",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "92x40 BUTTON \"Home\"",
+   "89x38 BUTTON \"Light\"",
+   "87x38 BUTTON \"Dark\"",
+   "80x38 BUTTON \"Flip\"",
+   "97x38 BUTTON \"Typed\"",
+   "50x28 BUTTON \"Audio on flip\"",
+   "71x38 BUTTON \"1×\"",
+   "94x38 BUTTON \"0.75×\"",
+   "87x38 BUTTON \"0.5×\"",
+   "16x16 INPUT \"\"",
+   "16x16 INPUT \"\"",
+   "16x16 INPUT \"\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "test",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "86x40 BUTTON \"Back\"",
+   "18x18 BUTTON \"More information: A word is \""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "words",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "71x38 BUTTON \"All44\"",
+   "81x38 BUTTON \"New37\"",
+   "101x38 BUTTON \"Learning2\"",
+   "97x38 BUTTON \"Learned5\"",
+   "158x38 BUTTON \"Previously known0\"",
+   "106x38 BUTTON \"Mastered0\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "writing",
+  "vp": "640x400",
+  "th": "light",
+  "scrollW": 640,
+  "innerW": 640,
+  "overflowX": false,
+  "wide": [],
+  "small": [],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ }
+]
