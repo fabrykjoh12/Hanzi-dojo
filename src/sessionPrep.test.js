@@ -139,3 +139,49 @@ describe('buildStudySession — complete deck past the 1000-row cap', () => {
     expect(new Set(data.queue.map(c => c.vocab_id)).size).toBe(1200)
   })
 })
+
+// Regression (audit HD-AUD-001): a word saved from a story or the dictionary is
+// a `new` card row that no grade has touched. It used to be served by nothing —
+// excluded from new words because its row exists, and never "due" — while
+// still eating a slot of the day's new-word allowance.
+describe('buildStudySession — saved words are dealt', () => {
+  const DAY = 24 * 60 * 60 * 1000
+  const profile = { daily_new_cards: 3, last_studied_on: todayStr() }
+  const level1 = { language: 'chinese', system: 'hsk_3', current_level: 1 }
+  // One genuine past review, so the gentle first-run cap stays out of the way.
+  const studied = (v) => ({
+    id: 'c-' + v.id, user_id: 'u1', vocab_id: v.id, state: 'review', reps: 4,
+    due_at: new Date(Date.now() + 30 * DAY).toISOString(),
+    created_at: new Date(Date.now() - 40 * DAY).toISOString(), stability: 30, lapses: 0,
+  })
+  const savedRow = (v, ageDays) => ({
+    id: 'c-' + v.id, user_id: 'u1', vocab_id: v.id, state: 'new', reps: 0,
+    due_at: new Date().toISOString(),
+    created_at: new Date(Date.now() - ageDays * DAY).toISOString(),
+  })
+
+  it('serves saved words first, oldest first, keeping their real card ids', async () => {
+    const vocabulary = hskVocabRows([1])
+    const [a, b, c, d] = vocabulary
+    db.current = fakeSupabase({ vocabulary, cards: [studied(a), savedRow(c, 1), savedRow(b, 9)] })
+    const data = await buildStudySession({ userId: 'u1', profile, track: level1 })
+    const newOnes = data.queue.filter(x => x.state === 'new')
+    expect(newOnes).toHaveLength(3)
+    expect(newOnes.map(x => x.vocab_id)).toEqual(expect.arrayContaining([b.id, c.id, d.id]))
+    const savedServed = newOnes.filter(x => x.id)
+    expect(savedServed.map(x => x.id).sort()).toEqual(['c-' + b.id, 'c-' + c.id].sort())
+  })
+
+  it('a pile of words saved today does not use up the allowance unserved', async () => {
+    const vocabulary = hskVocabRows([1])
+    const [a, ...rest] = vocabulary
+    // Ten words added at once today (the Analyzer's "Add all").
+    const pile = rest.slice(0, 10).map(v => savedRow(v, 0))
+    db.current = fakeSupabase({ vocabulary, cards: [studied(a), ...pile] })
+    const data = await buildStudySession({ userId: 'u1', profile, track: level1 })
+    const newOnes = data.queue.filter(x => x.state === 'new')
+    // The allowance (3) is spent ON the saved words, not wiped out by them.
+    expect(newOnes).toHaveLength(3)
+    expect(newOnes.every(x => x.id && x.id.startsWith('c-'))).toBe(true)
+  })
+})

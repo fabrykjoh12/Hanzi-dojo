@@ -23,11 +23,11 @@ import { supabase } from './supabase'
 import { getTrackCards } from './data'
 import { cacheGet, cacheSet } from './offline'
 import { fetchPaged, fetchChunkedIn } from './supabasePaging'
-import { hasGenuineObservation, isPriorKnown } from './knowledgeState'
+import { hasGenuineObservation } from './knowledgeState'
 import { pickCalibrationChecks, pendingCalibrationCount } from './calibration'
 import { studyFloorLevel } from './levelScope'
 import { missingVocabIds, mergeVocab } from './deckVocab'
-import { dueLearningCards, dueReviewCards } from './studyAvailability'
+import { dueLearningCards, dueReviewCards, pendingSavedCards, introducedOn } from './studyAvailability'
 import { buildStudyQueue, queueSeed } from './studyQueue'
 import { isFirstRunSession, firstRunNewTarget } from './firstRun'
 import { isReturningFromBreak, gentleReviewTarget } from './gentleReturn'
@@ -107,8 +107,10 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
   // Prior-knowledge claims are excluded: a placement claim writes hundreds of
   // rows in one moment, and counting them as "words introduced today" zeroed
   // the learner's entire daily new-card allowance on the day they signed up.
+  // Saved-but-unstudied rows are excluded too (introducedOn): they have not
+  // been introduced yet, and they are served below from these very slots.
   const introducedToday = (cards || [])
-    .filter(c => !isPriorKnown(c) && new Date(c.created_at) >= startOfToday && vocabById[c.vocab_id]).length
+    .filter(c => introducedOn(c, startOfToday) && vocabById[c.vocab_id]).length
   const remainingNew = Math.max(0, profile.daily_new_cards - introducedToday)
 
   const now = new Date()
@@ -151,13 +153,17 @@ export async function buildStudySession({ userId, profile, track, mode = 'review
   }
   const newTarget = firstRunNewTarget(firstRun, remainingNew)
 
-  const newItems = (vocab || [])
+  // Words the learner saved lead the new slots (oldest save first): they chose
+  // them, and nothing else will ever deal them. Curriculum words fill the rest.
+  // A saved row keeps its real id, so grading it updates that row in place.
+  const savedItems = pendingSavedCards(levelCards)
+  const curriculumNew = (vocab || [])
     .filter(v => !startedVocab.has(v.id))
-    .slice(0, newTarget)
     .map(v => ({
       id: null, vocab_id: v.id, vocab: v,
       state: 'new', interval_days: 0, learning_step: 0,
     }))
+  const newItems = [...savedItems, ...curriculumNew].slice(0, newTarget)
 
   // Prior-knowledge checks. A claim is inert — never due, and never offered as
   // a new card because its row already exists — so this is the ONLY way a

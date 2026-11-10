@@ -363,6 +363,19 @@ export function isMissingRpc(error) {
 //
 // So the drop is made deliberately here instead of happening by accident there.
 // The card is gone; no number of retries brings it back.
+// Study gives a card graded for the first time while offline a throwaway
+// 'local-…' id so the session can keep tracking it. That id exists on this
+// device only; sent to the server it fails the uuid cast (22P02) on every
+// replay, so the op could never land and the second grade of a new card was
+// lost. Anything carrying one is written by vocab id instead: grade_card's
+// insert path upserts on (user_id, vocab_id), and its reps guard still orders
+// the writes. Applied at the write boundary, so ops already queued with a
+// local id on a learner's device heal on their next flush.
+export function serverCardId(id) {
+  if (!id) return null
+  return String(id).startsWith('local-') ? null : id
+}
+
 export function isUnreplayable(error) {
   if (!error || error.code !== 'P0001') return false
   return String(error.message || '').toLowerCase().indexOf('card not found') !== -1
@@ -391,7 +404,7 @@ export async function gradeCardWrite(supabase, payload) {
     const { data, error } = await supabase.rpc('grade_card', {
       p_vocab_id: p.vocabId || null,
       p_updates: p.updates || {},
-      p_card_id: p.cardId || null,
+      p_card_id: serverCardId(p.cardId),
       p_log: p.log || null,
       p_activity: p.activity || null,
       p_op_id: p.opId || null,
@@ -431,7 +444,7 @@ export async function gradeCardWrite(supabase, payload) {
 // The pre-RPC write path, kept verbatim in behavior so an unapplied migration
 // changes nothing the learner can see.
 async function legacyGradeWrite(supabase, p) {
-  let cardId = p.cardId
+  let cardId = serverCardId(p.cardId)
   let inserted = false
   if (cardId) {
     const { error } = await supabase.from('cards').update(p.updates).eq('id', cardId)

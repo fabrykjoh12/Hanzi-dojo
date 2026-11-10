@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { dueLearningCards, dueReviewCards, weakCards } from './studyAvailability'
+import { dueLearningCards, dueReviewCards, weakCards, pendingSavedCards, introducedOn } from './studyAvailability'
 import { homeQueueSummary } from './homePresentation'
 import { pickCalibrationChecks, isCalibrationReady, CALIBRATION_SESSION_CAP } from './calibration'
 
@@ -211,5 +211,71 @@ describe('Home and Study agree', () => {
     }]
     expect(pickCalibrationChecks(verified, { now: AT })).toEqual([])
     expect(verified.filter(c => isCalibrationReady(c, AT))).toEqual([])
+  })
+})
+
+// Regression: words saved from a story, the dictionary, Words, the Analyzer or
+// a chat mission were stranded — a `new` row with reps 0 is neither offered as
+// a new word (its row exists) nor due (it isn't a review). 88 such cards on
+// production, the oldest from July. Audit finding HD-AUD-001.
+describe('pendingSavedCards', () => {
+  const DAY = 24 * 60 * 60 * 1000
+  const saved = (id, ageDays, extra = {}) => ({
+    vocab_id: id, state: 'new', reps: 0, created_at: new Date(Date.now() - ageDays * DAY).toISOString(), ...extra,
+  })
+
+  it('returns saved, never-graded rows, oldest save first', () => {
+    const deck = [saved('b', 1), saved('a', 30), saved('c', 5)]
+    expect(pendingSavedCards(deck).map(c => c.vocab_id)).toEqual(['a', 'c', 'b'])
+  })
+
+  it('treats a missing reps as never graded (rows inserted without the column)', () => {
+    expect(pendingSavedCards([{ vocab_id: 'x', state: 'new', created_at: new Date().toISOString() }])).toHaveLength(1)
+  })
+
+  it('leaves out anything a grade has touched, and every state but new', () => {
+    const deck = [
+      saved('graded', 1, { reps: 1 }),
+      { vocab_id: 'l', state: 'learning', reps: 1, created_at: new Date().toISOString() },
+      { vocab_id: 'r', state: 'review', reps: 3, created_at: new Date().toISOString() },
+    ]
+    expect(pendingSavedCards(deck)).toEqual([])
+  })
+
+  it('leaves out prior-knowledge claims — those are worked off by calibration checks', () => {
+    const claim = saved('claimed', 2, { prior_known_at: new Date().toISOString(), prior_known_source: 'placement' })
+    expect(pendingSavedCards([claim])).toEqual([])
+  })
+
+  it('does not reorder the caller\'s array', () => {
+    const deck = [saved('b', 1), saved('a', 30)]
+    pendingSavedCards(deck)
+    expect(deck.map(c => c.vocab_id)).toEqual(['b', 'a'])
+  })
+
+  it('tolerates an empty or missing deck', () => {
+    expect(pendingSavedCards(null)).toEqual([])
+    expect(pendingSavedCards([])).toEqual([])
+  })
+})
+
+describe('introducedOn — what uses up today\'s new-word allowance', () => {
+  const startOfToday = new Date(); startOfToday.setHours(0, 0, 0, 0)
+  const now = new Date().toISOString()
+  const yesterday = new Date(startOfToday.getTime() - 60 * 60 * 1000).toISOString()
+
+  it('counts a word first studied today', () => {
+    expect(introducedOn({ state: 'learning', reps: 1, created_at: now }, startOfToday)).toBe(true)
+  })
+
+  it('does not count a word that was saved but not yet studied', () => {
+    // One Analyzer "Add all" used to empty the day's allowance while the
+    // session served none of those words.
+    expect(introducedOn({ state: 'new', reps: 0, created_at: now }, startOfToday)).toBe(false)
+  })
+
+  it('does not count earlier days or prior-knowledge claims', () => {
+    expect(introducedOn({ state: 'learning', reps: 1, created_at: yesterday }, startOfToday)).toBe(false)
+    expect(introducedOn({ state: 'new', reps: 0, created_at: now, prior_known_at: now, prior_known_source: 'placement' }, startOfToday)).toBe(false)
   })
 })

@@ -1,0 +1,83 @@
+src/Home.jsx | reviewed-skim | none
+src/HomeIllustrations.jsx | excluded(visual-only, out of SRS scope) | none
+src/HomeScene.jsx | excluded(visual-only, out of SRS scope) | none
+src/HomeV2NavGlyphs.jsx | excluded(visual-only, out of SRS scope) | none
+src/KnownWords.jsx | reviewed-skim | none
+src/OfflineBar.jsx | reviewed-skim | SRS-02
+src/Onboarding.jsx | reviewed-skim | none
+src/SessionRecap.jsx | reviewed-skim | SRS-04
+src/Study.jsx | reviewed-skim (grade/undo/reset/session paths ~L225-960,1120-1200 read fully) | SRS-02,SRS-03,SRS-08,SRS-10
+src/Test.jsx | reviewed-skim (L248-500,560-580) | SRS-06,SRS-09
+src/Words.jsx | reviewed-skim | SRS-01,SRS-04
+src/assessment.js | excluded(not reached in time) | none
+src/assessment.test.js | excluded(not reached in time) | none
+src/calibration.js | reviewed-full | none
+src/calibration.test.js | excluded(test; not read) | none
+src/calibrationSimulation.test.js | excluded(test; not read) | none
+src/dailyStory.js | excluded(not reached in time) | none
+src/dailyStory.test.js | excluded(test; not read) | none
+src/deckVocab.js | excluded(not reached in time) | none
+src/deckVocab.test.js | excluded(test; not read) | none
+src/homeCounts.js | reviewed-skim | SRS-01
+src/homeCounts.test.js | excluded(test; not read) | none
+src/homeModel.js | reviewed-skim | none
+src/homeModel.test.js | excluded(test; not read) | none
+src/homePresentation.js | reviewed-skim | none
+src/homePresentation.test.js | excluded(test; not read) | none
+src/homeRefresh.js | excluded(not reached in time) | none
+src/homeRefresh.test.js | excluded(test; not read) | none
+src/homeScene.js | excluded(visual-only) | none
+src/homeScene.test.js | excluded(test; not read) | none
+src/homeStory.js | reviewed-skim | none
+src/homeStory.test.js | excluded(test; not read) | none
+src/knowledgeConsistency.test.js | excluded(test; not read) | none
+src/knowledgeState.js | reviewed-full | SRS-04
+src/knowledgeState.test.js | excluded(test; not read) | none
+src/knownWordMap.js | excluded(not reached in time) | none
+src/knownWordMap.test.js | excluded(test; not read) | none
+src/knownWordsData.js | reviewed-skim | none
+src/knownWordsData.test.js | excluded(test; not read) | none
+src/knownWordsReview.js | excluded(not reached in time) | none
+src/knownWordsReview.test.js | excluded(test; not read) | none
+src/levelScope.js | excluded(not reached in time) | none
+src/levelScope.test.js | excluded(test; not read) | none
+src/mastery.js | reviewed-skim (re-export) | none
+src/mastery.test.js | excluded(test; not read) | none
+src/offline.js | reviewed-skim (outbox API only) | none
+src/offline.test.js | excluded(test; not read) | none
+src/onboardingGoal.js | excluded(not reached in time) | none
+src/onboardingGoal.test.js | excluded(test; not read) | none
+src/onboardingPath.js | reviewed-skim | none
+src/onboardingPath.test.js | excluded(test; not read) | none
+src/resetCallSites.test.js | excluded(test; not read) | none
+src/reviewAccuracy.js | excluded(not reached in time) | none
+src/reviewAccuracy.test.js | excluded(test; not read) | none
+src/reviewForecast.js | excluded(not reached in time) | none
+src/reviewForecast.test.js | excluded(test; not read) | none
+src/sessionEstimate.js | excluded(not reached in time) | none
+src/sessionEstimate.test.js | excluded(test; not read) | none
+src/sessionMix.js | excluded(not reached in time) | none
+src/sessionMix.test.js | excluded(test; not read) | none
+src/sessionPrep.js | reviewed-full | SRS-01
+src/sessionPrep.test.js | reviewed-skim | none
+src/srs.js | reviewed-full | SRS-05
+src/srs.test.js | excluded(test; not read) | none
+src/studyAvailability.js | reviewed-full | SRS-01
+src/studyAvailability.test.js | excluded(test; not read) | none
+src/studyLayout.js | excluded(layout-only) | none
+src/studyLayout.test.js | excluded(test; not read) | none
+src/studyQueue.js | reviewed-full | SRS-05
+src/studyQueue.test.js | excluded(test; not read) | none
+src/studyRhythm.js | excluded(not reached in time) | none
+src/studyRhythm.test.js | excluded(test; not read) | none
+src/studyTally.js | reviewed-full | SRS-04
+src/studyTally.test.js | excluded(test; not read) | none
+src/syncQueue.js | reviewed-full | SRS-02,SRS-03
+src/syncQueue.test.js | reviewed-skim | SRS-02
+src/testLogic.js | reviewed-full | SRS-04,SRS-06
+src/testLogic.test.js | excluded(test; not read) | none
+src/testReschedule.js | reviewed-skim | none
+src/testReschedule.test.js | excluded(test; not read) | none
+src/useStudyAudio.js | excluded(audio, out of SRS scope) | none
+src/useStudyKeyboardShortcuts.js | excluded(not reached in time) | none
+src/useStudyKeyboardShortcuts.test.js | excluded(test; not read) | none

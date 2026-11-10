@@ -1,0 +1,84 @@
+[
+ {
+  "name": "study-front",
+  "vp": "667x375",
+  "th": "light",
+  "scrollW": 667,
+  "innerW": 667,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "38x38 BUTTON \"Exit\"",
+   "38x38 BUTTON \"Undo last grade\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "study-back",
+  "vp": "667x375",
+  "th": "light",
+  "scrollW": 667,
+  "innerW": 667,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "38x38 BUTTON \"Exit\"",
+   "38x38 BUTTON \"Undo last grade\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "study-front",
+  "vp": "932x430",
+  "th": "light",
+  "scrollW": 932,
+  "innerW": 932,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "29x29 BUTTON \"Collapse sidebar\"",
+   "207x39 BUTTON \"Studying Chinese, HSK 2. Swi\"",
+   "207x40 BUTTON \"Profile — Test Learner\"",
+   "32x32 BUTTON \"Switch to dark mode\"",
+   "32x32 BUTTON \"Settings\"",
+   "32x32 BUTTON \"Log out\"",
+   "38x38 BUTTON \"Exit\"",
+   "38x38 BUTTON \"Undo last grade\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ },
+ {
+  "name": "study-back",
+  "vp": "932x430",
+  "th": "light",
+  "scrollW": 932,
+  "innerW": 932,
+  "overflowX": false,
+  "wide": [],
+  "small": [
+   "29x29 BUTTON \"Collapse sidebar\"",
+   "207x39 BUTTON \"Studying Chinese, HSK 2. Swi\"",
+   "207x40 BUTTON \"Profile — Test Learner\"",
+   "32x32 BUTTON \"Switch to dark mode\"",
+   "32x32 BUTTON \"Settings\"",
+   "32x32 BUTTON \"Log out\""
+  ],
+  "lang": "en",
+  "title": "Hanzi Dojo — Learn to read Chinese free",
+  "dataTheme": "light",
+  "pageerrors": [],
+  "console": []
+ }
+]

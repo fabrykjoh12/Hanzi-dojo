@@ -1,0 +1,246 @@
+artProvenance.mjs | reviewed-skim (L1-40) | CNT-11
+audit-story-coverage.mjs | reviewed-skim (grep; requires service key - not run) | none
+authored-stories.mjs | excluded(time budget: not opened) | none
+backfill-examples.mjs | excluded(time budget: not opened) | none
+build-hsk-vocab.mjs | excluded(time budget: not opened) | none
+check-authored-stories.mjs | reviewed-skim (L1-80) + executed offline (--language chinese: 171 passed, 0 failed) | none
+check-content-integrity.mjs | reviewed-skim (header; requires service key - not run) | CNT-05
+check-published-stories.mjs | excluded(time budget: not opened) | none
+check-vocabulary-integrity.mjs | reviewed-skim (grep; requires service key - not run) | none
+clean-meanings.mjs | excluded(time budget: not opened) | none
+data/assessment-corpus.chinese.json | excluded(time budget: not opened) | none
+data/authored-stories.json | validated by script (segmentation/polyphone/coverage audits; md5 vs prod: 171/171 Chinese stories byte-identical to published rows) | CNT-01,CNT-02,CNT-05
+data/cedict.sample.u8 | excluded(time budget: not opened) | none
+data/content-integrity-baseline.json | excluded(time budget: not opened) | none
+data/hsk-curriculum-bands.json | validated by script (top-level keys only) | none
+data/hsk1-vocab-snapshot.json | validated by script (300 rows, polyphone lookup) | CNT-08
+data/hsk1.json | validated by script (empty array; documented) | none
+data/hsk2-vocab-snapshot.json | validated by script (497 rows cumulative; used as vocab map) | CNT-08
+data/hsk2.json | validated by script (empty array; documented) | none
+data/hsk2.sample.json | excluded(time budget: not opened) | none
+data/hsk3-vocab-snapshot.json | validated by script (row count only) | none
+data/hsk3.json | validated by script (453 rows; polyphone/proper-noun readings) | CNT-01
+data/hsk3_0-level1-sample.csv | excluded(time budget: not opened) | none
+data/hsk4.json | validated by script (929 rows; used in vocab map) | CNT-01
+data/hsk5.json | validated by script (row count only) | CNT-01
+data/hsk6.json | validated by script (row count only) | CNT-01
+data/jlpt-n5-kanji-corrections.json | excluded(frozen non-Chinese track data) | none
+data/jlpt1-vocab-snapshot.json | excluded(frozen non-Chinese track data) | none
+data/manhua/bible-sheets.art.json | validated by script (fetch-manhua-art --check, all manifests) | CNT-11
+data/manhua/bible.art.json | validated by script (fetch-manhua-art --check, all manifests) | CNT-11
+data/manhua/home-hero.art.json | validated by script (fetch-manhua-art --check, all manifests) | CNT-11
+data/manhua/inkbound-hsk1-ep01.art.json | validated by script (fetch-manhua-art --check; panels vs manifest) | CNT-11
+data/manhua/inkbound-hsk1-ep01.json | validated by script (panel art exists, beats monotonic, every line covered, md5 matches prod; polyphone audit) | none
+data/manhua/inkbound-hsk2-ep02.art.json | validated by script (fetch-manhua-art --check; panels vs manifest) | CNT-11
+data/manhua/inkbound-hsk2-ep02.json | validated by script (panel art exists, beats monotonic, every line covered, md5 matches prod; polyphone audit) | none
+data/manhua/inkbound-hsk3-ep03.art.json | validated by script (fetch-manhua-art --check; panels vs manifest) | CNT-11
+data/manhua/inkbound-hsk3-ep03.json | validated by script (panel art exists, beats monotonic, every line covered, md5 matches prod; polyphone audit) | none
+data/manhua/noodleshop-hsk1-ep01.art.json | validated by script (fetch-manhua-art --check; panels vs manifest) | CNT-11
+data/manhua/noodleshop-hsk1-ep01.json | validated by script (panel art exists, beats monotonic, every line covered, md5 matches prod; polyphone audit) | none
+data/manhua/noodleshop-hsk1-ep02.art.json | validated by script (fetch-manhua-art --check; panels vs manifest) | CNT-11
+data/manhua/noodleshop-hsk1-ep02.json | validated by script (panel art exists, beats monotonic, every line covered, md5 matches prod; polyphone audit) | none
+data/manhua/noodleshop-hsk2-ep03.art.json | validated by script (fetch-manhua-art --check; panels vs manifest) | CNT-11
+data/manhua/noodleshop-hsk2-ep03.json | validated by script (panel art exists, beats monotonic, every line covered, md5 matches prod; polyphone audit) | none
+data/manhua/train-hsk2-ep01.art.json | validated by script (fetch-manhua-art --check; panels vs manifest) | CNT-11
+data/manhua/train-hsk2-ep01.json | validated by script (panel art exists, beats monotonic, every line covered, md5 matches prod; polyphone audit) | none
+data/manhua/upstairs-hsk3-ep01.json | validated by script (panel art exists, beats monotonic, every line covered, md5 matches prod; polyphone audit) | CNT-02,CNT-11
+data/n4.json | excluded(frozen non-Chinese track data) | none
+data/russian-a1.json | excluded(frozen non-Chinese track data) | none
+data/starter-sentences.chinese.json | excluded(time budget: not opened) | none
+data/story-canon.chinese.json | excluded(time budget: not opened) | none
+data/story-covers-completion.json | excluded(time budget: not opened) | none
+data/story-covers.json | excluded(time budget: not opened) | none
+data/tatoeba.sample.tsv | excluded(time budget: not opened) | none
+data/tts-pronunciation-overrides.json | reviewed-skim (first entries) | CNT-02
+data/tts-relicense-manifest.json | excluded(time budget: not opened) | none
+data/vocabulary-integrity-baseline.json | excluded(time budget: not opened) | none
+deactivate-awkward-vocab.mjs | excluded(time budget: not opened) | none
+fetch-manhua-art.mjs | reviewed-skim (L30-70) + executed --check (offline, read-only): 1/117 entries carry prompt+date | CNT-11
+fetch-webfonts.mjs | reviewed-skim (grep OFL) | CNT-10
+fix-vocab-kanji.mjs | excluded(frozen non-Chinese track data) | none
+generate-audio.mjs | excluded(time budget: not opened) | none
+generate-comprehension.mjs | excluded(time budget: not opened) | none
+generate-examples.mjs | excluded(time budget: not opened) | none
+generate-meanings.mjs | excluded(time budget: not opened) | none
+generate-serial-stories.mjs | excluded(time budget: not opened) | none
+generate-starter-audio.mjs | excluded(time budget: not opened) | none
+generate-stories.mjs | excluded(time budget: not opened) | none
+generate-story-audio.mjs | excluded(time budget: not opened) | none
+generate-story-images.mjs | excluded(time budget: not opened) | none
+generate-story-translations.mjs | excluded(time budget: not opened) | none
+llm.mjs | excluded(time budget: not opened) | none
+llmProviders.mjs | excluded(time budget: not opened) | none
+migrate-legacy-claims.mjs | excluded(time budget: not opened) | none
+nativeFonts.mjs | excluded(time budget: not opened) | none
+normalize-readings.mjs | excluded(time budget: not opened) | none
+publish-manhua.mjs | excluded(time budget: not opened) | none
+publish-stories.mjs | excluded(time budget: not opened) | none
+seed-analytics.mjs | excluded(time budget: not opened) | none
+seed-dict.mjs | excluded(time budget: not opened) | none
+seed-examples.mjs | reviewed-skim (grep: pinyin-pro + fixDeParticlePinyin) | none
+seed-story-comprehension.mjs | excluded(time budget: not opened) | none
+seed-vocab.mjs | reviewed-skim (grep: empty-file handling) | none
+send-review-reminders.mjs | excluded(time budget: not opened) | none
+src/Analyzer.jsx | excluded(time budget: not opened) | none
+src/AudioButton.jsx | reviewed-skim (L1-60) | none
+src/ChatMission.jsx | excluded(time budget: not opened) | none
+src/ChatReader.jsx | excluded(time budget: not opened) | none
+src/ChatThread.jsx | excluded(time budget: not opened) | none
+src/ComprehensionCheck.jsx | excluded(time budget: not opened) | none
+src/DictEntryView.jsx | reviewed-skim (grep tone split) | none
+src/Dictionary.jsx | excluded(time budget: not opened) | none
+src/FillBlank.jsx | excluded(time budget: not opened) | none
+src/Grammar.jsx | excluded(time budget: not opened) | none
+src/GrammarPractice.jsx | excluded(time budget: not opened) | none
+src/Listen.jsx | excluded(time budget: not opened) | none
+src/ManhuaBubble.jsx | excluded(time budget: not opened) | none
+src/ManhuaCompletion.jsx | reviewed-skim (grep continues) | none
+src/ManhuaHeader.jsx | excluded(time budget: not opened) | none
+src/ManhuaPanel.jsx | excluded(time budget: not opened) | none
+src/ManhuaReader.jsx | excluded(time budget: not opened) | none
+src/ReaderLaunch.jsx | reviewed-skim (grep) | none
+src/SceneReader.jsx | excluded(time budget: not opened) | none
+src/SentenceBuilder.jsx | excluded(time budget: not opened) | none
+src/SeriesDetail.jsx | excluded(time budget: not opened) | none
+src/Speaking.jsx | excluded(time budget: not opened) | none
+src/Stories.jsx | reviewed-skim (grep: gating/shelf wiring, story queries) | none
+src/StoryCover.jsx | excluded(time budget: not opened) | none
+src/StoryFormatIcon.jsx | excluded(time budget: not opened) | none
+src/StoryPoster.jsx | excluded(time budget: not opened) | none
+src/StoryReader.jsx | excluded(time budget: not opened) | none
+src/StoryReaderImmersive.jsx | reviewed-skim (L276-395 utterance load, L600-700 narration/synth fallback; rest not read) | CNT-07
+src/StrokeOrder.jsx | excluded(time budget: not opened) | none
+src/Tones.jsx | reviewed-skim (L20-230 pool/tone logic) | CNT-08
+src/Writer.jsx | excluded(time budget: not opened) | none
+src/Writing.jsx | excluded(time budget: not opened) | none
+src/YouTube.jsx | excluded(time budget: not opened) | none
+src/audioCache.js | excluded(time budget: not opened) | none
+src/audioPlayback.js | reviewed-skim (grep) | none
+src/audioPlayback.test.js | excluded(time budget: not opened) | none
+src/cedict.js | excluded(time budget: not opened) | none
+src/cedict.test.js | excluded(time budget: not opened) | none
+src/chatMissions.js | excluded(time budget: not opened) | none
+src/chatReading.js | excluded(time budget: not opened) | none
+src/chatReading.test.js | excluded(time budget: not opened) | none
+src/comprehension.js | excluded(time budget: not opened) | none
+src/comprehension.test.js | excluded(time budget: not opened) | none
+src/dictAddCallSites.test.js | excluded(time budget: not opened) | none
+src/dictAddFeedback.js | excluded(time budget: not opened) | none
+src/dictAddFeedback.test.js | excluded(time budget: not opened) | none
+src/dictExplicit.js | excluded(time budget: not opened) | none
+src/dictExplicit.test.js | excluded(time budget: not opened) | none
+src/dictSearch.js | excluded(time budget: not opened) | none
+src/dictSearch.test.js | excluded(time budget: not opened) | none
+src/dictSearchState.js | excluded(time budget: not opened) | none
+src/dictSearchState.test.js | excluded(time budget: not opened) | none
+src/dictionaryFilters.js | excluded(time budget: not opened) | none
+src/dictionaryFilters.test.js | excluded(time budget: not opened) | none
+src/fillBlank.js | excluded(time budget: not opened) | none
+src/fillBlank.test.js | excluded(time budget: not opened) | none
+src/grammarDrill.js | excluded(time budget: not opened) | none
+src/grammarDrill.test.js | excluded(time budget: not opened) | none
+src/grammarDrills.js | excluded(time budget: not opened) | none
+src/grammarGlossary.js | excluded(time budget: not opened) | none
+src/grammarGlossary.test.js | excluded(time budget: not opened) | none
+src/grammarGuides.js | excluded(time budget: not opened) | none
+src/grammarReview.js | excluded(time budget: not opened) | none
+src/grammarReview.test.js | excluded(time budget: not opened) | none
+src/grammarSearch.js | excluded(time budget: not opened) | none
+src/grammarSearch.test.js | excluded(time budget: not opened) | none
+src/listenQuiz.js | excluded(time budget: not opened) | none
+src/listenQuiz.test.js | excluded(time budget: not opened) | none
+src/manhuaBalloon.js | excluded(time budget: not opened) | none
+src/manhuaBalloon.test.js | excluded(time budget: not opened) | none
+src/manhuaEpisodes.test.js | excluded(time budget: not opened) | none
+src/manhuaLayout.js | excluded(time budget: not opened) | none
+src/manhuaLayout.test.js | excluded(time budget: not opened) | none
+src/manhuaProgress.js | reviewed-skim (grep) | none
+src/manhuaProgress.test.js | excluded(time budget: not opened) | none
+src/manhuaTokens.js | excluded(time budget: not opened) | none
+src/manhuaTokens.test.js | excluded(time budget: not opened) | none
+src/pinyin.js | reviewed-full | CNT-09
+src/pinyin.test.js | excluded(time budget: not opened) | none
+src/readerMode.js | reviewed-skim (grep) | none
+src/readerMode.test.js | excluded(time budget: not opened) | none
+src/sceneReading.js | excluded(time budget: not opened) | none
+src/sceneReading.test.js | excluded(time budget: not opened) | none
+src/segment.js | excluded(time budget: not opened) | none
+src/sentenceBank.js | excluded(time budget: not opened) | none
+src/sentenceBank.test.js | excluded(time budget: not opened) | none
+src/storyArcs.js | excluded(time budget: not opened) | none
+src/storyArcs.test.js | excluded(time budget: not opened) | none
+src/storyArt.js | excluded(time budget: not opened) | none
+src/storyArt.test.js | excluded(time budget: not opened) | none
+src/storyChapters.js | excluded(time budget: not opened) | none
+src/storyChapters.test.js | excluded(time budget: not opened) | none
+src/storyFormat.js | excluded(time budget: not opened) | none
+src/storyFormat.test.js | excluded(time budget: not opened) | none
+src/storyList.js | excluded(time budget: not opened) | none
+src/storyList.test.js | excluded(time budget: not opened) | none
+src/storyMatch.js | excluded(time budget: not opened) | none
+src/storyMatch.test.js | excluded(time budget: not opened) | none
+src/storyNames.js | excluded(time budget: not opened) | none
+src/storyNames.test.js | excluded(time budget: not opened) | none
+src/storyReadabilityCompare.test.js | excluded(time budget: not opened) | none
+src/storyReading.js | reviewed-full (Chinese paths; JP/RU branches skimmed - frozen) + executed by audit scripts | CNT-02,CNT-05,CNT-06
+src/storyReading.test.js | excluded(time budget: not opened) | none
+src/storyReward.js | excluded(time budget: not opened) | none
+src/storyReward.test.js | excluded(time budget: not opened) | none
+src/storyRewardData.js | excluded(time budget: not opened) | none
+src/storyShelf.js | excluded(time budget: not opened) | none
+src/storyShelf.test.js | excluded(time budget: not opened) | none
+src/storyShelfFlat.js | reviewed-full | none
+src/storyShelfFlat.test.js | excluded(time budget: not opened) | none
+src/storyTiers.js | reviewed-full | CNT-06
+src/storyTiers.test.js | excluded(time budget: not opened) | none
+src/strokeData.js | excluded(time budget: not opened) | none
+src/strokeData.test.js | excluded(time budget: not opened) | none
+src/toneColor.js | reviewed-full | none
+src/toneColor.test.js | excluded(time budget: not opened) | none
+src/tts/concurrency.js | excluded(time budget: not opened) | none
+src/tts/config.js | excluded(time budget: not opened) | none
+src/tts/config.test.js | excluded(time budget: not opened) | none
+src/tts/constants.js | excluded(time budget: not opened) | none
+src/tts/contentHash.js | excluded(time budget: not opened) | none
+src/tts/contentHash.test.js | excluded(time budget: not opened) | none
+src/tts/errors.js | excluded(time budget: not opened) | none
+src/tts/log.js | excluded(time budget: not opened) | none
+src/tts/normalize.js | excluded(time budget: not opened) | none
+src/tts/overrides.js | reviewed-skim (L1-60) | CNT-02
+src/tts/overrides.test.js | excluded(time budget: not opened) | none
+src/tts/pipeline.test.js | excluded(time budget: not opened) | none
+src/tts/providers/azure.js | excluded(time budget: not opened) | none
+src/tts/providers/azure.test.js | excluded(time budget: not opened) | none
+src/tts/providers/index.js | excluded(time budget: not opened) | none
+src/tts/providers/mock.js | excluded(time budget: not opened) | none
+src/tts/records.js | excluded(time budget: not opened) | none
+src/tts/repository.js | excluded(time budget: not opened) | none
+src/tts/request.js | excluded(time budget: not opened) | none
+src/tts/request.test.js | excluded(time budget: not opened) | none
+src/tts/retry.js | excluded(time budget: not opened) | none
+src/tts/runner.js | excluded(time budget: not opened) | none
+src/tts/runner.test.js | excluded(time budget: not opened) | none
+src/tts/serverOnly.test.js | excluded(time budget: not opened) | none
+src/tts/sources.js | reviewed-skim (L1-50) | CNT-01
+src/tts/ssml.js | reviewed-skim (grep) | none
+src/tts/ssml.test.js | excluded(time budget: not opened) | none
+src/tts/storage.js | excluded(time budget: not opened) | none
+src/tts/storagePath.js | excluded(time budget: not opened) | none
+src/tts/utterances.js | reviewed-skim (grep) | CNT-07
+src/tts/utterances.test.js | excluded(time budget: not opened) | none
+src/ttsAudio.js | reviewed-skim (L90-130) | CNT-04
+src/ttsAudio.test.js | excluded(time budget: not opened) | none
+src/writingMatch.js | excluded(time budget: not opened) | none
+src/writingMatch.test.js | excluded(time budget: not opened) | none
+story-utterances.mjs | reviewed-skim (L1-80) | CNT-07
+storyContentDebt.mjs | reviewed-skim (grep only) | none
+storyCoverage.mjs | excluded(time budget: not opened) | none
+storyCurriculumAuthority.mjs | excluded(time budget: not opened) | none
+storyLevels.mjs | excluded(time budget: not opened) | none
+storyValidation.mjs | excluded(time budget: not opened) | none
+storyVocabAudit.mjs | reviewed-skim (grep only) | none
+sync-authored-stories.mjs | excluded(time budget: not opened) | none
+tts-generate.mjs | excluded(time budget: not opened) | none
+tts-integration-check.mjs | excluded(time budget: not opened) | none
+tts-overrides.mjs | excluded(time budget: not opened) | none
+vocabularyIntegrity.mjs | excluded(time budget: not opened) | none

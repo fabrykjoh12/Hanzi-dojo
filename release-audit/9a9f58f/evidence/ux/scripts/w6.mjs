@@ -1,0 +1,20 @@
+import { session, sleep } from './lib.mjs';
+const s = await session({}); const p = s.page; const B = 'http://localhost:5188';
+await p.goto(B + '/stories/st6'); await sleep(2500);
+await s.step('e1-tap-word', () => p.getByText('学校', { exact: true }).first().click());
+await s.step('e2-esc', () => p.keyboard.press('Escape'));
+await s.step('e3-translation', () => p.getByRole('button', { name: 'Show English translation' }).first().click());
+await p.mouse.wheel(0, 30000); await sleep(800); await p.mouse.wheel(0, 30000); await sleep(800);
+await s.snap('e4-end');
+await p.goto(B + '/stories'); await sleep(2500);
+await s.snap('f1-shelf'); await p.screenshot({ path: '/tmp/claude-0/-home-user-Hanzi-dojo/12b442f1-0fb8-5241-944f-52ce182089d0/scratchpad/agents/ux/shots/f1-shelf-full.png', fullPage: true });
+await s.step('f2-open-st1', () => p.getByText('公园里的下午').first().click());
+await s.step('f3-start', () => p.getByRole('button', { name: /Start reading/i }).click());
+await s.step('f4-word', () => p.getByText('今天', { exact: true }).first().click());
+await s.step('f5-close', () => p.getByRole('button', { name: 'Close' }).click());
+await s.step('f6-settings', () => p.getByRole('button', { name: /Reader settings/i }).click());
+await p.keyboard.press('Escape'); await sleep(400);
+for (let i = 0; i < 3; i++) { await p.getByRole('button', { name: /Next line/i }).click().catch(() => {}); await sleep(400); }
+await s.snap('f7-finish');
+await s.step('f8-q', () => p.getByRole('button', { name: 'Good' }).click());
+await s.done();

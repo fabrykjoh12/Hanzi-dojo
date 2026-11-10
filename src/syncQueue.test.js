@@ -27,7 +27,7 @@ import {
   gradeCardWrite, resetGradeRpcProbe, enqueueGrade, flushOutbox,
   enqueueStoryRead, enqueueStoryClaim, enqueueAnalytics,
   queuedOpBelongsToTrack, shouldDropUntaggedOps, dropQueuedWritesForTrack,
-  opIsReplayableBy, pendingWrites,
+  opIsReplayableBy, pendingWrites, serverCardId,
 } from './syncQueue'
 
 // ── A minimal chainable Supabase double ─────────────────────────────────────
@@ -796,5 +796,47 @@ describe("a progress reset drops that track's queued writes, and only those", ()
     await enqueueGrade({ userId: U, vocabId: 'v1', cardId: 'c1', updates: {}, ...CN })
     expect(await dropQueuedWritesForTrack(null, U)).toBe(0)
     expect(store.rows).toHaveLength(1)
+  })
+})
+
+// Regression (audit HD-AUD-002): a new card graded once offline gets a
+// device-only 'local-…' id; grading it again offline queued that id as
+// cardId, which fails grade_card's uuid cast (22P02) on every replay — the op
+// never landed and the card's graduation was lost.
+describe('local card ids never reach the server', () => {
+  beforeEach(() => resetGradeRpcProbe())
+  // Behaves like Postgres: a non-uuid p_card_id is a 22P02 cast error.
+  const uuidStrictRpc = (args) => (args && typeof args.p_card_id === 'string' && args.p_card_id.startsWith('local-'))
+    ? { data: null, error: { code: '22P02', message: 'invalid input syntax for type uuid: "' + args.p_card_id + '"' } }
+    : { data: { card_id: 'card-9', log_id: 'log-9' }, error: null }
+
+  it('serverCardId keeps real ids and drops local ones', () => {
+    expect(serverCardId('8b0c6a52-1111-4222-8333-944455556666')).toBe('8b0c6a52-1111-4222-8333-944455556666')
+    expect(serverCardId('local-1731000000000-v1')).toBe(null)
+    expect(serverCardId(null)).toBe(null)
+    expect(serverCardId(undefined)).toBe(null)
+  })
+
+  it('a grade carrying a local id is written by vocab id instead', async () => {
+    const sb = fakeSupabase({ rpc: uuidStrictRpc })
+    const res = await gradeCardWrite(sb, {
+      userId: 'u1', cardId: 'local-1731000000000-v1', vocabId: 'v1', updates: UPDATES, log: LOG, opId: 'op-9',
+    })
+    expect(res.ok).toBe(true)
+    expect(sb.calls.rpc[0].args).toMatchObject({ p_card_id: null, p_vocab_id: 'v1' })
+  })
+
+  it('an op already queued with a local id drains on the next flush', async () => {
+    store.rows = []
+    store.deletes = 0
+    store.failDeleteAfter = null
+    await enqueueGrade({
+      userId: 'u1', language: 'chinese', system: 'hsk_3',
+      vocabId: 'v1', cardId: 'local-1731000000000-v1', updates: UPDATES, log: LOG, day: '2026-11-09', state: 'learning',
+    })
+    const sb = fakeSupabase({ rpc: uuidStrictRpc })
+    await flushOutbox(sb, 'u1')
+    expect(store.rows).toHaveLength(0)
+    expect(sb.calls.rpc[0].args.p_card_id).toBe(null)
   })
 })
