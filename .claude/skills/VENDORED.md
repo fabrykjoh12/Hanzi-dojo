@@ -40,6 +40,33 @@ alongside it).
   webfonts) and lists a vermilion accent as a common default (ours is the brand
   accent and stays). Use it for process and critique, not palette or font picks.
 
+### Impeccable (Paul Bakaus) — 1 skill + 4 agents
+- Source: https://github.com/pbakaus/impeccable (plugin/skills/impeccable and
+  plugin/agents), commit `b4bff1626c344067788c2679f048a20057c7cc5a`, v4.8.2,
+  fetched 2026-11-12. Apache License 2.0 (`impeccable/LICENSE`, `NOTICE.md`).
+- Agents copied to `.claude/agents/impeccable-*.md`.
+- **Deliberately NOT vendored: `plugin/hooks/hooks.json`** (SessionStart +
+  PostToolUse hooks that run the launcher after every edit). Nothing runs
+  automatically.
+- `scripts/impeccable` is a launcher that downloads a compiled engine from the
+  project's GitHub releases and verifies it against the sha256 values in
+  `scripts/engine-checksums.txt`. In cloud sessions the harness may refuse to
+  run downloaded code; the skill then runs in its documented "launcher
+  unavailable" mode — the reference guides (craft-floor, critique, new-work,
+  ios, polish …) still apply, the deterministic detector does not.
+- Precedence: the skill itself says "the brief wins"; here the brief is
+  `CLAUDE.md` + `docs/DESIGN-BIBLE.md`.
+
+### web-design-guidelines (Vercel) — 1 skill, rules pinned
+- Source: https://github.com/vercel-labs/agent-skills (skills/web-design-guidelines,
+  commit `1a2c79d4e6c4a2283dc2c614b6538cbe1ed5ca62`) + the rules file from
+  https://github.com/vercel-labs/web-interface-guidelines (`command.md`), both
+  fetched 2026-11-12. MIT License (Vercel Labs).
+- **Changed from upstream:** upstream fetches the rules from the internet on
+  every run; here they are pinned in `guidelines.md` (read in full), and
+  SKILL.md is rewritten to read that file. Its "Title Case" rule is overridden
+  by the Design Bible's sentence case.
+
 **Removed** (were vendored, then dropped — don't re-add without a reason):
 - `api-design` — REST resource naming, status codes, versioning, rate limiting.
   This app has no API; it is a client SPA talking straight to Supabase.
