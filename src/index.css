@@ -451,8 +451,9 @@ body {
   position: fixed;
   inset: 0;
   z-index: -1;
-  /* The painting's own paper grain, tiled and multiplied onto Home's paper,
-     so the grain continues past the painting's edges on wide screens. */
+  /* A seamless, featureless paper tooth (periodic noise, ±1.2% luminance,
+     no recognisable fibres, no mirroring) multiplied onto Home's paper, so
+     the field past the painting's edges is paper, not flat colour. */
   background: var(--paper-grain) 0 0 / 512px 512px repeat var(--home-paper);
   background-blend-mode: multiply;
   pointer-events: none;
