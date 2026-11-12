@@ -1,10 +1,8 @@
 import { useEffect, useState } from 'react'
-import { ChevronRight } from 'lucide-react'
 import { getLevelLabel } from './utils'
 import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak } from './gentleReturn'
-import { sceneMood } from './homeScene'
 import { homeDailyStage } from './homePresentation'
 import { homeCard } from './homeCard'
 import { setDeskHandoff } from './deskTransition'
@@ -15,6 +13,7 @@ import TourOverlay from './TourOverlay'
 import { MOBILE_SHELL_HEIGHT } from './studyLayout'
 import inkDay from './assets/home-ink-day.webp'
 import inkNight from './assets/home-ink-night.webp'
+import paperGrain from './assets/home-paper-grain.webp'
 
 // Home is a painting with one object resting in it.
 //
@@ -95,24 +94,25 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
     <div
       className="hd-home"
       data-home-stage={homeDailyStage({ counts, daily: null })}
-      data-scene={sceneMood(new Date().getHours())}
       style={{
         position: 'relative',
         display: 'flex', flexDirection: 'column',
         minHeight: isMobile ? MOBILE_SHELL_HEIGHT : '100dvh',
-        padding: isMobile ? '8px 20px 24px' : '28px 32px 40px',
+        padding: isMobile ? '8px clamp(16px, 5vw, 20px) 24px' : '28px 32px 40px',
       }}
     >
       <div
         aria-hidden="true"
         data-home-scene
         className="hd-home-ink"
-        style={{ '--ink-day': 'url(' + inkDay + ')', '--ink-night': 'url(' + inkNight + ')' }}
+        style={{ '--ink-day': 'url(' + inkDay + ')', '--ink-night': 'url(' + inkNight + ')', '--paper-grain': 'url(' + paperGrain + ')' }}
       />
 
-      <header style={{ display: 'flex', justifyContent: 'flex-end' }}>
+      {/* On a phone the avatar is the way to Profile; the desktop sidebar
+          already shows the learner, so a second avatar there is noise. */}
+      <header style={{ display: 'flex', justifyContent: 'flex-end', minHeight: isMobile ? '44px' : 0 }}>
         <h1 style={visuallyHidden}>Today</h1>
-        <button
+        {isMobile && <button
           type="button"
           aria-label="Open profile"
           onClick={() => onNavigate('profile')}
@@ -130,50 +130,46 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
           }}>
             <ProfileGlyph size={18} active={false} color="currentColor" />
           </span>
-        </button>
+        </button>}
       </header>
 
-      {/* The card rests a little below centre, in the painting's band of
-          empty mist (the art leaves roughly 42–70% of its height clear). */}
-      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: isMobile ? '12vh' : '10vh' }}>
+      {/* The card rests in the painting's band of empty mist. The art is
+          painted to leave roughly 43–70% of its height clear, so the card's
+          top is placed from the painting's rendered height (see
+          .hd-home-band in index.css), not from a guess in vh. */}
+      <div className="hd-home-band" style={{ justifyContent: 'center' }}>
         <button
           type="button"
-          className="hd-home-card"
+          className="hd-home-card hd-fade-in"
           data-tour="home-queue"
           data-home-card={card.state}
           aria-label={card.ariaLabel}
           onClick={go}
         >
-          <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+          <span style={{ display: 'block' }}>
             <span style={{
-              fontSize: 'clamp(24px, 7.2vw, 28px)', lineHeight: 1.2, fontWeight: 600, letterSpacing: '-0.02em',
-              fontVariantNumeric: 'tabular-nums', color: 'var(--home-ink)', textWrap: 'balance',
+              display: 'block', fontSize: 'clamp(26px, calc(8.4vw - 3px), 34px)', lineHeight: 1.15, fontWeight: 600,
+              letterSpacing: '-0.022em', fontVariantNumeric: 'tabular-nums', color: 'var(--home-ink)', textWrap: 'balance',
             }}>
               {card.title}
             </span>
-            <ChevronRight aria-hidden="true" size={20} strokeWidth={2} color="var(--home-faint)" style={{ flexShrink: 0 }} />
+            {card.detail && (
+              <span style={{ display: 'block', marginTop: '6px', fontSize: '17px', lineHeight: '22px', color: 'var(--home-muted)' }}>
+                {card.detail}
+              </span>
+            )}
           </span>
 
-          {card.detail && (
-            <span style={{ display: 'block', marginTop: '4px', fontSize: '15px', lineHeight: '20px', color: 'var(--home-muted)' }}>
-              {card.detail}
-            </span>
-          )}
-
+          {/* Level progress. Decorative to assistive tech: the button's own
+              name already says it, and a progressbar inside a button is not
+              exposed anyway (button children are presentational). */}
           {card.progress && (
-            <span style={{ display: 'block', marginTop: '18px' }}>
-              <span
-                role="progressbar"
-                aria-label={card.progress}
-                aria-valuenow={counts.learnedCount || 0}
-                aria-valuemin="0"
-                aria-valuemax={counts.totalWords || 0}
-                style={{ display: 'block', height: '4px', borderRadius: '2px', background: 'var(--home-track)', overflow: 'hidden' }}
-              >
-                <span style={{ display: 'block', width: card.pct + '%', minWidth: card.pct > 0 ? '4px' : 0, height: '100%', borderRadius: '2px', background: accentInk }} />
+            <span aria-hidden="true" style={{ display: 'block', marginTop: '24px' }}>
+              <span style={{ display: 'block', height: '5px', borderRadius: '3px', background: 'var(--home-track)', overflow: 'hidden' }}>
+                <span style={{ display: 'block', width: card.pct + '%', minWidth: card.pct > 0 ? '5px' : 0, height: '100%', borderRadius: '3px', background: accentInk }} />
               </span>
               <span style={{
-                display: 'block', marginTop: '8px', fontSize: '13px', lineHeight: '18px', fontWeight: 500,
+                display: 'block', marginTop: '10px', fontSize: '14px', lineHeight: '18px', fontWeight: 500,
                 fontVariantNumeric: 'tabular-nums', color: 'var(--home-muted)',
               }}>
                 {card.progress}

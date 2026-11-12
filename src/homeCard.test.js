@@ -24,6 +24,9 @@ describe('progressLine', () => {
   it('says nothing when the level has no words to count', () => {
     expect(progressLine({ learned: 0, totalWords: 0, nextLevelLabel: 'HSK 3' })).toBe('')
   })
+  it('singular for a one-word level', () => {
+    expect(progressLine({ learned: 1, totalWords: 1, nextLevelLabel: 'HSK 3' })).toBe('1 of 1 word to HSK 3')
+  })
   it('stays a sentence when there is no next level label', () => {
     expect(progressLine({ learned: 3, totalWords: 9 })).toBe('3 of 9 words')
   })
@@ -89,11 +92,11 @@ describe('homeCard — all caught up', () => {
     expect(card.state).toBe('clear')
     expect(card.go).toBe('stories')
     expect(card.title).toBe('All caught up')
-    expect(card.detail).toBe('Read a story while you wait.')
+    expect(card.detail).toBe('Read a story.')
   })
   it('mentions tomorrow only when tomorrow holds something', () => {
-    expect(homeCard({ counts: { dueTomorrow: 7 } }).detail).toBe('7 cards tomorrow. Read a story while you wait.')
-    expect(homeCard({ counts: { dueTomorrow: 1 } }).detail).toBe('1 card tomorrow. Read a story while you wait.')
+    expect(homeCard({ counts: { dueTomorrow: 7 } }).detail).toBe('7 cards tomorrow. Read a story until then.')
+    expect(homeCard({ counts: { dueTomorrow: 1 } }).detail).toBe('1 card tomorrow. Read a story until then.')
   })
 })
 
@@ -103,7 +106,7 @@ describe('homeCard — counts failed to load', () => {
     expect(card.state).toBe('failed')
     expect(card.title).not.toMatch(/caught up/i)
     expect(card.go).toBe('study')
-    expect(card.detail).toBe('Tap to try again')
+    expect(card.detail).toBe('Try again')
   })
   it('tolerates null counts', () => {
     expect(homeCard({ counts: null }).state).toBe('clear')

@@ -13,25 +13,18 @@ test('uses only the locked Home motion timings', async ({ page }) => {
   await page.goto('/');
 
   const home = page.locator('[data-home-stage]');
-  const hero = page.locator('[data-tour="home-queue"]');
+  const card = page.locator('[data-tour="home-queue"]');
   await expect(home).toBeVisible();
-  // The hand-off panel arrives with the async daily story — wait for it so the
-  // delay census below sees the full page.
-  await expect(page.locator('[data-tour="home-then-read"]')).toBeVisible();
 
-  // Blocks settle with the shared rise, genuinely staggered by inline delays.
-  expect(await hero.evaluate(node => getComputedStyle(node).animationDuration)).toBe('0.52s');
-  const delays = await home.evaluate(node =>
-    [...node.querySelectorAll(':scope > .hd-rise')].map(el => parseFloat(getComputedStyle(el).animationDelay)));
-  expect(delays.length).toBeGreaterThanOrEqual(4);
-  expect(new Set(delays).size).toBe(delays.length);
-  expect([...delays].sort((a, b) => a - b)).toEqual(delays);
+  // One authored moment: the card settles into the painting with a single
+  // 320ms fade, and presses on a 160ms transition. Nothing else animates.
+  expect(await card.evaluate(node => getComputedStyle(node).animationDuration)).toBe('0.32s');
+  const durations = (await card.evaluate(node => getComputedStyle(node).transitionDuration)).split(',');
+  expect(durations[0].trim()).toBe('0.16s');
+  const others = await home.evaluate(node => [...node.querySelectorAll('*')]
+    .filter(el => el.getAttribute('data-tour') !== 'home-queue' && getComputedStyle(el).animationName !== 'none').length);
+  expect(others).toBe(0);
 
-  // The hero presses with the deep-press physics — it is the whole control.
-  const heroDurations = (await hero.evaluate(node => getComputedStyle(node).transitionDuration)).split(',');
-  expect(heroDurations[0].trim()).toBe('0.16s');
-
-  // The dock's selected capsule expands/collapses at the locked nav timing.
   const nav = page.getByRole('navigation', { name: 'Primary' });
   const activeTab = nav.locator('[aria-current="page"]');
   const tabTransition = await activeTab.evaluate(node => getComputedStyle(node).transitionDuration);

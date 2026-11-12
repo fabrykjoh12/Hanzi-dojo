@@ -27,7 +27,7 @@ beforeEach(() => store.clear())
 describe('TOURS step definitions', () => {
   it('has a home tour and a stories tour, nothing for study mid-session', () => {
     expect(Object.keys(TOURS).sort()).toEqual(['home', 'stories'])
-    expect(TOURS.home.length).toBe(4)
+    expect(TOURS.home.length).toBe(2)
     expect(TOURS.stories.length).toBe(3)
   })
 
@@ -156,11 +156,14 @@ describe('visibleSteps / nextStepIndex — missing anchors skip silently', () =>
   })
 
   it('nextStepIndex finds the next surviving step, or -1 at the end', () => {
-    const present = new Set(['home-week', 'nav'])
-    expect(nextStepIndex(steps, 0, s => present.has(s.anchor))).toBe(2)
-    expect(nextStepIndex(steps, 3, s => present.has(s.anchor))).toBe(3)
-    expect(nextStepIndex(steps, 4, s => present.has(s.anchor))).toBe(-1)
-    expect(nextStepIndex(steps, 0, () => false)).toBe(-1)
+    // Its own four-step fixture, so the skip logic is tested independently of
+    // how many steps a real tour happens to have.
+    const four = ['a', 'b', 'c', 'd'].map(id => ({ id, anchor: id }))
+    const present = new Set(['c', 'd'])
+    expect(nextStepIndex(four, 0, s => present.has(s.anchor))).toBe(2)
+    expect(nextStepIndex(four, 3, s => present.has(s.anchor))).toBe(3)
+    expect(nextStepIndex(four, 4, s => present.has(s.anchor))).toBe(-1)
+    expect(nextStepIndex(four, 0, () => false)).toBe(-1)
   })
 })
 

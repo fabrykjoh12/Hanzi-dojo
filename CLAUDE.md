@@ -326,8 +326,8 @@ Hardcoded neutral hexes are a bug.
 2. **Regex literals are fine.** *(Corrected 2026-08-04.)* This rule used to say
    "no complex regex literals — OXC breaks on them". That is no longer true, and
    the codebase had already outgrown it: ~38 files in `src/` use regex literals
-   today and the build is green, including a Unicode property escape in
-   `homeStory.js` (`/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u`). Write the
+   today and the build is green, including Unicode property escapes
+   (e.g. `/^[\p{Extended_Pictographic}\uFE0F\u200D\s]+/u`). Write the
    regex when a regex is clearest; reach for `indexOf()`/`split()`/`includes()`
    because they read better, not out of fear of the parser.
 3. **All styling is inline style objects.** No Tailwind utility classes in JSX.

@@ -1,20 +1,18 @@
 // Page Object for the authenticated Home screen.
 //
-// Home's one lit block is the flashcard queue: how many cards are waiting, the
-// New/Learning/Review composition, the day's goal, and a single button that
-// starts the session. The story you have unlocked is a quiet hand-off beneath
-// it — the next step in the loop, not a rival call to action — and the week's
-// rhythm and level progress share one flat panel below.
+// Home is an ink painting with one card resting in it. The whole card is the
+// one control: it starts today's cards (or, once the queue is clear, opens the
+// stories), and it says how many cards are waiting, roughly how long they
+// take, and how far they carry the learner toward the next level.
 export class HomePage {
   constructor(page) {
     this.page = page;
     this.today = page.getByRole('heading', { name: 'Today', exact: true });
-    this.hero = page.locator('[data-tour="home-queue"]');
-    this.queueEyebrow = page.getByText(/Ready to review|Queue clear/);
-    // The hero's single action: cards while cards are due, reading once clear.
-    this.heroAction = page.getByRole('button', { name: /Start reviewing|Read a story/ });
-    this.storyHandoff = page.locator('[data-tour="home-then-read"]');
-    this.weekPanel = page.locator('[data-tour="home-week"]');
+    this.card = page.locator('[data-tour="home-queue"]');
+    // Kept as an alias: other specs reach "the hero" to start a session.
+    this.hero = this.card;
+    this.heroAction = page.getByRole('button', { name: /Start reviewing|Read a story|Try again/ });
+    this.painting = page.locator('[data-home-scene]');
   }
   async goto() {
     await this.page.goto('/');

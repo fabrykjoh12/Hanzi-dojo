@@ -25,7 +25,7 @@ export function minutesLine(minutes) {
 export function progressLine({ learned = 0, totalWords = 0, nextLevelLabel = '' } = {}) {
   if (!totalWords || totalWords <= 0) return ''
   const to = nextLevelLabel ? ' to ' + nextLevelLabel : ''
-  return learned + ' of ' + totalWords + ' words' + to
+  return learned + ' of ' + totalWords + ' word' + (totalWords === 1 ? '' : 's') + to
 }
 
 // The whole card's content and behaviour for one state.
@@ -43,9 +43,9 @@ export function homeCard({ counts, learned = 0, totalWords = 0, nextLevelLabel =
   if (queue.failed) {
     return {
       state: 'failed', go: 'study', progress, pct,
-      title: 'Today’s cards didn’t load',
-      detail: 'Tap to try again',
-      ariaLabel: 'Start reviewing. Today’s cards didn’t load; starting will try again.',
+      title: 'Cards didn’t load',
+      detail: 'Try again',
+      ariaLabel: 'Try again. Today’s cards didn’t load; starting a session loads them fresh.',
     }
   }
 
@@ -55,8 +55,8 @@ export function homeCard({ counts, learned = 0, totalWords = 0, nextLevelLabel =
       state: 'clear', go: 'stories', progress, pct,
       title: 'All caught up',
       detail: tomorrow > 0
-        ? tomorrow + ' card' + (tomorrow === 1 ? '' : 's') + ' tomorrow. Read a story while you wait.'
-        : 'Read a story while you wait.',
+        ? tomorrow + ' card' + (tomorrow === 1 ? '' : 's') + ' tomorrow. Read a story until then.'
+        : 'Read a story.',
       ariaLabel: 'Read a story. All caught up for today.',
     }
   }

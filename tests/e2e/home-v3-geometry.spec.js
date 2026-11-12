@@ -106,8 +106,8 @@ test('Home content clears the floating dock and fonts settle without reflow', as
   await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
   const clearance = await page.evaluate(() => {
     const navTop = document.querySelector('nav[aria-label="Primary"]').getBoundingClientRect().top;
-    const lastPanel = document.querySelector('[data-tour="home-week"]');
-    return navTop - lastPanel.getBoundingClientRect().bottom;
+    const card = document.querySelector('[data-tour="home-queue"]');
+    return navTop - card.getBoundingClientRect().bottom;
   });
   expect(clearance).toBeGreaterThanOrEqual(0);
 });

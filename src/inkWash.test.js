@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest'
 import { seededRandom, ridgePath, ridgeLayers } from './inkWash'
-import { openingLine, heroSentence } from './homeStory'
 
 describe('seededRandom', () => {
   it('is deterministic for a seed — the skyline must not reshuffle on re-render', () => {
@@ -60,55 +59,5 @@ describe('ridgeLayers', () => {
 
   it('never exceeds full opacity on the nearest ridge', () => {
     for (const l of ridgeLayers('x', 3)) expect(l.opacity).toBeLessThanOrEqual(1)
-  })
-})
-
-describe('openingLine', () => {
-  it('takes the first non-empty line', () => {
-    expect(openingLine('\n\n  今天天气很好。\n第二行')).toBe('今天天气很好。')
-  })
-
-  it('is safe on empty or missing content', () => {
-    expect(openingLine('')).toBe('')
-    expect(openingLine(undefined)).toBe('')
-  })
-})
-
-describe('heroSentence', () => {
-  it('drops a speaker prefix — the hero is the words, not the tag', () => {
-    expect(heroSentence('妈妈：今天我们去公园。')).toBe('今天我们去公园。')
-  })
-
-  it('leaves a plain sentence alone when it fits', () => {
-    expect(heroSentence('今天我和朋友去公园散步')).toBe('今天我和朋友去公园散步')
-  })
-
-  it('cuts on a clause boundary rather than mid-word', () => {
-    const long = '今天我和朋友去公园散步，然后我们一起去了图书馆看书'
-    const out = heroSentence(long, 14)
-    expect(out.endsWith('，')).toBe(true)
-    expect(out.length).toBeLessThanOrEqual(14)
-  })
-
-  it('falls back to an ellipsis when there is no clause break in range', () => {
-    const out = heroSentence('あいうえおかきくけこさしすせそたちつてと', 8)
-    expect(out.endsWith('…')).toBe(true)
-  })
-
-  it('drops a leading scene emoji — the hero is the sentence', () => {
-    expect(heroSentence('\u{1F327}\uFE0F 今天天气不好。')).toBe('今天天气不好。')
-    expect(heroSentence('🌧 今天天气不好。')).toBe('今天天气不好。')
-  })
-
-  it('keeps an emoji that is not leading', () => {
-    expect(heroSentence('今天很好🌞')).toBe('今天很好🌞')
-  })
-
-  it('strips the emoji before the speaker prefix', () => {
-    expect(heroSentence('🌧️ 妈妈：今天我们去公园。')).toBe('今天我们去公园。')
-  })
-
-  it('is safe on empty content', () => {
-    expect(heroSentence('')).toBe('')
   })
 })

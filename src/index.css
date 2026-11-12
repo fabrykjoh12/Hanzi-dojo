@@ -225,57 +225,6 @@ body {
    between two identical rooms. Set by Home.jsx / Study.jsx. */
 :root[data-quiet-bg] { --bg-image-opacity: 0; --bg-image-opacity-lit: 0; }
 
-/* ── The Home horizon band (HomeScene.jsx) ─────────────────────────────────
-   One scene language — three hills and a disc — whose colours are the only
-   thing the time of day changes. Home stamps [data-scene] from sceneMood()
-   (homeScene.js); dark mode always wears the night set, whatever the clock
-   says, because dark IS the night treatment. Values are deliberately close to
-   --bg so the band reads as weather, not wallpaper. */
-[data-scene] {
-  /* day (base) */
-  --scene-sky: #F1F3E8;
-  --scene-hill-1: #C9CFAE;
-  --scene-hill-2: #D8DCC0;
-  --scene-hill-3: #E4E7D2;
-  --scene-disc: #EDC75F;
-}
-[data-scene='morning'] {
-  --scene-sky: #FAF0D8;
-  --scene-hill-1: #DBBC85;
-  --scene-hill-2: #E6CD9F;
-  --scene-hill-3: #EFDDBA;
-  --scene-disc: #E9AE45;
-}
-[data-scene='evening'] {
-  --scene-sky: #F9E7D2;
-  --scene-hill-1: #DCA878;
-  --scene-hill-2: #E8BE95;
-  --scene-hill-3: #F2D3B4;
-  --scene-disc: #C96B42;
-}
-[data-scene='night'] {
-  --scene-sky: #E9E7F0;
-  --scene-hill-1: #B1B1C9;
-  --scene-hill-2: #C4C3D6;
-  --scene-hill-3: #D6D4E3;
-  --scene-disc: #F2ECDA;
-}
-:root[data-theme='dark'] [data-scene] {
-  --scene-sky: #1B2130;
-  --scene-hill-1: #333D62;
-  --scene-hill-2: #2C3554;
-  --scene-hill-3: #262D47;
-  --scene-disc: #E8E0C6;
-}
-
-/* The band's one motion: the disc's halo breathes. Opacity only, glacially
-   slow; the global reduced-motion catch-all flattens it to a still halo. */
-@keyframes hd-scene-breathe {
-  from { opacity: 0.18; }
-  to   { opacity: 0.34; }
-}
-.hd-scene-halo { animation: hd-scene-breathe 7s ease-in-out infinite alternate; }
-
 /* Framing for the full-page language background (src/Background.jsx).
    The artwork is a wide landscape: mountains along the top, bamboo in the
    bottom-right corner, and a large expanse of empty paper through the middle
@@ -487,31 +436,39 @@ body {
   --home-muted: #6B635A;
   --home-faint: #A39A8F;
   --home-hairline: rgba(46, 36, 24, 0.10);
-  --home-track: rgba(46, 36, 24, 0.09);
+  --home-track: rgba(46, 36, 24, 0.12);
 }
 :root[data-theme="dark"] .hd-home {
-  --home-paper: #15130F;
-  --home-card: #211E1A;
+  --home-paper: #1B1814;
+  --home-card: #2B2723;
   --home-ink: #EFEAE2;
   --home-muted: #ABA295;
   --home-faint: #7C746A;
   --home-hairline: rgba(255, 248, 236, 0.09);
-  --home-track: rgba(255, 248, 236, 0.10);
+  --home-track: rgba(255, 248, 236, 0.13);
 }
 .hd-home-ink {
   position: fixed;
   inset: 0;
   z-index: -1;
-  background: var(--home-paper);
+  /* The painting's own paper grain, tiled and multiplied onto Home's paper,
+     so the grain continues past the painting's edges on wide screens. */
+  background: var(--paper-grain) 0 0 / 512px 512px repeat var(--home-paper);
+  background-blend-mode: multiply;
   pointer-events: none;
 }
+:root[data-theme="dark"] .hd-home-ink { background-image: none; }
 .hd-home-ink::before {
   content: '';
   position: absolute;
   inset: 0;
   background: var(--ink-day) center top / cover no-repeat;
+  /* The day art is flat-fielded (its paper normalised to white), so multiply
+     leaves only the ink on Home's own paper: no tone seam anywhere, at any
+     width. The night art is opaque and simply sits on its own ground. */
+  mix-blend-mode: multiply;
 }
-:root[data-theme="dark"] .hd-home-ink::before { background-image: var(--ink-night); }
+:root[data-theme="dark"] .hd-home-ink::before { background-image: var(--ink-night); mix-blend-mode: normal; }
 /* Wider than a phone: the painting stands as a tall panel whose edges dissolve
    into the same paper, instead of being cropped to a strip of peaks. */
 @media (min-aspect-ratio: 3/4) {
@@ -522,8 +479,8 @@ body {
     width: calc(100vh * 1248 / 2704);
     transform: translateX(-50%);
     background-size: cover;
-    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22%, #000 78%, transparent 100%);
-    mask-image: linear-gradient(to right, transparent 0%, #000 22%, #000 78%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 16%, #000 84%, transparent 100%);
   }
 }
 /* The dock floats over the painting on Home, so it takes the painting's paper
@@ -537,6 +494,8 @@ body {
   --hairline: rgba(255, 255, 255, 0.7);
   --text-muted: #6B635A;
 }
+/* On Home the card is the one lifted object; the dock lies flatter. */
+:root[data-home-ink] nav[aria-label="Primary"] { box-shadow: 0 0 0 0.5px var(--border) !important; }
 :root[data-theme="dark"][data-home-ink] nav[data-tour="nav"] {
   --surface: #211E1A;
   --surface-glass: rgba(21, 19, 15, 0.86);
@@ -552,9 +511,14 @@ body {
   font: inherit;
   color: inherit;
   cursor: pointer;
-  padding: 20px 20px 18px;
+  /* A <button> centres its content vertically; the card's words start at the
+     top in every state. */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 28px clamp(22px, 6vw, 26px) 26px;
   border: none;
-  border-radius: 22px;
+  border-radius: 24px;
   background: var(--home-card);
   box-shadow:
     0 0 0 0.5px var(--home-hairline),
@@ -564,13 +528,36 @@ body {
   touch-action: manipulation;
   transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1), background-color 160ms ease-out;
 }
-:root[data-theme="dark"] .hd-home-card { box-shadow: 0 0 0 0.5px var(--home-hairline); }
+:root[data-theme="dark"] .hd-home-card {
+  box-shadow: 0 0 0 0.5px var(--home-hairline), 0 8px 24px rgba(0, 0, 0, 0.35);
+}
+/* Where the card's top sits: 45% down the painting as rendered. On a phone
+   the painting is cover-fitted to the viewport, so its height is the larger
+   of the viewport height and the width scaled by the art's 2704/1248. The
+   header row (44px) and the top safe area are already above this box, so they
+   come off. On a wide screen the painting is full height; centre instead. */
+/* The card's BOTTOM edge is anchored 16px above the painting's bamboo
+   (≈65.5% down the painting as rendered); the card grows upward into the
+   mist, which can take it. The band box starts below the header row (44px)
+   and the 8px top padding, plus the top safe area, so those come off.
+   On a phone the painting is cover-fitted, so its rendered height is the
+   larger of the viewport height and the width × 2704/1248. */
+.hd-home-band {
+  display: flex;
+  align-items: flex-end;
+  height: max(200px, calc(max(100dvh, 100vw * 2704 / 1248) * 0.655 - 16px - 52px - env(safe-area-inset-top)));
+}
+/* Wide screens: the painting is exactly the viewport's height; the band box
+   starts 28px down (page padding, no header row). */
+@media (min-aspect-ratio: 3/4) {
+  .hd-home-band { height: max(200px, calc(100vh * 0.655 - 16px - 28px)); }
+}
 .hd-home-card:active {
   transform: scale(0.98);
   background: color-mix(in srgb, var(--home-card), var(--home-ink) 4%);
 }
 .hd-home-card:focus-visible { outline: 2px solid var(--home-muted); outline-offset: 3px; }
 @media (prefers-reduced-motion: reduce) {
-  .hd-home-card { transition: none; }
+  .hd-home-card { transition: none; animation: none; }
   .hd-home-card:active { transform: none; }
 }
