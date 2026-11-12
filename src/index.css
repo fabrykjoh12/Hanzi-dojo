@@ -475,3 +475,102 @@ body {
   @keyframes hd-home-rise { from { opacity: 0; } to { opacity: 1; } }
   .hd-breathe, .hd-skeleton { animation: none; }
 }
+
+/* ── Home: the ink painting and the one card resting in it ──────────────────
+   The painting's paper and ink set Home's own palette (sampled from the art
+   so the card sits in the same material). Light is a day scene; dark is the
+   same composition re-inked at night, never an inversion. */
+.hd-home {
+  --home-paper: #FAF3E9;
+  --home-card: #FCF9F3;
+  --home-ink: #1E1B17;
+  --home-muted: #6B635A;
+  --home-faint: #A39A8F;
+  --home-hairline: rgba(46, 36, 24, 0.10);
+  --home-track: rgba(46, 36, 24, 0.09);
+}
+:root[data-theme="dark"] .hd-home {
+  --home-paper: #15130F;
+  --home-card: #211E1A;
+  --home-ink: #EFEAE2;
+  --home-muted: #ABA295;
+  --home-faint: #7C746A;
+  --home-hairline: rgba(255, 248, 236, 0.09);
+  --home-track: rgba(255, 248, 236, 0.10);
+}
+.hd-home-ink {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--home-paper);
+  pointer-events: none;
+}
+.hd-home-ink::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--ink-day) center top / cover no-repeat;
+}
+:root[data-theme="dark"] .hd-home-ink::before { background-image: var(--ink-night); }
+/* Wider than a phone: the painting stands as a tall panel whose edges dissolve
+   into the same paper, instead of being cropped to a strip of peaks. */
+@media (min-aspect-ratio: 3/4) {
+  .hd-home-ink::before {
+    /* The layer is exactly the painting's box (its 1248×2704 proportions at
+       full height), so the mask fades the painting's own edges. */
+    inset: 0 auto 0 58%;
+    width: calc(100vh * 1248 / 2704);
+    transform: translateX(-50%);
+    background-size: cover;
+    -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 22%, #000 78%, transparent 100%);
+    mask-image: linear-gradient(to right, transparent 0%, #000 22%, #000 78%, transparent 100%);
+  }
+}
+/* The dock floats over the painting on Home, so it takes the painting's paper
+   and ink instead of the app's cool neutrals (Home sets data-home-ink while it
+   is mounted). Same component, same shape — only its material changes. */
+:root[data-home-ink] nav[data-tour="nav"] {
+  --surface: #FCF9F3;
+  --surface-glass: rgba(250, 243, 233, 0.86);
+  --watermark-pct: 0%;
+  --border: rgba(46, 36, 24, 0.10);
+  --hairline: rgba(255, 255, 255, 0.7);
+  --text-muted: #6B635A;
+}
+:root[data-theme="dark"][data-home-ink] nav[data-tour="nav"] {
+  --surface: #211E1A;
+  --surface-glass: rgba(21, 19, 15, 0.86);
+  --border: rgba(255, 248, 236, 0.09);
+  --hairline: transparent;
+  --text-muted: #ABA295;
+}
+.hd-home-card {
+  display: block;
+  width: 100%;
+  max-width: 420px;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: 20px 20px 18px;
+  border: none;
+  border-radius: 22px;
+  background: var(--home-card);
+  box-shadow:
+    0 0 0 0.5px var(--home-hairline),
+    0 1px 2px rgba(40, 30, 20, 0.06),
+    0 6px 18px rgba(40, 30, 20, 0.07);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: transform 160ms cubic-bezier(0.22, 1, 0.36, 1), background-color 160ms ease-out;
+}
+:root[data-theme="dark"] .hd-home-card { box-shadow: 0 0 0 0.5px var(--home-hairline); }
+.hd-home-card:active {
+  transform: scale(0.98);
+  background: color-mix(in srgb, var(--home-card), var(--home-ink) 4%);
+}
+.hd-home-card:focus-visible { outline: 2px solid var(--home-muted); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) {
+  .hd-home-card { transition: none; }
+  .hd-home-card:active { transform: none; }
+}
