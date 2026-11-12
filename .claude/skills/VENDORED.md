@@ -6,8 +6,9 @@ are available in Claude Code web/cloud sessions (which do not carry a local
 
 ## Sources & licenses
 
-Both projects are MIT-licensed; their copyright notices are preserved below as
-required by the MIT License.
+superpowers and ECC are MIT-licensed; their copyright notices are preserved below as
+required by the MIT License. frontend-design is Apache-2.0 (its LICENSE.txt ships
+alongside it).
 
 ### superpowers — all 14 skills
 - Source: https://github.com/obra/superpowers
@@ -26,6 +27,18 @@ required by the MIT License.
   frontend-a11y, vite-patterns, design-system, postgres-patterns,
   database-migrations, error-handling, e2e-testing, browser-qa, security-review,
   security-scan, deployment-patterns, github-ops, documentation-lookup
+
+### frontend-design (Anthropic) — 1 skill
+- Source: https://github.com/anthropics/skills/tree/main/skills/frontend-design
+  (fetched 2026-11-12 from `main`; read in full before vendoring — instructions
+  only, no scripts or hooks)
+- Copyright Anthropic — Apache License 2.0 (`frontend-design/LICENSE.txt`)
+- Why: its plan → review-against-brief → build → screenshot-critique loop and its
+  list of "generated design" tells. **Precedence:** `CLAUDE.md` and
+  `docs/DESIGN-BIBLE.md` win over its style advice — it pushes distinctive new
+  typefaces (we keep Inter + Noto Sans SC, and the native build must never fetch
+  webfonts) and lists a vermilion accent as a common default (ours is the brand
+  accent and stays). Use it for process and critique, not palette or font picks.
 
 **Removed** (were vendored, then dropped — don't re-add without a reason):
 - `api-design` — REST resource naming, status codes, versioning, rate limiting.
