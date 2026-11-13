@@ -45,7 +45,17 @@ test.describe('Home (logged in)', () => {
     await expect(home.card).toBeVisible();
     await expect(home.card).toHaveAttribute('data-home-card', 'ready');
     await expect(home.card.getByText(/^\d+ cards? to review$/)).toBeVisible();
-    await expect(home.card.getByText(/^About (a minute|\d+ minutes)$/)).toBeVisible();
+    // Today's session in three counts — blue new, red learning, green review —
+    // adding up to the title. No time estimate.
+    for (const key of ['new', 'learning', 'review']) {
+      await expect(home.card.locator('[data-queue="' + key + '"]')).toBeVisible();
+    }
+    const sums = await home.card.evaluate(node => ({
+      title: Number(node.textContent.match(/(\d+) cards? to review/)[1]),
+      parts: [...node.querySelectorAll('[data-queue]')].reduce((n, el) => n + Number(el.firstElementChild.textContent), 0),
+    }));
+    expect(sums.parts).toBe(sums.title);
+    await expect(home.card.getByText(/minutes?$/)).toHaveCount(0);
     await expect(home.card.getByText(/^\d+ of \d+ words? to HSK \d$/)).toBeVisible();
   });
 
@@ -55,7 +65,7 @@ test.describe('Home (logged in)', () => {
     await expect(home.card.locator('button')).toHaveCount(0);
     await expect(home.card.getByText(/Start reviewing|Start review/)).toHaveCount(0);
     // Its accessible name carries the action and the whole state.
-    await expect(home.card).toHaveAccessibleName(/^Start reviewing\. \d+ cards? to review\./);
+    await expect(home.card).toHaveAccessibleName(/^Start reviewing\. \d+ cards? to review: \d+ new, \d+ learning, \d+ review\./);
     await home.card.click();
     await expect(page).toHaveURL(/\/study$/);
     await expect(new StudyPage(page).showAnswer).toBeVisible();

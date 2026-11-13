@@ -9,16 +9,13 @@
 // meta strings — see docs/DESIGN-BIBLE.md §5 and §14.
 
 import { homeQueueSummary, homeProgressPct } from './homePresentation'
-import { sessionEstimateMinutes } from './sessionEstimate'
 import { GENTLE_REVIEW_CAP } from './gentleReturn'
 
-// "About 12 minutes" — never "~12 min" (abbreviated chrome) and never a
-// precise-sounding number for a one-minute session.
-export function minutesLine(minutes) {
-  if (!minutes || minutes <= 0) return ''
-  if (minutes === 1) return 'About a minute'
-  return 'About ' + minutes + ' minutes'
-}
+// The three queue colours, the owner's choice and the long-standing flashcard
+// convention: blue for new, red for learning, green for review. Status
+// colours stay hardcoded (CLAUDE.md §5); the component lifts them with ink()
+// wherever they are text, so they hold contrast at night.
+export const QUEUE_COLORS = Object.freeze({ new: '#2F6AB0', learning: '#B83A24', review: '#2F7A4D' })
 
 // "5 of 44 words to HSK 3". A level with no words (the top of the scale, or
 // counts that never arrived) has nothing honest to say, so it says nothing.
@@ -66,14 +63,24 @@ export function homeCard({ counts, learned = 0, totalWords = 0, nextLevelLabel =
   // the whole backlog, and says the rest will come back gradually.
   const capped = returning && (counts.dueCount || 0) > GENTLE_REVIEW_CAP
   const n = capped ? queue.totalReady - (counts.dueCount || 0) + GENTLE_REVIEW_CAP : queue.totalReady
-  const minutes = sessionEstimateMinutes(capped ? { ...counts, dueCount: GENTLE_REVIEW_CAP } : counts)
   const title = n + ' card' + (n === 1 ? '' : 's') + ' to review'
-  const detail = capped
-    ? 'Welcome back. The rest return over the next few days.'
-    : minutesLine(minutes)
+  // The owner chose the three counts over a time estimate, so the detail line
+  // only speaks when there is something to explain (the gentle-return cap).
+  const detail = capped ? 'Welcome back. The rest return over the next few days.' : ''
+  // What today's session is made of, in session order. Review includes the
+  // calibration checks (they ride in the review pool — see sessionPrep.js),
+  // and after a break it shows the capped handful, so the three always add up
+  // to the title.
+  const reviewCount = (capped ? GENTLE_REVIEW_CAP : (counts.dueCount || 0)) + (counts.calibrationCount || 0)
+  const breakdown = [
+    { key: 'new', label: 'New', value: counts.newCount || 0 },
+    { key: 'learning', label: 'Learning', value: counts.learnCount || 0 },
+    { key: 'review', label: 'Review', value: reviewCount },
+  ]
+  const parts = breakdown.map(b => b.value + ' ' + b.label.toLowerCase()).join(', ')
   return {
     state: 'ready', go: 'study', progress, pct,
-    title, detail,
-    ariaLabel: 'Start reviewing. ' + title + (detail ? '. ' + detail : '') + (progress ? '. ' + progress : ''),
+    title, detail, breakdown,
+    ariaLabel: 'Start reviewing. ' + title + ': ' + parts + '.' + (detail ? ' ' + detail : '') + (progress ? ' ' + progress + '.' : ''),
   }
 }

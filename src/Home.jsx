@@ -4,7 +4,7 @@ import { languageTheme, ink } from './languageTheme'
 import { useIsMobile } from './useIsMobile'
 import { isReturningFromBreak } from './gentleReturn'
 import { homeDailyStage } from './homePresentation'
-import { homeCard } from './homeCard'
+import { homeCard, QUEUE_COLORS } from './homeCard'
 import { setDeskHandoff } from './deskTransition'
 import { prepareStudySession } from './sessionPrep'
 import { ProfileGlyph } from './HomeV2NavGlyphs'
@@ -160,11 +160,40 @@ export default function Home({ profile, track, counts, session, onNavigate }) {
             )}
           </span>
 
+          {/* Today's session in three counts: blue new, red learning, green
+              review. Tinted tiles mixed into the card's own surface, numbers
+              in the colour as ink (lifted at night). Decorative to assistive
+              tech: the button's name already reads them out. */}
+          {card.breakdown && (
+            <span aria-hidden="true" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 'clamp(6px, 2vw, 8px)', marginTop: '20px' }}>
+              {card.breakdown.map(b => {
+                const hex = QUEUE_COLORS[b.key]
+                return (
+                  <span key={b.key} data-queue={b.key} style={{
+                    display: 'block', minWidth: 0, padding: '12px clamp(9px, 3vw, 12px) 11px', borderRadius: '14px',
+                    background: 'color-mix(in srgb, ' + hex + ' 11%, var(--home-card))',
+                    boxShadow: 'inset 0 0 0 0.5px color-mix(in srgb, ' + hex + ' 22%, transparent)',
+                  }}>
+                    <span style={{
+                      display: 'block', fontSize: '24px', lineHeight: 1, fontWeight: 650, letterSpacing: '-0.02em',
+                      fontVariantNumeric: 'tabular-nums', color: ink(hex),
+                    }}>
+                      {b.value}
+                    </span>
+                    <span style={{ display: 'block', marginTop: '6px', fontSize: 'clamp(12px, 3.4vw, 13px)', lineHeight: '16px', fontWeight: 500, color: 'var(--home-muted)', whiteSpace: 'nowrap' }}>
+                      {b.label}
+                    </span>
+                  </span>
+                )
+              })}
+            </span>
+          )}
+
           {/* Level progress. Decorative to assistive tech: the button's own
               name already says it, and a progressbar inside a button is not
               exposed anyway (button children are presentational). */}
           {card.progress && (
-            <span aria-hidden="true" style={{ display: 'block', marginTop: '24px' }}>
+            <span aria-hidden="true" style={{ display: 'block', marginTop: card.breakdown ? '20px' : '24px' }}>
               <span style={{ display: 'block', height: '5px', borderRadius: '3px', background: 'var(--home-track)', overflow: 'hidden' }}>
                 <span style={{ display: 'block', width: card.pct + '%', minWidth: card.pct > 0 ? '5px' : 0, height: '100%', borderRadius: '3px', background: accentInk }} />
               </span>

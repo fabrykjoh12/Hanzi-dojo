@@ -1,21 +1,8 @@
 import { describe, it, expect } from 'vitest'
-import { homeCard, minutesLine, progressLine } from './homeCard'
+import { homeCard, progressLine, QUEUE_COLORS } from './homeCard'
 import { GENTLE_REVIEW_CAP } from './gentleReturn'
 
 const ready = { dueCount: 10, learnCount: 3, newCount: 10 }
-
-describe('minutesLine', () => {
-  it('says nothing for an empty estimate', () => {
-    expect(minutesLine(0)).toBe('')
-    expect(minutesLine(undefined)).toBe('')
-  })
-  it('does not fake precision for a one-minute session', () => {
-    expect(minutesLine(1)).toBe('About a minute')
-  })
-  it('writes the minutes out in a sentence', () => {
-    expect(minutesLine(12)).toBe('About 12 minutes')
-  })
-})
 
 describe('progressLine', () => {
   it('names the next level', () => {
@@ -42,8 +29,20 @@ describe('homeCard — ready', () => {
   it('opens Study', () => {
     expect(card.go).toBe('study')
   })
-  it('gives the session length in plain words', () => {
-    expect(card.detail).toMatch(/^About \d+ minutes?$|^About a minute$/)
+  it('shows no time estimate — the three counts replace it', () => {
+    expect(card.detail).toBe('')
+  })
+  it('breaks the queue into new, learning and review, adding up to the title', () => {
+    expect(card.breakdown.map(b => b.key)).toEqual(['new', 'learning', 'review'])
+    expect(card.breakdown.map(b => b.value)).toEqual([10, 3, 10])
+    expect(card.breakdown.reduce((n, b) => n + b.value, 0)).toBe(23)
+  })
+  it('counts calibration checks as review', () => {
+    const c = homeCard({ counts: { dueCount: 2, calibrationCount: 3 } })
+    expect(c.breakdown.find(b => b.key === 'review').value).toBe(5)
+  })
+  it('colours the three counts blue, red and green', () => {
+    expect(Object.keys(QUEUE_COLORS)).toEqual(['new', 'learning', 'review'])
   })
   it('carries level progress and its percentage', () => {
     expect(card.progress).toBe('5 of 44 words to HSK 3')
@@ -51,7 +50,7 @@ describe('homeCard — ready', () => {
     expect(card.pct).toBeLessThan(100)
   })
   it('announces the action and the whole state to a screen reader', () => {
-    expect(card.ariaLabel).toMatch(/^Start reviewing\. 23 cards to review\./)
+    expect(card.ariaLabel).toMatch(/^Start reviewing\. 23 cards to review: 10 new, 3 learning, 10 review\./)
     expect(card.ariaLabel).toContain('5 of 44 words to HSK 3')
   })
   it('singular for one card', () => {
@@ -61,7 +60,7 @@ describe('homeCard — ready', () => {
     expect(homeCard({ counts: { calibrationCount: 4 } }).title).toBe('4 cards to review')
   })
   it('never uses dot-joined meta strings or abbreviations', () => {
-    for (const s of [card.title, card.detail, card.progress]) {
+    for (const s of [card.title, card.progress]) {
       expect(s).not.toContain('·')
       expect(s).not.toMatch(/~|\bmin\b/)
     }
@@ -76,10 +75,15 @@ describe('homeCard — back after a break', () => {
     expect(card.title).toBe((GENTLE_REVIEW_CAP + 5) + ' cards to review')
     expect(card.detail).toBe('Welcome back. The rest return over the next few days.')
   })
+  it('the breakdown shows the capped review count, still adding up', () => {
+    const card = homeCard({ counts: backlog, returning: true })
+    expect(card.breakdown.find(b => b.key === 'review').value).toBe(GENTLE_REVIEW_CAP)
+    expect(card.breakdown.reduce((n, b) => n + b.value, 0)).toBe(GENTLE_REVIEW_CAP + 5)
+  })
   it('is a normal day when the backlog is within the cap', () => {
     const card = homeCard({ counts: { dueCount: 3 }, returning: true })
     expect(card.title).toBe('3 cards to review')
-    expect(card.detail).toMatch(/^About/)
+    expect(card.detail).toBe('')
   })
   it('a returning flag alone changes nothing for a learner who has not been away', () => {
     expect(homeCard({ counts: backlog }).title).toBe('65 cards to review')
